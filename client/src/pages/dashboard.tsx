@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import DocumentUpload from "@/components/DocumentUpload";
 import ShipmentTable from "@/components/ShipmentTable";
 import ShipmentDetail from "@/components/ShipmentDetail";
+import CreateShipmentDialog from "@/components/CreateShipmentDialog";
 import { Ship, FileText, CheckCircle, DollarSign, Plus, Bell } from "lucide-react";
 import type { Shipment } from "@shared/schema";
 
@@ -46,10 +47,7 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center space-x-4">
-          <Button className="bg-freight-orange hover:bg-freight-orange/90 text-white">
-            <Plus className="w-4 h-4 mr-2" />
-            New Shipment
-          </Button>
+          <CreateShipmentDialog />
           <Button variant="ghost" className="relative">
             <Bell className="w-5 h-5" />
             <Badge className="absolute -top-1 -right-1 bg-freight-orange text-white text-xs w-5 h-5 flex items-center justify-center p-0">

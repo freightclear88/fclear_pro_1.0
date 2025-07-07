@@ -30,84 +30,173 @@ export default function Landing() {
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-freight-dark mb-4">
-            Make Imports to the USA Fast and Easy
+          <h1 className="text-5xl font-bold text-freight-dark mb-6">
+            USA Imports Made Simple!
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Freight Flow by Freightclear is your productivity app for streamlined freight management 
-            with OCR document intelligence and automatic data extraction.
+          <p className="text-xl text-gray-600 mb-8 max-w-4xl mx-auto">
+            Freight Flow is a digital customs brokerage service for importing freight into the United States. 
+            We make imports and customs clearance simple by offering a streamlined process for shipping, 
+            clearing and delivering your imports to the USA in one seamless transaction.
           </p>
           <Button 
             onClick={() => window.location.href = "/api/login"}
             size="lg"
-            className="bg-freight-orange hover:bg-freight-orange/90 text-white px-8 py-3 text-lg"
+            className="bg-freight-orange hover:bg-freight-orange/90 text-white px-12 py-4 text-lg font-semibold"
           >
-            Get Started
+            Clear My Freight Now
           </Button>
         </div>
 
-        {/* Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        {/* Key Features */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
+          <Card className="text-center">
+            <CardContent className="p-6">
+              <div className="bg-freight-blue/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <Ship className="w-8 h-8 text-freight-blue" />
+              </div>
+              <h3 className="font-semibold text-freight-dark mb-2">Fast Customs Clearance</h3>
+              <p className="text-sm text-gray-600">Streamlined customs processing for faster imports</p>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardContent className="p-6">
+              <div className="bg-freight-green/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <FileText className="w-8 h-8 text-freight-green" />
+              </div>
+              <h3 className="font-semibold text-freight-dark mb-2">Fast ISF Filing</h3>
+              <p className="text-sm text-gray-600">Quick Importer Security Filing processing</p>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardContent className="p-6">
+              <div className="bg-freight-orange/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <BarChart3 className="w-8 h-8 text-freight-orange" />
+              </div>
+              <h3 className="font-semibold text-freight-dark mb-2">Streamlined Workflows</h3>
+              <p className="text-sm text-gray-600">Digital solutions for import efficiency</p>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardContent className="p-6">
+              <div className="bg-freight-blue/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <Ship className="w-8 h-8 text-freight-blue" />
+              </div>
+              <h3 className="font-semibold text-freight-dark mb-2">Last Mile Delivery</h3>
+              <p className="text-sm text-gray-600">Complete delivery solutions to your door</p>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardContent className="p-6">
+              <div className="bg-freight-green/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <FileText className="w-8 h-8 text-freight-green" />
+              </div>
+              <h3 className="font-semibold text-freight-dark mb-2">Experts on Call</h3>
+              <p className="text-sm text-gray-600">Professional support when you need it</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Services Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Ship className="w-6 h-6 text-freight-blue" />
-                <span>Shipment Management</span>
-              </CardTitle>
+              <CardTitle className="text-lg">Customs Clearance</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600">
-                Track and manage all your shipments in one place with real-time status updates 
-                and comprehensive documentation.
+              <p className="text-gray-600 text-sm">
+                Customs Clearance USA for importers of foreign manufactured products.
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FileText className="w-6 h-6 text-freight-green" />
-                <span>OCR Document Intelligence</span>
-              </CardTitle>
+              <CardTitle className="text-lg">Importer Compliance</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600">
-                Automatically extract data from Bills of Lading, Commercial Invoices, and other 
-                freight documents using advanced OCR technology.
+              <p className="text-gray-600 text-sm">
+                Customs compliance solutions for USA importers. Brokers on call to advise.
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <BarChart3 className="w-6 h-6 text-freight-orange" />
-                <span>Analytics & Reporting</span>
-              </CardTitle>
+              <CardTitle className="text-lg">Freight Solutions</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600">
-                Get insights into your freight operations with detailed analytics and 
-                customizable reports for better decision making.
+              <p className="text-gray-600 text-sm">
+                International shipping solutions in air and ocean freight. Get a quote today.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Customs Bonds</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 text-sm">
+                Single entry and continuous bonds for USA importers. Apply today for savings.
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* CTA Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-          <h2 className="text-2xl font-bold text-freight-dark mb-4">
-            Ready to Streamline Your Freight Operations?
+        {/* Process Steps */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-12">
+          <h2 className="text-3xl font-bold text-freight-dark mb-8 text-center">
+            Customs Clearance in 3 Easy Steps
           </h2>
-          <p className="text-gray-600 mb-6">
-            Join freight professionals who trust Freightclear for their import operations.
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="bg-freight-orange text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold mx-auto mb-4">
+                1
+              </div>
+              <h3 className="text-lg font-semibold text-freight-dark mb-2">Fill out Quote Form</h3>
+              <p className="text-gray-600 text-sm">
+                Enter your shipment details and upload your documents in our easy to use quote request form.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="bg-freight-blue text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold mx-auto mb-4">
+                2
+              </div>
+              <h3 className="text-lg font-semibold text-freight-dark mb-2">Agent Response</h3>
+              <p className="text-gray-600 text-sm">
+                Our import agents will respond to your ticket with expert import rates and info on your pending customs clearance.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="bg-freight-green text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold mx-auto mb-4">
+                3
+              </div>
+              <h3 className="text-lg font-semibold text-freight-dark mb-2">Clearance Process</h3>
+              <p className="text-gray-600 text-sm">
+                Freightclear sets up your importer profile, processes your customs documents and transmits your shipment entry to U.S. Customs.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA Section */}
+        <div className="bg-freight-blue rounded-xl shadow-sm p-8 text-center text-white">
+          <h2 className="text-3xl font-bold mb-4">
+            Ready to Streamline Your USA Imports?
+          </h2>
+          <p className="text-blue-100 mb-6 text-lg">
+            Get customs clearance rates and service from our import agents on call.
           </p>
           <Button 
             onClick={() => window.location.href = "/api/login"}
             size="lg"
-            className="bg-freight-blue hover:bg-freight-blue/90 text-white px-8 py-3"
+            className="bg-freight-orange hover:bg-freight-orange/90 text-white px-12 py-4 text-lg font-semibold"
           >
-            Start Your Free Trial
+            Clear My Freight
           </Button>
         </div>
       </main>

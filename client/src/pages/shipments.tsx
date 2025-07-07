@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ShipmentTable from "@/components/ShipmentTable";
 import ShipmentDetail from "@/components/ShipmentDetail";
+import CreateShipmentDialog from "@/components/CreateShipmentDialog";
 import { Ship, Plus, Search } from "lucide-react";
 import type { Shipment } from "@shared/schema";
 
@@ -44,10 +45,7 @@ export default function Shipments() {
           </h2>
           <p className="text-gray-600">Manage all your freight shipments</p>
         </div>
-        <Button className="bg-freight-orange hover:bg-freight-orange/90 text-white">
-          <Plus className="w-4 h-4 mr-2" />
-          New Shipment
-        </Button>
+        <CreateShipmentDialog />
       </div>
 
       {/* Search and Filters */}

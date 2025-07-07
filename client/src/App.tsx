@@ -75,17 +75,17 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center space-x-3">
               <Avatar className="w-10 h-10">
                 <AvatarImage 
-                  src={user?.profileImageUrl} 
-                  alt={`${user?.firstName} ${user?.lastName}`}
+                  src={user?.profileImageUrl || ""} 
+                  alt={`${user?.firstName || ""} ${user?.lastName || ""}`}
                   className="object-cover"
                 />
                 <AvatarFallback className="bg-freight-blue text-white">
-                  {user?.firstName?.[0]}{user?.lastName?.[0]}
+                  {user?.firstName?.[0] || "U"}{user?.lastName?.[0] || ""}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-freight-dark truncate">
-                  {user?.firstName} {user?.lastName}
+                  {user?.firstName || ""} {user?.lastName || ""}
                 </p>
                 <p className="text-xs text-gray-500 truncate">
                   {user?.company || "Freight Professional"}
