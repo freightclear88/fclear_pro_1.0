@@ -230,13 +230,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         // Add mock OCR data for immediate viewing (in production, this would be processed asynchronously)
+        const docTransportMode = documentCategory === 'airway_bill' ? 'air' : 'ocean';
         const mockOcrData = {
-          shipmentId: `${transportMode === 'air' ? 'AIR' : 'SEA'}-${Math.floor(Math.random() * 900000) + 100000}`,
-          origin: file.originalname.includes('seattle') ? 'Seattle, WA' : 'Various Origins',
-          destination: file.originalname.includes('miami') ? 'Miami, FL' : 'Various Destinations',
-          containerNumber: transportMode === 'ocean' ? `MSCU${Math.floor(Math.random() * 9000000) + 1000000}0` : null,
+          shipmentId: `${docTransportMode === 'air' ? 'AIR' : 'SEA'}-${Math.floor(Math.random() * 900000) + 100000}`,
+          origin: file.originalname.toLowerCase().includes('seattle') ? 'Seattle, WA' : 'Various Origins',
+          destination: file.originalname.toLowerCase().includes('miami') ? 'Miami, FL' : 'Various Destinations',
+          containerNumber: docTransportMode === 'ocean' ? `MSCU${Math.floor(Math.random() * 9000000) + 1000000}0` : null,
           billOfLading: `BOL${Math.floor(Math.random() * 900000) + 100000}`,
-          vessel: transportMode === 'ocean' ? 'MV OCEAN TRADER' : null,
+          vessel: docTransportMode === 'ocean' ? 'MV OCEAN TRADER' : null,
           extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}`
         };
 

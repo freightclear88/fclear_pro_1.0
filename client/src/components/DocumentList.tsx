@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, Eye, Download, Calendar, User, Hash } from "lucide-react";
-import type { Document } from "@shared/schema";
+import { Document } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FileText, Eye, Download, Calendar, Hash } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface DocumentListProps {
   shipmentId?: number;
@@ -16,9 +16,10 @@ interface DocumentListProps {
 export default function DocumentList({ shipmentId, showAll = false }: DocumentListProps) {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const { toast } = useToast();
 
   const { data: documents = [], isLoading } = useQuery({
-    queryKey: shipmentId ? ["/api/shipments", shipmentId, "documents"] : ["/api/documents"],
+    queryKey: shipmentId ? ['/api/shipments', shipmentId, 'documents'] : ['/api/documents'],
     enabled: true,
   });
 
@@ -30,19 +31,30 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
   const handleDownload = async (document: Document) => {
     try {
       const response = await fetch(`/api/documents/${document.id}/download`);
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = document.fileName;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+      if (!response.ok) {
+        throw new Error('Download failed');
       }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = document.originalName || document.fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Download Started",
+        description: `Downloading ${document.originalName || document.fileName}`,
+      });
     } catch (error) {
-      console.error('Download failed:', error);
+      toast({
+        title: "Download Failed",
+        description: "Could not download the document",
+        variant: "destructive",
+      });
     }
   };
 
@@ -105,49 +117,80 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
             {documents.map((document: Document) => (
               <div
                 key={document.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                className="border rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <div className="flex items-center space-x-4 flex-1">
-                  <FileText className="w-8 h-8 text-freight-blue" />
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <h4 className="font-medium text-gray-900">{document.fileName}</h4>
-                      <Badge className={getCategoryBadgeColor(document.category)}>
-                        {formatCategoryName(document.category)}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      <span className="flex items-center">
-                        <Calendar className="w-3 h-3 mr-1" />
-                        {new Date(document.uploadedAt).toLocaleDateString()}
-                      </span>
-                      <span className="flex items-center">
-                        <Hash className="w-3 h-3 mr-1" />
-                        {document.fileSize ? `${Math.round(document.fileSize / 1024)} KB` : 'Size unknown'}
-                      </span>
+                <div className="flex items-center justify-between p-4">
+                  <div className="flex items-center space-x-4 flex-1">
+                    <FileText className="w-8 h-8 text-freight-blue" />
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h4 className="font-medium text-gray-900">{document.originalName || document.fileName}</h4>
+                        <Badge className={getCategoryBadgeColor(document.category)}>
+                          {formatCategoryName(document.category)}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <span className="flex items-center">
+                          <Calendar className="w-3 h-3 mr-1" />
+                          {new Date(document.uploadedAt).toLocaleDateString()}
+                        </span>
+                        <span className="flex items-center">
+                          <Hash className="w-3 h-3 mr-1" />
+                          {document.fileSize ? `${Math.round(document.fileSize / 1024)} KB` : 'Size unknown'}
+                        </span>
+                        {document.processingStatus && (
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            document.processingStatus === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {document.processingStatus}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleViewDocument(document)}
+                      className="text-freight-blue border-freight-blue hover:bg-freight-blue hover:text-white"
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      View Data
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownload(document)}
+                      className="text-freight-green border-freight-green hover:bg-freight-green hover:text-white"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleViewDocument(document)}
-                    className="text-freight-blue border-freight-blue hover:bg-freight-blue hover:text-white"
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    View Data
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDownload(document)}
-                    className="text-freight-green border-freight-green hover:bg-freight-green hover:text-white"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
-                  </Button>
-                </div>
+                
+                {(document.extractedData || document.ocrText) && (
+                  <div className="px-4 pb-4 border-t bg-gray-50">
+                    <h5 className="text-sm font-medium text-gray-700 mb-2 mt-2">Extracted Data:</h5>
+                    {document.extractedData && typeof document.extractedData === 'object' ? (
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {Object.entries(document.extractedData).map(([key, value]) => (
+                          <div key={key} className="flex justify-between">
+                            <span className="font-medium text-gray-600">
+                              {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
+                            </span>
+                            <span className="text-gray-800 truncate ml-2">{String(value) || 'N/A'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : document.ocrText ? (
+                      <div className="bg-white p-2 rounded border text-sm font-mono text-gray-600 max-h-20 overflow-y-auto">
+                        {document.ocrText}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -160,102 +203,78 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
           <DialogHeader>
             <DialogTitle className="flex items-center">
               <FileText className="w-5 h-5 mr-2 text-freight-blue" />
-              {selectedDocument?.fileName}
+              Document Details: {selectedDocument?.originalName || selectedDocument?.fileName}
             </DialogTitle>
           </DialogHeader>
           
           {selectedDocument && (
-            <ScrollArea className="max-h-[60vh]">
-              <div className="space-y-6">
-                {/* Document Info */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Document Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-sm text-gray-600">Category:</span>
-                        <Badge className={`ml-2 ${getCategoryBadgeColor(selectedDocument.category)}`}>
-                          {formatCategoryName(selectedDocument.category)}
-                        </Badge>
-                      </div>
-                      <div>
-                        <span className="text-sm text-gray-600">Upload Date:</span>
-                        <span className="ml-2 font-medium">
-                          {new Date(selectedDocument.uploadedAt).toLocaleString()}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-sm text-gray-600">File Size:</span>
-                        <span className="ml-2 font-medium">
-                          {selectedDocument.fileSize ? `${Math.round(selectedDocument.fileSize / 1024)} KB` : 'Unknown'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-sm text-gray-600">Processing Status:</span>
-                        <Badge className="ml-2 bg-green-100 text-green-800">
-                          {selectedDocument.processingStatus || 'Completed'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Extracted Data */}
-                {selectedDocument.extractedData && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Extracted Data</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <pre className="text-sm whitespace-pre-wrap text-gray-800 max-h-96 overflow-auto">
-                          {typeof selectedDocument.extractedData === 'string' 
-                            ? selectedDocument.extractedData 
-                            : JSON.stringify(selectedDocument.extractedData, null, 2)
-                          }
-                        </pre>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* OCR Text (if available) */}
-                {selectedDocument.ocrText && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">OCR Text Content</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <pre className="text-sm whitespace-pre-wrap text-gray-700 max-h-96 overflow-auto">
-                          {selectedDocument.ocrText}
-                        </pre>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex justify-end space-x-4 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={() => handleDownload(selectedDocument)}
-                    className="text-freight-green border-freight-green hover:bg-freight-green hover:text-white"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download Original
-                  </Button>
-                  <Button
-                    onClick={() => setIsDetailOpen(false)}
-                    className="bg-freight-blue hover:bg-freight-blue/90 text-white"
-                  >
-                    Close
-                  </Button>
+            <div className="space-y-4 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <span className="text-sm font-medium text-gray-600">File Size:</span>
+                  <p className="text-sm text-gray-900">{selectedDocument.fileSize ? `${Math.round(selectedDocument.fileSize / 1024)} KB` : 'Unknown'}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-600">Category:</span>
+                  <p className="text-sm text-gray-900">{formatCategoryName(selectedDocument.category)}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-600">Upload Date:</span>
+                  <p className="text-sm text-gray-900">{new Date(selectedDocument.uploadedAt).toLocaleString()}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-600">Processing Status:</span>
+                  <p className="text-sm text-gray-900">{selectedDocument.processingStatus || 'Pending'}</p>
                 </div>
               </div>
-            </ScrollArea>
+
+              {selectedDocument.extractedData && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Extracted Data</h3>
+                  <div className="bg-white border rounded-lg p-4">
+                    {typeof selectedDocument.extractedData === 'object' ? (
+                      <div className="space-y-2">
+                        {Object.entries(selectedDocument.extractedData).map(([key, value]) => (
+                          <div key={key} className="flex justify-between items-center py-1 border-b border-gray-100 last:border-b-0">
+                            <span className="font-medium text-gray-600">
+                              {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
+                            </span>
+                            <span className="text-gray-900">{String(value) || 'N/A'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <pre className="whitespace-pre-wrap text-sm font-mono">{selectedDocument.extractedData}</pre>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {selectedDocument.ocrText && !selectedDocument.extractedData && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">OCR Text</h3>
+                  <div className="bg-white border rounded-lg p-4">
+                    <pre className="whitespace-pre-wrap text-sm font-mono">{selectedDocument.ocrText}</pre>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  onClick={() => handleDownload(selectedDocument)}
+                  className="bg-freight-green hover:bg-freight-green/90 text-white"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download PDF
+                </Button>
+                <Button
+                  onClick={() => setIsDetailOpen(false)}
+                  variant="outline"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
