@@ -178,14 +178,14 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
                           📄
                         </div>
                         <div>
-                          <span className="text-sm font-medium">{document.originalName}</span>
+                          <span className="text-sm font-medium">{document.originalName || "Unknown File"}</span>
                           <div className="text-xs text-gray-500">
-                            {document.category.replace("_", " ").toUpperCase()}
+                            {document.category ? document.category.replace("_", " ").toUpperCase() : "Unknown Category"}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {getDocumentStatusBadge(document.status)}
+                        {getDocumentStatusBadge(document.status || "pending")}
                         <Button
                           variant="ghost"
                           size="sm"

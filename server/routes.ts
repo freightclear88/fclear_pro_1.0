@@ -159,6 +159,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Upload all documents
       const uploadedDocuments = [];
       for (const file of files) {
+        // Ensure category is always valid
+        const documentCategory = category && category.trim() ? category.trim() : 'other';
+        
         const document = await storage.createDocument({
           userId,
           shipmentId: createdShipment?.id || (shipmentId ? parseInt(shipmentId) : undefined),
@@ -166,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           originalName: file.originalname,
           fileType: file.mimetype,
           fileSize: file.size,
-          category: category || 'other',
+          category: documentCategory,
           status: 'pending',
           filePath: file.path,
         });
