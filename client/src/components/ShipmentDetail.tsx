@@ -178,6 +178,32 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
             </div>
             <DocumentList shipmentId={shipment.id} />
           </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-4 pt-4 border-t">
+            <Button 
+              onClick={handleCopyData}
+              variant="outline"
+              className="text-freight-orange border-freight-orange hover:bg-freight-orange hover:text-white"
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Copy All Data
+            </Button>
+            <Button 
+              onClick={() => window.open(`/shipment-html/${shipment.id}`, '_blank')}
+              variant="outline"
+              className="text-freight-blue border-freight-blue hover:bg-freight-blue hover:text-white"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              View HTML Page
+            </Button>
+            <Button 
+              onClick={onClose}
+              className="bg-freight-blue hover:bg-freight-blue/90 text-white"
+            >
+              Close
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

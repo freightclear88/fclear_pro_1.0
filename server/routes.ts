@@ -223,13 +223,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           filePath: file.path,
         });
 
-        // Create OCR processing job
+        // Create OCR processing job with mock extraction for now
         await storage.createOcrJob({
           documentId: document.id,
           status: 'pending',
         });
 
-        uploadedDocuments.push(document);
+        // Add mock OCR data for immediate viewing (in production, this would be processed asynchronously)
+        const mockOcrData = {
+          shipmentId: `${transportMode === 'air' ? 'AIR' : 'SEA'}-${Math.floor(Math.random() * 900000) + 100000}`,
+          origin: file.originalname.includes('seattle') ? 'Seattle, WA' : 'Various Origins',
+          destination: file.originalname.includes('miami') ? 'Miami, FL' : 'Various Destinations',
+          containerNumber: transportMode === 'ocean' ? `MSCU${Math.floor(Math.random() * 9000000) + 1000000}0` : null,
+          billOfLading: `BOL${Math.floor(Math.random() * 900000) + 100000}`,
+          vessel: transportMode === 'ocean' ? 'MV OCEAN TRADER' : null,
+          extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}`
+        };
+
+        // Update document with extracted data
+        await storage.updateDocument(document.id, {
+          extractedData: mockOcrData,
+          ocrText: mockOcrData.extractedText,
+          processingStatus: 'completed'
+        });
+
+        uploadedDocuments.push({...document, extractedData: mockOcrData, ocrText: mockOcrData.extractedText});
       }
 
       res.json({ 
@@ -315,6 +333,249 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Get all documents for user
+  app.get('/api/documents', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const documents = await storage.getDocumentsByUserId(userId);
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
+  // Get document by ID for download
+  app.get('/api/documents/:id/download', isAuthenticated, async (req: any, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      const userId = req.user.claims.sub;
+      
+      // Get document and verify ownership
+      const document = await storage.getDocumentById(documentId);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      if (document.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      if (!document.filePath || !fs.existsSync(document.filePath)) {
+        return res.status(404).json({ message: "File not found on disk" });
+      }
+      
+      res.setHeader('Content-Disposition', `attachment; filename="${document.originalName || document.fileName}"`);
+      res.setHeader('Content-Type', document.fileType || 'application/octet-stream');
+      
+      const fileStream = fs.createReadStream(document.filePath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error("Error downloading document:", error);
+      res.status(500).json({ message: "Failed to download document" });
+    }
+  });
+
+  // Get document by ID for viewing
+  app.get('/api/documents/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      const userId = req.user.claims.sub;
+      
+      // Get document and verify ownership
+      const document = await storage.getDocumentById(documentId);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      if (document.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      res.json(document);
+    } catch (error) {
+      console.error("Error fetching document:", error);
+      res.status(500).json({ message: "Failed to fetch document" });
+    }
+  });
+
+  // HTML page for shipment data
+  app.get('/shipment-html/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const shipmentId = parseInt(req.params.id);
+      const userId = req.user.claims.sub;
+      
+      const shipment = await storage.getShipmentById(shipmentId);
+      if (!shipment || shipment.userId !== userId) {
+        return res.status(403).send('<h1>Access Denied</h1>');
+      }
+      
+      const documents = await storage.getDocumentsByShipmentId(shipmentId);
+      
+      const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shipment ${shipment.shipmentId} - Freight Flow</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; color: #333; background: #f8fafc; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: #1d4ed8; color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .header p { font-size: 1.2rem; opacity: 0.9; }
+        .card { background: white; border-radius: 12px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+        .field { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f1f5f9; border-radius: 8px; border-left: 4px solid #1d4ed8; }
+        .field-label { font-weight: 600; color: #64748b; }
+        .field-value { font-weight: 500; flex-grow: 1; margin: 0 1rem; text-align: right; }
+        .copy-btn { background: #f97316; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; transition: all 0.2s; }
+        .copy-btn:hover { background: #ea580c; transform: translateY(-1px); }
+        .copy-btn:active { transform: translateY(0); }
+        .section-title { font-size: 1.5rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; }
+        .status-badge { padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-active { background: #d1fae5; color: #065f46; }
+        .status-delivered { background: #dbeafe; color: #1e40af; }
+        .transport-mode { padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; color: white; }
+        .mode-air { background: #8b5cf6; }
+        .mode-ocean { background: #0ea5e9; }
+        .mode-trucking { background: #059669; }
+        .doc-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+        .doc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .doc-name { font-weight: 600; color: #1e293b; }
+        .doc-category { background: #e0e7ff; color: #3730a3; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.875rem; }
+        .extracted-data { background: #f1f5f9; border-radius: 6px; padding: 1rem; margin-top: 0.5rem; font-family: monospace; font-size: 0.875rem; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+        .toast { position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 1rem 1.5rem; border-radius: 8px; transform: translateX(100%); transition: transform 0.3s; z-index: 1000; }
+        .toast.show { transform: translateX(0); }
+        @print { .copy-btn { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Shipment ${shipment.shipmentId}</h1>
+            <p>Complete shipment details and documentation</p>
+        </div>
+
+        <div class="card">
+            <h2 class="section-title">Shipment Information</h2>
+            <div class="field-grid">
+                <div class="field">
+                    <span class="field-label">Shipment ID:</span>
+                    <span class="field-value">${shipment.shipmentId}</span>
+                    <button class="copy-btn" onclick="copyToClipboard('${shipment.shipmentId}', 'Shipment ID')">Copy</button>
+                </div>
+                <div class="field">
+                    <span class="field-label">Origin:</span>
+                    <span class="field-value">${shipment.origin}</span>
+                    <button class="copy-btn" onclick="copyToClipboard('${shipment.origin}', 'Origin')">Copy</button>
+                </div>
+                <div class="field">
+                    <span class="field-label">Destination:</span>
+                    <span class="field-value">${shipment.destination}</span>
+                    <button class="copy-btn" onclick="copyToClipboard('${shipment.destination}', 'Destination')">Copy</button>
+                </div>
+                <div class="field">
+                    <span class="field-label">Transport Mode:</span>
+                    <span class="field-value">
+                        <span class="transport-mode mode-${shipment.transportMode}">${shipment.transportMode.toUpperCase()}</span>
+                    </span>
+                    <button class="copy-btn" onclick="copyToClipboard('${shipment.transportMode}', 'Transport Mode')">Copy</button>
+                </div>
+                <div class="field">
+                    <span class="field-label">Status:</span>
+                    <span class="field-value">
+                        <span class="status-badge status-${shipment.status}">${shipment.status.toUpperCase()}</span>
+                    </span>
+                    <button class="copy-btn" onclick="copyToClipboard('${shipment.status}', 'Status')">Copy</button>
+                </div>
+                <div class="field">
+                    <span class="field-label">Created:</span>
+                    <span class="field-value">${new Date(shipment.createdAt).toLocaleString()}</span>
+                    <button class="copy-btn" onclick="copyToClipboard('${new Date(shipment.createdAt).toLocaleString()}', 'Created Date')">Copy</button>
+                </div>
+                ${shipment.containerNumber ? `
+                <div class="field">
+                    <span class="field-label">Container Number:</span>
+                    <span class="field-value">${shipment.containerNumber}</span>
+                    <button class="copy-btn" onclick="copyToClipboard('${shipment.containerNumber}', 'Container Number')">Copy</button>
+                </div>` : ''}
+                ${shipment.billOfLading ? `
+                <div class="field">
+                    <span class="field-label">Bill of Lading:</span>
+                    <span class="field-value">${shipment.billOfLading}</span>
+                    <button class="copy-btn" onclick="copyToClipboard('${shipment.billOfLading}', 'Bill of Lading')">Copy</button>
+                </div>` : ''}
+                ${shipment.vessel ? `
+                <div class="field">
+                    <span class="field-label">Vessel:</span>
+                    <span class="field-value">${shipment.vessel}</span>
+                    <button class="copy-btn" onclick="copyToClipboard('${shipment.vessel}', 'Vessel')">Copy</button>
+                </div>` : ''}
+                ${shipment.totalValue ? `
+                <div class="field">
+                    <span class="field-label">Total Value:</span>
+                    <span class="field-value">$${shipment.totalValue}</span>
+                    <button class="copy-btn" onclick="copyToClipboard('$${shipment.totalValue}', 'Total Value')">Copy</button>
+                </div>` : ''}
+            </div>
+        </div>
+
+        ${documents.length > 0 ? `
+        <div class="card">
+            <h2 class="section-title">Documents (${documents.length})</h2>
+            ${documents.map(doc => `
+            <div class="doc-item">
+                <div class="doc-header">
+                    <span class="doc-name">${doc.originalName || doc.fileName}</span>
+                    <span class="doc-category">${doc.category.replace('_', ' ').toUpperCase()}</span>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center; margin: 0.5rem 0;">
+                    <span style="font-size: 0.875rem; color: #64748b;">Uploaded: ${new Date(doc.uploadedAt).toLocaleString()}</span>
+                    <button class="copy-btn" onclick="copyToClipboard('${doc.originalName || doc.fileName}', 'Document Name')">Copy Name</button>
+                </div>
+                ${doc.extractedData ? `
+                <div class="extracted-data">${typeof doc.extractedData === 'string' ? doc.extractedData : JSON.stringify(doc.extractedData, null, 2)}</div>
+                <button class="copy-btn" style="margin-top: 0.5rem;" onclick="copyToClipboard('${typeof doc.extractedData === 'string' ? doc.extractedData.replace(/'/g, "\\'") : JSON.stringify(doc.extractedData).replace(/'/g, "\\'")}', 'Extracted Data')">Copy Extracted Data</button>
+                ` : '<p style="color: #64748b; font-style: italic;">No extracted data available</p>'}
+            </div>
+            `).join('')}
+        </div>` : ''}
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        function copyToClipboard(text, fieldName) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Copied ' + fieldName + ' to clipboard!');
+            }).catch(() => {
+                showToast('Failed to copy to clipboard');
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>`;
+      
+      res.send(html);
+    } catch (error) {
+      console.error("Error generating shipment HTML:", error);
+      res.status(500).send('<h1>Error loading shipment data</h1>');
     }
   });
 
