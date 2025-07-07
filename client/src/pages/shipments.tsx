@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import ShipmentTable from "@/components/ShipmentTable";
 import ShipmentDetail from "@/components/ShipmentDetail";
 import CreateShipmentDialog from "@/components/CreateShipmentDialog";
+import DocumentUpload from "@/components/DocumentUpload";
 import { Ship, Plus, Search } from "lucide-react";
 import type { Shipment } from "@shared/schema";
 

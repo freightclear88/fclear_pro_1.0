@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { Copy, Download, X } from "lucide-react";
+import { Copy, Download, X, Upload } from "lucide-react";
+import DocumentUpload from "@/components/DocumentUpload";
+import DocumentList from "@/components/DocumentList";
 import type { Shipment, Document } from "@shared/schema";
 
 interface ShipmentDetailProps {
@@ -161,47 +163,21 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Documents</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {documents && documents.length > 0 ? (
-                <div className="space-y-3">
-                  {documents.map((document: Document) => (
-                    <div
-                      key={document.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="text-freight-blue">
-                          📄
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium">{document.originalName || "Unknown File"}</span>
-                          <div className="text-xs text-gray-500">
-                            {document.category ? document.category.replace("_", " ").toUpperCase() : "Unknown Category"}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {getDocumentStatusBadge(document.status || "pending")}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-freight-blue hover:text-freight-dark"
-                        >
-                          <Download className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center py-4">No documents uploaded</p>
-              )}
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Documents</h3>
+              <DocumentUpload 
+                shipmentId={shipment.id}
+                trigger={
+                  <Button size="sm" className="bg-freight-green hover:bg-freight-green/90 text-white">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Add Documents
+                  </Button>
+                }
+              />
+            </div>
+            <DocumentList shipmentId={shipment.id} />
+          </div>
         </div>
       </DialogContent>
     </Dialog>
