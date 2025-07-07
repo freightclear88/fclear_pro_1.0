@@ -120,6 +120,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Document upload route with shipment creation
+  app.post('/api/documents/upload', upload.array('documents', 10), isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { shipmentId, category } = req.body;
+      
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: "No files uploaded" });
+      }
+
+      const files = req.files as Express.Multer.File[];
+      let createdShipment = null;
+
+      // Check if this document type should create a new shipment
+      const shouldCreateShipment = !shipmentId && ['bill_of_lading', 'arrival_notice', 'airway_bill', 'isf_data_sheet'].includes(category);
+      
+      if (shouldCreateShipment) {
+        // Determine transport mode based on document type
+        const transportMode = category === 'airway_bill' ? 'air' : 'ocean';
+        
+        // Generate shipment ID based on transport mode
+        const prefix = transportMode === 'air' ? 'AIR' : 'SEA';
+        const timestamp = Date.now().toString().slice(-6);
+        const generatedShipmentId = `${prefix}-${timestamp}`;
+        
+        // Create new shipment
+        createdShipment = await storage.createShipment({
+          userId,
+          shipmentId: generatedShipmentId,
+          origin: "TBD - From Document Processing",
+          destination: "TBD - From Document Processing",
+          transportMode,
+          status: 'pending',
+        });
+      }
+
+      // Upload all documents
+      const uploadedDocuments = [];
+      for (const file of files) {
+        const document = await storage.createDocument({
+          userId,
+          shipmentId: createdShipment?.id || (shipmentId ? parseInt(shipmentId) : undefined),
+          fileName: file.filename,
+          originalName: file.originalname,
+          fileType: file.mimetype,
+          fileSize: file.size,
+          category: category || 'other',
+          status: 'pending',
+          filePath: file.path,
+        });
+
+        // Create OCR processing job
+        await storage.createOcrJob({
+          documentId: document.id,
+          status: 'pending',
+        });
+
+        uploadedDocuments.push(document);
+      }
+
+      res.json({ 
+        message: "Documents uploaded successfully", 
+        documents: uploadedDocuments,
+        shipment: createdShipment
+      });
+    } catch (error) {
+      console.error("Error uploading documents:", error);
+      res.status(500).json({ message: "Failed to upload documents" });
+    }
+  });
+
   app.post('/api/shipments/:shipmentId/documents', isAuthenticated, upload.single('file'), async (req: any, res) => {
     try {
       const shipmentId = parseInt(req.params.shipmentId);
@@ -137,27 +208,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create document record
-      const documentData = {
-        shipmentId,
+      const document = await storage.createDocument({
         userId,
+        shipmentId,
         fileName: req.file.filename,
         originalName: req.file.originalname,
         fileType: req.file.mimetype,
         fileSize: req.file.size,
         category,
-        status: "uploaded",
+        status: 'pending',
         filePath: req.file.path,
-      };
+      });
       
-      const document = await storage.createDocument(documentData);
-      
-      // Create OCR job for PDF files
-      if (req.file.mimetype === "application/pdf") {
-        await storage.createOcrJob({
-          documentId: document.id,
-          status: "pending",
-        });
-      }
+      // Create OCR job
+      await storage.createOcrJob({
+        documentId: document.id,
+        status: 'pending',
+      });
       
       res.status(201).json(document);
     } catch (error) {

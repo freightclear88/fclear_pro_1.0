@@ -48,6 +48,12 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center space-x-4">
           <CreateShipmentDialog />
+          <DocumentUpload onShipmentCreated={(shipment) => {
+            // Refresh data when a new shipment is created from document upload
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          }} />
           <Button variant="ghost" className="relative">
             <Bell className="w-5 h-5" />
             <Badge className="absolute -top-1 -right-1 bg-freight-orange text-white text-xs w-5 h-5 flex items-center justify-center p-0">

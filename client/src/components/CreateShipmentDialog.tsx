@@ -11,12 +11,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest } from "@/lib/queryClient";
 import { insertShipmentSchema } from "@shared/schema";
 import { z } from "zod";
-import { Plus } from "lucide-react";
+import { Plus, Ship, Plane, Truck } from "lucide-react";
 
 const shipmentFormSchema = insertShipmentSchema.extend({
   shipmentId: z.string().min(1, "Shipment ID is required"),
   origin: z.string().min(1, "Origin is required"),
   destination: z.string().min(1, "Destination is required"),
+  transportMode: z.string().min(1, "Transport mode is required"),
 });
 
 type ShipmentFormData = z.infer<typeof shipmentFormSchema>;
@@ -43,6 +44,7 @@ export default function CreateShipmentDialog({ trigger }: CreateShipmentDialogPr
       shipmentId: "",
       origin: "",
       destination: "",
+      transportMode: "ocean",
       status: "pending",
     },
   });
@@ -105,6 +107,40 @@ export default function CreateShipmentDialog({ trigger }: CreateShipmentDialogPr
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="transportMode">Transport Mode *</Label>
+              <Select value={watch("transportMode")} onValueChange={(value) => setValue("transportMode", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select transport mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="air">
+                    <div className="flex items-center space-x-2">
+                      <Plane className="w-4 h-4" />
+                      <span>Air Freight</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="ocean">
+                    <div className="flex items-center space-x-2">
+                      <Ship className="w-4 h-4" />
+                      <span>Ocean Freight</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="trucking">
+                    <div className="flex items-center space-x-2">
+                      <Truck className="w-4 h-4" />
+                      <span>Trucking</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.transportMode && (
+                <p className="text-sm text-red-600">{errors.transportMode.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select value={watch("status")} onValueChange={(value) => setValue("status", value)}>
                 <SelectTrigger>
@@ -117,6 +153,17 @@ export default function CreateShipmentDialog({ trigger }: CreateShipmentDialogPr
                   <SelectItem value="delivered">Delivered</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="totalValue">Total Value ($)</Label>
+              <Input
+                id="totalValue"
+                type="number"
+                step="0.01"
+                {...register("totalValue")}
+                placeholder="e.g., 50000.00"
+              />
             </div>
           </div>
 
@@ -196,16 +243,7 @@ export default function CreateShipmentDialog({ trigger }: CreateShipmentDialogPr
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="totalValue">Total Value ($)</Label>
-              <Input
-                id="totalValue"
-                type="number"
-                step="0.01"
-                {...register("totalValue")}
-                placeholder="e.g., 50000.00"
-              />
-            </div>
+            <div></div>
           </div>
 
           <div className="flex justify-end space-x-4">

@@ -45,7 +45,15 @@ export default function Shipments() {
           </h2>
           <p className="text-gray-600">Manage all your freight shipments</p>
         </div>
-        <CreateShipmentDialog />
+        <div className="flex items-center space-x-4">
+          <CreateShipmentDialog />
+          <DocumentUpload onShipmentCreated={(shipment) => {
+            // Refresh data when a new shipment is created from document upload
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          }} />
+        </div>
       </div>
 
       {/* Search and Filters */}

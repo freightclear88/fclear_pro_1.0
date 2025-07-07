@@ -1,49 +1,94 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { CloudUpload, FileText, Receipt, Bell, Plane, Info, Folder } from "lucide-react";
+import { Upload, FileText, Ship, Plane, Truck } from "lucide-react";
 
 interface DocumentUploadProps {
-  shipmentId: number;
+  shipmentId?: number;
+  trigger?: React.ReactNode;
+  onShipmentCreated?: (shipment: any) => void;
 }
 
-const documentCategories = [
-  { id: "bill_of_lading", label: "Bill of Lading", icon: FileText, color: "text-freight-orange" },
-  { id: "commercial_invoice", label: "Commercial Invoice", icon: Receipt, color: "text-freight-blue" },
-  { id: "arrival_notice", label: "Arrival Notice", icon: Bell, color: "text-freight-green" },
-  { id: "airway_bill", label: "Airway Bill", icon: Plane, color: "text-freight-orange" },
-  { id: "isf_information", label: "ISF Info Sheet", icon: Info, color: "text-freight-blue" },
-  { id: "other", label: "Other", icon: Folder, color: "text-gray-500" },
+const DOCUMENT_CATEGORIES = [
+  { value: "bill_of_lading", label: "Bill of Lading", icon: Ship, creates: "ocean" },
+  { value: "arrival_notice", label: "Arrival Notice", icon: Ship, creates: "ocean" },
+  { value: "commercial_invoice", label: "Commercial Invoice", icon: FileText, creates: null },
+  { value: "airway_bill", label: "Airway Bill", icon: Plane, creates: "air" },
+  { value: "isf_data_sheet", label: "ISF Data Sheet", icon: Ship, creates: "ocean" },
+  { value: "other", label: "Other Document", icon: FileText, creates: null },
 ];
 
-export default function DocumentUpload({ shipmentId }: DocumentUploadProps) {
+export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated }: DocumentUploadProps) {
+  const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const uploadMutation = useMutation({
-    mutationFn: async ({ file, category }: { file: File; category: string }) => {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("category", category);
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    setUploadedFiles(acceptedFiles);
+  }, []);
 
-      const response = await apiRequest("POST", `/api/shipments/${shipmentId}/documents`, formData);
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'image/*': ['.png', '.jpg', '.jpeg', '.gif'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+    },
+    multiple: true,
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: async ({ files, category }: { files: File[], category: string }) => {
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append('documents', file);
+      });
+      formData.append('category', category);
+      
+      if (shipmentId) {
+        formData.append('shipmentId', shipmentId.toString());
+      }
+
+      const response = await fetch('/api/documents/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "Success",
-        description: "Document uploaded successfully",
+        title: "Upload Successful",
+        description: data.shipment 
+          ? `Documents uploaded and new ${data.shipment.transportMode} shipment created: ${data.shipment.shipmentId}`
+          : `${uploadedFiles.length} document(s) uploaded successfully`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/shipments", shipmentId, "documents"] });
+      
+      if (data.shipment && onShipmentCreated) {
+        onShipmentCreated(data.shipment);
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/shipments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      
+      setUploadedFiles([]);
       setSelectedCategory("");
-      setUploadProgress(0);
+      setOpen(false);
     },
     onError: (error) => {
       toast({
@@ -51,99 +96,160 @@ export default function DocumentUpload({ shipmentId }: DocumentUploadProps) {
         description: error.message,
         variant: "destructive",
       });
-      setUploadProgress(0);
     },
   });
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 0) return;
-    
-    if (!selectedCategory) {
+  const handleUpload = () => {
+    if (uploadedFiles.length === 0) {
       toast({
-        title: "Category Required",
-        description: "Please select a document category first",
+        title: "No Files Selected",
+        description: "Please select files to upload",
         variant: "destructive",
       });
       return;
     }
 
-    const file = acceptedFiles[0];
-    setUploadProgress(0);
-    uploadMutation.mutate({ file, category: selectedCategory });
-  }, [selectedCategory, uploadMutation, toast]);
+    if (!selectedCategory) {
+      toast({
+        title: "Category Required",
+        description: "Please select a document category",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'application/pdf': ['.pdf'],
-      'image/jpeg': ['.jpg', '.jpeg'],
-      'image/png': ['.png'],
-    },
-    maxSize: 10 * 1024 * 1024, // 10MB
-    multiple: false,
-  });
+    uploadMutation.mutate({ files: uploadedFiles, category: selectedCategory });
+  };
+
+  const selectedCategoryData = DOCUMENT_CATEGORIES.find(cat => cat.value === selectedCategory);
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <h3 className="text-lg font-semibold text-freight-dark mb-4 flex items-center">
-          <CloudUpload className="mr-2 text-freight-orange" />
-          Document Upload
-        </h3>
-        
-        <div
-          {...getRootProps()}
-          className={`
-            border-2 border-dashed rounded-lg p-8 text-center mb-4 transition-all cursor-pointer
-            ${isDragActive 
-              ? "border-freight-green bg-green-50" 
-              : selectedCategory 
-                ? "border-freight-blue bg-blue-50 hover:border-freight-orange hover:bg-orange-50" 
-                : "border-gray-300 bg-gray-50"
-            }
-          `}
-        >
-          <input {...getInputProps()} />
-          <CloudUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-lg font-medium text-gray-700 mb-2">
-            Drop files here or click to browse
-          </p>
-          <p className="text-sm text-gray-500">
-            Supported formats: PDF, JPG, PNG (Max 10MB)
-          </p>
-        </div>
-
-        {uploadMutation.isPending && (
-          <div className="mb-4">
-            <Progress value={uploadProgress} className="w-full" />
-            <p className="text-sm text-gray-600 mt-2">Uploading document...</p>
-          </div>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {trigger || (
+          <Button className="bg-freight-green hover:bg-freight-green/90 text-white">
+            <Upload className="w-4 h-4 mr-2" />
+            Upload Documents
+          </Button>
         )}
-
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {documentCategories.map((category) => {
-            const Icon = category.icon;
-            return (
-              <div
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`
-                  border rounded-lg p-3 transition-colors cursor-pointer
-                  ${selectedCategory === category.id
-                    ? "border-freight-orange bg-orange-50"
-                    : "border-gray-200 hover:border-freight-orange"
-                  }
-                `}
-              >
-                <div className="flex items-center space-x-2">
-                  <Icon className={`w-4 h-4 ${category.color}`} />
-                  <span className="text-sm font-medium">{category.label}</span>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>
+            {shipmentId ? `Add Documents to Shipment` : "Upload Documents"}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-6">
+          {/* Document Category Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="category">Document Category *</Label>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select document type" />
+              </SelectTrigger>
+              <SelectContent>
+                {DOCUMENT_CATEGORIES.map((category) => {
+                  const Icon = category.icon;
+                  return (
+                    <SelectItem key={category.value} value={category.value}>
+                      <div className="flex items-center space-x-2">
+                        <Icon className="w-4 h-4" />
+                        <span>{category.label}</span>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            
+            {selectedCategoryData && selectedCategoryData.creates && !shipmentId && (
+              <div className="bg-freight-blue/10 border border-freight-blue/20 rounded-lg p-3 mt-2">
+                <div className="flex items-center space-x-2 text-freight-blue">
+                  {selectedCategoryData.creates === "air" ? (
+                    <Plane className="w-4 h-4" />
+                  ) : selectedCategoryData.creates === "ocean" ? (
+                    <Ship className="w-4 h-4" />
+                  ) : (
+                    <Truck className="w-4 h-4" />
+                  )}
+                  <span className="text-sm font-medium">
+                    This will create a new {selectedCategoryData.creates} shipment
+                  </span>
                 </div>
               </div>
-            );
-          })}
+            )}
+          </div>
+
+          {/* File Upload Area */}
+          <div className="space-y-2">
+            <Label>Upload Files</Label>
+            <Card>
+              <CardContent className="p-6">
+                <div
+                  {...getRootProps()}
+                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                    isDragActive 
+                      ? 'border-freight-orange bg-freight-orange/10' 
+                      : 'border-gray-300 hover:border-freight-orange hover:bg-freight-orange/5'
+                  }`}
+                >
+                  <input {...getInputProps()} />
+                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <div className="space-y-2">
+                    <p className="text-lg font-medium text-gray-700">
+                      {isDragActive ? "Drop files here..." : "Drag & drop files here"}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      or click to select files
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Supports PDF, DOC, DOCX, and image files
+                    </p>
+                  </div>
+                </div>
+                
+                {uploadedFiles.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="font-medium text-gray-700 mb-2">
+                      Selected Files ({uploadedFiles.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {uploadedFiles.map((file, index) => (
+                        <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                          <FileText className="w-4 h-4 text-freight-blue" />
+                          <span className="text-sm text-gray-700 flex-1">{file.name}</span>
+                          <span className="text-xs text-gray-500">
+                            {(file.size / 1024 / 1024).toFixed(1)} MB
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpload}
+              disabled={uploadMutation.isPending || uploadedFiles.length === 0 || !selectedCategory}
+              className="bg-freight-green hover:bg-freight-green/90 text-white"
+            >
+              {uploadMutation.isPending ? "Uploading..." : "Upload Documents"}
+            </Button>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }

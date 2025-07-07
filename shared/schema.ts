@@ -43,6 +43,7 @@ export const shipments = pgTable("shipments", {
   originPort: varchar("origin_port"),
   destination: varchar("destination").notNull(),
   destinationPort: varchar("destination_port"),
+  transportMode: varchar("transport_mode").notNull().default("ocean"), // air, ocean, trucking
   status: varchar("status").notNull().default("pending"),
   vessel: varchar("vessel"),
   containerNumber: varchar("container_number"),
@@ -54,7 +55,7 @@ export const shipments = pgTable("shipments", {
 
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
-  shipmentId: integer("shipment_id").notNull().references(() => shipments.id, { onDelete: "cascade" }),
+  shipmentId: integer("shipment_id").references(() => shipments.id, { onDelete: "cascade" }),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   fileName: varchar("file_name").notNull(),
   originalName: varchar("original_name").notNull(),
