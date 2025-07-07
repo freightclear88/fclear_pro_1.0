@@ -124,3 +124,6 @@ Changelog:
 - July 07, 2025: Implemented admin dashboard with system-wide data access
 - July 07, 2025: Added HTML copy functionality and CSV export features
 - July 07, 2025: Focused application features over customs process descriptions
+- July 07, 2025: Implemented complete document-based shipment creation workflow
+- July 07, 2025: Added test data seeding functionality for development testing
+- July 07, 2025: Enhanced transport mode selection (Air, Ocean, Trucking) with automatic detection

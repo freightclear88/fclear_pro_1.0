@@ -319,6 +319,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test data seeding route (development only)
+  app.post('/api/seed-test-data', isAuthenticated, async (req: any, res) => {
+    try {
+      if (process.env.NODE_ENV !== 'development') {
+        return res.status(403).json({ message: "Test data seeding only available in development" });
+      }
+      
+      const userId = req.user.claims.sub;
+      const { seedTestData } = await import('./seedData');
+      const result = await seedTestData(userId);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error seeding test data:", error);
+      res.status(500).json({ message: "Failed to seed test data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
