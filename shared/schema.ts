@@ -1,0 +1,110 @@
+import {
+  pgTable,
+  text,
+  varchar,
+  timestamp,
+  jsonb,
+  index,
+  serial,
+  integer,
+  decimal,
+} from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table for Replit Auth
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  company: varchar("company"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const shipments = pgTable("shipments", {
+  id: serial("id").primaryKey(),
+  shipmentId: varchar("shipment_id").notNull().unique(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  origin: varchar("origin").notNull(),
+  originPort: varchar("origin_port"),
+  destination: varchar("destination").notNull(),
+  destinationPort: varchar("destination_port"),
+  status: varchar("status").notNull().default("pending"),
+  vessel: varchar("vessel"),
+  containerNumber: varchar("container_number"),
+  billOfLading: varchar("bill_of_lading"),
+  totalValue: decimal("total_value", { precision: 12, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const documents = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  shipmentId: integer("shipment_id").notNull().references(() => shipments.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  fileName: varchar("file_name").notNull(),
+  originalName: varchar("original_name").notNull(),
+  fileType: varchar("file_type").notNull(),
+  fileSize: integer("file_size").notNull(),
+  category: varchar("category").notNull(),
+  status: varchar("status").notNull().default("pending"),
+  extractedData: jsonb("extracted_data"),
+  filePath: varchar("file_path").notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+});
+
+export const ocrProcessingJobs = pgTable("ocr_processing_jobs", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id").notNull().references(() => documents.id, { onDelete: "cascade" }),
+  status: varchar("status").notNull().default("pending"), // pending, processing, completed, failed
+  extractedText: text("extracted_text"),
+  extractedData: jsonb("extracted_data"),
+  errorMessage: text("error_message"),
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Schema types
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
+
+export type InsertShipment = typeof shipments.$inferInsert;
+export type Shipment = typeof shipments.$inferSelect;
+
+export type InsertDocument = typeof documents.$inferInsert;
+export type Document = typeof documents.$inferSelect;
+
+export type InsertOcrProcessingJob = typeof ocrProcessingJobs.$inferInsert;
+export type OcrProcessingJob = typeof ocrProcessingJobs.$inferSelect;
+
+// Insert schemas
+export const insertShipmentSchema = createInsertSchema(shipments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertDocumentSchema = createInsertSchema(documents).omit({
+  id: true,
+  uploadedAt: true,
+});
+
+export const insertOcrProcessingJobSchema = createInsertSchema(ocrProcessingJobs).omit({
+  id: true,
+  createdAt: true,
+  processedAt: true,
+});
