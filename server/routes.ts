@@ -48,6 +48,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Profile management routes
+  app.get('/api/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
+  app.put('/api/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { 
+        firstName, 
+        lastName, 
+        companyName, 
+        address, 
+        city, 
+        state, 
+        zipCode, 
+        country, 
+        taxId, 
+        taxIdType 
+      } = req.body;
+
+      const updatedUser = await storage.updateUser(userId, {
+        firstName,
+        lastName,
+        companyName,
+        address,
+        city,
+        state,
+        zipCode,
+        country,
+        taxId,
+        taxIdType,
+        updatedAt: new Date(),
+      });
+
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
   // Shipment routes
   app.get('/api/shipments', isAuthenticated, async (req: any, res) => {
     try {

@@ -30,7 +30,14 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  company: varchar("company"),
+  companyName: varchar("company_name"),
+  address: text("address"),
+  city: varchar("city"),
+  state: varchar("state"),
+  zipCode: varchar("zip_code"),
+  country: varchar("country").default("United States"),
+  taxId: varchar("tax_id"), // EIN or SSN
+  taxIdType: varchar("tax_id_type"), // "EIN" or "SSN"
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
