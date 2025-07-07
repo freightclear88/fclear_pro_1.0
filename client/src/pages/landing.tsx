@@ -147,37 +147,37 @@ export default function Landing() {
           </Card>
         </div>
 
-        {/* Process Steps */}
+        {/* Application Features */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-12">
           <h2 className="text-3xl font-bold text-freight-dark mb-8 text-center">
-            Customs Clearance in 3 Easy Steps
+            Freight Flow Application Features
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="bg-freight-orange text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold mx-auto mb-4">
-                1
+              <div className="bg-freight-orange/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <Ship className="w-8 h-8 text-freight-orange" />
               </div>
-              <h3 className="text-lg font-semibold text-freight-dark mb-2">Fill out Quote Form</h3>
+              <h3 className="text-lg font-semibold text-freight-dark mb-2">Shipment Management</h3>
               <p className="text-gray-600 text-sm">
-                Enter your shipment details and upload your documents in our easy to use quote request form.
+                Create, track, and manage all your freight shipments with detailed tracking and status updates.
               </p>
             </div>
             <div className="text-center">
-              <div className="bg-freight-blue text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold mx-auto mb-4">
-                2
+              <div className="bg-freight-blue/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <FileText className="w-8 h-8 text-freight-blue" />
               </div>
-              <h3 className="text-lg font-semibold text-freight-dark mb-2">Agent Response</h3>
+              <h3 className="text-lg font-semibold text-freight-dark mb-2">Document Intelligence</h3>
               <p className="text-gray-600 text-sm">
-                Our import agents will respond to your ticket with expert import rates and info on your pending customs clearance.
+                Upload and process Bills of Lading, Commercial Invoices, and other documents with OCR technology.
               </p>
             </div>
             <div className="text-center">
-              <div className="bg-freight-green text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold mx-auto mb-4">
-                3
+              <div className="bg-freight-green/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <BarChart3 className="w-8 h-8 text-freight-green" />
               </div>
-              <h3 className="text-lg font-semibold text-freight-dark mb-2">Clearance Process</h3>
+              <h3 className="text-lg font-semibold text-freight-dark mb-2">Data Export & Reports</h3>
               <p className="text-gray-600 text-sm">
-                Freightclear sets up your importer profile, processes your customs documents and transmits your shipment entry to U.S. Customs.
+                Generate HTML reports with copy functionality and export shipment data to CSV for analysis.
               </p>
             </div>
           </div>

@@ -199,6 +199,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes
+  app.get('/api/admin/shipments', isAuthenticated, async (req: any, res) => {
+    try {
+      const shipments = await storage.getAllShipments();
+      res.json(shipments);
+    } catch (error) {
+      console.error("Error fetching all shipments:", error);
+      res.status(500).json({ message: "Failed to fetch shipments" });
+    }
+  });
+
+  app.get('/api/admin/users', isAuthenticated, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching all users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get('/api/admin/documents', isAuthenticated, async (req: any, res) => {
+    try {
+      const documents = await storage.getAllDocuments();
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching all documents:", error);
+      res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
+  app.get('/api/admin/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const shipments = await storage.getAllShipments();
+      const users = await storage.getAllUsers();
+      const documents = await storage.getAllDocuments();
+      
+      const totalValue = shipments.reduce((sum, s) => {
+        return sum + (parseFloat(s.totalValue || "0"));
+      }, 0);
+      
+      res.json({
+        totalShipments: shipments.length,
+        totalUsers: users.length,
+        totalDocuments: documents.length,
+        totalValue: `$${(totalValue / 1000000).toFixed(1)}M`,
+      });
+    } catch (error) {
+      console.error("Error fetching admin stats:", error);
+      res.status(500).json({ message: "Failed to fetch admin stats" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

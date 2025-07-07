@@ -108,7 +108,19 @@ The application uses PostgreSQL with the following main entities:
 
 Preferred communication style: Simple, everyday language.
 
+Key Features Requested:
+- Focus on application features rather than customs clearance process
+- Admin interface with system-wide data access
+- HTML data pages with copy functionality 
+- CSV export for shipments (monthly/yearly filters)
+- Professional Freightclear branding alignment
+
 ## Changelog
 
 Changelog:
-- July 07, 2025. Initial setup
+- July 07, 2025: Initial setup
+- July 07, 2025: Enhanced landing page with Freightclear-inspired messaging
+- July 07, 2025: Added comprehensive shipment creation dialog
+- July 07, 2025: Implemented admin dashboard with system-wide data access
+- July 07, 2025: Added HTML copy functionality and CSV export features
+- July 07, 2025: Focused application features over customs process descriptions

@@ -19,16 +19,19 @@ export interface IStorage {
   // User operations (mandatory for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
   
   // Shipment operations
   getShipmentsByUserId(userId: string): Promise<Shipment[]>;
   getShipmentById(id: number): Promise<Shipment | undefined>;
+  getAllShipments(): Promise<Shipment[]>;
   createShipment(shipment: InsertShipment): Promise<Shipment>;
   updateShipment(id: number, shipment: Partial<InsertShipment>): Promise<Shipment>;
   
   // Document operations
   getDocumentsByShipmentId(shipmentId: number): Promise<Document[]>;
   getDocumentsByUserId(userId: string): Promise<Document[]>;
+  getAllDocuments(): Promise<Document[]>;
   createDocument(document: InsertDocument): Promise<Document>;
   updateDocument(id: number, document: Partial<InsertDocument>): Promise<Document>;
   
@@ -60,6 +63,13 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getAllUsers(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .orderBy(desc(users.createdAt));
+  }
+
   // Shipment operations
   async getShipmentsByUserId(userId: string): Promise<Shipment[]> {
     return await db
@@ -89,6 +99,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(shipments.id, id))
       .returning();
     return shipment;
+  }
+
+  async getAllShipments(): Promise<Shipment[]> {
+    return await db
+      .select()
+      .from(shipments)
+      .orderBy(desc(shipments.createdAt));
   }
 
   // Document operations
@@ -123,6 +140,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(documents.id, id))
       .returning();
     return document;
+  }
+
+  async getAllDocuments(): Promise<Document[]> {
+    return await db
+      .select()
+      .from(documents)
+      .orderBy(desc(documents.uploadedAt));
   }
 
   // OCR processing operations

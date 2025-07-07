@@ -13,13 +13,15 @@ import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Shipments from "@/pages/shipments";
 import Profile from "@/pages/profile";
-import { BarChart3, Ship, Upload, User } from "lucide-react";
+import Admin from "@/pages/admin";
+import { BarChart3, Ship, Upload, User, Shield } from "lucide-react";
 import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_1751903859339.png";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
   { name: "Shipments", href: "/shipments", icon: Ship },
   { name: "Documents", href: "/documents", icon: Upload },
+  { name: "Admin", href: "/admin", icon: Shield },
   { name: "Profile", href: "/profile", icon: User },
 ];
 
@@ -123,6 +125,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/shipments" component={Shipments} />
+        <Route path="/admin" component={Admin} />
         <Route path="/profile" component={Profile} />
         <Route component={NotFound} />
       </Switch>
