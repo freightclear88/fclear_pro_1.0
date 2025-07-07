@@ -1,0 +1,8 @@
+BILL OF LADING
+
+Shipment ID: BOL-123456
+Origin: Seattle, WA
+Destination: Miami, FL
+Container: MSCU1234567
+Vessel: MV Ocean Trader
+Date: Mon Jul  7 07:04:41 PM UTC 2025
