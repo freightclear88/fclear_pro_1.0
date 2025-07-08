@@ -50,12 +50,12 @@ export default function ShipmentTable({ shipments, onViewShipment }: ShipmentTab
   const handleCopyShipment = async (shipment: Shipment) => {
     try {
       const shipmentData = `
-Shipment ID: ${shipment.shipmentId}
-Container: ${shipment.containerNumber || "N/A"}
-Bill of Lading: ${shipment.billOfLading || "N/A"}
-Vessel: ${shipment.vessel || "N/A"}
-Origin: ${shipment.origin}
-Destination: ${shipment.destination}
+Shipment ID: ${shipment?.shipmentId || "N/A"}
+Container: ${shipment?.containerNumber || "N/A"}
+Bill of Lading: ${shipment?.billOfLading || "N/A"}
+Vessel: ${shipment?.vessel || "N/A"}
+Origin: ${shipment?.origin || "N/A"}
+Destination: ${shipment?.destination || "N/A"}
       `.trim();
 
       await navigator.clipboard.writeText(shipmentData);
@@ -164,8 +164,7 @@ Destination: ${shipment.destination}
 
   return (
     <div className="space-y-1">
-      {shipments.map((shipment) => {
-        if (!shipment) return null;
+      {shipments.filter(shipment => shipment && shipment.id && shipment.shipmentId).map((shipment) => {
         const isExpanded = expandedShipments.has(shipment.id);
         
         return (
@@ -187,28 +186,28 @@ Destination: ${shipment.destination}
                     {/* Shipment ID & Transport Mode */}
                     <div>
                       <div className="font-medium text-freight-dark flex items-center space-x-2">
-                        <span>{shipment.shipmentId}</span>
+                        <span>{shipment?.shipmentId || 'Unknown'}</span>
                         <span className="text-lg">{getTransportModeIcon(shipment?.transportMode || 'ocean')}</span>
                       </div>
                       <div className="text-sm text-gray-500">
-                        {new Date(shipment.createdAt!).toLocaleDateString()}
+                        {shipment?.createdAt ? new Date(shipment.createdAt).toLocaleDateString() : 'Unknown'}
                       </div>
                     </div>
 
                     {/* Container/BL Info */}
                     <div>
                       <div className="text-sm font-medium">
-                        {shipment.containerNumber || "No Container"}
+                        {shipment?.containerNumber || "No Container"}
                       </div>
                       <div className="text-xs text-gray-500 flex items-center space-x-1">
-                        <span>BL: {shipment.billOfLading || "N/A"}</span>
-                        {shipment.billOfLading && (
+                        <span>BL: {shipment?.billOfLading || "N/A"}</span>
+                        {shipment?.billOfLading && (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const trackingUrl = generateTrackingUrl(shipment.billOfLading!);
+                              const trackingUrl = generateTrackingUrl(shipment?.billOfLading!);
                               if (trackingUrl) {
                                 window.open(trackingUrl, '_blank');
                               }
@@ -223,27 +222,27 @@ Destination: ${shipment.destination}
 
                     {/* Route */}
                     <div>
-                      <div className="text-sm font-medium">{shipment.origin}</div>
-                      <div className="text-xs text-gray-500">→ {shipment.destination}</div>
+                      <div className="text-sm font-medium">{shipment?.origin || 'Unknown'}</div>
+                      <div className="text-xs text-gray-500">→ {shipment?.destination || 'Unknown'}</div>
                     </div>
 
                     {/* Vessel */}
                     <div>
-                      <div className="text-sm">{shipment.vessel || "TBD"}</div>
+                      <div className="text-sm">{shipment?.vessel || "TBD"}</div>
                       <div className="text-xs text-gray-500">
-                        {shipment.originPort && `From: ${shipment.originPort}`}
+                        {shipment?.originPort && `From: ${shipment.originPort}`}
                       </div>
                     </div>
 
                     {/* Container Tracking */}
                     <div>
-                      {shipment.containerNumber && (
+                      {shipment?.containerNumber && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            const trackingUrl = generateContainerTrackingUrl(shipment.containerNumber!);
+                            const trackingUrl = generateContainerTrackingUrl(shipment?.containerNumber!);
                             if (trackingUrl) {
                               window.open(trackingUrl, '_blank');
                             }
@@ -307,7 +306,7 @@ Destination: ${shipment.destination}
                       Document Folder - {shipment.shipmentId}
                     </span>
                   </div>
-                  <DocumentFolder shipmentId={shipment.id} />
+                  <DocumentFolder shipmentId={shipment?.id || 0} />
                 </div>
               </CollapsibleContent>
             </div>
