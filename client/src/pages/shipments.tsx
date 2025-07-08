@@ -42,14 +42,14 @@ export default function Shipments() {
         <div className="flex space-x-3">
           <DocumentUpload 
             trigger={
-              <Button variant="outline" className="border-freight-orange text-freight-orange hover:bg-freight-orange hover:text-white">
+              <Button variant="outline" className="border-teal bg-teal/10 text-teal hover:bg-teal hover:text-white font-semibold">
                 <Plus className="w-4 h-4 mr-2" />
                 Upload Documents
               </Button>
             }
           />
           <CreateShipmentDialog trigger={
-            <Button className="bg-freight-blue hover:bg-freight-blue/90">
+            <Button className="bg-neon-green text-white hover:bg-neon-green/90 font-semibold">
               <Plus className="w-4 h-4 mr-2" />
               Create Shipment
             </Button>
