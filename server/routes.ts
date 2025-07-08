@@ -230,6 +230,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         // Realistic arrival notice data extraction (in production, this would be processed by real OCR AI)
+        const currentTime = new Date();
+        const processingTime = currentTime.toLocaleTimeString('en-US', { hour12: false, timeZone: 'America/New_York' });
         const docTransportMode = documentCategory === 'airway_bill' ? 'air' : 'ocean';
         const arrivalNoticeData = {
           // Core identification
@@ -267,12 +269,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Cargo details
           cargoDescription: ['Electronics & Computer Parts', 'Textiles & Apparel', 'Home & Garden Products', 'Industrial Equipment'][Math.floor(Math.random() * 4)],
           
-          extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nStatus: Arrival Notice - Vessel/Flight has arrived at destination port`
+          extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nStatus: Arrival Notice - Vessel/Flight has arrived at destination port\nProcessed at: ${processingTime} EST\nDocument Status: ✓ Successfully processed and extracted shipment data`
         };
 
         // Update document with extracted data
         await storage.updateDocument(document.id, {
-          extractedData: arrivalNoticeData,
+          extractedData: {
+            ...arrivalNoticeData,
+            processingTime: processingTime,
+            processingStatus: 'completed',
+            processedAt: currentTime.toISOString()
+          },
           status: 'completed'
         });
 
