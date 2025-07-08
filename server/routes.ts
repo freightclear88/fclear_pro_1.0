@@ -568,9 +568,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "POA file not found on disk" });
       }
       
-      // Set headers for PDF viewing
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="Power_of_Attorney.pdf"`);
+      // Check file type and set appropriate headers
+      const fileExtension = path.extname(user.powerOfAttorneyDocumentPath).toLowerCase();
+      if (fileExtension === '.html') {
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Disposition', `inline; filename="Power_of_Attorney.html"`);
+      } else if (fileExtension === '.pdf') {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="Power_of_Attorney.pdf"`);
+      } else {
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="Power_of_Attorney${fileExtension}"`);
+      }
       
       const fileStream = fs.createReadStream(user.powerOfAttorneyDocumentPath);
       fileStream.pipe(res);
@@ -589,31 +598,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate HTML POA document with filled data
       const poaHtml = generateFilledPOADocument(poaData);
       
-      // Generate PDF from HTML
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
-      const page = await browser.newPage();
-      await page.setContent(poaHtml, { waitUntil: 'networkidle0' });
-      
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '20px',
-          bottom: '20px',
-          left: '20px',
-          right: '20px'
-        }
-      });
-      
-      await browser.close();
-
-      // Save PDF file
-      const fileName = `POA_${userId}_${Date.now()}.pdf`;
+      // Save as HTML file first as fallback
+      const fileName = `POA_${userId}_${Date.now()}.html`;
       const filePath = path.join('uploads', fileName);
-      fs.writeFileSync(filePath, pdfBuffer);
+      fs.writeFileSync(filePath, poaHtml);
 
       // Update user's POA status and document path
       const updatedUser = await storage.updateUser(userId, {
