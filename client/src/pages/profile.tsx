@@ -51,13 +51,6 @@ export default function Profile() {
   // Check POA status from user profile
   const poaStatus = userProfile?.powerOfAttorneyStatus || 'pending';
   const irsProofStatus = userProfile?.irsProofStatus || 'pending';
-  
-  // Debug logging
-  console.log('POA Debug:', {
-    poaStatus,
-    documentPath: userProfile?.powerOfAttorneyDocumentPath,
-    shouldShowButton: poaStatus === 'pending' && !userProfile?.powerOfAttorneyDocumentPath
-  });
 
   // Update form data when profile loads
   useEffect(() => {
@@ -219,12 +212,11 @@ export default function Profile() {
                   ? 'bg-red-100 text-red-800 hover:bg-red-100'
                   : 'bg-red-100 text-red-800 hover:bg-red-100'
               }>
-                {poaStatus === 'validated' ? 'Validated' : poaStatus === 'pending' ? 'Pending Review' : poaStatus === 'rejected' ? 'Rejected' : 'Required'} (Debug: {poaStatus})
+                {poaStatus === 'validated' ? 'Validated' : poaStatus === 'pending' ? 'Pending Review' : poaStatus === 'rejected' ? 'Rejected' : 'Required'}
               </Badge>
             </div>
             
             <div className="flex items-center space-x-2">
-              <div className="text-xs text-gray-500">Debug: Status='{poaStatus}', Show button: {String(poaStatus === 'pending')}</div>
               {poaStatus === 'pending' && (
                 <>
                   <Button

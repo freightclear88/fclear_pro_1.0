@@ -150,3 +150,6 @@ Changelog:
 - July 08, 2025: Completed comprehensive button standardization system with consistent CSS classes (btn-primary, btn-secondary, btn-outline-primary, etc.)
 - July 08, 2025: Fixed icon imports across all components (DocumentUpload, PowerOfAttorneyUpload, IrsProofUpload, ShipmentDetail, landing, dashboard, admin pages)
 - July 08, 2025: Application stability restored with proper error handling and consistent UI styling throughout
+- July 08, 2025: Implemented "La Belle Aurore" Google font for POA electronic signature field at 14pt for authentic handwritten appearance
+- July 08, 2025: Added POA deletion functionality allowing users to delete existing POAs and create new ones for testing purposes
+- July 08, 2025: Fixed POA creation button visibility issues after deletion with proper status condition handling
