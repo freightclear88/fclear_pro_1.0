@@ -61,8 +61,9 @@ Destination: ${shipment.destination}
     }
   };
 
-  const getTransportModeIcon = (mode: string) => {
-    switch (mode?.toLowerCase()) {
+  const getTransportModeIcon = (mode: string | null | undefined) => {
+    if (!mode) return '📦';
+    switch (mode.toLowerCase()) {
       case 'air':
         return '✈️';
       case 'ocean':
@@ -175,7 +176,7 @@ Destination: ${shipment.destination}
                     <div>
                       <div className="font-medium text-freight-dark flex items-center space-x-2">
                         <span>{shipment.shipmentId}</span>
-                        <span className="text-lg">{getTransportModeIcon(shipment.transportMode)}</span>
+                        <span className="text-lg">{getTransportModeIcon(shipment.transportMode || 'ocean')}</span>
                       </div>
                       <div className="text-sm text-gray-500">
                         {new Date(shipment.createdAt!).toLocaleDateString()}
