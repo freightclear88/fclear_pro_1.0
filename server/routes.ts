@@ -151,6 +151,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Document routes
+  app.get('/api/documents', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const shipmentId = req.query.shipmentId;
+      
+      let documents;
+      if (shipmentId) {
+        // Get documents for specific shipment
+        documents = await storage.getDocumentsByShipmentId(parseInt(shipmentId));
+        // Filter by user to ensure security
+        documents = documents.filter(doc => doc.userId === userId);
+      } else {
+        // Get all user documents
+        documents = await storage.getDocumentsByUserId(userId);
+      }
+      
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
   app.get('/api/shipments/:shipmentId/documents', isAuthenticated, async (req: any, res) => {
     try {
       const shipmentId = parseInt(req.params.shipmentId);
