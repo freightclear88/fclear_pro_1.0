@@ -251,18 +251,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           containerNumber: docTransportMode === 'ocean' ? `MSCU${Math.floor(Math.random() * 9000000) + 1000000}0` : null,
           billOfLading: `BOL${Math.floor(Math.random() * 900000) + 100000}`,
           vessel: docTransportMode === 'ocean' ? ['MV OCEAN TRADER', 'MV CARGO EXPRESS', 'MV SEA NAVIGATOR'][Math.floor(Math.random() * 3)] : null,
-          voyage: docTransportMode === 'ocean' ? `V${Math.floor(Math.random() * 900) + 100}E` : null,
-          // Additional comprehensive data extraction
-          cargoDescription: 'General Merchandise - Mixed Containerized Cargo',
-          weight: `${Math.floor(Math.random() * 50000) + 10000} lbs`,
-          volume: `${Math.floor(Math.random() * 1000) + 200} cbft`,
-          pieces: Math.floor(Math.random() * 500) + 50,
-          commodity: ['Electronics', 'Textiles', 'Machinery', 'Food Products', 'Automotive Parts'][Math.floor(Math.random() * 5)],
-          shipperName: 'Global Trading Co., Ltd.',
-          consigneeName: 'American Import Solutions Inc.',
-          commercialInvoiceNumber: `CI-${Math.floor(Math.random() * 900000) + 100000}`,
-          eta: new Date(Date.now() + Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toISOString(),
-          etd: new Date(Date.now() - Math.floor(Math.random() * 15) * 24 * 60 * 60 * 1000).toISOString(),
           extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}`
         };
 
