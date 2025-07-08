@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Upload, FileText, Ship, Plane, Truck } from "lucide-react";
+import { Upload, FileText, Ship, Plane, Truck, Package } from "lucide-react";
 
 interface DocumentUploadProps {
   shipmentId?: number;
@@ -20,6 +20,7 @@ const DOCUMENT_CATEGORIES = [
   { value: "bill_of_lading", label: "Bill of Lading", icon: Ship, creates: "ocean" },
   { value: "arrival_notice", label: "Arrival Notice", icon: Ship, creates: "ocean" },
   { value: "commercial_invoice", label: "Commercial Invoice", icon: FileText, creates: null },
+  { value: "packing_list", label: "Packing List", icon: Package, creates: null },
   { value: "airway_bill", label: "Airway Bill", icon: Plane, creates: "air" },
   { value: "isf_data_sheet", label: "ISF Data Sheet", icon: Ship, creates: "ocean" },
   { value: "other", label: "Other Document", icon: FileText, creates: null },
