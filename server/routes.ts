@@ -70,6 +70,7 @@ function generateFilledPOADocument(data: any): string {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Power of Attorney</title>
+    <link href="https://fonts.googleapis.com/css2?family=La+Belle+Aurore&display=swap" rel="stylesheet">
     <style>
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
         .header { text-align: center; margin-bottom: 30px; }
@@ -81,6 +82,7 @@ function generateFilledPOADocument(data: any): string {
         .checkbox-group { margin: 10px 0; }
         .signature-section { margin-top: 40px; border-top: 2px solid #333; padding-top: 20px; }
         .signature-field { display: inline-block; border-bottom: 2px solid #333; min-width: 300px; text-align: center; margin: 10px 20px; }
+        .signature-value { font-family: 'La Belle Aurore', cursive; font-size: 23pt; }
         @media print { body { margin: 0; padding: 15px; } }
     </style>
 </head>
@@ -195,7 +197,7 @@ function generateFilledPOADocument(data: any): string {
         <p>By signing below, I acknowledge that I have read, understood, and agree to the terms of this Power of Attorney.</p>
         
         <div style="margin-top: 40px;">
-            <div class="signature-field">${data.electronicSignature || ''}</div>
+            <div class="signature-field signature-value">${data.electronicSignature || ''}</div>
             <div class="signature-field">${data.signerCapacity || ''}</div>
             <div class="signature-field">${data.signatureDate || ''}</div>
         </div>
@@ -229,6 +231,7 @@ function generatePOADocument(data: any): string {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Power of Attorney</title>
+    <link href="https://fonts.googleapis.com/css2?family=La+Belle+Aurore&display=swap" rel="stylesheet">
     <style>
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
         .header { text-align: center; margin-bottom: 30px; }
@@ -240,6 +243,7 @@ function generatePOADocument(data: any): string {
         .checkbox-group { margin: 10px 0; }
         .signature-section { margin-top: 40px; border-top: 2px solid #333; padding-top: 20px; }
         .signature-field { display: inline-block; border-bottom: 2px solid #333; min-width: 300px; text-align: center; margin: 10px 20px; }
+        .signature-value { font-family: 'La Belle Aurore', cursive; font-size: 23pt; }
         @media print { body { margin: 0; padding: 15px; } }
     </style>
 </head>
@@ -761,14 +765,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const poaHtml = generateFilledPOADocument(poaData);
       
       // Save as HTML file first as fallback
-      const fileName = `POA_${userId}_${Date.now()}.html`;
-      const filePath = path.join('uploads', fileName);
-      fs.writeFileSync(filePath, poaHtml);
+      const htmlFileName = `POA_${userId}_${Date.now()}.html`;
+      const htmlFilePath = path.join('uploads', htmlFileName);
+      fs.writeFileSync(htmlFilePath, poaHtml);
 
-      // Update user's POA status and document path
+      // Generate PDF using Puppeteer
+      const puppeteer = require('puppeteer');
+      
+      let pdfFilePath = null;
+      try {
+        const browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        });
+        
+        const page = await browser.newPage();
+        
+        // Set content and wait for fonts to load
+        await page.setContent(poaHtml, { 
+          waitUntil: ['networkidle0', 'domcontentloaded'] 
+        });
+        
+        // Wait for Google Fonts to load
+        await page.evaluateHandle('document.fonts.ready');
+        
+        // Additional wait to ensure fonts are fully loaded
+        await page.waitForTimeout(2000);
+        
+        // Generate PDF
+        const pdfFileName = `POA_${userId}_${Date.now()}.pdf`;
+        pdfFilePath = path.join('uploads', pdfFileName);
+        
+        await page.pdf({
+          path: pdfFilePath,
+          format: 'A4',
+          printBackground: true,
+          margin: {
+            top: '20mm',
+            right: '20mm',
+            bottom: '20mm',
+            left: '20mm'
+          }
+        });
+        
+        await browser.close();
+        console.log('PDF generated successfully with Google fonts');
+      } catch (pdfError) {
+        console.error('PDF generation failed, keeping HTML only:', pdfError);
+        // Continue without failing - HTML fallback available
+      }
+
+      // Update user's POA status and document path (prefer PDF if available)
       const updatedUser = await storage.updateUser(userId, {
         powerOfAttorneyStatus: 'pending', // Changed from 'uploaded' to 'pending' for admin validation
-        powerOfAttorneyDocumentPath: filePath,
+        powerOfAttorneyDocumentPath: pdfFilePath || htmlFilePath,
         powerOfAttorneyUploadedAt: new Date(),
       });
 
@@ -777,7 +827,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ 
         message: "Power of Attorney generated successfully and pending validation",
-        user: updatedUser 
+        user: updatedUser,
+        format: pdfFilePath ? 'PDF' : 'HTML'
       });
     } catch (error) {
       console.error("Error generating POA:", error);

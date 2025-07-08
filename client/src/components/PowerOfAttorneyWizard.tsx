@@ -484,7 +484,7 @@ export default function PowerOfAttorneyWizard({ isOpen, onClose, user }: PowerOf
                       value={formData.electronicSignature}
                       onChange={(e) => updateField('electronicSignature', e.target.value)}
                       placeholder="Type your full legal name"
-                      className="text-[14pt]"
+                      className="text-[23pt]"
                       style={{ fontFamily: "'La Belle Aurore', cursive" }}
                     />
                     <p className="text-xs text-gray-500 mt-1">
