@@ -217,7 +217,8 @@ export default function Profile() {
             </div>
             
             <div className="flex items-center space-x-2">
-              {poaStatus === 'pending' && (
+              {/* Debug: status={poaStatus}, type={typeof poaStatus} */}
+              {(poaStatus === 'pending' || true) && (
                 <>
                   <Button
                     onClick={() => setShowPOAWizard(true)}
