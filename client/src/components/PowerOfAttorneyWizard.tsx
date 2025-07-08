@@ -520,23 +520,27 @@ export default function PowerOfAttorneyWizard({ isOpen, onClose, user }: PowerOf
         </div>
 
         {/* Navigation Buttons */}
-        <div className="flex justify-between pt-6 border-t">
+        <div className="flex justify-between items-center pt-6 border-t mt-6">
           <Button
             variant="outline"
             onClick={prevStep}
             disabled={currentStep === 1}
+            className="flex items-center px-4 py-2"
           >
             <ChevronLeft className="w-4 h-4 mr-2" />
             Previous
           </Button>
           
-          <div className="flex space-x-2">
+          <div className="flex space-x-3">
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
             
             {currentStep < 4 ? (
-              <Button onClick={nextStep} className="bg-freight-blue hover:bg-freight-blue/90 text-white">
+              <Button 
+                onClick={nextStep} 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 flex items-center"
+              >
                 Next
                 <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
@@ -544,7 +548,7 @@ export default function PowerOfAttorneyWizard({ isOpen, onClose, user }: PowerOf
               <Button 
                 onClick={handleSubmit}
                 disabled={generatePOAMutation.isPending || !formData.acknowledgment || !formData.electronicSignature}
-                className="bg-freight-green hover:bg-freight-green/90 text-white"
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 flex items-center"
               >
                 {generatePOAMutation.isPending ? (
                   "Generating..."
