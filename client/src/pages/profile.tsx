@@ -216,24 +216,19 @@ export default function Profile() {
               </Badge>
             </div>
             
-            <div className="flex items-center space-x-2" style={{border: "2px solid red", padding: "10px"}}>
-              <div style={{background: "yellow", padding: "5px"}}>
-                Button container test
-              </div>
-              <button
-                onClick={() => setShowPOAWizard(true)}
-                style={{background: "blue", color: "white", padding: "10px", border: "2px solid black"}}
-              >
-                NATIVE BUTTON TEST
-              </button>
-              <Button
-                onClick={() => setShowPOAWizard(true)}
-                className="bg-freight-green hover:bg-freight-green/90 text-white"
-                style={{background: "red !important", color: "white !important", minWidth: "150px", minHeight: "40px"}}
-              >
-                SHADCN BUTTON TEST
-              </Button>
-              <PowerOfAttorneyUpload />
+            <div className="flex items-center space-x-2">
+              {poaStatus === 'pending' && (
+                <>
+                  <Button
+                    onClick={() => setShowPOAWizard(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md border border-blue-600"
+                  >
+                    <Scale className="w-4 h-4 mr-2" />
+                    Create POA
+                  </Button>
+                  <PowerOfAttorneyUpload />
+                </>
+              )}
               {(poaStatus === 'uploaded' || poaStatus === 'validated') && (
                 <div className="flex space-x-2">
                   <Button
