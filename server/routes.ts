@@ -193,6 +193,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POA upload route
+  app.post('/api/profile/upload-poa', isAuthenticated, upload.single('file'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Update user's POA status and document path
+      const updatedUser = await storage.updateUser(userId, {
+        powerOfAttorneyStatus: 'uploaded',
+        powerOfAttorneyDocumentPath: file.path,
+        powerOfAttorneyUploadedAt: new Date(),
+      });
+
+      res.json({ 
+        message: "Power of Attorney uploaded successfully",
+        user: updatedUser 
+      });
+    } catch (error) {
+      console.error("Error uploading POA:", error);
+      res.status(500).json({ message: "Failed to upload POA" });
+    }
+  });
+
+  // POA view route
+  app.get('/api/profile/poa/view', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.powerOfAttorneyDocumentPath) {
+        return res.status(404).json({ message: "POA document not found" });
+      }
+      
+      if (!fs.existsSync(user.powerOfAttorneyDocumentPath)) {
+        return res.status(404).json({ message: "POA file not found on disk" });
+      }
+      
+      // Set headers for inline viewing
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="Power_of_Attorney.pdf"`);
+      
+      const fileStream = fs.createReadStream(user.powerOfAttorneyDocumentPath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error("Error viewing POA:", error);
+      res.status(500).json({ message: "Failed to view POA" });
+    }
+  });
+
   // Document upload route with shipment creation
   app.post('/api/documents/upload', upload.array('documents', 10), isAuthenticated, async (req: any, res) => {
     try {

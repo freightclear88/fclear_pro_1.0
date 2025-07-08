@@ -39,6 +39,9 @@ export const users = pgTable("users", {
   country: varchar("country").default("United States"),
   taxId: varchar("tax_id"), // EIN or SSN
   taxIdType: varchar("tax_id_type"), // "EIN" or "SSN"
+  powerOfAttorneyStatus: varchar("power_of_attorney_status").default("pending"), // pending, uploaded, validated
+  powerOfAttorneyDocumentPath: varchar("power_of_attorney_document_path"),
+  powerOfAttorneyUploadedAt: timestamp("power_of_attorney_uploaded_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

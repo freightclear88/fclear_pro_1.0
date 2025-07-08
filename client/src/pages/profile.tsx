@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { User, Mail, Building, LogOut, Ship, FileText, MapPin, Hash, Edit, Save, X, Star, AlertCircle, Upload } from "lucide-react";
-import DocumentUpload from "@/components/DocumentUpload";
+import PowerOfAttorneyUpload from "@/components/PowerOfAttorneyUpload";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -45,14 +45,8 @@ export default function Profile() {
     queryKey: ["/api/dashboard/stats"],
   });
 
-  // Get user's documents to check POA status
-  const { data: userDocuments = [] } = useQuery({
-    queryKey: ["/api/documents"],
-  });
-
-  // Check if user has a validated POA document
-  const poaDocument = userDocuments.find((doc: any) => doc.category === 'power_of_attorney');
-  const poaStatus = poaDocument ? 'validated' : 'pending';
+  // Check POA status from user profile
+  const poaStatus = userProfile?.powerOfAttorneyStatus || 'pending';
 
   // Update form data when profile loads
   useEffect(() => {
@@ -158,6 +152,8 @@ export default function Profile() {
               <div className="flex items-center space-x-2">
                 {poaStatus === 'validated' ? (
                   <Star className="w-6 h-6 text-green-500 fill-green-500" />
+                ) : poaStatus === 'uploaded' ? (
+                  <AlertCircle className="w-6 h-6 text-yellow-500" />
                 ) : (
                   <AlertCircle className="w-6 h-6 text-red-500" />
                 )}
@@ -166,30 +162,39 @@ export default function Profile() {
                   <p className="text-sm text-gray-600">
                     {poaStatus === 'validated' 
                       ? 'Your Power of Attorney is validated and active'
+                      : poaStatus === 'uploaded'
+                      ? 'Your Power of Attorney is uploaded and pending validation'
                       : 'Power of Attorney required for customs clearance'
                     }
                   </p>
                 </div>
               </div>
-              <Badge variant={poaStatus === 'validated' ? 'default' : 'destructive'} className={
+              <Badge variant={poaStatus === 'validated' ? 'default' : poaStatus === 'uploaded' ? 'secondary' : 'destructive'} className={
                 poaStatus === 'validated' 
-                  ? 'bg-green-100 text-green-800 hover:bg-green-100' 
+                  ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                  : poaStatus === 'uploaded'
+                  ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
                   : 'bg-red-100 text-red-800 hover:bg-red-100'
               }>
-                {poaStatus === 'validated' ? 'Validated' : 'Required'}
+                {poaStatus === 'validated' ? 'Validated' : poaStatus === 'uploaded' ? 'Pending Review' : 'Required'}
               </Badge>
             </div>
             
-            {poaStatus !== 'validated' && (
-              <DocumentUpload 
-                trigger={
-                  <Button className="bg-freight-blue hover:bg-freight-blue/90 text-white">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload POA
-                  </Button>
-                }
-              />
-            )}
+            <div className="flex items-center space-x-2">
+              {poaStatus === 'pending' && (
+                <PowerOfAttorneyUpload />
+              )}
+              {(poaStatus === 'uploaded' || poaStatus === 'validated') && (
+                <Button
+                  variant="outline"
+                  onClick={() => window.open('/api/profile/poa/view', '_blank')}
+                  className="text-purple-600 border-purple-600 hover:bg-purple-600 hover:text-white"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  View POA
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
