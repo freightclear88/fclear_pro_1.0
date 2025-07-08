@@ -133,7 +133,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
       <DialogTrigger asChild>
         {trigger || (
           <Button className="bg-freight-green hover:bg-freight-green/90 text-white">
-            <Upload className="w-4 h-4 mr-2" />
+            <FileUp className="w-4 h-4 mr-2" />
             Upload Documents
           </Button>
         )}

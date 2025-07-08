@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Ship, FileText, BarChart3, Upload, Eye, Truck, Plane } from "lucide-react";
+import { Ship, FileText, BarChart3, FileUp, Eye, Truck, Plane } from "lucide-react";
 import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_1751903859339.png";
 
 export default function Landing() {
@@ -90,7 +90,7 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="bg-freight-orange/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Upload className="w-8 h-8 text-freight-orange" />
+                <FileUp className="w-8 h-8 text-freight-orange" />
               </div>
               <h3 className="text-lg font-semibold text-freight-dark mb-2">Document Upload</h3>
               <p className="text-gray-600 text-sm">
