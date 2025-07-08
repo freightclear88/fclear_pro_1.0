@@ -111,7 +111,7 @@ export default function ShipmentHtmlPage({ shipment, isOpen, onClose }: Shipment
     return null;
   };
 
-  const TransportIcon = getTransportIcon(shipment.transportMode);
+  const TransportIcon = getTransportIcon(shipment?.transportMode || 'ocean');
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -135,7 +135,7 @@ export default function ShipmentHtmlPage({ shipment, isOpen, onClose }: Shipment
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex items-center space-x-2">
                   <TransportIcon className="w-5 h-5 text-freight-blue" />
-                  <span className="font-medium">{shipment.transportMode || "Unknown"}</span>
+                  <span className="font-medium">{shipment?.transportMode || "Unknown"}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <MapPin className="w-5 h-5 text-freight-orange" />

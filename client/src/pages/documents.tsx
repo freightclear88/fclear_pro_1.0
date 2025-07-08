@@ -102,7 +102,7 @@ export default function Documents() {
                 </SelectTrigger>
                 <SelectContent>
                   {shipments.map((shipment: Shipment) => {
-                    const TransportIcon = getTransportIcon(shipment.transportMode);
+                    const TransportIcon = getTransportIcon(shipment?.transportMode || 'ocean');
                     return (
                       <SelectItem key={shipment.id} value={shipment.id!.toString()}>
                         <div className="flex items-center space-x-2">

@@ -30,12 +30,7 @@ export default function ShipmentTable({ shipments, onViewShipment }: ShipmentTab
     );
   }
 
-  // Debug logging
-  if (shipments.length > 0) {
-    console.log('Frontend received shipments:', shipments[0]);
-    console.log('transportMode value:', shipments[0]?.transportMode);
-    console.log('shipments array:', shipments);
-  }
+
 
   const handleViewHtmlPage = (shipment: Shipment) => {
     setSelectedShipment(shipment);
@@ -78,7 +73,6 @@ Destination: ${shipment.destination}
   };
 
   const getTransportModeIcon = (mode: string | null | undefined) => {
-    console.log('getTransportModeIcon called with:', mode);
     if (!mode) return '📦';
     switch (mode.toLowerCase()) {
       case 'air':
@@ -194,14 +188,7 @@ Destination: ${shipment.destination}
                     <div>
                       <div className="font-medium text-freight-dark flex items-center space-x-2">
                         <span>{shipment.shipmentId}</span>
-                        <span className="text-lg">
-                          {(() => {
-                            console.log('Processing shipment:', shipment);
-                            const mode = shipment?.transportMode || 'ocean';
-                            console.log('Extracted mode:', mode);
-                            return getTransportModeIcon(mode);
-                          })()}
-                        </span>
+                        <span className="text-lg">{getTransportModeIcon(shipment?.transportMode || 'ocean')}</span>
                       </div>
                       <div className="text-sm text-gray-500">
                         {new Date(shipment.createdAt!).toLocaleDateString()}
