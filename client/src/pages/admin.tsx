@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle, Receipt } from "lucide-react";
+import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle, Receipt, ChevronDown, ChevronRight, Folder } from "lucide-react";
 import type { Shipment, Document, User } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -15,6 +16,7 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const [expandedShipments, setExpandedShipments] = useState<Set<number>>(new Set());
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -210,6 +212,91 @@ export default function Admin() {
   const handleValidateIRSProof = (userId: string, status: 'validated' | 'rejected') => {
     validateIRSProofMutation.mutate({ userId, status });
   };
+
+  const toggleShipmentExpansion = (shipmentId: number) => {
+    setExpandedShipments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(shipmentId)) {
+        newSet.delete(shipmentId);
+      } else {
+        newSet.add(shipmentId);
+      }
+      return newSet;
+    });
+  };
+
+  // Document Folder Component
+  function DocumentFolder({ shipmentId }: { shipmentId: number }) {
+    const { data: documents = [] } = useQuery<Document[]>({
+      queryKey: ['/api/documents', shipmentId],
+      queryFn: async () => {
+        const response = await fetch(`/api/documents?shipmentId=${shipmentId}`);
+        if (!response.ok) throw new Error('Failed to fetch documents');
+        return response.json();
+      },
+    });
+
+    const handleDownload = async (document: Document) => {
+      try {
+        const response = await fetch(`/api/documents/${document.id}/download`);
+        if (!response.ok) throw new Error('Download failed');
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = document.originalName || 'document';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        toast({
+          title: "Download Complete",
+          description: `Downloaded ${document.originalName}`,
+        });
+      } catch (error) {
+        toast({
+          title: "Download Failed",
+          description: "Could not download document",
+          variant: "destructive",
+        });
+      }
+    };
+
+    if (documents.length === 0) {
+      return (
+        <div className="text-center py-4 text-gray-500 text-sm">
+          No documents uploaded yet
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {documents.map((doc: Document) => (
+          <div key={doc.id} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+            <div className="flex items-center space-x-2">
+              <FileText className="w-4 h-4 text-freight-blue" />
+              <div>
+                <p className="text-sm font-medium">{doc.originalName}</p>
+                <p className="text-xs text-gray-500 capitalize">{doc.category.replace('_', ' ')}</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDownload(doc)}
+              className="text-freight-orange hover:text-freight-dark"
+            >
+              <Download className="w-4 h-4" />
+            </Button>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   // Filter users with pending POAs
   const pendingPOAUsers = allUsers.filter((user: User) => user.powerOfAttorneyStatus === 'pending');
@@ -478,52 +565,86 @@ export default function Admin() {
               <TableBody>
                 {filteredShipments.map((shipment) => {
                   const user = allUsers.find(u => u.id === shipment.userId);
+                  const isExpanded = expandedShipments.has(shipment.id);
+                  
                   return (
-                    <TableRow key={shipment.id} className="hover:bg-gray-50">
-                      <TableCell>
-                        <div className="font-medium text-freight-dark">{shipment.shipmentId}</div>
-                        {shipment.containerNumber && (
-                          <div className="text-sm text-gray-500">Container: {shipment.containerNumber}</div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{user?.firstName} {user?.lastName}</div>
-                        <div className="text-sm text-gray-500">{user?.email}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium text-freight-dark">{shipment.origin}</div>
-                        {shipment.originPort && (
-                          <div className="text-sm text-gray-500">Port: {shipment.originPort}</div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium text-freight-dark">{shipment.destination}</div>
-                        {shipment.destinationPort && (
-                          <div className="text-sm text-gray-500">Port: {shipment.destinationPort}</div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(shipment.status)}
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium">
-                          ${shipment.totalValue ? parseFloat(shipment.totalValue).toLocaleString() : "0"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(shipment.createdAt!).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCopyShipmentData(shipment)}
-                          className="text-freight-orange hover:text-freight-dark"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                    <>
+                      <TableRow key={shipment.id} className="hover:bg-gray-50">
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Collapsible>
+                              <CollapsibleTrigger 
+                                onClick={() => toggleShipmentExpansion(shipment.id)}
+                                className="flex items-center space-x-1 hover:text-freight-blue"
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="w-4 h-4" />
+                                ) : (
+                                  <ChevronRight className="w-4 h-4" />
+                                )}
+                                <Folder className="w-4 h-4" />
+                              </CollapsibleTrigger>
+                            </Collapsible>
+                            <div>
+                              <div className="font-medium text-freight-dark">{shipment.shipmentId}</div>
+                              {shipment.containerNumber && (
+                                <div className="text-sm text-gray-500">Container: {shipment.containerNumber}</div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{user?.firstName} {user?.lastName}</div>
+                          <div className="text-sm text-gray-500">{user?.email}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium text-freight-dark">{shipment.origin}</div>
+                          {shipment.originPort && (
+                            <div className="text-sm text-gray-500">Port: {shipment.originPort}</div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium text-freight-dark">{shipment.destination}</div>
+                          {shipment.destinationPort && (
+                            <div className="text-sm text-gray-500">Port: {shipment.destinationPort}</div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(shipment.status)}
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium">
+                            ${shipment.totalValue ? parseFloat(shipment.totalValue).toLocaleString() : "0"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(shipment.createdAt!).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopyShipmentData(shipment)}
+                            className="text-freight-orange hover:text-freight-dark"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      {isExpanded && (
+                        <TableRow>
+                          <TableCell colSpan={8} className="p-4 bg-gray-50/50">
+                            <div className="border rounded-lg p-4 bg-white">
+                              <h4 className="font-medium mb-3 text-freight-dark flex items-center">
+                                <FileText className="w-4 h-4 mr-2" />
+                                Documents for {shipment.shipmentId}
+                              </h4>
+                              <DocumentFolder shipmentId={shipment.id} />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
                   );
                 })}
               </TableBody>
