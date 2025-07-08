@@ -104,6 +104,11 @@ function generateFilledPOADocument(data: any): string {
         </div>
         
         <div class="form-group">
+            <label>Company Name:</label>
+            <div class="value">${data.principalCompanyName || ''}</div>
+        </div>
+        
+        <div class="form-group">
             <label>Address:</label>
             <div class="value">${data.principalAddress || ''}</div>
         </div>
@@ -151,7 +156,7 @@ function generateFilledPOADocument(data: any): string {
         
         <div class="form-group">
             <label>Address:</label>
-            <div class="value">${data.agentAddress || ''}</div>
+            <div class="value">${data.agentAddress || '371 Merrick Rd, suite 305, Rockville Centre, NY 11570'}</div>
         </div>
     </div>
 
@@ -245,6 +250,11 @@ function generatePOADocument(data: any): string {
         </div>
         
         <div class="form-group">
+            <label>Company Name:</label>
+            <div class="value"></div>
+        </div>
+        
+        <div class="form-group">
             <label>Address:</label>
             <div class="value"></div>
         </div>
@@ -292,7 +302,7 @@ function generatePOADocument(data: any): string {
         
         <div class="form-group">
             <label>Address:</label>
-            <div class="value"></div>
+            <div class="value">371 Merrick Rd, suite 305, Rockville Centre, NY 11570</div>
         </div>
     </div>
 

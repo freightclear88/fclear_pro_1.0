@@ -21,6 +21,7 @@ interface PowerOfAttorneyWizardProps {
 interface POAFormData {
   // Principal (User) Information
   principalName: string;
+  principalCompanyName: string;
   principalAddress: string;
   principalCity: string;
   principalState: string;
@@ -53,6 +54,7 @@ export default function PowerOfAttorneyWizard({ isOpen, onClose, user }: PowerOf
   const [formData, setFormData] = useState<POAFormData>({
     // Pre-populate with user data
     principalName: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : '',
+    principalCompanyName: user?.companyName || '',
     principalAddress: user?.address || '',
     principalCity: user?.city || '',
     principalState: user?.state || '',
@@ -64,7 +66,7 @@ export default function PowerOfAttorneyWizard({ isOpen, onClose, user }: PowerOf
     agentName: 'WCS International Inc.',
     agentTitle: 'Customs Broker',
     agentCompany: 'WCS International Inc.',
-    agentAddress: '',
+    agentAddress: '371 Merrick Rd, suite 305, Rockville Centre, NY 11570',
     
     // Powers
     customsDeclarations: true,
@@ -205,6 +207,16 @@ export default function PowerOfAttorneyWizard({ isOpen, onClose, user }: PowerOf
                       placeholder="your@email.com"
                     />
                   </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="principalCompanyName">Company Name *</Label>
+                  <Input
+                    id="principalCompanyName"
+                    value={formData.principalCompanyName}
+                    onChange={(e) => updateField('principalCompanyName', e.target.value)}
+                    placeholder="Enter your company name"
+                  />
                 </div>
                 
                 <div>
