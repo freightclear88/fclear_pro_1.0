@@ -245,7 +245,7 @@ export default function ShipmentHtmlPage({ shipment, isOpen, onClose }: Shipment
                     
                     copyToClipboard(allData, "All Shipment Data");
                   }}
-                  className="bg-freight-green hover:bg-freight-green/90 text-white"
+                  className="btn-secondary"
                 >
                   <Copy className="w-4 h-4 mr-2" />
                   Copy All Data

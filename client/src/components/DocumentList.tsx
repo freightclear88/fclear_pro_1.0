@@ -173,12 +173,11 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
                     {/* Data viewing button */}
                     <Button
                       size="sm"
-                      variant="outline"
                       onClick={() => {
                         setSelectedDocument(document);
                         setIsDetailOpen(true);
                       }}
-                      className="text-freight-blue border-freight-blue hover:bg-freight-blue hover:text-white"
+                      className="btn-outline-accent"
                     >
                       <FileText className="w-4 h-4 mr-2" />
                       View Data
@@ -186,9 +185,8 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
                     
                     <Button
                       size="sm"
-                      variant="outline"
                       onClick={() => handleDownload(document)}
-                      className="text-freight-green border-freight-green hover:bg-freight-green hover:text-white"
+                      className="btn-outline-primary"
                     >
                       <Download className="w-4 h-4 mr-2" />
                       Download

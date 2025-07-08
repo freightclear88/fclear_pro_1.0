@@ -258,9 +258,8 @@ export default function Profile() {
               )}
               {(irsProofStatus === 'uploaded' || irsProofStatus === 'validated') && (
                 <Button
-                  variant="outline"
                   onClick={() => window.open('/api/profile/irs-proof/view', '_blank')}
-                  className="text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white"
+                  className="btn-outline-accent"
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   View Document

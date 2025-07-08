@@ -204,7 +204,6 @@ Destination: ${shipment?.destination || "N/A"}
                         <span>BL: {shipment?.billOfLading || "N/A"}</span>
                         {shipment?.billOfLading && (
                           <Button
-                            variant="ghost"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -213,7 +212,7 @@ Destination: ${shipment?.destination || "N/A"}
                                 window.open(trackingUrl, '_blank');
                               }
                             }}
-                            className="text-freight-orange hover:text-freight-dark p-0 h-3"
+                            className="btn-ghost p-0 h-3"
                           >
                             <ExternalLink className="w-3 h-3" />
                           </Button>
@@ -239,7 +238,6 @@ Destination: ${shipment?.destination || "N/A"}
                     <div>
                       {shipment?.containerNumber && (
                         <Button
-                          variant="outline"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -248,7 +246,7 @@ Destination: ${shipment?.destination || "N/A"}
                               window.open(trackingUrl, '_blank');
                             }
                           }}
-                          className="text-xs border-freight-blue text-freight-blue hover:bg-freight-blue hover:text-white"
+                          className="btn-outline-accent text-xs"
                         >
                           Track Container
                         </Button>

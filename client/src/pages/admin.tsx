@@ -229,7 +229,7 @@ export default function Admin() {
         <div className="flex items-center space-x-4">
           <Button
             onClick={handleExportCSV}
-            className="bg-freight-green hover:bg-freight-green/90 text-white"
+            className="btn-accent"
           >
             <Download className="w-4 h-4 mr-2" />
             Export CSV
@@ -328,8 +328,8 @@ export default function Admin() {
                     {user.powerOfAttorneyDocumentPath && (
                       <Button
                         size="sm"
-                        variant="outline"
                         onClick={() => window.open(`/api/profile/poa/view?userId=${user.id}`, '_blank')}
+                        className="btn-outline-accent"
                       >
                         <FileText className="h-4 w-4 mr-1" />
                         View POA
@@ -339,16 +339,16 @@ export default function Admin() {
                       size="sm"
                       onClick={() => handleValidatePOA(user.id, 'validated')}
                       disabled={validatePOAMutation.isPending}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="btn-secondary"
                     >
                       <CheckCircle className="h-4 w-4 mr-1" />
                       Validate
                     </Button>
                     <Button
                       size="sm"
-                      variant="destructive"
                       onClick={() => handleValidatePOA(user.id, 'rejected')}
                       disabled={validatePOAMutation.isPending}
+                      className="btn-danger"
                     >
                       <XCircle className="h-4 w-4 mr-1" />
                       Reject
@@ -385,8 +385,8 @@ export default function Admin() {
                     {user.irsProofDocumentPath && (
                       <Button
                         size="sm"
-                        variant="outline"
                         onClick={() => window.open(`/api/admin/users/${user.id}/irs-proof/view`, '_blank')}
+                        className="btn-outline-accent"
                       >
                         <FileText className="h-4 w-4 mr-1" />
                         View Document
@@ -396,16 +396,16 @@ export default function Admin() {
                       size="sm"
                       onClick={() => handleValidateIRSProof(user.id, 'validated')}
                       disabled={validateIRSProofMutation.isPending}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="btn-secondary"
                     >
                       <CheckCircle className="h-4 w-4 mr-1" />
                       Approve
                     </Button>
                     <Button
                       size="sm"
-                      variant="destructive"
                       onClick={() => handleValidateIRSProof(user.id, 'rejected')}
                       disabled={validateIRSProofMutation.isPending}
+                      className="btn-danger"
                     >
                       <XCircle className="h-4 w-4 mr-1" />
                       Reject
