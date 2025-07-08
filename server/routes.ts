@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import puppeteer from 'puppeteer';
 import { insertShipmentSchema, insertDocumentSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
@@ -770,7 +771,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       fs.writeFileSync(htmlFilePath, poaHtml);
 
       // Generate PDF using Puppeteer
-      const puppeteer = require('puppeteer');
       
       let pdfFilePath = null;
       try {
