@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { UploadCloud as Upload, FileText, Ship, Plane, Truck, Package, Scale } from "lucide-react";
+import { FileUp, FileText, Ship, Plane, Truck, Package, Scale } from "lucide-react";
 
 interface DocumentUploadProps {
   shipmentId?: number;
@@ -200,7 +200,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
                   }`}
                 >
                   <input {...getInputProps()} />
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <FileUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <div className="space-y-2">
                     <p className="text-lg font-medium text-gray-700">
                       {isDragActive ? "Drop files here..." : "Drag & drop files here"}

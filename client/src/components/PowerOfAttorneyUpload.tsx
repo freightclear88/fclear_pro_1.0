@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { UploadCloud as Upload, FileText, Scale, X } from "lucide-react";
+import { FileUp, FileText, Scale, X } from "lucide-react";
 
 interface PowerOfAttorneyUploadProps {
   trigger?: React.ReactNode;
@@ -84,7 +84,7 @@ export default function PowerOfAttorneyUpload({ trigger }: PowerOfAttorneyUpload
       <DialogTrigger asChild>
         {trigger || (
           <Button className="bg-freight-blue hover:bg-freight-blue/90 text-white">
-            <Upload className="w-4 h-4 mr-2" />
+            <FileUp className="w-4 h-4 mr-2" />
             Upload POA
           </Button>
         )}

@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { UploadCloud as Upload, Receipt } from "lucide-react";
+import { FileUp, Receipt } from "lucide-react";
 
 interface IrsProofUploadProps {
   trigger?: React.ReactNode;
@@ -70,7 +70,7 @@ export default function IrsProofUpload({ trigger }: IrsProofUploadProps) {
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" className="w-full">
-            <Upload className="w-4 h-4 mr-2" />
+            <FileUp className="w-4 h-4 mr-2" />
             Upload IRS Proof
           </Button>
         )}

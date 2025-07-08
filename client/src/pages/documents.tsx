@@ -7,7 +7,7 @@ import DocumentUpload from "@/components/DocumentUpload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Upload, Plus, Package, Ship, Plane, Truck } from "lucide-react";
+import { FileText, FileUp, Plus, Package, Ship, Plane, Truck } from "lucide-react";
 import type { Shipment } from "@shared/schema";
 
 export default function Documents() {

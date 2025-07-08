@@ -9,7 +9,7 @@ import ShipmentTable from "@/components/ShipmentTable";
 import ShipmentDetail from "@/components/ShipmentDetail";
 import CreateShipmentDialog from "@/components/CreateShipmentDialog";
 
-import { Ship, FileText, CheckCircle, DollarSign, Plus, Bell } from "lucide-react";
+import { Ship, FileText, CheckCircle, DollarSign, Plus, Bell, FileUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Shipment } from "@shared/schema";
@@ -63,7 +63,7 @@ export default function Dashboard() {
           <DocumentUpload 
             trigger={
               <Button className="btn-outline-primary">
-                <Upload className="w-4 h-4 mr-2" />
+                <FileUp className="w-4 h-4 mr-2" />
                 Upload Documents
               </Button>
             }
