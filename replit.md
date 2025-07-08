@@ -127,3 +127,7 @@ Changelog:
 - July 07, 2025: Implemented complete document-based shipment creation workflow
 - July 07, 2025: Added test data seeding functionality for development testing
 - July 07, 2025: Enhanced transport mode selection (Air, Ocean, Trucking) with automatic detection
+- July 08, 2025: Removed dedicated Documents page from main navigation
+- July 08, 2025: Integrated document management directly into Shipments page with tabs
+- July 08, 2025: Added carrier tracking buttons for BL numbers and container numbers
+- July 08, 2025: Restructured documents as subsets of shipments with dedicated folders
