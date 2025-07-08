@@ -1,8 +1,8 @@
-# Freight Flow - Document Management System
+# Freightclear Importer Workflow - Document Management System
 
 ## Overview
 
-Freight Flow is a comprehensive web application designed for freight management with OCR document intelligence and automatic data extraction. Built for Freightclear, it provides a streamlined platform for managing shipments, documents, and user accounts with a focus on imports to the USA.
+Freightclear Importer Workflow is a comprehensive web application designed for freight management with OCR document intelligence and automatic data extraction. Built for Freightclear, it provides a streamlined platform for managing shipments, documents, and user accounts with a focus on imports to the USA.
 
 ## System Architecture
 
@@ -153,3 +153,4 @@ Changelog:
 - July 08, 2025: Implemented "La Belle Aurore" Google font for POA electronic signature field at 14pt for authentic handwritten appearance
 - July 08, 2025: Added POA deletion functionality allowing users to delete existing POAs and create new ones for testing purposes
 - July 08, 2025: Fixed POA creation button visibility issues after deletion with proper status condition handling
+- July 08, 2025: Renamed application from "Freight Flow" to "Freightclear Importer Workflow" across all UI components, server templates, and documentation

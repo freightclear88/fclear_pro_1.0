@@ -49,7 +49,7 @@ async function sendPOANotification(userDetails: any) {
       <p><strong>Action Required:</strong> Review the submitted POA document and update the validation status.</p>
       
       <hr>
-      <p><em>This is an automated notification from Freight Flow.</em></p>
+      <p><em>This is an automated notification from Freightclear Importer Workflow.</em></p>
     `
   };
 
@@ -216,7 +216,7 @@ function generateFilledPOADocument(data: any): string {
     </div>
 
     <div style="margin-top: 50px; font-size: 12px; text-align: center; color: #666;">
-        Generated electronically by Freight Flow - ${new Date().toLocaleString()}
+        Generated electronically by Freightclear Importer Workflow - ${new Date().toLocaleString()}
     </div>
 </body>
 </html>
@@ -377,7 +377,7 @@ function generatePOADocument(data: any): string {
     </div>
 
     <div style="margin-top: 50px; font-size: 12px; text-align: center; color: #666;">
-        Generated electronically by Freight Flow - ${new Date().toLocaleString()}
+        Generated electronically by Freightclear Importer Workflow - ${new Date().toLocaleString()}
     </div>
 </body>
 </html>
@@ -1195,7 +1195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shipment ${shipment.shipmentId} - Freight Flow</title>
+    <title>Shipment ${shipment.shipmentId} - Freightclear Importer Workflow</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; color: #333; background: #f8fafc; }
