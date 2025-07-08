@@ -70,6 +70,36 @@ export default function Profile() {
     }
   }, [userProfile]);
 
+  // Delete POA mutation
+  const deletePOAMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/profile/poa', {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete POA');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      toast({
+        title: "POA Deleted",
+        description: "Power of Attorney has been deleted successfully. You can now create a new one.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Delete Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateProfileMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       return await apiRequest("/api/profile", {
@@ -200,14 +230,25 @@ export default function Profile() {
                 </>
               )}
               {(poaStatus === 'uploaded' || poaStatus === 'validated') && (
-                <Button
-                  variant="outline"
-                  onClick={() => window.open('/api/profile/poa/view', '_blank')}
-                  className="text-purple-600 border-purple-600 hover:bg-purple-600 hover:text-white"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  View POA
-                </Button>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open('/api/profile/poa/view', '_blank')}
+                    className="text-purple-600 border-purple-600 hover:bg-purple-600 hover:text-white"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    View POA
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => deletePOAMutation.mutate()}
+                    disabled={deletePOAMutation.isPending}
+                    className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    {deletePOAMutation.isPending ? 'Deleting...' : 'Delete POA'}
+                  </Button>
+                </div>
               )}
             </div>
           </div>

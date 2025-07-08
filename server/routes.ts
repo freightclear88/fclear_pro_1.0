@@ -591,6 +591,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POA delete route
+  app.delete('/api/profile/poa', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Delete the POA file if it exists
+      if (user.powerOfAttorneyDocumentPath && fs.existsSync(user.powerOfAttorneyDocumentPath)) {
+        fs.unlinkSync(user.powerOfAttorneyDocumentPath);
+      }
+      
+      // Reset POA status and clear document path
+      const updatedUser = await storage.updateUser(userId, {
+        powerOfAttorneyStatus: 'pending',
+        powerOfAttorneyDocumentPath: null,
+        powerOfAttorneyUploadedAt: null,
+      });
+      
+      res.json({ 
+        message: "Power of Attorney deleted successfully",
+        user: updatedUser 
+      });
+    } catch (error) {
+      console.error("Error deleting POA:", error);
+      res.status(500).json({ message: "Failed to delete POA" });
+    }
+  });
+
   // POA view route
   app.get('/api/profile/poa/view', isAuthenticated, async (req: any, res) => {
     try {
