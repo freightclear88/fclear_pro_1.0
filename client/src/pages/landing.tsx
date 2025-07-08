@@ -116,38 +116,7 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Transport Modes */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <Card className="text-center hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <Ship className="w-12 h-12 text-freight-blue mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-freight-dark mb-2">Ocean Shipments</h3>
-              <p className="text-gray-600 text-sm">
-                Full container and LCL shipments with container tracking and vessel schedules.
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="text-center hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <Plane className="w-12 h-12 text-freight-green mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-freight-dark mb-2">Air Cargo</h3>
-              <p className="text-gray-600 text-sm">
-                Express and standard air freight with flight tracking and delivery confirmation.
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="text-center hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <Truck className="w-12 h-12 text-freight-orange mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-freight-dark mb-2">Ground Transport</h3>
-              <p className="text-gray-600 text-sm">
-                Trucking and intermodal services with GPS tracking and delivery updates.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+
 
         {/* Call to Action */}
         <div className="text-center bg-gradient-to-r from-freight-blue to-freight-dark rounded-xl p-12">
