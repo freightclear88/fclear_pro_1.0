@@ -277,17 +277,17 @@ function generatePOADocument(data: any): string {
         <div class="form-row">
             <div class="form-field">
                 <label>Agent Name:</label>
-                <div class="value"></div>
+                <div class="value">WCS International Inc.</div>
             </div>
             <div class="form-field">
                 <label>Title:</label>
-                <div class="value"></div>
+                <div class="value">Customs Broker</div>
             </div>
         </div>
         
         <div class="form-group">
             <label>Company:</label>
-            <div class="value"></div>
+            <div class="value">WCS International Inc.</div>
         </div>
         
         <div class="form-group">

@@ -140,3 +140,4 @@ Changelog:
 - July 08, 2025: Added PDF generation using Puppeteer for signed POA documents
 - July 08, 2025: Implemented email notifications to admin users when POAs are submitted
 - July 08, 2025: Created admin-level POA validation system with approve/reject functionality
+- July 08, 2025: Updated POA agent information to "WCS International Inc." (removed Chris Williams)

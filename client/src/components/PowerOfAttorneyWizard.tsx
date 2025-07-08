@@ -28,7 +28,7 @@ interface POAFormData {
   principalEmail: string;
   principalPhone: string;
   
-  // Agent Information (Freightclear)
+  // Agent Information (WCS International Inc.)
   agentName: string;
   agentTitle: string;
   agentCompany: string;
@@ -60,11 +60,11 @@ export default function PowerOfAttorneyWizard({ isOpen, onClose, user }: PowerOf
     principalEmail: user?.email || '',
     principalPhone: user?.phone || '',
     
-    // Default agent information (Freightclear)
-    agentName: 'Chris Williams',
-    agentTitle: 'President',
-    agentCompany: 'WCS Cargo',
-    agentAddress: '555 Stupid Way, Stupid AZ',
+    // Default agent information (WCS International Inc.)
+    agentName: 'WCS International Inc.',
+    agentTitle: 'Customs Broker',
+    agentCompany: 'WCS International Inc.',
+    agentAddress: '',
     
     // Powers
     customsDeclarations: true,
