@@ -28,6 +28,9 @@ interface POAFormData {
   principalZip: string;
   principalEmail: string;
   principalPhone: string;
+  irsEinSs: string;
+  corporationType: string;
+  signerCapacity: string;
   
   // Agent Information (WCS International Inc.)
   agentName: string;
@@ -61,6 +64,9 @@ export default function PowerOfAttorneyWizard({ isOpen, onClose, user }: PowerOf
     principalZip: user?.zipCode || '',
     principalEmail: user?.email || '',
     principalPhone: user?.phone || '',
+    irsEinSs: '',
+    corporationType: '',
+    signerCapacity: '',
     
     // Default agent information (WCS International Inc.)
     agentName: 'WCS International Inc.',
@@ -259,14 +265,53 @@ export default function PowerOfAttorneyWizard({ isOpen, onClose, user }: PowerOf
                   </div>
                 </div>
                 
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="principalPhone">Phone Number *</Label>
+                    <Input
+                      id="principalPhone"
+                      value={formData.principalPhone}
+                      onChange={(e) => updateField('principalPhone', e.target.value)}
+                      placeholder="(555) 123-4567"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="irsEinSs">IRS-EIN-SS *</Label>
+                    <Input
+                      id="irsEinSs"
+                      value={formData.irsEinSs}
+                      onChange={(e) => updateField('irsEinSs', e.target.value)}
+                      placeholder="XX-XXXXXXX or XXX-XX-XXXX"
+                    />
+                  </div>
+                </div>
+                
                 <div>
-                  <Label htmlFor="principalPhone">Phone Number</Label>
-                  <Input
-                    id="principalPhone"
-                    value={formData.principalPhone}
-                    onChange={(e) => updateField('principalPhone', e.target.value)}
-                    placeholder="(555) 123-4567"
-                  />
+                  <Label>Corporation Type *</Label>
+                  <div className="mt-2 space-y-2">
+                    {[
+                      { value: 'individual', label: 'Individual' },
+                      { value: 'sole_proprietorship', label: 'Sole Proprietorship' },
+                      { value: 'partnership', label: 'Partnership' },
+                      { value: 'corporation', label: 'Corporation' },
+                      { value: 'llc', label: 'Limited Liability Corp (LLC)' }
+                    ].map((option) => (
+                      <div key={option.value} className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id={option.value}
+                          name="corporationType"
+                          value={option.value}
+                          checked={formData.corporationType === option.value}
+                          onChange={(e) => updateField('corporationType', e.target.value)}
+                          className="h-4 w-4 text-freight-blue focus:ring-freight-blue"
+                        />
+                        <Label htmlFor={option.value} className="text-sm font-normal">
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -427,19 +472,33 @@ export default function PowerOfAttorneyWizard({ isOpen, onClose, user }: PowerOf
                   </Label>
                 </div>
                 
-                <div>
-                  <Label htmlFor="electronicSignature">Electronic Signature *</Label>
-                  <Input
-                    id="electronicSignature"
-                    value={formData.electronicSignature}
-                    onChange={(e) => updateField('electronicSignature', e.target.value)}
-                    placeholder="Type your full legal name"
-                    className="text-[14pt]"
-                    style={{ fontFamily: "'La Belle Aurore', cursive" }}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Your typed name serves as your electronic signature
-                  </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="electronicSignature">Electronic Signature *</Label>
+                    <Input
+                      id="electronicSignature"
+                      value={formData.electronicSignature}
+                      onChange={(e) => updateField('electronicSignature', e.target.value)}
+                      placeholder="Type your full legal name"
+                      className="text-[14pt]"
+                      style={{ fontFamily: "'La Belle Aurore', cursive" }}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Your typed name serves as your electronic signature
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="signerCapacity">Capacity *</Label>
+                    <Input
+                      id="signerCapacity"
+                      value={formData.signerCapacity}
+                      onChange={(e) => updateField('signerCapacity', e.target.value)}
+                      placeholder="e.g., President, Owner, CEO"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Your title or role in the company
+                    </p>
+                  </div>
                 </div>
                 
                 <div>

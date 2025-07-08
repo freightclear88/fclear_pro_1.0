@@ -133,6 +133,15 @@ function generateFilledPOADocument(data: any): string {
                 <label>Phone:</label>
                 <div class="value">${data.principalPhone || ''}</div>
             </div>
+            <div class="form-field">
+                <label>IRS-EIN-SS:</label>
+                <div class="value">${data.irsEinSs || ''}</div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Corporation Type:</label>
+            <div class="value">${data.corporationType ? data.corporationType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : ''}</div>
         </div>
     </div>
 
@@ -187,13 +196,17 @@ function generateFilledPOADocument(data: any): string {
         
         <div style="margin-top: 40px;">
             <div class="signature-field">${data.electronicSignature || ''}</div>
+            <div class="signature-field">${data.signerCapacity || ''}</div>
             <div class="signature-field">${data.signatureDate || ''}</div>
         </div>
         <div style="margin-top: 10px;">
-            <div style="display: inline-block; width: 300px; text-align: center; margin: 0 20px;">
+            <div style="display: inline-block; width: 250px; text-align: center; margin: 0 10px;">
                 <strong>Principal Signature</strong>
             </div>
-            <div style="display: inline-block; width: 300px; text-align: center; margin: 0 20px;">
+            <div style="display: inline-block; width: 250px; text-align: center; margin: 0 10px;">
+                <strong>Capacity</strong>
+            </div>
+            <div style="display: inline-block; width: 250px; text-align: center; margin: 0 10px;">
                 <strong>Date</strong>
             </div>
         </div>
@@ -279,6 +292,15 @@ function generatePOADocument(data: any): string {
                 <label>Phone:</label>
                 <div class="value"></div>
             </div>
+            <div class="form-field">
+                <label>IRS-EIN-SS:</label>
+                <div class="value"></div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Corporation Type:</label>
+            <div class="value"></div>
         </div>
     </div>
 
@@ -334,12 +356,16 @@ function generatePOADocument(data: any): string {
         <div style="margin-top: 40px;">
             <div class="signature-field"></div>
             <div class="signature-field"></div>
+            <div class="signature-field"></div>
         </div>
         <div style="margin-top: 10px;">
-            <div style="display: inline-block; width: 300px; text-align: center; margin: 0 20px;">
+            <div style="display: inline-block; width: 250px; text-align: center; margin: 0 10px;">
                 <strong>Principal Signature</strong>
             </div>
-            <div style="display: inline-block; width: 300px; text-align: center; margin: 0 20px;">
+            <div style="display: inline-block; width: 250px; text-align: center; margin: 0 10px;">
+                <strong>Capacity</strong>
+            </div>
+            <div style="display: inline-block; width: 250px; text-align: center; margin: 0 10px;">
                 <strong>Date</strong>
             </div>
         </div>
