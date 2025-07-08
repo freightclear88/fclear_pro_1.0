@@ -85,11 +85,18 @@ export default function PowerOfAttorneyWizard({ isOpen, onClose, user }: PowerOf
 
   const generatePOAMutation = useMutation({
     mutationFn: async (data: POAFormData) => {
-      return await apiRequest('/api/profile/generate-poa', {
+      const response = await fetch('/api/profile/generate-poa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate POA');
+      }
+
+      return response.json();
     },
     onSuccess: () => {
       toast({
