@@ -11,14 +11,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
-import { User, Mail, Building, LogOut, Ship, FileText, MapPin, Hash, Edit, Save, X, Star, AlertCircle, Upload } from "lucide-react";
+import { User, Mail, Building, LogOut, Ship, FileText, MapPin, Hash, Edit, Save, X, Star, AlertCircle, Upload, Scale } from "lucide-react";
 import PowerOfAttorneyUpload from "@/components/PowerOfAttorneyUpload";
+import PowerOfAttorneyWizard from "@/components/PowerOfAttorneyWizard";
 
 export default function Profile() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+  const [showPOAWizard, setShowPOAWizard] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -182,7 +184,16 @@ export default function Profile() {
             
             <div className="flex items-center space-x-2">
               {poaStatus === 'pending' && (
-                <PowerOfAttorneyUpload />
+                <>
+                  <Button
+                    onClick={() => setShowPOAWizard(true)}
+                    className="bg-freight-green hover:bg-freight-green/90 text-white"
+                  >
+                    <Scale className="w-4 h-4 mr-2" />
+                    Create POA
+                  </Button>
+                  <PowerOfAttorneyUpload />
+                </>
               )}
               {(poaStatus === 'uploaded' || poaStatus === 'validated') && (
                 <Button
@@ -470,6 +481,13 @@ export default function Profile() {
           </Card>
         </div>
       </div>
+
+      {/* POA Wizard */}
+      <PowerOfAttorneyWizard
+        isOpen={showPOAWizard}
+        onClose={() => setShowPOAWizard(false)}
+        user={userProfile}
+      />
     </div>
   );
 }

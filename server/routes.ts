@@ -9,6 +9,147 @@ import fs from "fs";
 import { z } from "zod";
 import { detectCarrierFromBL, generateTrackingUrl, generateContainerTrackingUrl } from "./carrierTracking";
 
+// POA HTML template function
+function generatePOADocument(data: any): string {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power of Attorney</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; }
+        .form-field { flex: 1; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .value { border-bottom: 1px solid #333; min-height: 20px; padding: 2px 0; }
+        .checkbox-group { margin: 10px 0; }
+        .signature-section { margin-top: 40px; border-top: 2px solid #333; padding-top: 20px; }
+        .signature-field { display: inline-block; border-bottom: 2px solid #333; min-width: 300px; text-align: center; margin: 10px 20px; }
+        @media print { body { margin: 0; padding: 15px; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>POWER OF ATTORNEY</h1>
+        <h2>FOR CUSTOMS AND BORDER PROTECTION MATTERS</h2>
+    </div>
+
+    <div class="form-group">
+        <h3>PRINCIPAL (IMPORTER) INFORMATION</h3>
+        <div class="form-row">
+            <div class="form-field">
+                <label>Full Name:</label>
+                <div class="value">${data.principalName}</div>
+            </div>
+            <div class="form-field">
+                <label>Email:</label>
+                <div class="value">${data.principalEmail}</div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Address:</label>
+            <div class="value">${data.principalAddress}</div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-field">
+                <label>City:</label>
+                <div class="value">${data.principalCity}</div>
+            </div>
+            <div class="form-field">
+                <label>State:</label>
+                <div class="value">${data.principalState}</div>
+            </div>
+            <div class="form-field">
+                <label>ZIP Code:</label>
+                <div class="value">${data.principalZip}</div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <label>Phone:</label>
+                <div class="value">${data.principalPhone}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <h3>AGENT (CUSTOMS BROKER) INFORMATION</h3>
+        <div class="form-row">
+            <div class="form-field">
+                <label>Agent Name:</label>
+                <div class="value">${data.agentName}</div>
+            </div>
+            <div class="form-field">
+                <label>Title:</label>
+                <div class="value">${data.agentTitle}</div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Company:</label>
+            <div class="value">${data.agentCompany}</div>
+        </div>
+        
+        <div class="form-group">
+            <label>Address:</label>
+            <div class="value">${data.agentAddress}</div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <h3>POWERS GRANTED</h3>
+        <p>I hereby authorize the above-named agent to act on my behalf in the following matters:</p>
+        
+        <div class="checkbox-group">
+            <div>☑ File customs declarations and entry documents</div>
+            <div>☑ Sign import documents on my behalf</div>
+            <div>☑ Make payment of duties, taxes, and fees</div>
+            <div>☑ Represent me before U.S. Customs and Border Protection</div>
+            <div>☑ Authorize release of goods from customs custody</div>
+            ${data.otherPowers ? `<div><strong>Additional Powers:</strong> ${data.otherPowers}</div>` : ''}
+        </div>
+    </div>
+
+    <div class="form-group">
+        <h3>TERMS AND CONDITIONS</h3>
+        <p>This Power of Attorney shall remain in effect until revoked in writing by the undersigned. 
+        I understand that this authorization grants the named agent the power to act on my behalf in customs matters 
+        and that I remain responsible for all obligations arising from such actions.</p>
+    </div>
+
+    <div class="signature-section">
+        <h3>ELECTRONIC SIGNATURE</h3>
+        <p>By signing below, I acknowledge that I have read, understood, and agree to the terms of this Power of Attorney.</p>
+        
+        <div style="margin-top: 40px;">
+            <div class="signature-field">${data.electronicSignature}</div>
+            <div class="signature-field">${data.signatureDate}</div>
+        </div>
+        <div style="margin-top: 10px;">
+            <div style="display: inline-block; width: 300px; text-align: center; margin: 0 20px;">
+                <strong>Principal Signature</strong>
+            </div>
+            <div style="display: inline-block; width: 300px; text-align: center; margin: 0 20px;">
+                <strong>Date</strong>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 50px; font-size: 12px; text-align: center; color: #666;">
+        Generated electronically by Freight Flow - ${new Date().toLocaleString()}
+    </div>
+</body>
+</html>
+  `;
+}
+
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) {
@@ -234,15 +375,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "POA file not found on disk" });
       }
       
-      // Set headers for inline viewing
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="Power_of_Attorney.pdf"`);
+      // Check file type and set appropriate headers
+      const fileExtension = path.extname(user.powerOfAttorneyDocumentPath).toLowerCase();
+      if (fileExtension === '.html') {
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Disposition', `inline; filename="Power_of_Attorney.html"`);
+      } else if (fileExtension === '.pdf') {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="Power_of_Attorney.pdf"`);
+      } else {
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="Power_of_Attorney${fileExtension}"`);
+      }
       
       const fileStream = fs.createReadStream(user.powerOfAttorneyDocumentPath);
       fileStream.pipe(res);
     } catch (error) {
       console.error("Error viewing POA:", error);
       res.status(500).json({ message: "Failed to view POA" });
+    }
+  });
+
+  // POA generation route
+  app.post('/api/profile/generate-poa', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const poaData = req.body;
+
+      // Generate HTML POA document
+      const poaHtml = generatePOADocument(poaData);
+      
+      // Save as HTML file
+      const fileName = `POA_${userId}_${Date.now()}.html`;
+      const filePath = path.join('uploads', fileName);
+      
+      fs.writeFileSync(filePath, poaHtml);
+
+      // Update user's POA status and document path
+      const updatedUser = await storage.updateUser(userId, {
+        powerOfAttorneyStatus: 'uploaded',
+        powerOfAttorneyDocumentPath: filePath,
+        powerOfAttorneyUploadedAt: new Date(),
+      });
+
+      res.json({ 
+        message: "Power of Attorney generated successfully",
+        user: updatedUser 
+      });
+    } catch (error) {
+      console.error("Error generating POA:", error);
+      res.status(500).json({ message: "Failed to generate POA" });
     }
   });
 

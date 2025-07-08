@@ -99,9 +99,9 @@ export default function PowerOfAttorneyUpload({ trigger }: PowerOfAttorneyUpload
         
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-semibold text-blue-900 mb-2">Important Information</h4>
+            <h4 className="font-semibold text-blue-900 mb-2">Upload Power of Attorney</h4>
             <p className="text-sm text-blue-800">
-              Upload your signed Power of Attorney document. This document authorizes Freightclear to act on your behalf for customs matters. Accepted formats: PDF, PNG, JPG, JPEG.
+              Upload your signed Power of Attorney document. Accepted formats: PDF, PNG, JPG, JPEG.
             </p>
           </div>
 
