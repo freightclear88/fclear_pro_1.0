@@ -252,8 +252,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                           file.originalname.toLowerCase().includes('los angeles') ? 'Port of Los Angeles' : 'Port of Long Beach',
           
           // Arrival notice specific timing
-          eta: new Date(Date.now() + Math.floor(Math.random() * 7) * 24 * 60 * 60 * 1000).toISOString(),
-          ata: Math.random() > 0.5 ? new Date(Date.now() - Math.floor(Math.random() * 3) * 24 * 60 * 60 * 1000).toISOString() : null,
+          eta: new Date(Date.now() + Math.floor(Math.random() * 7) * 24 * 60 * 60 * 1000),
+          ata: Math.random() > 0.5 ? new Date(Date.now() - Math.floor(Math.random() * 3) * 24 * 60 * 60 * 1000) : null,
           
           // Party information
           shipperName: 'Shanghai Export Manufacturing Co., Ltd.',
