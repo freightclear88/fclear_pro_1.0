@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle } from "lucide-react";
+import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle, Receipt } from "lucide-react";
 import type { Shipment, Document, User } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -175,8 +175,45 @@ export default function Admin() {
     validatePOAMutation.mutate({ userId, status });
   };
 
+  // IRS Proof validation mutations
+  const validateIRSProofMutation = useMutation({
+    mutationFn: async ({ userId, status }: { userId: string; status: string }) => {
+      const response = await fetch(`/api/admin/users/${userId}/irs-proof/validate`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update IRS proof status');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({
+        title: "IRS Proof Updated",
+        description: "User's IRS proof status has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleValidateIRSProof = (userId: string, status: 'validated' | 'rejected') => {
+    validateIRSProofMutation.mutate({ userId, status });
+  };
+
   // Filter users with pending POAs
   const pendingPOAUsers = allUsers.filter((user: User) => user.powerOfAttorneyStatus === 'pending');
+  const pendingIRSProofUsers = allUsers.filter((user: User) => user.irsProofStatus === 'uploaded');
 
   return (
     <div className="p-6">
@@ -312,6 +349,63 @@ export default function Admin() {
                       variant="destructive"
                       onClick={() => handleValidatePOA(user.id, 'rejected')}
                       disabled={validatePOAMutation.isPending}
+                    >
+                      <XCircle className="h-4 w-4 mr-1" />
+                      Reject
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* IRS Proof Validation Section */}
+      {pendingIRSProofUsers.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5" />
+              IRS Proof Verification Required
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {pendingIRSProofUsers.map((user: User) => (
+                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg bg-blue-50">
+                  <div className="flex-1">
+                    <h4 className="font-medium">{user.firstName} {user.lastName}</h4>
+                    <p className="text-sm text-gray-600">{user.email}</p>
+                    <p className="text-xs text-gray-500">
+                      Submitted: {user.irsProofUploadedAt ? new Date(user.irsProofUploadedAt).toLocaleString() : 'N/A'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {user.irsProofDocumentPath && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => window.open(`/api/admin/users/${user.id}/irs-proof/view`, '_blank')}
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        View Document
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => handleValidateIRSProof(user.id, 'validated')}
+                      disabled={validateIRSProofMutation.isPending}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleValidateIRSProof(user.id, 'rejected')}
+                      disabled={validateIRSProofMutation.isPending}
                     >
                       <XCircle className="h-4 w-4 mr-1" />
                       Reject

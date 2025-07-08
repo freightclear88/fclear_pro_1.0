@@ -11,8 +11,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
-import { User, Mail, Building, LogOut, Ship, FileText, MapPin, Hash, Edit, Save, X, Star, AlertCircle, Upload, Scale } from "lucide-react";
+import { User, Mail, Building, LogOut, Ship, FileText, MapPin, Hash, Edit, Save, X, Star, AlertCircle, Upload, Scale, Receipt, CheckCircle, XCircle, Clock } from "lucide-react";
 import PowerOfAttorneyUpload from "@/components/PowerOfAttorneyUpload";
+import IrsProofUpload from "@/components/IrsProofUpload";
 import PowerOfAttorneyWizard from "@/components/PowerOfAttorneyWizard";
 
 export default function Profile() {
@@ -49,6 +50,7 @@ export default function Profile() {
 
   // Check POA status from user profile
   const poaStatus = userProfile?.powerOfAttorneyStatus || 'pending';
+  const irsProofStatus = userProfile?.irsProofStatus || 'pending';
 
   // Update form data when profile loads
   useEffect(() => {
@@ -205,6 +207,63 @@ export default function Profile() {
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   View POA
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* IRS Proof Status */}
+      <Card className="mb-6 border-l-4 border-l-freight-orange">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                {irsProofStatus === 'validated' ? (
+                  <CheckCircle className="w-6 h-6 text-green-500" />
+                ) : irsProofStatus === 'uploaded' ? (
+                  <Clock className="w-6 h-6 text-yellow-500" />
+                ) : (
+                  <XCircle className="w-6 h-6 text-red-500" />
+                )}
+                <div>
+                  <h3 className="font-semibold text-lg">IRS Proof</h3>
+                  <p className="text-sm text-gray-600">
+                    {irsProofStatus === 'validated' 
+                      ? 'Your IRS proof document is validated'
+                      : irsProofStatus === 'uploaded'
+                      ? 'Your IRS proof document is pending verification'
+                      : 'IRS verification document required'
+                    }
+                  </p>
+                </div>
+              </div>
+              <Badge variant={irsProofStatus === 'validated' ? 'default' : irsProofStatus === 'pending' ? 'secondary' : irsProofStatus === 'rejected' ? 'destructive' : 'destructive'} className={
+                irsProofStatus === 'validated'
+                  ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                  : irsProofStatus === 'pending'
+                  ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
+                  : irsProofStatus === 'rejected'
+                  ? 'bg-red-100 text-red-800 hover:bg-red-100'
+                  : 'bg-red-100 text-red-800 hover:bg-red-100'
+              }>
+                {irsProofStatus === 'validated' ? 'Validated' : irsProofStatus === 'pending' ? 'Pending Review' : irsProofStatus === 'rejected' ? 'Rejected' : 'Required'}
+              </Badge>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              {(irsProofStatus === 'pending' || irsProofStatus === 'rejected') && (
+                <IrsProofUpload />
+              )}
+              {(irsProofStatus === 'uploaded' || irsProofStatus === 'validated') && (
+                <Button
+                  variant="outline"
+                  onClick={() => window.open('/api/profile/irs-proof/view', '_blank')}
+                  className="text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  View Document
                 </Button>
               )}
             </div>

@@ -143,3 +143,6 @@ Changelog:
 - July 08, 2025: Updated POA agent information to "WCS International Inc." (removed Chris Williams)
 - July 08, 2025: Added company name field to POA form and pre-filled WCS International address
 - July 08, 2025: Improved database connection stability and error handling for production reliability
+- July 08, 2025: Added IRS proof upload functionality to user profiles with admin verification system
+- July 08, 2025: Created comprehensive IRS proof status display with red/green indicators based on verification status
+- July 08, 2025: Implemented admin-level IRS proof validation system with approve/reject functionality similar to POA

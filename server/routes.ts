@@ -626,6 +626,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // IRS Proof upload route
+  app.post('/api/profile/irs-proof/upload', isAuthenticated, upload.single('irsProof'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const userId = req.user.claims.sub;
+      const fileName = `IRS_Proof_${userId}_${Date.now()}${path.extname(req.file.originalname)}`;
+      const filePath = path.join('uploads', fileName);
+      
+      // Move the uploaded file to the final location
+      fs.renameSync(req.file.path, filePath);
+
+      // Update user's IRS proof status and document path
+      const updatedUser = await storage.updateUser(userId, {
+        irsProofStatus: 'uploaded',
+        irsProofDocumentPath: filePath,
+        irsProofUploadedAt: new Date(),
+      });
+
+      res.json({ 
+        message: "IRS proof uploaded successfully and pending verification",
+        user: updatedUser 
+      });
+    } catch (error) {
+      console.error("Error uploading IRS proof:", error);
+      res.status(500).json({ message: "Failed to upload IRS proof" });
+    }
+  });
+
+  // IRS Proof view route
+  app.get('/api/profile/irs-proof/view', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.irsProofDocumentPath) {
+        return res.status(404).json({ message: "IRS proof document not found" });
+      }
+      
+      if (!fs.existsSync(user.irsProofDocumentPath)) {
+        return res.status(404).json({ message: "IRS proof file not found on disk" });
+      }
+      
+      // Check file type and set appropriate headers
+      const fileExtension = path.extname(user.irsProofDocumentPath).toLowerCase();
+      if (fileExtension === '.pdf') {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="IRS_Proof.pdf"`);
+      } else if (['.jpg', '.jpeg', '.png'].includes(fileExtension)) {
+        const mimeTypes = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png' };
+        res.setHeader('Content-Type', mimeTypes[fileExtension] || 'image/jpeg');
+        res.setHeader('Content-Disposition', `inline; filename="IRS_Proof${fileExtension}"`);
+      } else {
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="IRS_Proof${fileExtension}"`);
+      }
+      
+      const fileStream = fs.createReadStream(user.irsProofDocumentPath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error("Error viewing IRS proof:", error);
+      res.status(500).json({ message: "Failed to view IRS proof" });
+    }
+  });
+
   // POA generation route
   app.post('/api/profile/generate-poa', isAuthenticated, async (req: any, res) => {
     try {
@@ -1250,6 +1317,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error seeding test data:", error);
       res.status(500).json({ message: "Failed to seed test data" });
+    }
+  });
+
+  // Admin IRS Proof validation route
+  app.patch('/api/admin/users/:userId/irs-proof/validate', isAuthenticated, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { status } = req.body;
+
+      if (!['validated', 'rejected'].includes(status)) {
+        return res.status(400).json({ message: "Invalid status. Must be 'validated' or 'rejected'" });
+      }
+
+      const updatedUser = await storage.updateUser(userId, {
+        irsProofStatus: status,
+      });
+
+      res.json({
+        message: `IRS proof status updated to ${status}`,
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error("Error updating IRS proof status:", error);
+      res.status(500).json({ message: "Failed to update IRS proof status" });
+    }
+  });
+
+  // Admin IRS Proof view route
+  app.get('/api/admin/users/:userId/irs-proof/view', isAuthenticated, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.irsProofDocumentPath) {
+        return res.status(404).json({ message: "IRS proof document not found" });
+      }
+      
+      if (!fs.existsSync(user.irsProofDocumentPath)) {
+        return res.status(404).json({ message: "IRS proof file not found on disk" });
+      }
+      
+      // Check file type and set appropriate headers
+      const fileExtension = path.extname(user.irsProofDocumentPath).toLowerCase();
+      if (fileExtension === '.pdf') {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="IRS_Proof_${userId}.pdf"`);
+      } else if (['.jpg', '.jpeg', '.png'].includes(fileExtension)) {
+        const mimeTypes = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png' };
+        res.setHeader('Content-Type', mimeTypes[fileExtension] || 'image/jpeg');
+        res.setHeader('Content-Disposition', `inline; filename="IRS_Proof_${userId}${fileExtension}"`);
+      } else {
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="IRS_Proof_${userId}${fileExtension}"`);
+      }
+      
+      const fileStream = fs.createReadStream(user.irsProofDocumentPath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error("Error viewing IRS proof:", error);
+      res.status(500).json({ message: "Failed to view IRS proof" });
     }
   });
 

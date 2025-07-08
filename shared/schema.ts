@@ -44,6 +44,9 @@ export const users = pgTable("users", {
   powerOfAttorneyStatus: varchar("power_of_attorney_status").default("pending"), // pending, uploaded, validated
   powerOfAttorneyDocumentPath: varchar("power_of_attorney_document_path"),
   powerOfAttorneyUploadedAt: timestamp("power_of_attorney_uploaded_at"),
+  irsProofStatus: varchar("irs_proof_status").default("pending"), // pending, uploaded, validated
+  irsProofDocumentPath: varchar("irs_proof_document_path"),
+  irsProofUploadedAt: timestamp("irs_proof_uploaded_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
