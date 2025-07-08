@@ -8,8 +8,8 @@ import DocumentUpload from "@/components/DocumentUpload";
 import ShipmentTable from "@/components/ShipmentTable";
 import ShipmentDetail from "@/components/ShipmentDetail";
 import CreateShipmentDialog from "@/components/CreateShipmentDialog";
-import TestDataInfo from "@/components/TestDataInfo";
-import { Ship, FileText, CheckCircle, DollarSign, Plus, Bell, Database } from "lucide-react";
+
+import { Ship, FileText, CheckCircle, DollarSign, Plus, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Shipment } from "@shared/schema";
@@ -39,28 +39,7 @@ export default function Dashboard() {
     setSelectedShipment(null);
   };
 
-  const seedTestDataMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("/api/seed-test-data", {
-        method: "POST",
-      });
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Test Data Created",
-        description: data.message,
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/shipments"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to Create Test Data",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+
 
   const recentShipments = shipments.slice(0, 3);
 
@@ -82,15 +61,7 @@ export default function Dashboard() {
               window.location.reload();
             }, 1000);
           }} />
-          <Button 
-            onClick={() => seedTestDataMutation.mutate()}
-            disabled={seedTestDataMutation.isPending}
-            variant="outline"
-            className="text-freight-blue border-freight-blue hover:bg-freight-blue hover:text-white"
-          >
-            <Database className="w-4 h-4 mr-2" />
-            {seedTestDataMutation.isPending ? "Creating..." : "Create Test Data"}
-          </Button>
+
           <Button variant="ghost" className="relative">
             <Bell className="w-5 h-5" />
             <Badge className="absolute -top-1 -right-1 bg-freight-orange text-white text-xs w-5 h-5 flex items-center justify-center p-0">
