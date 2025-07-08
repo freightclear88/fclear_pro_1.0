@@ -24,6 +24,7 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
   });
 
   const handleViewDocument = (document: Document) => {
+    // Show document detail dialog with extracted data
     setSelectedDocument(document);
     setIsDetailOpen(true);
   };
@@ -154,15 +155,35 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
+                    {/* PDF/Image/Text viewing button */}
+                    {(document.fileType === 'application/pdf' || 
+                      document.fileType?.startsWith('image/') ||
+                      document.fileType === 'text/plain') && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => window.open(`/api/documents/${document.id}/view`, '_blank')}
+                        className="text-purple-600 border-purple-600 hover:bg-purple-600 hover:text-white"
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        View {document.fileType === 'application/pdf' ? 'PDF' : 'File'}
+                      </Button>
+                    )}
+                    
+                    {/* Data viewing button */}
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleViewDocument(document)}
+                      onClick={() => {
+                        setSelectedDocument(document);
+                        setIsDetailOpen(true);
+                      }}
                       className="text-freight-blue border-freight-blue hover:bg-freight-blue hover:text-white"
                     >
-                      <Eye className="w-4 h-4 mr-2" />
+                      <FileText className="w-4 h-4 mr-2" />
                       View Data
                     </Button>
+                    
                     <Button
                       size="sm"
                       variant="outline"

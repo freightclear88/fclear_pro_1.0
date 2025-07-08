@@ -481,8 +481,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get document by ID for viewing
-  app.get('/api/documents/:id', isAuthenticated, async (req: any, res) => {
+  // Get document by ID for viewing (inline viewing, not download)
+  app.get('/api/documents/:id/view', isAuthenticated, async (req: any, res) => {
     try {
       const documentId = parseInt(req.params.id);
       const userId = req.user.claims.sub;
@@ -497,7 +497,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
       
-      res.json(document);
+      if (!document.filePath || !fs.existsSync(document.filePath)) {
+        return res.status(404).json({ message: "File not found on disk" });
+      }
+      
+      // Set headers for inline viewing (not download)
+      res.setHeader('Content-Type', document.fileType || 'application/octet-stream');
+      res.setHeader('Content-Disposition', `inline; filename="${document.originalName || document.fileName}"`);
+      
+      // Stream the file content
+      const fileStream = fs.createReadStream(document.filePath);
+      fileStream.pipe(res);
     } catch (error) {
       console.error("Error fetching document:", error);
       res.status(500).json({ message: "Failed to fetch document" });
