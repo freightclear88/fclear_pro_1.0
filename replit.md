@@ -141,3 +141,5 @@ Changelog:
 - July 08, 2025: Implemented email notifications to admin users when POAs are submitted
 - July 08, 2025: Created admin-level POA validation system with approve/reject functionality
 - July 08, 2025: Updated POA agent information to "WCS International Inc." (removed Chris Williams)
+- July 08, 2025: Added company name field to POA form and pre-filled WCS International address
+- July 08, 2025: Improved database connection stability and error handling for production reliability
