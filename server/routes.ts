@@ -7,6 +7,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { z } from "zod";
+import { detectCarrierFromBL, generateTrackingUrl, generateContainerTrackingUrl } from "./carrierTracking";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -272,13 +273,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nStatus: Arrival Notice - Vessel/Flight has arrived at destination port\nProcessed at: ${processingTime} EST\nDocument Status: ✓ Successfully processed and extracted shipment data`
         };
 
-        // Update document with extracted data
+        // Update document with extracted data including tracking URLs
         await storage.updateDocument(document.id, {
           extractedData: {
             ...arrivalNoticeData,
             processingTime: processingTime,
             processingStatus: 'completed',
-            processedAt: currentTime.toISOString()
+            processedAt: currentTime.toISOString(),
+            // Add tracking metadata
+            trackingInfo: {
+              blTrackingUrl: arrivalNoticeData.billOfLading ? generateTrackingUrl(arrivalNoticeData.billOfLading) : null,
+              containerTrackingUrl: arrivalNoticeData.containerNumber ? generateContainerTrackingUrl(arrivalNoticeData.containerNumber) : null,
+              detectedCarrier: arrivalNoticeData.billOfLading ? detectCarrierFromBL(arrivalNoticeData.billOfLading) : null
+            }
           },
           status: 'completed'
         });

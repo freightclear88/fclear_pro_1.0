@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Shipment } from "@shared/schema";
-import { Copy, FileText, Calendar, MapPin, Package, Truck, Ship, Plane } from "lucide-react";
+import { Copy, FileText, Calendar, MapPin, Package, Truck, Ship, Plane, ExternalLink } from "lucide-react";
+import { detectCarrierFromBL, generateTrackingUrl, generateContainerTrackingUrl } from "@/lib/carrierTracking";
 
 interface ShipmentHtmlPageProps {
   shipment: Shipment;
@@ -15,14 +16,14 @@ interface ShipmentHtmlPageProps {
 const FIELD_SECTIONS = {
   "Shipment Identification": [
     { key: "shipmentId", label: "Shipment ID", icon: Package },
-    { key: "billOfLading", label: "Bill of Lading", icon: FileText },
+    { key: "billOfLading", label: "Bill of Lading", icon: FileText, hasTracking: true },
     { key: "status", label: "Status", icon: Package },
     { key: "transportMode", label: "Transport Mode", icon: Truck },
   ],
   "Vessel & Transport Details": [
     { key: "vessel", label: "Vessel Name", icon: Ship },
     { key: "voyage", label: "Voyage Number", icon: Ship },
-    { key: "containerNumber", label: "Container Number", icon: Package },
+    { key: "containerNumber", label: "Container Number", icon: Package, hasTracking: true },
   ],
   "Origin & Destination": [
     { key: "origin", label: "Origin", icon: MapPin },
@@ -89,6 +90,27 @@ export default function ShipmentHtmlPage({ shipment, isOpen, onClose }: Shipment
     }
   };
 
+  const getTrackingUrl = (fieldKey: string, value: string) => {
+    if (!value || value === "N/A") return null;
+    
+    if (fieldKey === "billOfLading") {
+      return generateTrackingUrl(value);
+    }
+    if (fieldKey === "containerNumber") {
+      return generateContainerTrackingUrl(value);
+    }
+    return null;
+  };
+
+  const getCarrierInfo = (fieldKey: string, value: string) => {
+    if (!value || value === "N/A") return null;
+    
+    if (fieldKey === "billOfLading") {
+      return detectCarrierFromBL(value);
+    }
+    return null;
+  };
+
   const TransportIcon = getTransportIcon(shipment.transportMode);
 
   return (
@@ -135,9 +157,11 @@ export default function ShipmentHtmlPage({ shipment, isOpen, onClose }: Shipment
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {fields.map(({ key, label, icon: Icon }) => {
+                  {fields.map(({ key, label, icon: Icon, hasTracking }) => {
                     const value = getFieldValue(key);
                     const isEmpty = value === "N/A" || value === "";
+                    const trackingUrl = hasTracking && !isEmpty ? getTrackingUrl(key, value) : null;
+                    const carrierInfo = hasTracking && !isEmpty ? getCarrierInfo(key, value) : null;
                     
                     return (
                       <div
@@ -152,24 +176,42 @@ export default function ShipmentHtmlPage({ shipment, isOpen, onClose }: Shipment
                             <div className="text-sm font-medium text-gray-700">{label}</div>
                             <div className={`text-sm ${isEmpty ? 'text-gray-400 italic' : 'text-gray-900 font-medium'}`}>
                               {value}
+                              {carrierInfo && (
+                                <div className="text-xs text-freight-orange mt-1 font-medium">
+                                  🚢 {carrierInfo.name}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
-                        {!isEmpty && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => copyToClipboard(value, label)}
-                            className={`ml-2 ${
-                              copiedField === label
-                                ? 'bg-green-100 border-green-300 text-green-700'
-                                : 'hover:bg-freight-blue hover:text-white'
-                            }`}
-                          >
-                            <Copy className="w-3 h-3" />
-                            {copiedField === label ? 'Copied!' : 'Copy'}
-                          </Button>
-                        )}
+                        <div className="flex gap-2">
+                          {!isEmpty && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => copyToClipboard(value, label)}
+                              className={`${
+                                copiedField === label
+                                  ? 'bg-green-100 border-green-300 text-green-700'
+                                  : 'hover:bg-freight-blue hover:text-white'
+                              }`}
+                            >
+                              <Copy className="w-3 h-3" />
+                              {copiedField === label ? 'Copied!' : 'Copy'}
+                            </Button>
+                          )}
+                          {trackingUrl && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => window.open(trackingUrl, '_blank')}
+                              className="hover:bg-freight-orange hover:text-white border-freight-orange text-freight-orange"
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Track
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
