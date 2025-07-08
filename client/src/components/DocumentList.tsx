@@ -44,10 +44,11 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       
       toast({
-        title: "Download Started",
-        description: `Downloading ${document.originalName || document.fileName}`,
+        title: "Download Complete",
+        description: `Downloaded ${document.originalName || document.fileName}`,
       });
     } catch (error) {
       toast({
