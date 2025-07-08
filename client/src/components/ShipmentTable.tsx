@@ -3,9 +3,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Copy, Edit, FileText } from "lucide-react";
+import { Eye, Copy, Edit, FileText, ExternalLink } from "lucide-react";
 import type { Shipment } from "@shared/schema";
 import ShipmentHtmlPage from "./ShipmentHtmlPage";
+import { detectCarrierFromBL, generateTrackingUrl, generateContainerTrackingUrl } from "@/lib/carrierTracking";
 
 interface ShipmentTableProps {
   shipments: Shipment[];
@@ -82,7 +83,7 @@ Status: ${shipment.status}
             <TableHead>Origin</TableHead>
             <TableHead>Destination</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Container</TableHead>
+            <TableHead>Container / Tracking</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -91,7 +92,32 @@ Status: ${shipment.status}
             <TableRow key={shipment.id} className="hover:bg-gray-50">
               <TableCell>
                 <div className="font-medium text-freight-dark">{shipment.shipmentId}</div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-500 flex items-center space-x-2">
+                  <span>BL: {shipment.billOfLading || "N/A"}</span>
+                  {shipment.billOfLading && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const trackingUrl = generateTrackingUrl(shipment.billOfLading!);
+                        if (trackingUrl) {
+                          window.open(trackingUrl, '_blank');
+                        } else {
+                          toast({
+                            title: "No Tracking Available",
+                            description: "Unable to generate tracking link for this BL number",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                      className="text-freight-orange hover:text-freight-dark p-0 h-4"
+                      title="Track Bill of Lading"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+                <div className="text-xs text-gray-400">
                   Created: {new Date(shipment.createdAt!).toLocaleDateString()}
                 </div>
               </TableCell>
@@ -111,9 +137,33 @@ Status: ${shipment.status}
                 {getStatusBadge(shipment.status)}
               </TableCell>
               <TableCell>
-                <span className="font-medium">
-                  {shipment.containerNumber || "N/A"}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium">
+                    {shipment.containerNumber || "N/A"}
+                  </span>
+                  {shipment.containerNumber && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const trackingUrl = generateContainerTrackingUrl(shipment.containerNumber!);
+                        if (trackingUrl) {
+                          window.open(trackingUrl, '_blank');
+                        } else {
+                          toast({
+                            title: "No Tracking Available",
+                            description: "Unable to generate tracking link for this container",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                      className="text-freight-orange hover:text-freight-dark"
+                      title="Track Container"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
               </TableCell>
               <TableCell>
                 <div className="flex items-center space-x-2">
