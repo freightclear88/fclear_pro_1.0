@@ -21,6 +21,20 @@ export default function ShipmentTable({ shipments, onViewShipment }: ShipmentTab
   const [isHtmlPageOpen, setIsHtmlPageOpen] = useState(false);
   const [expandedShipments, setExpandedShipments] = useState<Set<number>>(new Set());
 
+  // Safety check for shipments data
+  if (!shipments || !Array.isArray(shipments)) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">Loading shipments...</p>
+      </div>
+    );
+  }
+
+  // Debug logging
+  if (shipments.length > 0) {
+    console.log('Frontend received shipments:', shipments[0]);
+  }
+
   const handleViewHtmlPage = (shipment: Shipment) => {
     setSelectedShipment(shipment);
     setIsHtmlPageOpen(true);
@@ -154,6 +168,7 @@ Destination: ${shipment.destination}
   return (
     <div className="space-y-1">
       {shipments.map((shipment) => {
+        if (!shipment) return null;
         const isExpanded = expandedShipments.has(shipment.id);
         
         return (
@@ -176,7 +191,7 @@ Destination: ${shipment.destination}
                     <div>
                       <div className="font-medium text-freight-dark flex items-center space-x-2">
                         <span>{shipment.shipmentId}</span>
-                        <span className="text-lg">{getTransportModeIcon(shipment.transportMode || 'ocean')}</span>
+                        <span className="text-lg">{getTransportModeIcon((shipment as any)?.transportMode || (shipment as any)?.transport_mode || 'ocean')}</span>
                       </div>
                       <div className="text-sm text-gray-500">
                         {new Date(shipment.createdAt!).toLocaleDateString()}

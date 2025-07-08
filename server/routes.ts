@@ -103,6 +103,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const shipments = await storage.getShipmentsByUserId(userId);
+      
+      // Debug logging to see actual data structure
+      if (shipments.length > 0) {
+        console.log('First shipment data:', JSON.stringify(shipments[0], null, 2));
+      }
+      
       res.json(shipments);
     } catch (error) {
       console.error("Error fetching shipments:", error);
