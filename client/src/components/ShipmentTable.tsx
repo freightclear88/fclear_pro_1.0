@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Copy, Edit, FileText, ExternalLink, ChevronDown, ChevronRight, Folder, Download } from "lucide-react";
+import { Eye, Copy, Edit, FileText, ExternalLink, ChevronDown, ChevronRight, Folder, Download, Plus } from "lucide-react";
 import type { Shipment, Document } from "@shared/schema";
 import ShipmentHtmlPage from "./ShipmentHtmlPage";
+import DocumentUpload from "./DocumentUpload";
 import { detectCarrierFromBL, generateTrackingUrl, generateContainerTrackingUrl } from "@/lib/carrierTracking";
 
 interface ShipmentTableProps {
@@ -300,11 +301,26 @@ Destination: ${shipment?.destination || "N/A"}
               {/* Document folder content */}
               <CollapsibleContent>
                 <div className="border-t bg-gray-50 p-4">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <Folder className="w-4 h-4 text-freight-blue" />
-                    <span className="text-sm font-medium text-freight-dark">
-                      Document Folder - {shipment?.shipmentId || 'Unknown'}
-                    </span>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <Folder className="w-4 h-4 text-freight-blue" />
+                      <span className="text-sm font-medium text-freight-dark">
+                        Document Folder - {shipment?.shipmentId || 'Unknown'}
+                      </span>
+                    </div>
+                    <DocumentUpload 
+                      shipmentId={shipment?.id}
+                      trigger={
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center space-x-1 text-xs border-freight-blue text-freight-blue hover:bg-freight-blue hover:text-white"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Add Document</span>
+                        </Button>
+                      }
+                    />
                   </div>
                   <DocumentFolder shipmentId={shipment?.id || 0} />
                 </div>

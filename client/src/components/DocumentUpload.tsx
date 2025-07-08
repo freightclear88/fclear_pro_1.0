@@ -85,6 +85,9 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
       queryClient.invalidateQueries({ queryKey: ["/api/shipments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      if (shipmentId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/documents/shipment", shipmentId] });
+      }
       
       setUploadedFiles([]);
       setSelectedCategory("");
