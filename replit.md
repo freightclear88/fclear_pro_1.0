@@ -1,8 +1,8 @@
-# Freightclear Importer Workflow - Document Management System
+# Freightclear Workflows - Document Management System
 
 ## Overview
 
-Freightclear Importer Workflow is a comprehensive web application designed for freight management with OCR document intelligence and automatic data extraction. Built for Freightclear, it provides a streamlined platform for managing shipments, documents, and user accounts with a focus on imports to the USA.
+Freightclear Workflows is a comprehensive web application designed for freight management with OCR document intelligence and automatic data extraction. Built for Freightclear, it provides a streamlined platform for managing shipments, documents, and user accounts with a focus on imports to the USA.
 
 ## System Architecture
 
@@ -154,3 +154,4 @@ Changelog:
 - July 08, 2025: Added POA deletion functionality allowing users to delete existing POAs and create new ones for testing purposes
 - July 08, 2025: Fixed POA creation button visibility issues after deletion with proper status condition handling
 - July 08, 2025: Renamed application from "Freight Flow" to "Freightclear Importer Workflow" across all UI components, server templates, and documentation
+- July 08, 2025: Updated application name from "Freightclear Importer Workflow" to "Freightclear Workflows" for simplified branding

@@ -16,7 +16,7 @@ export default function Landing() {
             <div className="flex items-center space-x-3">
               <img src={freightclearLogo} alt="Freightclear Logo" className="h-10" />
               <div>
-                <h1 className="text-xl font-bold text-freight-dark">Freightclear Importer Workflow</h1>
+                <h1 className="text-xl font-bold text-freight-dark">Freightclear Workflows</h1>
                 <p className="text-sm text-teal">Streamlined Import Management</p>
               </div>
             </div>
@@ -34,7 +34,7 @@ export default function Landing() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-freight-dark mb-6">
-            <span className="gradient-text">Freightclear Importer Workflow</span>
+            <span className="gradient-text">Freightclear Workflows</span>
           </h1>
           <p className="text-xl text-gray-700 mb-8 max-w-4xl mx-auto">
             Intelligent document processing and shipment management platform. 

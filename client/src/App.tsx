@@ -41,7 +41,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center space-x-3">
               <img src={freightclearLogo} alt="Freightclear Logo" className="h-8" />
               <div>
-                <h1 className="text-lg font-bold text-freight-dark">Freightclear Importer Workflow</h1>
+                <h1 className="text-lg font-bold text-freight-dark">Freightclear Workflows</h1>
                 <p className="text-sm text-teal">Streamlined Import Management</p>
               </div>
             </div>
