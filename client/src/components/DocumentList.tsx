@@ -67,6 +67,8 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
         return 'bg-green-100 text-green-800';
       case 'packing_list':
         return 'bg-yellow-100 text-yellow-800';
+      case 'power_of_attorney':
+        return 'bg-purple-100 text-purple-800';
       case 'airway_bill':
         return 'bg-purple-100 text-purple-800';
       case 'arrival_notice':

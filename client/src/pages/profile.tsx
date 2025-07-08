@@ -11,7 +11,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
-import { User, Mail, Building, LogOut, Ship, FileText, MapPin, Hash, Edit, Save, X } from "lucide-react";
+import { User, Mail, Building, LogOut, Ship, FileText, MapPin, Hash, Edit, Save, X, Star, AlertCircle, Upload } from "lucide-react";
+import DocumentUpload from "@/components/DocumentUpload";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -43,6 +44,15 @@ export default function Profile() {
   const { data: stats } = useQuery({
     queryKey: ["/api/dashboard/stats"],
   });
+
+  // Get user's documents to check POA status
+  const { data: userDocuments = [] } = useQuery({
+    queryKey: ["/api/documents"],
+  });
+
+  // Check if user has a validated POA document
+  const poaDocument = userDocuments.find((doc: any) => doc.category === 'power_of_attorney');
+  const poaStatus = poaDocument ? 'validated' : 'pending';
 
   // Update form data when profile loads
   useEffect(() => {
@@ -139,6 +149,50 @@ export default function Profile() {
           Sign Out
         </Button>
       </div>
+
+      {/* Power of Attorney Status */}
+      <Card className="mb-6 border-l-4 border-l-freight-blue">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                {poaStatus === 'validated' ? (
+                  <Star className="w-6 h-6 text-green-500 fill-green-500" />
+                ) : (
+                  <AlertCircle className="w-6 h-6 text-red-500" />
+                )}
+                <div>
+                  <h3 className="font-semibold text-lg">Power of Attorney</h3>
+                  <p className="text-sm text-gray-600">
+                    {poaStatus === 'validated' 
+                      ? 'Your Power of Attorney is validated and active'
+                      : 'Power of Attorney required for customs clearance'
+                    }
+                  </p>
+                </div>
+              </div>
+              <Badge variant={poaStatus === 'validated' ? 'default' : 'destructive'} className={
+                poaStatus === 'validated' 
+                  ? 'bg-green-100 text-green-800 hover:bg-green-100' 
+                  : 'bg-red-100 text-red-800 hover:bg-red-100'
+              }>
+                {poaStatus === 'validated' ? 'Validated' : 'Required'}
+              </Badge>
+            </div>
+            
+            {poaStatus !== 'validated' && (
+              <DocumentUpload 
+                trigger={
+                  <Button className="bg-freight-blue hover:bg-freight-blue/90 text-white">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload POA
+                  </Button>
+                }
+              />
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Business Information */}
