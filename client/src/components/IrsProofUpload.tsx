@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Upload, Receipt } from "lucide-react";
+import { UploadCloud as Upload, Receipt } from "lucide-react";
 
 interface IrsProofUploadProps {
   trigger?: React.ReactNode;

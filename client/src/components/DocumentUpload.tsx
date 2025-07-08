@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Upload, FileText, Ship, Plane, Truck, Package, Scale } from "lucide-react";
+import { UploadCloud as Upload, FileText, Ship, Plane, Truck, Package, Scale } from "lucide-react";
 
 interface DocumentUploadProps {
   shipmentId?: number;

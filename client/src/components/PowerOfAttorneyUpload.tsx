@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Upload, FileText, Scale, X } from "lucide-react";
+import { UploadCloud as Upload, FileText, Scale, X } from "lucide-react";
 
 interface PowerOfAttorneyUploadProps {
   trigger?: React.ReactNode;
