@@ -220,13 +220,18 @@ export default function Profile() {
               <div style={{background: "yellow", padding: "5px"}}>
                 Button container test
               </div>
+              <button
+                onClick={() => setShowPOAWizard(true)}
+                style={{background: "blue", color: "white", padding: "10px", border: "2px solid black"}}
+              >
+                NATIVE BUTTON TEST
+              </button>
               <Button
                 onClick={() => setShowPOAWizard(true)}
                 className="bg-freight-green hover:bg-freight-green/90 text-white"
-                style={{background: "blue !important", color: "white !important"}}
+                style={{background: "red !important", color: "white !important", minWidth: "150px", minHeight: "40px"}}
               >
-                <Scale className="w-4 h-4 mr-2" />
-                VISIBLE TEST BUTTON
+                SHADCN BUTTON TEST
               </Button>
               <PowerOfAttorneyUpload />
               {(poaStatus === 'uploaded' || poaStatus === 'validated') && (
