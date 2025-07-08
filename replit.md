@@ -134,3 +134,6 @@ Changelog:
 - July 08, 2025: Final UI simplification: removed Documents tab, embedded document folders directly in shipments table
 - July 08, 2025: Removed shipment status column, streamlined table layout with collapsible document folders
 - July 08, 2025: Each shipment row now expandable to show dedicated document folder with download functionality
+- July 08, 2025: Implemented Power of Attorney customer profile integration with database schema
+- July 08, 2025: Created POA e-signature form wizard with 4-step process and HTML document generation
+- July 08, 2025: Removed validation from POA upload, created blank form template, reset all POA data

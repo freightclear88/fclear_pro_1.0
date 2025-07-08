@@ -43,38 +43,38 @@ function generatePOADocument(data: any): string {
         <div class="form-row">
             <div class="form-field">
                 <label>Full Name:</label>
-                <div class="value">${data.principalName}</div>
+                <div class="value"></div>
             </div>
             <div class="form-field">
                 <label>Email:</label>
-                <div class="value">${data.principalEmail}</div>
+                <div class="value"></div>
             </div>
         </div>
         
         <div class="form-group">
             <label>Address:</label>
-            <div class="value">${data.principalAddress}</div>
+            <div class="value"></div>
         </div>
         
         <div class="form-row">
             <div class="form-field">
                 <label>City:</label>
-                <div class="value">${data.principalCity}</div>
+                <div class="value"></div>
             </div>
             <div class="form-field">
                 <label>State:</label>
-                <div class="value">${data.principalState}</div>
+                <div class="value"></div>
             </div>
             <div class="form-field">
                 <label>ZIP Code:</label>
-                <div class="value">${data.principalZip}</div>
+                <div class="value"></div>
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-field">
                 <label>Phone:</label>
-                <div class="value">${data.principalPhone}</div>
+                <div class="value"></div>
             </div>
         </div>
     </div>
@@ -84,22 +84,22 @@ function generatePOADocument(data: any): string {
         <div class="form-row">
             <div class="form-field">
                 <label>Agent Name:</label>
-                <div class="value">${data.agentName}</div>
+                <div class="value"></div>
             </div>
             <div class="form-field">
                 <label>Title:</label>
-                <div class="value">${data.agentTitle}</div>
+                <div class="value"></div>
             </div>
         </div>
         
         <div class="form-group">
             <label>Company:</label>
-            <div class="value">${data.agentCompany}</div>
+            <div class="value"></div>
         </div>
         
         <div class="form-group">
             <label>Address:</label>
-            <div class="value">${data.agentAddress}</div>
+            <div class="value"></div>
         </div>
     </div>
 
@@ -108,12 +108,12 @@ function generatePOADocument(data: any): string {
         <p>I hereby authorize the above-named agent to act on my behalf in the following matters:</p>
         
         <div class="checkbox-group">
-            <div>☑ File customs declarations and entry documents</div>
-            <div>☑ Sign import documents on my behalf</div>
-            <div>☑ Make payment of duties, taxes, and fees</div>
-            <div>☑ Represent me before U.S. Customs and Border Protection</div>
-            <div>☑ Authorize release of goods from customs custody</div>
-            ${data.otherPowers ? `<div><strong>Additional Powers:</strong> ${data.otherPowers}</div>` : ''}
+            <div>☐ File customs declarations and entry documents</div>
+            <div>☐ Sign import documents on my behalf</div>
+            <div>☐ Make payment of duties, taxes, and fees</div>
+            <div>☐ Represent me before U.S. Customs and Border Protection</div>
+            <div>☐ Authorize release of goods from customs custody</div>
+            <div><strong>Additional Powers:</strong> _________________________________</div>
         </div>
     </div>
 
@@ -129,8 +129,8 @@ function generatePOADocument(data: any): string {
         <p>By signing below, I acknowledge that I have read, understood, and agree to the terms of this Power of Attorney.</p>
         
         <div style="margin-top: 40px;">
-            <div class="signature-field">${data.electronicSignature}</div>
-            <div class="signature-field">${data.signatureDate}</div>
+            <div class="signature-field"></div>
+            <div class="signature-field"></div>
         </div>
         <div style="margin-top: 10px;">
             <div style="display: inline-block; width: 300px; text-align: center; margin: 0 20px;">
