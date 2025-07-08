@@ -303,7 +303,7 @@ Destination: ${shipment?.destination || "N/A"}
                   <div className="flex items-center space-x-2 mb-3">
                     <Folder className="w-4 h-4 text-freight-blue" />
                     <span className="text-sm font-medium text-freight-dark">
-                      Document Folder - {shipment.shipmentId}
+                      Document Folder - {shipment?.shipmentId || 'Unknown'}
                     </span>
                   </div>
                   <DocumentFolder shipmentId={shipment?.id || 0} />

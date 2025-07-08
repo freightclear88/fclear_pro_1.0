@@ -52,6 +52,10 @@ const FIELD_SECTIONS = {
 };
 
 export default function ShipmentHtmlPage({ shipment, isOpen, onClose }: ShipmentHtmlPageProps) {
+  // Safety check - don't render if shipment is null/undefined
+  if (!shipment) {
+    return null;
+  }
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -119,7 +123,7 @@ export default function ShipmentHtmlPage({ shipment, isOpen, onClose }: Shipment
         <DialogHeader>
           <DialogTitle className="flex items-center text-xl">
             <TransportIcon className="w-6 h-6 mr-3 text-freight-blue" />
-            Shipment Details: {shipment.shipmentId}
+            Shipment Details: {shipment?.shipmentId || 'Unknown'}
           </DialogTitle>
         </DialogHeader>
 
@@ -128,7 +132,7 @@ export default function ShipmentHtmlPage({ shipment, isOpen, onClose }: Shipment
           <Card className="border-freight-blue border-2">
             <CardHeader className="bg-freight-blue/5">
               <CardTitle className="text-freight-blue">
-                {shipment.shipmentId} - {shipment.status}
+                {shipment?.shipmentId || 'Unknown'} - {shipment?.status || 'Unknown'}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
@@ -139,11 +143,11 @@ export default function ShipmentHtmlPage({ shipment, isOpen, onClose }: Shipment
                 </div>
                 <div className="flex items-center space-x-2">
                   <MapPin className="w-5 h-5 text-freight-orange" />
-                  <span>{shipment.originPort || "Origin TBD"} → {shipment.destinationPort || "Destination TBD"}</span>
+                  <span>{shipment?.originPort || "Origin TBD"} → {shipment?.destinationPort || "Destination TBD"}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Calendar className="w-5 h-5 text-freight-green" />
-                  <span>{shipment.eta ? new Date(shipment.eta).toLocaleDateString() : "ETA TBD"}</span>
+                  <span>{shipment?.eta ? new Date(shipment.eta).toLocaleDateString() : "ETA TBD"}</span>
                 </div>
               </div>
             </CardContent>
