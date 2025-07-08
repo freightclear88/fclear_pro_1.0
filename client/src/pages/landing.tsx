@@ -127,11 +127,11 @@ export default function Landing() {
             Join freight professionals who trust Freight Flow for their shipping needs.
           </p>
           <Button 
-            onClick={() => window.location.href = "/api/login"}
+            onClick={() => window.location.href = "/register"}
             size="lg"
             className="bg-freight-orange hover:bg-freight-orange/90 text-white px-12 py-4 text-lg font-semibold"
           >
-            Start Managing Your Freight
+            Get Started
           </Button>
         </div>
       </main>

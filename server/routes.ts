@@ -381,6 +381,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
+  // Registration route
+  app.post('/api/register', async (req, res) => {
+    try {
+      const { email, firstName, lastName, phone, companyName, companyAddress } = req.body;
+      
+      // Basic validation
+      if (!email || !firstName || !lastName || !phone || !companyName || !companyAddress) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "An account with this email already exists" });
+      }
+      
+      // For now, just return success - actual user creation will happen during OAuth
+      res.json({ 
+        message: "Registration information received. Please complete authentication.",
+        redirect: "/api/login"
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {

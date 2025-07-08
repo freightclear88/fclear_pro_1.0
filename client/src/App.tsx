@@ -10,6 +10,7 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
+import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
 import Shipments from "@/pages/shipments";
 import Profile from "@/pages/profile";
@@ -114,6 +115,7 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={Landing} />
+        <Route path="/register" component={Register} />
         <Route component={NotFound} />
       </Switch>
     );
