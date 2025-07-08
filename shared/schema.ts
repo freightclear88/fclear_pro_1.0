@@ -47,65 +47,24 @@ export const shipments = pgTable("shipments", {
   id: serial("id").primaryKey(),
   shipmentId: varchar("shipment_id").notNull().unique(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  
-  // Core shipment identification
-  billOfLading: varchar("bill_of_lading"),
-  masterBillOfLading: varchar("master_bill_of_lading"),
-  
-  // Transport details
-  transportMode: varchar("transport_mode").notNull().default("ocean"), // air, ocean, trucking
-  vessel: varchar("vessel"),
-  voyage: varchar("voyage"),
-  containerNumber: varchar("container_number"),
-  sealNumber: varchar("seal_number"),
-  
-  // Locations and ports
   origin: varchar("origin").notNull(),
   originPort: varchar("origin_port"),
   destination: varchar("destination").notNull(),
   destinationPort: varchar("destination_port"),
-  placeOfDelivery: varchar("place_of_delivery"),
-  
-  // Dates and timing
+  transportMode: varchar("transport_mode").notNull().default("ocean"), // air, ocean, trucking
+  status: varchar("status").notNull().default("pending"),
+  vessel: varchar("vessel"),
+  voyage: varchar("voyage"),
+  containerNumber: varchar("container_number"),
+  billOfLading: varchar("bill_of_lading"),
   eta: timestamp("eta"),
   ata: timestamp("ata"),
-  etd: timestamp("etd"),
-  atd: timestamp("atd"),
-  
-  // Cargo information
-  cargoDescription: text("cargo_description"),
-  packageType: varchar("package_type"),
-  numberOfPackages: integer("number_of_packages"),
-  grossWeight: varchar("gross_weight"),
-  netWeight: varchar("net_weight"),
-  measurements: varchar("measurements"),
-  marksAndNumbers: text("marks_and_numbers"),
-  
-  // Party information
   shipperName: varchar("shipper_name"),
-  shipperAddress: text("shipper_address"),
   consigneeName: varchar("consignee_name"),
-  consigneeAddress: text("consignee_address"),
-  notifyParty: varchar("notify_party"),
-  notifyPartyAddress: text("notify_party_address"),
-  destinationAgent: varchar("destination_agent"),
-  destinationAgentContact: text("destination_agent_contact"),
-  
-  // Financial information
   freightCharges: decimal("freight_charges", { precision: 12, scale: 2 }),
-  freightTerms: varchar("freight_terms"), // prepaid, collect
   destinationCharges: decimal("destination_charges", { precision: 12, scale: 2 }),
-  storageCharges: decimal("storage_charges", { precision: 12, scale: 2 }),
-  totalValue: decimal("total_value", { precision: 12, scale: 2 }),
-  
-  // Customs and compliance
   customsBroker: varchar("customs_broker"),
-  customsBrokerContact: text("customs_broker_contact"),
-  requiredDocuments: text("required_documents"),
-  specialInstructions: text("special_instructions"),
-  
-  // System fields
-  status: varchar("status").notNull().default("pending"),
+  totalValue: decimal("total_value", { precision: 12, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
