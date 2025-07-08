@@ -8,6 +8,7 @@ import {
   serial,
   integer,
   decimal,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -48,14 +49,41 @@ export const shipments = pgTable("shipments", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   origin: varchar("origin").notNull(),
   originPort: varchar("origin_port"),
+  originAddress: text("origin_address"),
   destination: varchar("destination").notNull(),
   destinationPort: varchar("destination_port"),
+  destinationAddress: text("destination_address"),
   transportMode: varchar("transport_mode").notNull().default("ocean"), // air, ocean, trucking
   status: varchar("status").notNull().default("pending"),
   vessel: varchar("vessel"),
+  voyage: varchar("voyage"),
   containerNumber: varchar("container_number"),
   billOfLading: varchar("bill_of_lading"),
+  // Dates
+  eta: timestamp("eta"),
+  etd: timestamp("etd"),
+  // Cargo information
+  cargoDescription: text("cargo_description"),
+  weight: varchar("weight"),
+  volume: varchar("volume"),
+  pieces: integer("pieces"),
+  commodity: varchar("commodity"),
+  // Financial
   totalValue: decimal("total_value", { precision: 12, scale: 2 }),
+  // Additional details
+  notes: text("notes"),
+  specialInstructions: text("special_instructions"),
+  hazmat: boolean("hazmat").default(false),
+  temperature: varchar("temperature"),
+  // Shipper/Consignee information
+  shipperName: varchar("shipper_name"),
+  shipperAddress: text("shipper_address"),
+  consigneeName: varchar("consignee_name"),
+  consigneeAddress: text("consignee_address"),
+  // Document references
+  commercialInvoiceNumber: varchar("commercial_invoice_number"),
+  packingListNumber: varchar("packing_list_number"),
+  // System fields
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

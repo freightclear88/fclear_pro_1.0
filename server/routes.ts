@@ -229,26 +229,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: 'pending',
         });
 
-        // Add mock OCR data for immediate viewing (in production, this would be processed asynchronously)
+        // Enhanced mock OCR data extraction (in production, this would be processed by real OCR AI)
         const docTransportMode = documentCategory === 'airway_bill' ? 'air' : 'ocean';
         const mockOcrData = {
           shipmentId: `${docTransportMode === 'air' ? 'AIR' : 'SEA'}-${Math.floor(Math.random() * 900000) + 100000}`,
-          origin: file.originalname.toLowerCase().includes('seattle') ? 'Seattle, WA' : 'Various Origins',
-          destination: file.originalname.toLowerCase().includes('miami') ? 'Miami, FL' : 'Various Destinations',
+          origin: file.originalname.toLowerCase().includes('seattle') ? 'Seattle, WA' : 
+                  file.originalname.toLowerCase().includes('los angeles') ? 'Los Angeles, CA' :
+                  file.originalname.toLowerCase().includes('new york') ? 'New York, NY' : 'Various Origins',
+          originPort: docTransportMode === 'ocean' ? (
+            file.originalname.toLowerCase().includes('seattle') ? 'Port of Seattle' :
+            file.originalname.toLowerCase().includes('los angeles') ? 'Port of Los Angeles' :
+            file.originalname.toLowerCase().includes('new york') ? 'Port of New York/New Jersey' : 'TBD'
+          ) : null,
+          destination: file.originalname.toLowerCase().includes('miami') ? 'Miami, FL' : 
+                      file.originalname.toLowerCase().includes('houston') ? 'Houston, TX' :
+                      file.originalname.toLowerCase().includes('chicago') ? 'Chicago, IL' : 'Various Destinations',
+          destinationPort: docTransportMode === 'ocean' ? (
+            file.originalname.toLowerCase().includes('miami') ? 'Port of Miami' :
+            file.originalname.toLowerCase().includes('houston') ? 'Port of Houston' : 'TBD'
+          ) : null,
           containerNumber: docTransportMode === 'ocean' ? `MSCU${Math.floor(Math.random() * 9000000) + 1000000}0` : null,
           billOfLading: `BOL${Math.floor(Math.random() * 900000) + 100000}`,
-          vessel: docTransportMode === 'ocean' ? 'MV OCEAN TRADER' : null,
+          vessel: docTransportMode === 'ocean' ? ['MV OCEAN TRADER', 'MV CARGO EXPRESS', 'MV SEA NAVIGATOR'][Math.floor(Math.random() * 3)] : null,
+          voyage: docTransportMode === 'ocean' ? `V${Math.floor(Math.random() * 900) + 100}E` : null,
+          // Additional comprehensive data extraction
+          cargoDescription: 'General Merchandise - Mixed Containerized Cargo',
+          weight: `${Math.floor(Math.random() * 50000) + 10000} lbs`,
+          volume: `${Math.floor(Math.random() * 1000) + 200} cbft`,
+          pieces: Math.floor(Math.random() * 500) + 50,
+          commodity: ['Electronics', 'Textiles', 'Machinery', 'Food Products', 'Automotive Parts'][Math.floor(Math.random() * 5)],
+          shipperName: 'Global Trading Co., Ltd.',
+          consigneeName: 'American Import Solutions Inc.',
+          commercialInvoiceNumber: `CI-${Math.floor(Math.random() * 900000) + 100000}`,
+          eta: new Date(Date.now() + Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toISOString(),
+          etd: new Date(Date.now() - Math.floor(Math.random() * 15) * 24 * 60 * 60 * 1000).toISOString(),
           extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}`
         };
 
         // Update document with extracted data
         await storage.updateDocument(document.id, {
           extractedData: mockOcrData,
-          ocrText: mockOcrData.extractedText,
-          processingStatus: 'completed'
+          status: 'completed'
         });
 
-        uploadedDocuments.push({...document, extractedData: mockOcrData, ocrText: mockOcrData.extractedText});
+        // Update the shipment with the extracted OCR data
+        if (createdShipment && mockOcrData) {
+          const updatedShipment = await storage.updateShipment(createdShipment.id, {
+            origin: mockOcrData.origin || createdShipment.origin,
+            originPort: mockOcrData.originPort || createdShipment.originPort,
+            destination: mockOcrData.destination || createdShipment.destination,
+            destinationPort: mockOcrData.destinationPort || createdShipment.destinationPort,
+            vessel: mockOcrData.vessel || createdShipment.vessel,
+            containerNumber: mockOcrData.containerNumber || createdShipment.containerNumber,
+            billOfLading: mockOcrData.billOfLading || createdShipment.billOfLading,
+            shipmentId: mockOcrData.shipmentId || createdShipment.shipmentId,
+          });
+          
+          // Update the reference to the updated shipment
+          createdShipment = updatedShipment;
+        }
+
+        uploadedDocuments.push({...document, extractedData: mockOcrData});
       }
 
       res.json({ 
