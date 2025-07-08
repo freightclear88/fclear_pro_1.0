@@ -217,18 +217,23 @@ export default function Profile() {
             </div>
             
             <div className="flex items-center space-x-2">
-              {poaStatus === 'pending' && (
-                <>
-                  <Button
-                    onClick={() => setShowPOAWizard(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md border border-blue-600"
-                  >
-                    <Scale className="w-4 h-4 mr-2" />
-                    Create POA
-                  </Button>
-                  <PowerOfAttorneyUpload />
-                </>
+              {/* Always show Create POA button for all statuses except validated */}
+              {poaStatus !== 'validated' && (
+                <Button
+                  onClick={() => setShowPOAWizard(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md border border-blue-600"
+                >
+                  <Scale className="w-4 h-4 mr-2" />
+                  {poaStatus === 'rejected' ? 'Create New POA' : 'Create POA'}
+                </Button>
               )}
+              
+              {/* Show upload option for pending status */}
+              {poaStatus === 'pending' && (
+                <PowerOfAttorneyUpload />
+              )}
+              
+              {/* Show view and delete for uploaded/validated status */}
               {(poaStatus === 'uploaded' || poaStatus === 'validated') && (
                 <div className="flex space-x-2">
                   <Button
