@@ -171,14 +171,16 @@ export default function Profile() {
                   </p>
                 </div>
               </div>
-              <Badge variant={poaStatus === 'validated' ? 'default' : poaStatus === 'uploaded' ? 'secondary' : 'destructive'} className={
+              <Badge variant={poaStatus === 'validated' ? 'default' : poaStatus === 'pending' ? 'secondary' : poaStatus === 'rejected' ? 'destructive' : 'destructive'} className={
                 poaStatus === 'validated' 
                   ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                  : poaStatus === 'uploaded'
+                  : poaStatus === 'pending'
                   ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
+                  : poaStatus === 'rejected'
+                  ? 'bg-red-100 text-red-800 hover:bg-red-100'
                   : 'bg-red-100 text-red-800 hover:bg-red-100'
               }>
-                {poaStatus === 'validated' ? 'Validated' : poaStatus === 'uploaded' ? 'Pending Review' : 'Required'}
+                {poaStatus === 'validated' ? 'Validated' : poaStatus === 'pending' ? 'Pending Review' : poaStatus === 'rejected' ? 'Rejected' : 'Required'}
               </Badge>
             </div>
             

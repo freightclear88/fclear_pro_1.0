@@ -7,14 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users } from "lucide-react";
+import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle } from "lucide-react";
 import type { Shipment, Document, User } from "@shared/schema";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function Admin() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: allShipments = [] } = useQuery<Shipment[]>({
     queryKey: ["/api/admin/shipments"],
@@ -137,6 +139,45 @@ export default function Admin() {
     );
   };
 
+  // POA validation mutations
+  const validatePOAMutation = useMutation({
+    mutationFn: async ({ userId, status }: { userId: string; status: string }) => {
+      const response = await fetch(`/api/admin/users/${userId}/poa/validate`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update POA status');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({
+        title: "POA Status Updated",
+        description: "Power of Attorney status has been updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleValidatePOA = (userId: string, status: 'validated' | 'rejected') => {
+    validatePOAMutation.mutate({ userId, status });
+  };
+
+  // Filter users with pending POAs
+  const pendingPOAUsers = allUsers.filter((user: User) => user.powerOfAttorneyStatus === 'pending');
+
   return (
     <div className="p-6">
       {/* Header */}
@@ -225,6 +266,63 @@ export default function Admin() {
           </CardContent>
         </Card>
       </div>
+
+      {/* POA Validation Section */}
+      {pendingPOAUsers.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Power of Attorney Validation Required
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {pendingPOAUsers.map((user: User) => (
+                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg bg-yellow-50">
+                  <div className="flex-1">
+                    <h4 className="font-medium">{user.firstName} {user.lastName}</h4>
+                    <p className="text-sm text-gray-600">{user.email}</p>
+                    <p className="text-xs text-gray-500">
+                      Submitted: {user.powerOfAttorneyUploadedAt ? new Date(user.powerOfAttorneyUploadedAt).toLocaleString() : 'N/A'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {user.powerOfAttorneyDocumentPath && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => window.open(`/api/profile/poa/view?userId=${user.id}`, '_blank')}
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        View POA
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => handleValidatePOA(user.id, 'validated')}
+                      disabled={validatePOAMutation.isPending}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Validate
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleValidatePOA(user.id, 'rejected')}
+                      disabled={validatePOAMutation.isPending}
+                    >
+                      <XCircle className="h-4 w-4 mr-1" />
+                      Reject
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters */}
       <Card className="mb-6">
