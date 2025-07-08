@@ -980,15 +980,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                uploadDate.getFullYear() === thisMonth.getFullYear();
       }).length;
       
-      const totalValue = shipments.reduce((sum, s) => {
-        return sum + (parseFloat(s.totalValue || "0"));
-      }, 0);
-      
       res.json({
         activeShipments,
         pendingDocuments,
         processedThisMonth,
-        totalValue: `$${(totalValue / 1000000).toFixed(1)}M`,
       });
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
@@ -1286,15 +1281,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const users = await storage.getAllUsers();
       const documents = await storage.getAllDocuments();
       
-      const totalValue = shipments.reduce((sum, s) => {
-        return sum + (parseFloat(s.totalValue || "0"));
-      }, 0);
-      
       res.json({
         totalShipments: shipments.length,
         totalUsers: users.length,
         totalDocuments: documents.length,
-        totalValue: `$${(totalValue / 1000000).toFixed(1)}M`,
       });
     } catch (error) {
       console.error("Error fetching admin stats:", error);

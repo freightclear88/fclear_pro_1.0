@@ -9,7 +9,7 @@ import ShipmentTable from "@/components/ShipmentTable";
 import ShipmentDetail from "@/components/ShipmentDetail";
 import CreateShipmentDialog from "@/components/CreateShipmentDialog";
 
-import { Ship, FileText, CheckCircle, DollarSign, Plus, Bell, FileUp } from "lucide-react";
+import { Ship, FileText, CheckCircle, Plus, Bell, FileUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Shipment } from "@shared/schema";
@@ -84,7 +84,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <Card className="gradient-card hover-glow border-0">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -105,7 +105,7 @@ export default function Dashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Pending Documents</p>
+                <p className="text-sm text-gray-600">Documents</p>
                 <p className="text-3xl font-bold text-freight-dark">
                   {stats?.pendingDocuments || 0}
                 </p>
@@ -133,21 +133,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="gradient-card hover-glow border-0">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Value</p>
-                <p className="text-3xl font-bold text-freight-dark">
-                  {stats?.totalValue || "$0"}
-                </p>
-              </div>
-              <div className="bg-teal/10 p-3 rounded-lg">
-                <DollarSign className="w-6 h-6 text-teal" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
       </div>
 
       {/* Document Upload and Recent Activity */}
