@@ -31,6 +31,9 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen gradient-secondary">
+      {/* Flowing Wave Background */}
+      <div className="wave-background"></div>
+      
       {/* Sidebar */}
       <div className="w-64 glass-effect shadow-lg border-r border-white/20 fixed h-full z-30">
         <Sidebar>

@@ -109,6 +109,79 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   }
 
+  /* Flowing Wave Background */
+  .wave-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .wave-background::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(
+      45deg,
+      transparent 0%,
+      hsl(120, 70%, 40%, 0.1) 20%,
+      hsl(200, 70%, 60%, 0.15) 40%,
+      rgba(255, 255, 255, 0.2) 60%,
+      hsl(120, 70%, 40%, 0.1) 80%,
+      transparent 100%
+    );
+    animation: wave-flow 20s ease-in-out infinite;
+    transform: skewY(-2deg);
+  }
+
+  .wave-background::after {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 0;
+    width: 200%;
+    height: 60%;
+    background: linear-gradient(
+      -45deg,
+      transparent 0%,
+      hsl(200, 70%, 60%, 0.08) 25%,
+      rgba(255, 255, 255, 0.15) 50%,
+      hsl(120, 70%, 40%, 0.08) 75%,
+      transparent 100%
+    );
+    animation: wave-flow-reverse 25s ease-in-out infinite;
+    transform: skewY(1deg);
+  }
+
+  @keyframes wave-flow {
+    0%, 100% {
+      transform: translateX(-50%) skewY(-2deg);
+      opacity: 0.3;
+    }
+    50% {
+      transform: translateX(-25%) skewY(-1deg);
+      opacity: 0.6;
+    }
+  }
+
+  @keyframes wave-flow-reverse {
+    0%, 100% {
+      transform: translateX(-25%) skewY(1deg);
+      opacity: 0.4;
+    }
+    50% {
+      transform: translateX(-50%) skewY(2deg);
+      opacity: 0.2;
+    }
+  }
+
   .hover-glow:hover {
     box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
     transition: box-shadow 0.3s ease;

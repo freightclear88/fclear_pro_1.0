@@ -6,6 +6,9 @@ import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_17519038593
 export default function Landing() {
   return (
     <div className="min-h-screen gradient-secondary">
+      {/* Flowing Wave Background */}
+      <div className="wave-background"></div>
+      
       {/* Header */}
       <header className="glass-effect shadow-lg border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
