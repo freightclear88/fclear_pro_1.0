@@ -3,8 +3,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Copy, Edit } from "lucide-react";
+import { Eye, Copy, Edit, FileText } from "lucide-react";
 import type { Shipment } from "@shared/schema";
+import ShipmentHtmlPage from "./ShipmentHtmlPage";
 
 interface ShipmentTableProps {
   shipments: Shipment[];
@@ -13,6 +14,13 @@ interface ShipmentTableProps {
 
 export default function ShipmentTable({ shipments, onViewShipment }: ShipmentTableProps) {
   const { toast } = useToast();
+  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const [isHtmlPageOpen, setIsHtmlPageOpen] = useState(false);
+
+  const handleViewHtmlPage = (shipment: Shipment) => {
+    setSelectedShipment(shipment);
+    setIsHtmlPageOpen(true);
+  };
 
   const handleCopyShipment = async (shipment: Shipment) => {
     try {
@@ -120,17 +128,20 @@ Status: ${shipment.status}
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleCopyShipment(shipment)}
-                    className="text-freight-orange hover:text-freight-dark"
+                    onClick={() => handleViewHtmlPage(shipment)}
+                    className="text-freight-green hover:text-freight-dark"
+                    title="View HTML Page"
                   >
-                    <Copy className="w-4 h-4" />
+                    <FileText className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-gray-500 hover:text-freight-dark"
+                    onClick={() => handleCopyShipment(shipment)}
+                    className="text-freight-orange hover:text-freight-dark"
+                    title="Copy Data"
                   >
-                    <Edit className="w-4 h-4" />
+                    <Copy className="w-4 h-4" />
                   </Button>
                 </div>
               </TableCell>
@@ -138,6 +149,15 @@ Status: ${shipment.status}
           ))}
         </TableBody>
       </Table>
+      
+      {/* HTML Page Dialog */}
+      {selectedShipment && (
+        <ShipmentHtmlPage
+          shipment={selectedShipment}
+          isOpen={isHtmlPageOpen}
+          onClose={() => setIsHtmlPageOpen(false)}
+        />
+      )}
     </div>
   );
 }
