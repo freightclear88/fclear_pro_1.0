@@ -131,3 +131,6 @@ Changelog:
 - July 08, 2025: Integrated document management directly into Shipments page with tabs
 - July 08, 2025: Added carrier tracking buttons for BL numbers and container numbers
 - July 08, 2025: Restructured documents as subsets of shipments with dedicated folders
+- July 08, 2025: Final UI simplification: removed Documents tab, embedded document folders directly in shipments table
+- July 08, 2025: Removed shipment status column, streamlined table layout with collapsible document folders
+- July 08, 2025: Each shipment row now expandable to show dedicated document folder with download functionality
