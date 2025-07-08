@@ -112,33 +112,7 @@ export default function Landing() {
                 Monitor shipment status and get updates on your freight movements across all transport modes.
               </p>
             </div>
-            <div className="text-center">
-              <div className="bg-freight-purple/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Ship className="w-8 h-8 text-freight-purple" />
-              </div>
-              <h3 className="text-lg font-semibold text-freight-dark mb-2">Ocean Freight</h3>
-              <p className="text-gray-600 text-sm">
-                Manage container shipments with full tracking from origin port to destination.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="bg-freight-indigo/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Plane className="w-8 h-8 text-freight-indigo" />
-              </div>
-              <h3 className="text-lg font-semibold text-freight-dark mb-2">Air Freight</h3>
-              <p className="text-gray-600 text-sm">
-                Track air cargo shipments with flight details and real-time status updates.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="bg-freight-teal/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Truck className="w-8 h-8 text-freight-teal" />
-              </div>
-              <h3 className="text-lg font-semibold text-freight-dark mb-2">Ground Transport</h3>
-              <p className="text-gray-600 text-sm">
-                Coordinate trucking and rail movements with comprehensive tracking capabilities.
-              </p>
-            </div>
+
           </div>
         </div>
 
