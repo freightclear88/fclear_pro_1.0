@@ -184,7 +184,7 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
             <Button 
               onClick={handleCopyData}
               variant="outline"
-              className="text-freight-orange border-freight-orange hover:bg-freight-orange hover:text-white"
+              className="bg-teal/10 border-teal text-teal hover:bg-teal hover:text-white font-semibold"
             >
               <Copy className="w-4 h-4 mr-2" />
               Copy All Data
