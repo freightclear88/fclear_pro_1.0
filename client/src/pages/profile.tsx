@@ -217,7 +217,7 @@ export default function Profile() {
             </div>
             
             <div className="flex items-center space-x-2">
-              {poaStatus === 'pending' && (
+              {(poaStatus === 'pending' && !userProfile?.powerOfAttorneyDocumentPath) && (
                 <>
                   <Button
                     onClick={() => setShowPOAWizard(true)}
