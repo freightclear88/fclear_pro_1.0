@@ -216,14 +216,17 @@ export default function Profile() {
               </Badge>
             </div>
             
-            <div className="flex items-center space-x-2">
-              {/* Always show button for testing */}
+            <div className="flex items-center space-x-2" style={{border: "2px solid red", padding: "10px"}}>
+              <div style={{background: "yellow", padding: "5px"}}>
+                Button container test
+              </div>
               <Button
                 onClick={() => setShowPOAWizard(true)}
                 className="bg-freight-green hover:bg-freight-green/90 text-white"
+                style={{background: "blue !important", color: "white !important"}}
               >
                 <Scale className="w-4 h-4 mr-2" />
-                Create POA (Test)
+                VISIBLE TEST BUTTON
               </Button>
               <PowerOfAttorneyUpload />
               {(poaStatus === 'uploaded' || poaStatus === 'validated') && (
