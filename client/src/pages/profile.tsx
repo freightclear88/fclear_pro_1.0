@@ -51,6 +51,13 @@ export default function Profile() {
   // Check POA status from user profile
   const poaStatus = userProfile?.powerOfAttorneyStatus || 'pending';
   const irsProofStatus = userProfile?.irsProofStatus || 'pending';
+  
+  // Debug logging
+  console.log('POA Debug:', {
+    poaStatus,
+    documentPath: userProfile?.powerOfAttorneyDocumentPath,
+    shouldShowButton: poaStatus === 'pending' && !userProfile?.powerOfAttorneyDocumentPath
+  });
 
   // Update form data when profile loads
   useEffect(() => {
