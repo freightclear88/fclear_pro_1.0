@@ -30,16 +30,16 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen gradient-secondary">
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg border-r border-gray-200 fixed h-full z-30">
+      <div className="w-64 glass-effect shadow-lg border-r border-white/20 fixed h-full z-30">
         <Sidebar>
-          <SidebarHeader className="p-6 border-b border-gray-200">
+          <SidebarHeader className="p-6 border-b border-white/20">
             <div className="flex items-center space-x-3">
               <img src={freightclearLogo} alt="Freightclear Logo" className="h-8" />
               <div>
                 <h1 className="text-lg font-bold text-freight-dark">Freight Flow</h1>
-                <p className="text-sm text-gray-500">by Freightclear</p>
+                <p className="text-sm text-teal">by Freightclear</p>
               </div>
             </div>
           </SidebarHeader>
@@ -55,8 +55,8 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                       className={cn(
                         "flex items-center px-4 py-3 rounded-lg font-medium transition-colors",
                         isActive
-                          ? "text-freight-dark bg-freight-orange bg-opacity-10"
-                          : "text-gray-600 hover:text-freight-dark hover:bg-gray-50"
+                          ? "text-freight-dark bg-teal/10"
+                          : "text-gray-700 hover:text-freight-dark hover:bg-white/50"
                       )}
                     >
                       <Icon 
@@ -73,7 +73,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
             </div>
           </SidebarContent>
 
-          <SidebarFooter className="absolute bottom-0 w-full p-4 border-t border-gray-200 bg-white">
+          <SidebarFooter className="absolute bottom-0 w-full p-4 border-t border-white/20 glass-effect">
             <div className="flex items-center space-x-3">
               <Avatar className="w-10 h-10">
                 <AvatarImage 
@@ -81,7 +81,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                   alt={`${user?.firstName || ""} ${user?.lastName || ""}`}
                   className="object-cover"
                 />
-                <AvatarFallback className="bg-freight-blue text-white">
+                <AvatarFallback className="bg-teal text-white">
                   {user?.firstName?.[0] || "U"}{user?.lastName?.[0] || ""}
                 </AvatarFallback>
               </Avatar>
@@ -89,7 +89,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                 <p className="text-sm font-medium text-freight-dark truncate">
                   {user?.firstName || ""} {user?.lastName || ""}
                 </p>
-                <p className="text-xs text-gray-500 truncate">
+                <p className="text-xs text-teal truncate">
                   {user?.company || "Freight Professional"}
                 </p>
               </div>
@@ -100,7 +100,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <div className="flex-1 ml-64">
-        <div className="bg-freight-gray min-h-screen">
+        <div className="min-h-screen">
           {children}
         </div>
       </div>

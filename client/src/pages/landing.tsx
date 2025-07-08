@@ -5,21 +5,21 @@ import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_17519038593
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-freight-gray">
+    <div className="min-h-screen gradient-secondary">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="glass-effect shadow-lg border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-3">
               <img src={freightclearLogo} alt="Freightclear Logo" className="h-10" />
               <div>
                 <h1 className="text-xl font-bold text-freight-dark">Freight Flow</h1>
-                <p className="text-sm text-gray-500">by Freightclear</p>
+                <p className="text-sm text-teal">by Freightclear</p>
               </div>
             </div>
             <Button 
               onClick={() => window.location.href = "/api/login"}
-              className="bg-freight-orange hover:bg-freight-orange/90 text-white"
+              className="gradient-accent hover-glow text-white border-0"
             >
               Sign In
             </Button>
@@ -31,16 +31,16 @@ export default function Landing() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-freight-dark mb-6">
-            Freight Flow
+            <span className="gradient-text">Freight Flow</span>
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-4xl mx-auto">
+          <p className="text-xl text-gray-700 mb-8 max-w-4xl mx-auto">
             Intelligent document processing and shipment management platform. 
             Upload documents, create shipments, and track your freight operations efficiently.
           </p>
           <Button 
             onClick={() => window.location.href = "/api/login"}
             size="lg"
-            className="bg-freight-orange hover:bg-freight-orange/90 text-white px-12 py-4 text-lg font-semibold"
+            className="gradient-primary hover-glow text-white px-12 py-4 text-lg font-semibold border-0"
           >
             Get Started
           </Button>
@@ -48,30 +48,30 @@ export default function Landing() {
 
         {/* Key Features */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          <Card className="text-center">
+          <Card className="text-center gradient-card hover-glow border-0">
             <CardContent className="p-8">
-              <div className="bg-freight-blue/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <FileText className="w-8 h-8 text-freight-blue" />
+              <div className="bg-teal/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <FileText className="w-8 h-8 text-teal" />
               </div>
               <h3 className="font-semibold text-freight-dark mb-3 text-lg">Document Processing</h3>
               <p className="text-gray-600">Upload and process freight documents with intelligent OCR extraction</p>
             </CardContent>
           </Card>
 
-          <Card className="text-center">
+          <Card className="text-center gradient-card hover-glow border-0">
             <CardContent className="p-8">
-              <div className="bg-freight-green/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Ship className="w-8 h-8 text-freight-green" />
+              <div className="bg-neon-green/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <Ship className="w-8 h-8 text-neon-green" />
               </div>
               <h3 className="font-semibold text-freight-dark mb-3 text-lg">Shipment Management</h3>
               <p className="text-gray-600">Track and manage air, ocean, and trucking shipments in one platform</p>
             </CardContent>
           </Card>
 
-          <Card className="text-center">
+          <Card className="text-center gradient-card hover-glow border-0">
             <CardContent className="p-8">
-              <div className="bg-freight-orange/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <BarChart3 className="w-8 h-8 text-freight-orange" />
+              <div className="bg-powder-blue/20 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <BarChart3 className="w-8 h-8 text-powder-blue" />
               </div>
               <h3 className="font-semibold text-freight-dark mb-3 text-lg">Analytics Dashboard</h3>
               <p className="text-gray-600">Monitor performance with comprehensive reports and insights</p>
@@ -80,8 +80,8 @@ export default function Landing() {
         </div>
 
         {/* Application Features */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-12">
-          <h2 className="text-3xl font-bold text-freight-dark mb-8 text-center">
+        <div className="gradient-card rounded-xl shadow-lg border-0 p-8 mb-12 hover-glow">
+          <h2 className="text-3xl font-bold gradient-text mb-8 text-center">
             Platform Features
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -119,17 +119,17 @@ export default function Landing() {
 
 
         {/* Call to Action */}
-        <div className="text-center bg-gradient-to-r from-freight-blue to-freight-dark rounded-xl p-12">
+        <div className="text-center gradient-primary rounded-xl p-12 hover-glow">
           <h2 className="text-3xl font-bold text-white mb-4">
             Ready to streamline your freight operations?
           </h2>
-          <p className="text-xl text-gray-200 mb-8">
+          <p className="text-xl text-white/90 mb-8">
             Join freight professionals who trust Freight Flow for their shipping needs.
           </p>
           <Button 
             onClick={() => window.location.href = "/register"}
             size="lg"
-            className="bg-freight-orange hover:bg-freight-orange/90 text-white px-12 py-4 text-lg font-semibold"
+            className="bg-white text-teal hover:bg-white/90 px-12 py-4 text-lg font-semibold border-0"
           >
             Get Started
           </Button>

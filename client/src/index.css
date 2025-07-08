@@ -13,23 +13,28 @@
   --card-foreground: hsl(20, 14.3%, 4.1%);
   --border: hsl(20, 5.9%, 90%);
   --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(207, 90%, 54%);
-  --primary-foreground: hsl(211, 100%, 99%);
-  --secondary: hsl(60, 4.8%, 95.9%);
-  --secondary-foreground: hsl(24, 9.8%, 10%);
-  --accent: hsl(60, 4.8%, 95.9%);
-  --accent-foreground: hsl(24, 9.8%, 10%);
+  --primary: hsl(180, 100%, 25%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(175, 100%, 85%);
+  --secondary-foreground: hsl(180, 100%, 15%);
+  --accent: hsl(200, 100%, 80%);
+  --accent-foreground: hsl(180, 100%, 15%);
   --destructive: hsl(0, 84.2%, 60.2%);
   --destructive-foreground: hsl(60, 9.1%, 97.8%);
   --ring: hsl(20, 14.3%, 4.1%);
   --radius: 0.5rem;
 
-  /* Freightclear Brand Colors */
-  --freight-orange: hsl(14, 100%, 60%);
-  --freight-blue: hsl(207, 90%, 54%);
-  --freight-green: hsl(122, 39%, 49%);
-  --freight-gray: hsl(220, 14%, 96%);
+  /* Modern Gradient Colors - High Contrast */
+  --teal: hsl(180, 80%, 35%);
+  --neon-green: hsl(120, 70%, 40%);
+  --powder-blue: hsl(200, 70%, 60%);
   --freight-dark: hsl(210, 24%, 16%);
+  
+  /* Light Gradient Definitions for Better Contrast */
+  --gradient-primary: linear-gradient(135deg, hsl(180, 80%, 35%) 0%, hsl(120, 70%, 40%) 50%, hsl(200, 70%, 60%) 100%);
+  --gradient-secondary: linear-gradient(45deg, hsl(200, 30%, 96%) 0%, hsl(180, 30%, 94%) 100%);
+  --gradient-accent: linear-gradient(90deg, hsl(120, 50%, 85%) 0%, hsl(180, 50%, 85%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(0, 0%, 100%) 0%, hsl(200, 50%, 98%) 100%);
 }
 
 .dark {
@@ -43,8 +48,8 @@
   --card-foreground: hsl(0, 0%, 98%);
   --border: hsl(240, 3.7%, 15.9%);
   --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(207, 90%, 54%);
-  --primary-foreground: hsl(211, 100%, 99%);
+  --primary: hsl(180, 100%, 25%);
+  --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(240, 3.7%, 15.9%);
   --secondary-foreground: hsl(0, 0%, 98%);
   --accent: hsl(240, 3.7%, 15.9%);
@@ -66,16 +71,72 @@
 }
 
 @layer utilities {
-  .text-freight-orange {
-    color: var(--freight-orange);
+  /* Gradient Utility Classes */
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .gradient-text {
+    background: var(--gradient-primary);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 200% 200%;
+    animation: gradient-shimmer 3s ease-in-out infinite;
+  }
+
+  @keyframes gradient-shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+    transition: box-shadow 0.3s ease;
+  }
+
+  /* Modern Color Utilities */
+  .text-teal {
+    color: var(--teal);
   }
   
-  .text-freight-blue {
-    color: var(--freight-blue);
+  .text-neon-green {
+    color: var(--neon-green);
   }
   
-  .text-freight-green {
-    color: var(--freight-green);
+  .text-powder-blue {
+    color: var(--powder-blue);
+  }
+
+  .bg-teal {
+    background-color: var(--teal);
+  }
+  
+  .bg-neon-green {
+    background-color: var(--neon-green);
+  }
+  
+  .bg-powder-blue {
+    background-color: var(--powder-blue);
   }
   
   .text-freight-dark {

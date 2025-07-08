@@ -73,7 +73,7 @@ export default function Dashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
+        <Card className="gradient-card hover-glow border-0">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -82,14 +82,14 @@ export default function Dashboard() {
                   {stats?.activeShipments || 0}
                 </p>
               </div>
-              <div className="bg-freight-blue/10 p-3 rounded-lg">
-                <Ship className="w-6 h-6 text-freight-blue" />
+              <div className="bg-teal/10 p-3 rounded-lg">
+                <Ship className="w-6 h-6 text-teal" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="gradient-card hover-glow border-0">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -98,14 +98,14 @@ export default function Dashboard() {
                   {stats?.pendingDocuments || 0}
                 </p>
               </div>
-              <div className="bg-freight-orange/10 p-3 rounded-lg">
-                <FileText className="w-6 h-6 text-freight-orange" />
+              <div className="bg-neon-green/10 p-3 rounded-lg">
+                <FileText className="w-6 h-6 text-neon-green" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="gradient-card hover-glow border-0">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -114,14 +114,14 @@ export default function Dashboard() {
                   {stats?.processedThisMonth || 0}
                 </p>
               </div>
-              <div className="bg-freight-green/10 p-3 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-freight-green" />
+              <div className="bg-powder-blue/15 p-3 rounded-lg">
+                <CheckCircle className="w-6 h-6 text-powder-blue" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="gradient-card hover-glow border-0">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -130,8 +130,8 @@ export default function Dashboard() {
                   {stats?.totalValue || "$0"}
                 </p>
               </div>
-              <div className="bg-freight-blue/10 p-3 rounded-lg">
-                <DollarSign className="w-6 h-6 text-freight-blue" />
+              <div className="bg-teal/10 p-3 rounded-lg">
+                <DollarSign className="w-6 h-6 text-teal" />
               </div>
             </div>
           </CardContent>
