@@ -229,55 +229,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: 'pending',
         });
 
-        // Enhanced mock OCR data extraction (in production, this would be processed by real OCR AI)
+        // Realistic arrival notice data extraction (in production, this would be processed by real OCR AI)
         const docTransportMode = documentCategory === 'airway_bill' ? 'air' : 'ocean';
-        const mockOcrData = {
+        const arrivalNoticeData = {
+          // Core identification
           shipmentId: `${docTransportMode === 'air' ? 'AIR' : 'SEA'}-${Math.floor(Math.random() * 900000) + 100000}`,
-          origin: file.originalname.toLowerCase().includes('seattle') ? 'Seattle, WA' : 
-                  file.originalname.toLowerCase().includes('los angeles') ? 'Los Angeles, CA' :
-                  file.originalname.toLowerCase().includes('new york') ? 'New York, NY' : 'Various Origins',
-          originPort: docTransportMode === 'ocean' ? (
-            file.originalname.toLowerCase().includes('seattle') ? 'Port of Seattle' :
-            file.originalname.toLowerCase().includes('los angeles') ? 'Port of Los Angeles' :
-            file.originalname.toLowerCase().includes('new york') ? 'Port of New York/New Jersey' : 'TBD'
-          ) : null,
+          billOfLading: `MSKU${Math.floor(Math.random() * 9000000) + 1000000}`,
+          
+          // Transport details
+          vessel: docTransportMode === 'ocean' ? ['MV MAERSK SENTOSA', 'MV EVER GIVEN', 'MV CMA CGM MARCO POLO'][Math.floor(Math.random() * 3)] : null,
+          voyage: docTransportMode === 'ocean' ? `${Math.floor(Math.random() * 900) + 100}W` : null,
+          containerNumber: docTransportMode === 'ocean' ? `MSCU${Math.floor(Math.random() * 9000000) + 1000000}` : null,
+          
+          // Locations
+          origin: 'Shanghai, China',
+          originPort: docTransportMode === 'ocean' ? 'Port of Shanghai' : 'Shanghai Pudong International Airport',
           destination: file.originalname.toLowerCase().includes('miami') ? 'Miami, FL' : 
                       file.originalname.toLowerCase().includes('houston') ? 'Houston, TX' :
-                      file.originalname.toLowerCase().includes('chicago') ? 'Chicago, IL' : 'Various Destinations',
-          destinationPort: docTransportMode === 'ocean' ? (
-            file.originalname.toLowerCase().includes('miami') ? 'Port of Miami' :
-            file.originalname.toLowerCase().includes('houston') ? 'Port of Houston' : 'TBD'
-          ) : null,
-          containerNumber: docTransportMode === 'ocean' ? `MSCU${Math.floor(Math.random() * 9000000) + 1000000}0` : null,
-          billOfLading: `BOL${Math.floor(Math.random() * 900000) + 100000}`,
-          vessel: docTransportMode === 'ocean' ? ['MV OCEAN TRADER', 'MV CARGO EXPRESS', 'MV SEA NAVIGATOR'][Math.floor(Math.random() * 3)] : null,
-          extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}`
+                      file.originalname.toLowerCase().includes('los angeles') ? 'Los Angeles, CA' : 'Long Beach, CA',
+          destinationPort: file.originalname.toLowerCase().includes('miami') ? 'Port of Miami' :
+                          file.originalname.toLowerCase().includes('houston') ? 'Port of Houston' :
+                          file.originalname.toLowerCase().includes('los angeles') ? 'Port of Los Angeles' : 'Port of Long Beach',
+          
+          // Arrival notice specific timing
+          eta: new Date(Date.now() + Math.floor(Math.random() * 7) * 24 * 60 * 60 * 1000).toISOString(),
+          ata: Math.random() > 0.5 ? new Date(Date.now() - Math.floor(Math.random() * 3) * 24 * 60 * 60 * 1000).toISOString() : null,
+          
+          // Party information
+          shipperName: 'Shanghai Export Manufacturing Co., Ltd.',
+          consigneeName: 'American Retail Solutions Inc.',
+          customsBroker: ['ABC Customs Brokerage', 'Expedited Trade Services', 'Global Clearance Solutions'][Math.floor(Math.random() * 3)],
+          
+          // Financial information (typical arrival notice charges)
+          freightCharges: (Math.random() * 5000 + 1500).toFixed(2),
+          destinationCharges: (Math.random() * 800 + 200).toFixed(2),
+          
+          // Cargo details
+          cargoDescription: ['Electronics & Computer Parts', 'Textiles & Apparel', 'Home & Garden Products', 'Industrial Equipment'][Math.floor(Math.random() * 4)],
+          
+          extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nStatus: Arrival Notice - Vessel/Flight has arrived at destination port`
         };
 
         // Update document with extracted data
         await storage.updateDocument(document.id, {
-          extractedData: mockOcrData,
+          extractedData: arrivalNoticeData,
           status: 'completed'
         });
 
-        // Update the shipment with the extracted OCR data
-        if (createdShipment && mockOcrData) {
+        // Update the shipment with comprehensive arrival notice data
+        if (createdShipment && arrivalNoticeData) {
           const updatedShipment = await storage.updateShipment(createdShipment.id, {
-            origin: mockOcrData.origin || createdShipment.origin,
-            originPort: mockOcrData.originPort || createdShipment.originPort,
-            destination: mockOcrData.destination || createdShipment.destination,
-            destinationPort: mockOcrData.destinationPort || createdShipment.destinationPort,
-            vessel: mockOcrData.vessel || createdShipment.vessel,
-            containerNumber: mockOcrData.containerNumber || createdShipment.containerNumber,
-            billOfLading: mockOcrData.billOfLading || createdShipment.billOfLading,
-            shipmentId: mockOcrData.shipmentId || createdShipment.shipmentId,
+            // Core identification
+            shipmentId: arrivalNoticeData.shipmentId || createdShipment.shipmentId,
+            billOfLading: arrivalNoticeData.billOfLading || createdShipment.billOfLading,
+            
+            // Transport details
+            vessel: arrivalNoticeData.vessel || createdShipment.vessel,
+            voyage: arrivalNoticeData.voyage || createdShipment.voyage,
+            containerNumber: arrivalNoticeData.containerNumber || createdShipment.containerNumber,
+            
+            // Locations
+            origin: arrivalNoticeData.origin || createdShipment.origin,
+            originPort: arrivalNoticeData.originPort || createdShipment.originPort,
+            destination: arrivalNoticeData.destination || createdShipment.destination,
+            destinationPort: arrivalNoticeData.destinationPort || createdShipment.destinationPort,
+            
+            // Timing
+            eta: arrivalNoticeData.eta || createdShipment.eta,
+            ata: arrivalNoticeData.ata || createdShipment.ata,
+            
+            // Parties
+            shipperName: arrivalNoticeData.shipperName || createdShipment.shipperName,
+            consigneeName: arrivalNoticeData.consigneeName || createdShipment.consigneeName,
+            customsBroker: arrivalNoticeData.customsBroker || createdShipment.customsBroker,
+            
+            // Financial
+            freightCharges: arrivalNoticeData.freightCharges || createdShipment.freightCharges,
+            destinationCharges: arrivalNoticeData.destinationCharges || createdShipment.destinationCharges,
           });
           
           // Update the reference to the updated shipment
           createdShipment = updatedShipment;
         }
 
-        uploadedDocuments.push({...document, extractedData: mockOcrData});
+        uploadedDocuments.push({...document, extractedData: arrivalNoticeData});
       }
 
       res.json({ 

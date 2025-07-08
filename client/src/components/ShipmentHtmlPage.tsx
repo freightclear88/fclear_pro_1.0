@@ -13,39 +13,40 @@ interface ShipmentHtmlPageProps {
 }
 
 const FIELD_SECTIONS = {
-  "Basic Information": [
+  "Shipment Identification": [
     { key: "shipmentId", label: "Shipment ID", icon: Package },
+    { key: "billOfLading", label: "Bill of Lading", icon: FileText },
     { key: "status", label: "Status", icon: Package },
     { key: "transportMode", label: "Transport Mode", icon: Truck },
-    { key: "createdAt", label: "Created Date", icon: Calendar },
-    { key: "updatedAt", label: "Updated Date", icon: Calendar },
+  ],
+  "Vessel & Transport Details": [
+    { key: "vessel", label: "Vessel Name", icon: Ship },
+    { key: "voyage", label: "Voyage Number", icon: Ship },
+    { key: "containerNumber", label: "Container Number", icon: Package },
   ],
   "Origin & Destination": [
+    { key: "origin", label: "Origin", icon: MapPin },
     { key: "originPort", label: "Origin Port", icon: MapPin },
+    { key: "destination", label: "Destination", icon: MapPin },
     { key: "destinationPort", label: "Destination Port", icon: MapPin },
-    { key: "originAddress", label: "Origin Address", icon: MapPin },
-    { key: "destinationAddress", label: "Destination Address", icon: MapPin },
   ],
-  "Shipping Details": [
-    { key: "containerNumber", label: "Container Number", icon: Package },
-    { key: "billOfLading", label: "Bill of Lading", icon: FileText },
-    { key: "vessel", label: "Vessel", icon: Ship },
-    { key: "voyage", label: "Voyage", icon: Ship },
-    { key: "eta", label: "ETA", icon: Calendar },
-    { key: "etd", label: "ETD", icon: Calendar },
+  "Arrival Information": [
+    { key: "eta", label: "Estimated Time of Arrival (ETA)", icon: Calendar },
+    { key: "ata", label: "Actual Time of Arrival (ATA)", icon: Calendar },
   ],
-  "Cargo Information": [
-    { key: "cargoDescription", label: "Cargo Description", icon: Package },
-    { key: "weight", label: "Weight", icon: Package },
-    { key: "volume", label: "Volume", icon: Package },
-    { key: "pieces", label: "Pieces", icon: Package },
-    { key: "commodity", label: "Commodity", icon: Package },
+  "Party Information": [
+    { key: "shipperName", label: "Shipper Name", icon: Package },
+    { key: "consigneeName", label: "Consignee Name", icon: Package },
+    { key: "customsBroker", label: "Customs Broker", icon: FileText },
   ],
-  "Additional Details": [
-    { key: "notes", label: "Notes", icon: FileText },
-    { key: "specialInstructions", label: "Special Instructions", icon: FileText },
-    { key: "hazmat", label: "Hazmat", icon: Package },
-    { key: "temperature", label: "Temperature", icon: Package },
+  "Financial Information": [
+    { key: "freightCharges", label: "Freight Charges", icon: Package },
+    { key: "destinationCharges", label: "Destination Charges", icon: Package },
+    { key: "totalValue", label: "Total Cargo Value", icon: Package },
+  ],
+  "System Information": [
+    { key: "createdAt", label: "Created Date", icon: Calendar },
+    { key: "updatedAt", label: "Updated Date", icon: Calendar },
   ],
 };
 
