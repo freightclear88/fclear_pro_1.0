@@ -219,11 +219,12 @@ export default function Profile() {
                   ? 'bg-red-100 text-red-800 hover:bg-red-100'
                   : 'bg-red-100 text-red-800 hover:bg-red-100'
               }>
-                {poaStatus === 'validated' ? 'Validated' : poaStatus === 'pending' ? 'Pending Review' : poaStatus === 'rejected' ? 'Rejected' : 'Required'}
+                {poaStatus === 'validated' ? 'Validated' : poaStatus === 'pending' ? 'Pending Review' : poaStatus === 'rejected' ? 'Rejected' : 'Required'} (Debug: {poaStatus})
               </Badge>
             </div>
             
             <div className="flex items-center space-x-2">
+              <div className="text-xs text-gray-500">Debug: Status='{poaStatus}', Show button: {String(poaStatus === 'pending')}</div>
               {poaStatus === 'pending' && (
                 <>
                   <Button
