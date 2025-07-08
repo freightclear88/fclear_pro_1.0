@@ -217,19 +217,15 @@ export default function Profile() {
             </div>
             
             <div className="flex items-center space-x-2">
-              {/* Debug: status={poaStatus}, type={typeof poaStatus} */}
-              {(poaStatus === 'pending' || true) && (
-                <>
-                  <Button
-                    onClick={() => setShowPOAWizard(true)}
-                    className="bg-freight-green hover:bg-freight-green/90 text-white"
-                  >
-                    <Scale className="w-4 h-4 mr-2" />
-                    Create POA
-                  </Button>
-                  <PowerOfAttorneyUpload />
-                </>
-              )}
+              {/* Always show button for testing */}
+              <Button
+                onClick={() => setShowPOAWizard(true)}
+                className="bg-freight-green hover:bg-freight-green/90 text-white"
+              >
+                <Scale className="w-4 h-4 mr-2" />
+                Create POA (Test)
+              </Button>
+              <PowerOfAttorneyUpload />
               {(poaStatus === 'uploaded' || poaStatus === 'validated') && (
                 <div className="flex space-x-2">
                   <Button
