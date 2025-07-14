@@ -184,51 +184,71 @@
 
   /* Standardized Button Classes */
   .btn-primary {
-    background: hsl(180, 80%, 35%);
-    color: white;
+    background: hsl(180, 80%, 35%) !important;
+    color: white !important;
     font-weight: 600;
-    border: none;
+    border: none !important;
     transition: all 0.2s ease;
+    opacity: 1 !important;
+    visibility: visible !important;
   }
   .btn-primary:hover {
-    background: hsl(180, 80%, 30%);
-    color: white;
+    background: hsl(180, 80%, 30%) !important;
+    color: white !important;
+  }
+  .btn-primary:disabled {
+    background: hsl(180, 80%, 35%, 0.5) !important;
+    color: white !important;
+    opacity: 0.5 !important;
+    cursor: not-allowed;
   }
 
   .btn-secondary {
-    background: hsl(120, 70%, 40%);
-    color: white;
+    background: hsl(120, 70%, 40%) !important;
+    color: white !important;
     font-weight: 600;
-    border: none;
+    border: none !important;
     transition: all 0.2s ease;
+    opacity: 1 !important;
+    visibility: visible !important;
   }
   .btn-secondary:hover {
-    background: hsl(120, 70%, 35%);
-    color: white;
+    background: hsl(120, 70%, 35%) !important;
+    color: white !important;
+  }
+  .btn-secondary:disabled {
+    background: hsl(120, 70%, 40%, 0.5) !important;
+    color: white !important;
+    opacity: 0.5 !important;
+    cursor: not-allowed;
   }
 
   .btn-outline-primary {
-    background: hsl(180, 80%, 35%, 0.1);
-    border: 1px solid hsl(180, 80%, 35%);
-    color: hsl(180, 80%, 35%);
+    background: hsl(180, 80%, 35%, 0.1) !important;
+    border: 1px solid hsl(180, 80%, 35%) !important;
+    color: hsl(180, 80%, 35%) !important;
     font-weight: 600;
     transition: all 0.2s ease;
+    opacity: 1 !important;
+    visibility: visible !important;
   }
   .btn-outline-primary:hover {
-    background: hsl(180, 80%, 35%);
-    color: white;
+    background: hsl(180, 80%, 35%) !important;
+    color: white !important;
   }
 
   .btn-outline-secondary {
-    background: hsl(120, 70%, 40%, 0.1);
-    border: 1px solid hsl(120, 70%, 40%);
-    color: hsl(120, 70%, 40%);
+    background: hsl(120, 70%, 40%, 0.1) !important;
+    border: 1px solid hsl(120, 70%, 40%) !important;
+    color: hsl(120, 70%, 40%) !important;
     font-weight: 600;
     transition: all 0.2s ease;
+    opacity: 1 !important;
+    visibility: visible !important;
   }
   .btn-outline-secondary:hover {
-    background: hsl(120, 70%, 40%);
-    color: white;
+    background: hsl(120, 70%, 40%) !important;
+    color: white !important;
   }
 
   .btn-accent {

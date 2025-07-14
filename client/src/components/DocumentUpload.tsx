@@ -132,7 +132,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button className="bg-freight-green hover:bg-freight-green/90 text-white">
+          <Button className="btn-primary">
             <FileUp className="w-4 h-4 mr-2" />
             Upload Documents
           </Button>
@@ -240,7 +240,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
           <div className="flex justify-end space-x-4">
             <Button
               type="button"
-              variant="outline"
+              className="btn-outline-primary"
               onClick={() => setOpen(false)}
             >
               Cancel
@@ -248,7 +248,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
             <Button
               onClick={handleUpload}
               disabled={uploadMutation.isPending || uploadedFiles.length === 0 || !selectedCategory}
-              className="bg-freight-green hover:bg-freight-green/90 text-white"
+              className="btn-primary"
             >
               {uploadMutation.isPending ? "Uploading..." : "Upload Documents"}
             </Button>
