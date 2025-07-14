@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Copy, Edit, FileText, ExternalLink, ChevronDown, ChevronRight, Folder, Download, Plus } from "lucide-react";
+import { Eye, Copy, Edit, FileText, ExternalLink, ChevronDown, ChevronRight, Folder, Download, Plus, X } from "lucide-react";
 import type { Shipment, Document } from "@shared/schema";
 import ShipmentHtmlPage from "./ShipmentHtmlPage";
 import DocumentUpload from "./DocumentUpload";
@@ -89,9 +90,17 @@ Destination: ${shipment?.destination || "N/A"}
 
   // Document folder component for each shipment
   function DocumentFolder({ shipmentId }: { shipmentId: number }) {
+    const [viewingDocument, setViewingDocument] = useState<Document | null>(null);
+    const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
+    
     const { data: documents = [] } = useQuery({
       queryKey: ["/api/documents", shipmentId],
     });
+
+    const handleViewPdf = (document: Document) => {
+      setViewingDocument(document);
+      setIsPdfViewerOpen(true);
+    };
 
     const handleDownload = async (document: Document) => {
       try {
@@ -131,27 +140,112 @@ Destination: ${shipment?.destination || "N/A"}
     }
 
     return (
-      <div className="space-y-2">
-        {documents.map((doc: Document) => (
-          <div key={doc.id} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
-            <div className="flex items-center space-x-2">
-              <FileText className="w-4 h-4 text-freight-blue" />
-              <div>
-                <p className="text-sm font-medium">{doc.originalName}</p>
-                <p className="text-xs text-gray-500 capitalize">{doc.category.replace('_', ' ')}</p>
+      <>
+        <div className="space-y-2">
+          {documents.map((doc: Document) => (
+            <div key={doc.id} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+              <div className="flex items-center space-x-2">
+                <FileText className="w-4 h-4 text-freight-blue" />
+                <div>
+                  <p className="text-sm font-medium">{doc.originalName}</p>
+                  <p className="text-xs text-gray-500 capitalize">{doc.category.replace('_', ' ')}</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-1">
+                {(doc.fileType === 'application/pdf' || 
+                  doc.fileType?.startsWith('image/') ||
+                  doc.fileType === 'text/plain') && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleViewPdf(doc)}
+                    className="text-freight-blue hover:text-freight-dark"
+                    title="View Document"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDownload(doc)}
+                  className="text-freight-orange hover:text-freight-dark"
+                  title="Download Document"
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleDownload(doc)}
-              className="text-freight-orange hover:text-freight-dark"
-            >
-              <Download className="w-4 h-4" />
-            </Button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+
+        {/* PDF Viewer Dialog */}
+        <Dialog open={isPdfViewerOpen} onOpenChange={setIsPdfViewerOpen}>
+          <DialogContent className="max-w-6xl max-h-[90vh] w-[90vw] h-[90vh]">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <FileText className="w-5 h-5 mr-2 text-freight-blue" />
+                  {viewingDocument?.originalName || viewingDocument?.fileName}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    size="sm"
+                    onClick={() => window.open(`/api/documents/${viewingDocument?.id}/view`, '_blank')}
+                    className="btn-outline-primary"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Open in New Tab
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => viewingDocument && handleDownload(viewingDocument)}
+                    className="btn-outline-primary"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setIsPdfViewerOpen(false)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-hidden">
+              {viewingDocument && (
+                <div className="w-full h-full bg-gray-100 rounded border">
+                  {viewingDocument.fileType === 'application/pdf' ? (
+                    <iframe
+                      src={`/api/documents/${viewingDocument.id}/view`}
+                      className="w-full h-full border-0 rounded"
+                      title={viewingDocument.originalName || viewingDocument.fileName}
+                    />
+                  ) : viewingDocument.fileType?.startsWith('image/') ? (
+                    <div className="w-full h-full flex items-center justify-center p-4">
+                      <img
+                        src={`/api/documents/${viewingDocument.id}/view`}
+                        alt={viewingDocument.originalName || viewingDocument.fileName}
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <iframe
+                      src={`/api/documents/${viewingDocument.id}/view`}
+                      className="w-full h-full border-0 rounded bg-white"
+                      title={viewingDocument.originalName || viewingDocument.fileName}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 

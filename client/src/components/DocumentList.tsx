@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Eye, Download, Calendar, Hash } from "lucide-react";
+import { FileText, Eye, Download, Calendar, Hash, X, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,6 +16,8 @@ interface DocumentListProps {
 export default function DocumentList({ shipmentId, showAll = false }: DocumentListProps) {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [viewingDocument, setViewingDocument] = useState<Document | null>(null);
+  const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: documents = [], isLoading } = useQuery({
@@ -27,6 +29,12 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
     // Show document detail dialog with extracted data
     setSelectedDocument(document);
     setIsDetailOpen(true);
+  };
+
+  const handleViewPdf = (document: Document) => {
+    // Show PDF viewer dialog for in-app viewing
+    setViewingDocument(document);
+    setIsPdfViewerOpen(true);
   };
 
   const handleDownload = async (document: Document) => {
@@ -155,15 +163,14 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {/* PDF/Image/Text viewing button */}
+                    {/* In-app PDF/Image/Text viewing button */}
                     {(document.fileType === 'application/pdf' || 
                       document.fileType?.startsWith('image/') ||
                       document.fileType === 'text/plain') && (
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={() => window.open(`/api/documents/${document.id}/view`, '_blank')}
-                        className="text-purple-600 border-purple-600 hover:bg-purple-600 hover:text-white"
+                        onClick={() => handleViewPdf(document)}
+                        className="btn-outline-secondary"
                       >
                         <Eye className="w-4 h-4 mr-2" />
                         View {document.fileType === 'application/pdf' ? 'PDF' : 'File'}
@@ -300,6 +307,73 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* PDF Viewer Dialog */}
+      <Dialog open={isPdfViewerOpen} onOpenChange={setIsPdfViewerOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] w-[90vw] h-[90vh]">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center">
+                <FileText className="w-5 h-5 mr-2 text-freight-blue" />
+                {viewingDocument?.originalName || viewingDocument?.fileName}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  size="sm"
+                  onClick={() => window.open(`/api/documents/${viewingDocument?.id}/view`, '_blank')}
+                  className="btn-outline-primary"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open in New Tab
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => viewingDocument && handleDownload(viewingDocument)}
+                  className="btn-outline-primary"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setIsPdfViewerOpen(false)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-hidden">
+            {viewingDocument && (
+              <div className="w-full h-full bg-gray-100 rounded border">
+                {viewingDocument.fileType === 'application/pdf' ? (
+                  <iframe
+                    src={`/api/documents/${viewingDocument.id}/view`}
+                    className="w-full h-full border-0 rounded"
+                    title={viewingDocument.originalName || viewingDocument.fileName}
+                  />
+                ) : viewingDocument.fileType?.startsWith('image/') ? (
+                  <div className="w-full h-full flex items-center justify-center p-4">
+                    <img
+                      src={`/api/documents/${viewingDocument.id}/view`}
+                      alt={viewingDocument.originalName || viewingDocument.fileName}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <iframe
+                    src={`/api/documents/${viewingDocument.id}/view`}
+                    className="w-full h-full border-0 rounded bg-white"
+                    title={viewingDocument.originalName || viewingDocument.fileName}
+                  />
+                )}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </>
