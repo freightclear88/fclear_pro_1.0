@@ -156,3 +156,4 @@ Changelog:
 - July 08, 2025: Renamed application from "Freight Flow" to "Freightclear Importer Workflow" across all UI components, server templates, and documentation
 - July 08, 2025: Updated application name from "Freightclear Importer Workflow" to "Freightclear Workflows" for simplified branding
 - July 08, 2025: Fixed button visibility issues in document upload dialog by standardizing button CSS classes with explicit visibility properties
+- July 08, 2025: Enhanced dashboard with abbreviated lists showing last 10 shipments and last 10 documents in dedicated cards with improved layout
