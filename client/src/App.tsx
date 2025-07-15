@@ -56,7 +56,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                 <h1 className="font-light text-freight-dark" style={{
                   fontFamily: 'Kanit, sans-serif',
                   fontWeight: 300,
-                  fontSize: '36px',
+                  fontSize: '28px',
                   background: 'linear-gradient(to bottom, #66c2ff, #33cccc)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
