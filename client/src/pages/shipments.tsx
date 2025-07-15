@@ -39,7 +39,7 @@ export default function Shipments() {
           <h1 className="text-3xl font-bold text-gray-900 mb-3">Shipments</h1>
           <p className="text-gray-600 mt-2">Track and manage your freight shipments</p>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex space-x-3 pr-8 mr-6">
           <DocumentUpload 
             trigger={
               <Button className="btn-outline-primary">
@@ -49,7 +49,7 @@ export default function Shipments() {
             }
           />
           <CreateShipmentDialog trigger={
-            <Button className="btn-secondary">
+            <Button className="btn-secondary mr-4">
               <Plus className="w-4 h-4 mr-2" />
               Create Shipment
             </Button>
