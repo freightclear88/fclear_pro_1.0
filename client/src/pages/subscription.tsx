@@ -417,6 +417,14 @@ export default function Subscription() {
               <p className="text-sm text-gray-600">
                 Subscribing to {selectedPlan.displayName} - ${billingCycle === "monthly" ? selectedPlan.monthlyPrice : selectedPlan.yearlyPrice}/{billingCycle === "monthly" ? "month" : "year"}
               </p>
+              <div className="flex items-center justify-center mt-4">
+                <img 
+                  src="https://www.authorize.net/content/dam/authorize/images/authorize-net-logo.png" 
+                  alt="Secured by Authorize.Net" 
+                  className="h-6 opacity-75"
+                />
+                <span className="ml-2 text-xs text-gray-500">Secured by Authorize.Net</span>
+              </div>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubscriptionSubmit} className="space-y-4">
@@ -530,6 +538,24 @@ export default function Subscription() {
             </CardContent>
           </Card>
         )}
+
+        {/* Security Footer */}
+        <div className="mt-8 text-center">
+          <div className="flex items-center justify-center gap-4 py-4">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-green-600" />
+              <span className="text-sm text-gray-600">256-bit SSL Encryption</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <img 
+                src="https://www.authorize.net/content/dam/authorize/images/authorize-net-logo.png" 
+                alt="Authorize.Net" 
+                className="h-4 opacity-75"
+              />
+              <span className="text-sm text-gray-600">PCI DSS Compliant</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

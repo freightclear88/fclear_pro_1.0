@@ -200,6 +200,14 @@ export default function Payments() {
             <p className="text-sm text-gray-600">
               Enter your invoice details and payment information below
             </p>
+            <div className="flex items-center justify-center mt-4 pt-4 border-t">
+              <img 
+                src="https://www.authorize.net/content/dam/authorize/images/authorize-net-logo.png" 
+                alt="Secured by Authorize.Net" 
+                className="h-6 opacity-75"
+              />
+              <span className="ml-2 text-xs text-gray-500">Secured by Authorize.Net</span>
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleInvoiceSubmit} className="space-y-6">
@@ -362,9 +370,19 @@ export default function Payments() {
         {/* Security Notice */}
         <Card className="mt-8 bg-gray-50">
           <CardContent className="pt-6">
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-              <CreditCard className="w-4 h-4" />
-              <span>Your payment information is secure and encrypted</span>
+            <div className="flex items-center justify-center gap-6 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                <span>Your payment information is secure and encrypted</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <img 
+                  src="https://www.authorize.net/content/dam/authorize/images/authorize-net-logo.png" 
+                  alt="Authorize.Net" 
+                  className="h-4 opacity-75"
+                />
+                <span>PCI DSS Compliant</span>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -171,3 +171,4 @@ Changelog:
 - July 15, 2025: Added /demo route with test user to allow feature testing without login requirements
 - July 15, 2025: Simplified subscription plans to only Free and Pro ($175/month) by removing hardcoded plans from API routes and using database-stored plans exclusively
 - July 15, 2025: Restructured payment interface into separate "Subscription" and "Payments" sections with dedicated routes (/subscription for plan management, /payments for invoice payments)
+- July 15, 2025: Added Authorize.Net secured logos and PCI DSS compliance badges to both subscription and payments pages for enhanced trust and security assurance
