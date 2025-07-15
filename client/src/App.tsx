@@ -136,6 +136,7 @@ function Router() {
         <Route path="/payment" component={Payment} />
         <Route path="/admin" component={Admin} />
         <Route path="/profile" component={Profile} />
+        <Route path="/demo" component={Demo} />
         <Route component={NotFound} />
       </Switch>
     </AuthenticatedLayout>

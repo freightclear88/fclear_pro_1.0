@@ -68,6 +68,12 @@ export default function Demo() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Button 
+                onClick={() => window.location.href = '/'}
+                className="btn-primary h-12"
+              >
+                📊 Dashboard
+              </Button>
+              <Button 
                 onClick={() => window.location.href = '/shipments'}
                 className="btn-primary h-12"
               >
@@ -78,12 +84,6 @@ export default function Demo() {
                 className="btn-primary h-12"
               >
                 💳 Subscription Plans
-              </Button>
-              <Button 
-                onClick={() => window.location.href = '/admin'}
-                className="btn-secondary h-12"
-              >
-                ⚙️ Admin Dashboard
               </Button>
               <Button 
                 onClick={() => window.location.href = '/profile'}
