@@ -63,8 +63,8 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex justify-between items-center">
+        <DialogHeader className="pb-6">
+          <DialogTitle className="flex justify-between items-center text-2xl py-3">
             <span>Shipment Details - {shipment.shipmentId}</span>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="w-4 h-4" />
@@ -74,8 +74,8 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Shipment Information</CardTitle>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg py-2">Shipment Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
@@ -164,7 +164,7 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
           </Card>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between py-2">
               <h3 className="text-lg font-semibold">Documents</h3>
               <DocumentUpload 
                 shipmentId={shipment.id}
@@ -180,9 +180,9 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-4 pt-4 border-t">
+          <div className="flex justify-end space-x-4 pt-6 border-t mt-6">
             <Button 
-              onClick={handleCopyData}
+              onClick={() => handleCopyField("All shipment data", JSON.stringify(shipment, null, 2))}
               className="btn-outline-primary"
             >
               <Copy className="w-4 h-4 mr-2" />

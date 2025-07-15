@@ -32,12 +32,12 @@ export default function Shipments() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Shipments</h1>
-          <p className="text-gray-600 mt-1">Track and manage your freight shipments</p>
+      <div className="flex justify-between items-center pt-6 pb-4">
+        <div className="px-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">Shipments</h1>
+          <p className="text-gray-600 mt-2">Track and manage your freight shipments</p>
         </div>
         <div className="flex space-x-3">
           <DocumentUpload 
@@ -59,7 +59,7 @@ export default function Shipments() {
 
       {/* Search */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-8">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
@@ -74,13 +74,13 @@ export default function Shipments() {
 
       {/* Shipments Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Ship className="w-5 h-5 mr-2 text-freight-blue" />
+        <CardHeader className="pb-6">
+          <CardTitle className="flex items-center text-2xl py-2">
+            <Ship className="w-6 h-6 mr-3 text-freight-blue" />
             Active Shipments ({filteredShipments.length})
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <ShipmentTable shipments={filteredShipments} onViewShipment={handleViewShipment} />
         </CardContent>
       </Card>

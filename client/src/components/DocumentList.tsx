@@ -122,9 +122,9 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
   return (
     <>
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <FileText className="w-5 h-5 mr-2 text-freight-blue" />
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center text-lg py-2">
+            <FileText className="w-5 h-5 mr-3 text-freight-blue" />
             {shipmentId ? "Shipment Documents" : "All Documents"} ({documents.length})
           </CardTitle>
         </CardHeader>
