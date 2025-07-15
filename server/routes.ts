@@ -1,7 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, requireSubscription } from "./replitAuth";
+import ApiContracts from 'authorizenet/lib/apicontracts';
+import ApiControllers from 'authorizenet/lib/apicontrollers';
+import SDKConstants from 'authorizenet/lib/constants';
 import puppeteer from 'puppeteer';
 import { insertShipmentSchema, insertDocumentSchema } from "@shared/schema";
 import multer from "multer";
@@ -501,7 +504,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Shipment routes
-  app.get('/api/shipments', isAuthenticated, async (req: any, res) => {
+  app.get('/api/shipments', requireSubscription, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const shipments = await storage.getShipmentsByUserId(userId);
@@ -533,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/shipments', isAuthenticated, async (req: any, res) => {
+  app.post('/api/shipments', requireSubscription, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const shipmentData = insertShipmentSchema.parse({
@@ -861,7 +864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Document upload route with shipment creation
-  app.post('/api/documents/upload', upload.array('documents', 10), isAuthenticated, async (req: any, res) => {
+  app.post('/api/documents/upload', upload.array('documents', 10), requireSubscription, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { shipmentId, category } = req.body;
@@ -1476,6 +1479,563 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error viewing IRS proof:", error);
       res.status(500).json({ message: "Failed to view IRS proof" });
+    }
+  });
+
+  // Payment Configuration Route
+  app.get('/api/payment/config', isAuthenticated, async (req, res) => {
+    try {
+      const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
+      const clientKey = process.env.AUTHORIZE_NET_CLIENT_KEY;
+      
+      if (!apiLoginId || !clientKey) {
+        return res.json({ configured: false });
+      }
+      
+      res.json({
+        configured: true,
+        apiLoginId: apiLoginId,
+        clientKey: clientKey,
+        environment: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
+      });
+    } catch (error) {
+      console.error("Error fetching payment config:", error);
+      res.status(500).json({ configured: false, error: "Configuration error" });
+    }
+  });
+
+  // Payment Processing Route
+  app.post('/api/payment/process', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const {
+        invoiceNumber,
+        companyName,
+        amount,
+        description,
+        opaqueData,
+        billingInfo
+      } = req.body;
+
+      // Validate required fields
+      if (!invoiceNumber || !companyName || !amount || !opaqueData) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required payment information"
+        });
+      }
+
+      // Validate amount
+      const paymentAmount = parseFloat(amount);
+      if (isNaN(paymentAmount) || paymentAmount <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid payment amount"
+        });
+      }
+
+      // Check for API credentials
+      const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
+      const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
+
+      if (!apiLoginId || !transactionKey) {
+        return res.status(500).json({
+          success: false,
+          error: "Payment system not configured"
+        });
+      }
+
+      // Create merchant authentication
+      const merchantAuthenticationType = new ApiContracts.MerchantAuthenticationType();
+      merchantAuthenticationType.setName(apiLoginId);
+      merchantAuthenticationType.setTransactionKey(transactionKey);
+
+      // Create payment object using opaque data (payment nonce)
+      const opaqueDataObject = new ApiContracts.OpaqueDataType();
+      opaqueDataObject.setDataDescriptor(opaqueData.dataDescriptor);
+      opaqueDataObject.setDataValue(opaqueData.dataValue);
+
+      const paymentType = new ApiContracts.PaymentType();
+      paymentType.setOpaqueData(opaqueDataObject);
+
+      // Create billing address if provided
+      const billTo = new ApiContracts.CustomerAddressType();
+      if (billingInfo?.firstName) billTo.setFirstName(billingInfo.firstName);
+      if (billingInfo?.lastName) billTo.setLastName(billingInfo.lastName);
+      if (billingInfo?.zip) billTo.setZip(billingInfo.zip);
+      billTo.setCompany(companyName);
+
+      // Create customer data
+      const customerData = new ApiContracts.CustomerDataType();
+      customerData.setType(ApiContracts.CustomerTypeEnum.INDIVIDUAL);
+      if (req.user.claims.email) {
+        customerData.setEmail(req.user.claims.email);
+      }
+
+      // Create transaction request
+      const transactionRequest = new ApiContracts.TransactionRequestType();
+      transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION);
+      transactionRequest.setPayment(paymentType);
+      transactionRequest.setAmount(paymentAmount.toFixed(2));
+      transactionRequest.setBillTo(billTo);
+      transactionRequest.setCustomer(customerData);
+
+      // Add invoice and description
+      transactionRequest.setInvoiceNumber(invoiceNumber);
+      if (description) {
+        transactionRequest.setDescription(description);
+      }
+
+      // Create the main request
+      const createRequest = new ApiContracts.CreateTransactionRequest();
+      createRequest.setMerchantAuthentication(merchantAuthenticationType);
+      createRequest.setTransactionRequest(transactionRequest);
+
+      // Execute the request
+      const ctrl = new ApiControllers.CreateTransactionController(createRequest.getJSON());
+      
+      // Set environment (sandbox or production)
+      if (process.env.NODE_ENV === 'production') {
+        ctrl.setEnvironment(SDKConstants.endpoint.production);
+      } else {
+        ctrl.setEnvironment(SDKConstants.endpoint.sandbox);
+      }
+
+      // Process the transaction
+      await new Promise<void>((resolve, reject) => {
+        ctrl.execute(() => {
+          try {
+            const apiResponse = ctrl.getResponse();
+            const response = new ApiContracts.CreateTransactionResponse(apiResponse);
+            
+            if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
+              const transactionResponse = response.getTransactionResponse();
+              
+              if (transactionResponse && transactionResponse.getResponseCode() === '1') {
+                // Transaction approved
+                console.log(`Payment successful - Transaction ID: ${transactionResponse.getTransId()}`);
+                
+                res.json({
+                  success: true,
+                  transactionId: transactionResponse.getTransId(),
+                  authCode: transactionResponse.getAuthCode(),
+                  responseCode: transactionResponse.getResponseCode(),
+                  message: "Payment processed successfully"
+                });
+              } else {
+                // Transaction declined
+                const errorCode = transactionResponse?.getErrors()?.getError()?.[0]?.getErrorCode() || 'Unknown';
+                const errorText = transactionResponse?.getErrors()?.getError()?.[0]?.getErrorText() || 'Transaction declined';
+                
+                console.error(`Payment declined - Code: ${errorCode}, Text: ${errorText}`);
+                
+                res.json({
+                  success: false,
+                  error: `Payment declined: ${errorText}`,
+                  errorCode: errorCode
+                });
+              }
+            } else {
+              // API error
+              const errorMessage = response.getMessages().getMessage()[0].getText();
+              console.error(`Payment API error: ${errorMessage}`);
+              
+              res.json({
+                success: false,
+                error: `Payment processing error: ${errorMessage}`
+              });
+            }
+            resolve();
+          } catch (error) {
+            console.error("Payment processing error:", error);
+            res.status(500).json({
+              success: false,
+              error: "Payment processing failed"
+            });
+            reject(error);
+          }
+        });
+      });
+
+    } catch (error) {
+      console.error("Payment route error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Internal server error during payment processing"
+      });
+    }
+  });
+
+  // Subscription Plans Route
+  app.get('/api/subscription/plans', async (req, res) => {
+    try {
+      // Return predefined subscription plans (could be stored in database)
+      const plans = [
+        {
+          id: 1,
+          planName: 'basic',
+          displayName: 'Basic Plan',
+          description: 'Perfect for small businesses getting started with imports',
+          monthlyPrice: '29.99',
+          yearlyPrice: '287.90', // 20% discount
+          maxShipments: 25,
+          maxDocuments: 100,
+          maxUsers: 1,
+          features: [
+            'Basic shipment tracking',
+            'Document upload & storage',
+            'Email notifications',
+            'Standard support',
+            'Monthly usage reports'
+          ],
+          isActive: true
+        },
+        {
+          id: 2,
+          planName: 'professional',
+          displayName: 'Professional Plan',
+          description: 'Ideal for growing businesses with advanced needs',
+          monthlyPrice: '79.99',
+          yearlyPrice: '767.90', // 20% discount
+          maxShipments: 100,
+          maxDocuments: 500,
+          maxUsers: 5,
+          features: [
+            'Advanced shipment tracking',
+            'OCR document processing',
+            'API access',
+            'Priority support',
+            'Advanced analytics',
+            'Custom reporting',
+            'Bulk operations'
+          ],
+          isActive: true
+        },
+        {
+          id: 3,
+          planName: 'enterprise',
+          displayName: 'Enterprise Plan',
+          description: 'Complete solution for large-scale operations',
+          monthlyPrice: '199.99',
+          yearlyPrice: '1919.90', // 20% discount
+          maxShipments: -1, // unlimited
+          maxDocuments: -1, // unlimited
+          maxUsers: -1, // unlimited
+          features: [
+            'Unlimited everything',
+            'Dedicated account manager',
+            'Custom integrations',
+            '24/7 phone support',
+            'SLA guarantees',
+            'Advanced security features',
+            'Custom training'
+          ],
+          isActive: true
+        }
+      ];
+      
+      res.json(plans);
+    } catch (error) {
+      console.error("Error fetching subscription plans:", error);
+      res.status(500).json({ error: "Failed to fetch subscription plans" });
+    }
+  });
+
+  // User Access Check Route
+  app.get('/api/subscription/access', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const accessInfo = await storage.checkUserAccess(userId);
+      res.json(accessInfo);
+    } catch (error) {
+      console.error("Error checking user access:", error);
+      res.status(500).json({ error: "Failed to check user access" });
+    }
+  });
+
+  // Create Subscription Route
+  app.post('/api/subscription/create', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const {
+        planName,
+        billingCycle,
+        opaqueData,
+        billingInfo
+      } = req.body;
+
+      // Validate required fields
+      if (!planName || !billingCycle || !opaqueData) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required subscription information"
+        });
+      }
+
+      // Get plan details
+      const plans = [
+        { planName: 'basic', monthlyPrice: 29.99, yearlyPrice: 287.90, maxShipments: 25, maxDocuments: 100 },
+        { planName: 'professional', monthlyPrice: 79.99, yearlyPrice: 767.90, maxShipments: 100, maxDocuments: 500 },
+        { planName: 'enterprise', monthlyPrice: 199.99, yearlyPrice: 1919.90, maxShipments: -1, maxDocuments: -1 }
+      ];
+      
+      const selectedPlan = plans.find(p => p.planName === planName);
+      if (!selectedPlan) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid subscription plan"
+        });
+      }
+
+      const amount = billingCycle === 'yearly' ? selectedPlan.yearlyPrice : selectedPlan.monthlyPrice;
+
+      // Check for API credentials
+      const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
+      const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
+
+      if (!apiLoginId || !transactionKey) {
+        return res.status(500).json({
+          success: false,
+          error: "Payment system not configured"
+        });
+      }
+
+      // Create merchant authentication
+      const merchantAuthenticationType = new ApiContracts.MerchantAuthenticationType();
+      merchantAuthenticationType.setName(apiLoginId);
+      merchantAuthenticationType.setTransactionKey(transactionKey);
+
+      // Create customer profile first
+      const customerProfile = new ApiContracts.CustomerProfileType();
+      customerProfile.setMerchantCustomerId(userId);
+      customerProfile.setEmail(req.user.claims.email || '');
+      customerProfile.setDescription(`${billingInfo.firstName} ${billingInfo.lastName} - ${planName} plan`);
+
+      // Create payment profile
+      const creditCard = new ApiContracts.CreditCardType();
+      const opaqueDataObject = new ApiContracts.OpaqueDataType();
+      opaqueDataObject.setDataDescriptor(opaqueData.dataDescriptor);
+      opaqueDataObject.setDataValue(opaqueData.dataValue);
+
+      const paymentType = new ApiContracts.PaymentType();
+      paymentType.setOpaqueData(opaqueDataObject);
+
+      const paymentProfile = new ApiContracts.CustomerPaymentProfileType();
+      paymentProfile.setCustomerType(ApiContracts.CustomerTypeEnum.INDIVIDUAL);
+      paymentProfile.setPayment(paymentType);
+
+      // Billing address
+      const billTo = new ApiContracts.CustomerAddressType();
+      billTo.setFirstName(billingInfo.firstName);
+      billTo.setLastName(billingInfo.lastName);
+      billTo.setCompany(billingInfo.company);
+      billTo.setZip(billingInfo.zip);
+      paymentProfile.setBillTo(billTo);
+
+      customerProfile.setPaymentProfiles([paymentProfile]);
+
+      const createRequest = new ApiContracts.CreateCustomerProfileRequest();
+      createRequest.setProfile(customerProfile);
+      createRequest.setMerchantAuthentication(merchantAuthenticationType);
+
+      const ctrl = new ApiControllers.CreateCustomerProfileController(createRequest.getJSON());
+      
+      // Set environment
+      if (process.env.NODE_ENV === 'production') {
+        ctrl.setEnvironment(SDKConstants.endpoint.production);
+      } else {
+        ctrl.setEnvironment(SDKConstants.endpoint.sandbox);
+      }
+
+      // Create customer profile and process initial payment
+      await new Promise<void>((resolve, reject) => {
+        ctrl.execute(() => {
+          try {
+            const apiResponse = ctrl.getResponse();
+            const response = new ApiContracts.CreateCustomerProfileResponse(apiResponse);
+            
+            if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
+              const customerProfileId = response.getCustomerProfileId();
+              const paymentProfileId = response.getCustomerPaymentProfileIdList().getNumericString()[0];
+              
+              console.log(`Customer profile created: ${customerProfileId}`);
+              
+              // Process initial payment
+              const transactionRequest = new ApiContracts.TransactionRequestType();
+              transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION);
+              transactionRequest.setAmount(amount.toFixed(2));
+
+              const profileToCharge = new ApiContracts.CustomerProfilePaymentType();
+              profileToCharge.setCustomerProfileId(customerProfileId);
+              
+              const paymentProfileToCharge = new ApiContracts.PaymentProfileType();
+              paymentProfileToCharge.setPaymentProfileId(paymentProfileId);
+              profileToCharge.setPaymentProfile(paymentProfileToCharge);
+
+              transactionRequest.setProfile(profileToCharge);
+              transactionRequest.setLineItems([]);
+
+              const createTransactionRequest = new ApiContracts.CreateTransactionRequest();
+              createTransactionRequest.setMerchantAuthentication(merchantAuthenticationType);
+              createTransactionRequest.setTransactionRequest(transactionRequest);
+
+              const transactionCtrl = new ApiControllers.CreateTransactionController(createTransactionRequest.getJSON());
+              
+              // Set environment
+              if (process.env.NODE_ENV === 'production') {
+                transactionCtrl.setEnvironment(SDKConstants.endpoint.production);
+              } else {
+                transactionCtrl.setEnvironment(SDKConstants.endpoint.sandbox);
+              }
+
+              transactionCtrl.execute(async () => {
+                try {
+                  const transactionApiResponse = transactionCtrl.getResponse();
+                  const transactionResponse = new ApiContracts.CreateTransactionResponse(transactionApiResponse);
+                  
+                  if (transactionResponse.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
+                    const transactionResult = transactionResponse.getTransactionResponse();
+                    
+                    if (transactionResult && transactionResult.getResponseCode() === '1') {
+                      // Transaction successful - update user subscription
+                      const subscriptionEndDate = new Date();
+                      if (billingCycle === 'yearly') {
+                        subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
+                      } else {
+                        subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
+                      }
+
+                      const nextBillingDate = new Date(subscriptionEndDate);
+
+                      await storage.updateUserSubscription(userId, {
+                        subscriptionStatus: 'active',
+                        subscriptionPlan: planName,
+                        subscriptionStartDate: new Date(),
+                        subscriptionEndDate: subscriptionEndDate,
+                        nextBillingDate: nextBillingDate,
+                        lastPaymentDate: new Date(),
+                        billingCycle: billingCycle,
+                        subscriptionAmount: amount.toString(),
+                        customerProfileId: customerProfileId,
+                        paymentProfileId: paymentProfileId,
+                        isTrialActive: false,
+                        maxShipments: selectedPlan.maxShipments,
+                        maxDocuments: selectedPlan.maxDocuments,
+                        paymentFailureCount: 0
+                      });
+
+                      // Store payment transaction
+                      await storage.createPaymentTransaction({
+                        userId: userId,
+                        transactionId: transactionResult.getTransId(),
+                        amount: amount.toString(),
+                        status: 'success',
+                        paymentMethod: 'credit_card',
+                        authCode: transactionResult.getAuthCode(),
+                        responseCode: transactionResult.getResponseCode(),
+                        description: `${planName} plan - ${billingCycle} subscription`,
+                        billingCycle: billingCycle,
+                        rawResponse: transactionApiResponse
+                      });
+
+                      console.log(`Subscription created successfully for user ${userId}`);
+                      
+                      res.json({
+                        success: true,
+                        subscriptionId: customerProfileId,
+                        transactionId: transactionResult.getTransId(),
+                        message: "Subscription created successfully"
+                      });
+                    } else {
+                      // Transaction declined
+                      const errorCode = transactionResult?.getErrors()?.getError()?.[0]?.getErrorCode() || 'Unknown';
+                      const errorText = transactionResult?.getErrors()?.getError()?.[0]?.getErrorText() || 'Transaction declined';
+                      
+                      res.json({
+                        success: false,
+                        error: `Payment declined: ${errorText}`,
+                        errorCode: errorCode
+                      });
+                    }
+                  } else {
+                    // Transaction API error
+                    const errorMessage = transactionResponse.getMessages().getMessage()[0].getText();
+                    res.json({
+                      success: false,
+                      error: `Payment error: ${errorMessage}`
+                    });
+                  }
+                  resolve();
+                } catch (error) {
+                  console.error("Transaction processing error:", error);
+                  res.status(500).json({
+                    success: false,
+                    error: "Transaction processing failed"
+                  });
+                  reject(error);
+                }
+              });
+            } else {
+              // Profile creation error
+              const errorMessage = response.getMessages().getMessage()[0].getText();
+              res.json({
+                success: false,
+                error: `Profile creation error: ${errorMessage}`
+              });
+              resolve();
+            }
+          } catch (error) {
+            console.error("Customer profile creation error:", error);
+            res.status(500).json({
+              success: false,
+              error: "Customer profile creation failed"
+            });
+            reject(error);
+          }
+        });
+      });
+
+    } catch (error) {
+      console.error("Subscription creation error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Internal server error during subscription creation"
+      });
+    }
+  });
+
+  // Cancel Subscription Route
+  app.post('/api/subscription/cancel', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      await storage.updateUserSubscription(userId, {
+        subscriptionStatus: 'cancelled',
+        subscriptionEndDate: new Date() // End immediately
+      });
+
+      res.json({
+        success: true,
+        message: "Subscription cancelled successfully"
+      });
+    } catch (error) {
+      console.error("Error cancelling subscription:", error);
+      res.status(500).json({ error: "Failed to cancel subscription" });
+    }
+  });
+
+  // Payment History Route
+  app.get('/api/payment/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const transactions = await storage.getPaymentTransactionsByUserId(userId);
+      res.json({
+        payments: transactions,
+        total: transactions.length
+      });
+    } catch (error) {
+      console.error("Error fetching payment history:", error);
+      res.status(500).json({ error: "Failed to fetch payment history" });
     }
   });
 

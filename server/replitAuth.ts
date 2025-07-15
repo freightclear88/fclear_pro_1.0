@@ -155,3 +155,51 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     return;
   }
 };
+
+// Middleware to check subscription access
+export const requireSubscription: RequestHandler = async (req: any, res, next) => {
+  try {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const userId = req.user.claims.sub;
+    const accessInfo = await storage.checkUserAccess(userId);
+
+    if (!accessInfo.hasAccess) {
+      return res.status(403).json({ 
+        message: "Subscription required",
+        subscriptionStatus: accessInfo.subscriptionStatus,
+        isTrialActive: accessInfo.isTrialActive
+      });
+    }
+
+    // Check usage limits for specific operations
+    const path = req.path;
+    if (path.includes('/shipments') && req.method === 'POST') {
+      if (accessInfo.usageLimits.shipments.max !== -1 && 
+          accessInfo.usageLimits.shipments.current >= accessInfo.usageLimits.shipments.max) {
+        return res.status(403).json({ 
+          message: "Shipment limit reached",
+          usageLimits: accessInfo.usageLimits
+        });
+      }
+    }
+
+    if (path.includes('/documents') && req.method === 'POST') {
+      if (accessInfo.usageLimits.documents.max !== -1 && 
+          accessInfo.usageLimits.documents.current >= accessInfo.usageLimits.documents.max) {
+        return res.status(403).json({ 
+          message: "Document limit reached",
+          usageLimits: accessInfo.usageLimits
+        });
+      }
+    }
+
+    req.userAccess = accessInfo;
+    next();
+  } catch (error) {
+    console.error("Subscription check error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

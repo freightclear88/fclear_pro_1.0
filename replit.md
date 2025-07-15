@@ -25,6 +25,7 @@ The application follows a modern full-stack architecture with clear separation b
 - **UI Components**: Shadcn/UI component library with Radix UI primitives
 - **Styling**: Tailwind CSS with custom Freightclear brand colors
 - **File Uploads**: React Dropzone for document uploads
+- **Payment Processing**: Accept.js for secure credit card tokenization
 
 ### Backend Architecture
 
@@ -34,16 +35,20 @@ The application follows a modern full-stack architecture with clear separation b
 - **Session Management**: Express sessions with PostgreSQL store
 - **File Handling**: Multer for multipart file uploads
 - **API Structure**: RESTful endpoints with proper error handling
+- **Payment Gateway**: Authorize.Net integration for subscription billing
+- **Access Control**: Subscription middleware with usage limits enforcement
 
 ### Database Schema
 
 The application uses PostgreSQL with the following main entities:
 
-- **Users**: Store user profile information from Replit Auth
+- **Users**: Store user profile information from Replit Auth with subscription fields
 - **Shipments**: Core freight shipment data with tracking information
 - **Documents**: File metadata linked to shipments with categorization
 - **OCR Processing Jobs**: Queue system for document processing
 - **Sessions**: Session storage for authentication
+- **Subscription Plans**: Predefined billing plans with features and limits
+- **Payment Transactions**: Record of all Authorize.Net payment transactions
 
 ## Data Flow
 
@@ -156,3 +161,9 @@ Changelog:
 - July 08, 2025: Renamed application from "Freight Flow" to "Freightclear Importer Workflow" across all UI components, server templates, and documentation
 - July 08, 2025: Updated application name from "Freightclear Importer Workflow" to "Freightclear Workflows" for simplified branding
 - July 08, 2025: Fixed button visibility issues in document upload dialog by standardizing button CSS classes with explicit visibility properties
+- July 15, 2025: Implemented comprehensive subscription-based access control system using Authorize.Net for monthly billing
+- July 15, 2025: Created subscription plans (Basic $29.99/mo, Professional $79.99/mo, Enterprise $199.99/mo) with usage limits
+- July 15, 2025: Added database schema for user subscriptions with trial periods, payment tracking, and usage monitoring
+- July 15, 2025: Transformed payment page into subscription management dashboard with plan selection and billing cycles
+- July 15, 2025: Added subscription middleware protecting shipment and document creation routes with usage limit enforcement
+- July 15, 2025: Integrated Accept.js for secure payment processing and customer profile management in Authorize.Net
