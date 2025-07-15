@@ -194,3 +194,4 @@ Changelog:
 - July 15, 2025: Reorganized payments page into two-column layout: invoices card (35% width) and payment area (65% width) using CSS Grid with lg:col-span-4 and lg:col-span-8
 - July 15, 2025: Enhanced payments page responsiveness with max-w-7xl container, xl:col-span-3/9 breakpoints, and improved form grid layouts with xl:grid-cols-3/4 for better space utilization
 - July 15, 2025: Added detailed instruction text to IRS proof card on profile page explaining required documents for companies/LLCs vs individual importers in 11pt font
+- July 15, 2025: Updated IRS proof validation to display green star icon (like POA) when validated, maintaining admin-only validation control

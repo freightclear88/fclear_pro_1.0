@@ -267,7 +267,7 @@ export default function Profile() {
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-2">
                 {irsProofStatus === 'validated' ? (
-                  <CheckCircle className="w-6 h-6 text-green-500" />
+                  <Star className="w-6 h-6 text-green-500 fill-green-500" />
                 ) : irsProofStatus === 'uploaded' ? (
                   <Clock className="w-6 h-6 text-yellow-500" />
                 ) : (
