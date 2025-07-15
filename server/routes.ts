@@ -411,6 +411,14 @@ const upload = multer({
   },
 });
 
+// Helper function to get user ID in both development and production modes
+function getUserId(req: any): string {
+  if (process.env.NODE_ENV === 'development') {
+    return 'demo-user-123';
+  }
+  return req.user.claims.sub;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -489,9 +497,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Profile management routes
-  app.get('/api/profile', isAuthenticated, async (req: any, res) => {
+  app.get('/api/profile', requireSubscription, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -500,9 +508,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/profile', isAuthenticated, async (req: any, res) => {
+  app.put('/api/profile', requireSubscription, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const { 
         firstName, 
         lastName, 
@@ -540,7 +548,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Shipment routes
   app.get('/api/shipments', requireSubscription, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const shipments = await storage.getShipmentsByUserId(userId);
       res.json(shipments);
     } catch (error) {
@@ -549,7 +557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/shipments/:id', isAuthenticated, async (req: any, res) => {
+  app.get('/api/shipments/:id', requireSubscription, async (req: any, res) => {
     try {
       const shipmentId = parseInt(req.params.id);
       const shipment = await storage.getShipmentById(shipmentId);
@@ -559,7 +567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user owns this shipment
-      if (shipment.userId !== req.user.claims.sub) {
+      if (shipment.userId !== getUserId(req)) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -572,7 +580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/shipments', requireSubscription, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const shipmentData = insertShipmentSchema.parse({
         ...req.body,
         userId,
@@ -590,9 +598,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Document routes
-  app.get('/api/documents', isAuthenticated, async (req: any, res) => {
+  app.get('/api/documents', requireSubscription, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const shipmentId = req.query.shipmentId;
       
       let documents;
@@ -613,10 +621,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/shipments/:shipmentId/documents', isAuthenticated, async (req: any, res) => {
+  app.get('/api/shipments/:shipmentId/documents', requireSubscription, async (req: any, res) => {
     try {
       const shipmentId = parseInt(req.params.shipmentId);
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       
       // Verify user owns the shipment
       const shipment = await storage.getShipmentById(shipmentId);
@@ -1109,10 +1117,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Dashboard stats route
-  app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
+  // Subscription access check
+  app.get('/api/subscription/access', requireSubscription, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
+      const accessInfo = await storage.checkUserAccess(userId);
+      res.json(accessInfo);
+    } catch (error) {
+      console.error("Error checking subscription access:", error);
+      res.status(500).json({ message: "Failed to check subscription access" });
+    }
+  });
+
+  // Payment configuration
+  app.get('/api/payment/config', requireSubscription, async (req: any, res) => {
+    try {
+      const clientKey = process.env.AUTHORIZE_NET_CLIENT_KEY;
+      const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
+      
+      if (!clientKey || !apiLoginId) {
+        return res.status(500).json({ 
+          success: false, 
+          error: "Payment system not configured" 
+        });
+      }
+      
+      res.json({
+        success: true,
+        clientKey,
+        apiLoginId,
+        environment: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
+      });
+    } catch (error) {
+      console.error("Error fetching payment config:", error);
+      res.status(500).json({ message: "Failed to fetch payment configuration" });
+    }
+  });
+
+  // Dashboard stats route
+  app.get('/api/dashboard/stats', requireSubscription, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
       
       const shipments = await storage.getShipmentsByUserId(userId);
       const documents = await storage.getDocumentsByUserId(userId);
