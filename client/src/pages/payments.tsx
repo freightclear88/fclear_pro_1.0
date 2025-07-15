@@ -213,14 +213,16 @@ export default function Payments() {
                 ) : (
                   <div className="space-y-3">
                     {shippingInvoices.map((invoice: Document) => (
-                      <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
-                        <div className="flex items-center gap-3">
-                          <Receipt className="w-5 h-5 text-freight-blue" />
-                          <div>
-                            <h4 className="font-medium">{invoice.originalName || invoice.fileName}</h4>
-                            <p className="text-sm text-gray-600">
-                              Uploaded: {new Date(invoice.createdAt).toLocaleDateString()}
-                            </p>
+                      <div key={invoice.id} className="p-4 border rounded-lg bg-gray-50">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <Receipt className="w-5 h-5 text-freight-blue flex-shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-medium truncate">{invoice.originalName || invoice.fileName}</h4>
+                              <p className="text-sm text-gray-600">
+                                Uploaded: {new Date(invoice.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -228,6 +230,7 @@ export default function Payments() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleViewInvoice(invoice)}
+                            className="flex-1 sm:flex-none"
                           >
                             <Eye className="w-4 h-4 mr-2" />
                             View
@@ -236,6 +239,7 @@ export default function Payments() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleDownloadInvoice(invoice)}
+                            className="flex-1 sm:flex-none"
                           >
                             <Download className="w-4 h-4 mr-2" />
                             Download
