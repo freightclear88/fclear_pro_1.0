@@ -201,12 +201,14 @@ export default function Payments() {
               Enter your invoice details and payment information below
             </p>
             <div className="flex items-center justify-center mt-4 pt-4 border-t">
-              <img 
-                src="https://www.authorize.net/content/dam/authorize/images/authorize-net-logo.png" 
-                alt="Secured by Authorize.Net" 
-                className="h-6 opacity-75"
-              />
-              <span className="ml-2 text-xs text-gray-500">Secured by Authorize.Net</span>
+              <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                  <line x1="8" y1="21" x2="16" y2="21"/>
+                  <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+                <span className="text-xs text-gray-600 font-medium">Secured by Authorize.Net</span>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -376,11 +378,14 @@ export default function Payments() {
                 <span>Your payment information is secure and encrypted</span>
               </div>
               <div className="flex items-center gap-2">
-                <img 
-                  src="https://www.authorize.net/content/dam/authorize/images/authorize-net-logo.png" 
-                  alt="Authorize.Net" 
-                  className="h-4 opacity-75"
-                />
+                <div className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="17" x2="12" y2="21"/>
+                  </svg>
+                  <span className="text-xs text-blue-600 font-medium">Authorize.Net</span>
+                </div>
                 <span>PCI DSS Compliant</span>
               </div>
             </div>

@@ -175,3 +175,4 @@ Changelog:
 - July 15, 2025: Moved Subscription to bottom of main navigation menu as lowest option
 - July 15, 2025: Implemented admin authentication control system with isAdmin database field and requireAdmin middleware
 - July 15, 2025: Admin section now only visible to users with admin privileges, protecting all admin routes with proper authorization
+- July 15, 2025: Fixed Authorize.Net secure logo display issues by replacing external image URLs with reliable inline SVG icons and styled badges
