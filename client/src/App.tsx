@@ -53,7 +53,14 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                 <img src={freightclearLogo} alt="Freightclear Logo" className="h-15 w-auto mx-auto" style={{height: '60px'}} />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-freight-dark">Workflows</h1>
+                <h1 className="text-lg font-light text-freight-dark" style={{
+                  fontFamily: 'Kanit, sans-serif',
+                  fontWeight: 300,
+                  background: 'linear-gradient(to bottom, #66c2ff, #33cccc)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>WORKFLOWS</h1>
               </div>
             </div>
           </SidebarHeader>
