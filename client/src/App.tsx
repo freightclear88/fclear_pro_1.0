@@ -18,12 +18,14 @@ import Admin from "@/pages/admin";
 import Subscription from "@/pages/subscription";
 import Payments from "@/pages/payments";
 import Demo from "@/pages/demo";
-import { BarChart3, Ship, User, Shield, CreditCard, Receipt } from "lucide-react";
+import Chat from "@/pages/chat";
+import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle } from "lucide-react";
 import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_1751903859339.png";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
   { name: "Shipments", href: "/shipments", icon: Ship },
+  { name: "Chat", href: "/chat", icon: MessageCircle },
   { name: "Payments", href: "/payments", icon: Receipt },
   { name: "Profile", href: "/profile", icon: User },
   { name: "Subscription", href: "/subscription", icon: CreditCard },
@@ -163,6 +165,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/shipments" component={Shipments} />
+        <Route path="/chat" component={Chat} />
         <Route path="/subscription" component={Subscription} />
         <Route path="/payments" component={Payments} />
         <Route path="/admin" component={Admin} />

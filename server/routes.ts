@@ -426,6 +426,47 @@ function getUserId(req: any): string {
   return req.user.claims.sub;
 }
 
+// Simple AI response generator for common questions
+async function generateAIResponse(userMessage: string): Promise<string> {
+  const message = userMessage.toLowerCase();
+  
+  // Common shipping/freight questions
+  if (message.includes('shipping') || message.includes('freight')) {
+    return "I can help you with shipping and freight questions! You can create shipments, track your cargo, and manage documents all in one place. What specific shipping question can I help you with?";
+  }
+  
+  if (message.includes('document') || message.includes('upload')) {
+    return "For document management, you can upload bills of lading, commercial invoices, packing lists, and other shipping documents. Each document gets automatically categorized and linked to your shipments. Need help with a specific document type?";
+  }
+  
+  if (message.includes('customs') || message.includes('clearance')) {
+    return "For customs clearance, make sure you have your Power of Attorney validated and IRS proof uploaded. Our system helps streamline the customs process by organizing all required documents. Are you having issues with customs documentation?";
+  }
+  
+  if (message.includes('payment') || message.includes('subscription')) {
+    return "For payment and subscription questions, you can manage your billing through the Subscription page. We offer Free and Pro plans ($175/month). Pro gives you unlimited shipments and documents. Need help with billing?";
+  }
+  
+  if (message.includes('poa') || message.includes('power of attorney')) {
+    return "The Power of Attorney (POA) is required for customs clearance. You can create and submit your POA through the Profile page. Once submitted, an admin will review and validate it. The POA authorizes WCS International Inc. to act on your behalf for customs matters.";
+  }
+  
+  if (message.includes('irs') || message.includes('tax')) {
+    return "IRS proof is required for verification. Companies/LLCs should upload IRS Letter 147C or equivalent with company name, address, and EIN. Individual importers should upload a PDF of their social security card. This gets reviewed by our admin team.";
+  }
+  
+  if (message.includes('help') || message.includes('support')) {
+    return "I'm here to help! I can assist with shipping questions, document uploads, customs clearance, payments, and general platform navigation. You can also contact our admin team for more complex issues. What do you need help with?";
+  }
+  
+  if (message.includes('admin') || message.includes('contact')) {
+    return "To contact an admin, you can continue this conversation and an admin will be notified. Alternatively, you can reach out through the support channels. Our admin team handles POA validation, IRS proof verification, and complex shipping issues.";
+  }
+  
+  // Default response
+  return "Thanks for your message! I can help with shipping, documents, customs clearance, payments, and general platform questions. For more complex issues, I can connect you with our admin team. What would you like to know about?";
+}
+
 // Demo-compatible middleware for document access
 function requireDocumentAccess(req: any, res: any, next: any) {
   try {
@@ -2248,6 +2289,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching payment history:", error);
       res.status(500).json({ error: "Failed to fetch payment history" });
+    }
+  });
+
+  // Chat routes
+  app.get('/api/chat/conversations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const conversations = await storage.getChatConversationsByUserId(userId);
+      res.json(conversations);
+    } catch (error) {
+      console.error("Error fetching chat conversations:", error);
+      res.status(500).json({ message: "Failed to fetch conversations" });
+    }
+  });
+
+  app.post('/api/chat/conversations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { title } = req.body;
+      
+      const conversation = await storage.createChatConversation({
+        userId,
+        title: title || "New Conversation",
+        status: "active"
+      });
+      
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error creating chat conversation:", error);
+      res.status(500).json({ message: "Failed to create conversation" });
+    }
+  });
+
+  app.get('/api/chat/conversations/:id/messages', isAuthenticated, async (req: any, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const messages = await storage.getChatMessagesByConversationId(conversationId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching chat messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  app.post('/api/chat/conversations/:id/messages', isAuthenticated, async (req: any, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const userId = getUserId(req);
+      const { content, messageType = 'text' } = req.body;
+      
+      const message = await storage.createChatMessage({
+        conversationId,
+        senderId: userId,
+        senderType: 'user',
+        content,
+        messageType,
+        isRead: false
+      });
+      
+      // Check if we need to generate an AI response
+      if (content.toLowerCase().includes('help') || content.toLowerCase().includes('question')) {
+        // Simple AI response for common questions
+        const aiResponse = await generateAIResponse(content);
+        await storage.createChatMessage({
+          conversationId,
+          senderId: 'ai-assistant',
+          senderType: 'ai',
+          content: aiResponse,
+          messageType: 'text',
+          isRead: false
+        });
+      }
+      
+      res.json(message);
+    } catch (error) {
+      console.error("Error creating chat message:", error);
+      res.status(500).json({ message: "Failed to create message" });
+    }
+  });
+
+  // Admin chat routes
+  app.get('/api/admin/chat/conversations', requireAdmin, async (req: any, res) => {
+    try {
+      const conversations = await storage.getAllChatConversations();
+      res.json(conversations);
+    } catch (error) {
+      console.error("Error fetching admin chat conversations:", error);
+      res.status(500).json({ message: "Failed to fetch conversations" });
+    }
+  });
+
+  app.post('/api/admin/chat/conversations/:id/messages', requireAdmin, async (req: any, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const adminId = getUserId(req);
+      const { content, messageType = 'text' } = req.body;
+      
+      const message = await storage.createChatMessage({
+        conversationId,
+        senderId: adminId,
+        senderType: 'admin',
+        content,
+        messageType,
+        isRead: false
+      });
+      
+      res.json(message);
+    } catch (error) {
+      console.error("Error creating admin chat message:", error);
+      res.status(500).json({ message: "Failed to create message" });
     }
   });
 

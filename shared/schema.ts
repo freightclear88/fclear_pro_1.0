@@ -186,6 +186,31 @@ export const ocrProcessingJobs = pgTable("ocr_processing_jobs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Chat conversations table
+export const chatConversations = pgTable("chat_conversations", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: varchar("title").notNull().default("New Conversation"),
+  status: varchar("status").notNull().default("active"), // active, archived, closed
+  lastMessageAt: timestamp("last_message_at").defaultNow(),
+  assignedAdminId: varchar("assigned_admin_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Chat messages table
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull().references(() => chatConversations.id, { onDelete: "cascade" }),
+  senderId: varchar("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  senderType: varchar("sender_type").notNull(), // user, admin, ai
+  content: text("content").notNull(),
+  messageType: varchar("message_type").notNull().default("text"), // text, system, file_attachment
+  metadata: jsonb("metadata"), // for AI responses, file attachments, etc.
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Schema types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -198,6 +223,12 @@ export type Document = typeof documents.$inferSelect;
 
 export type InsertOcrProcessingJob = typeof ocrProcessingJobs.$inferInsert;
 export type OcrProcessingJob = typeof ocrProcessingJobs.$inferSelect;
+
+export type InsertChatConversation = typeof chatConversations.$inferInsert;
+export type ChatConversation = typeof chatConversations.$inferSelect;
+
+export type InsertChatMessage = typeof chatMessages.$inferInsert;
+export type ChatMessage = typeof chatMessages.$inferSelect;
 
 export type InsertSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
@@ -221,4 +252,15 @@ export const insertOcrProcessingJobSchema = createInsertSchema(ocrProcessingJobs
   id: true,
   createdAt: true,
   processedAt: true,
+});
+
+export const insertChatConversationSchema = createInsertSchema(chatConversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
+  id: true,
+  createdAt: true,
 });
