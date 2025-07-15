@@ -48,14 +48,15 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       <div className="w-64 glass-effect shadow-lg border-r border-white/20 fixed h-full z-30">
         <Sidebar>
           <SidebarHeader className="p-8 border-b border-white/20">
-            <div className="flex flex-col items-center text-center space-y-3">
-              <div className="p-4 mb-2">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-4">
                 <img src={freightclearLogo} alt="Freightclear Logo" className="h-15 w-auto mx-auto" style={{height: '60px'}} />
               </div>
-              <div>
-                <h1 className="text-lg font-light text-freight-dark" style={{
+              <div style={{paddingTop: '10px'}}>
+                <h1 className="font-light text-freight-dark" style={{
                   fontFamily: 'Kanit, sans-serif',
                   fontWeight: 300,
+                  fontSize: '36px',
                   background: 'linear-gradient(to bottom, #66c2ff, #33cccc)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
