@@ -283,6 +283,14 @@ export default function Profile() {
                       : 'IRS verification document required'
                     }
                   </p>
+                  <div className="mt-2 text-xs text-gray-500" style={{ fontSize: '11pt' }}>
+                    <p className="mb-1">
+                      <strong>Companies, corporations or LLC's:</strong> Upload IRS Letter 147C or equivalent communication from IRS containing Company Name, address, and EIN number.
+                    </p>
+                    <p>
+                      <strong>Individual importers:</strong> Upload a PDF displaying image of your social security card.
+                    </p>
+                  </div>
                 </div>
               </div>
               <Badge variant={irsProofStatus === 'validated' ? 'default' : irsProofStatus === 'pending' ? 'secondary' : irsProofStatus === 'rejected' ? 'destructive' : 'destructive'} className={
