@@ -7,10 +7,84 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle, Receipt, ChevronDown, ChevronRight, Folder } from "lucide-react";
+import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle, Receipt, ChevronDown, ChevronRight, Folder, CreditCard, Crown, Zap } from "lucide-react";
 import type { Shipment, Document, User } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+
+interface SubscriptionUpgradeDialogProps {
+  user: User;
+  subscriptionPlans: any[];
+  onUpgrade: (planName: string, duration: number) => void;
+  isPending: boolean;
+}
+
+function SubscriptionUpgradeDialog({ user, subscriptionPlans, onUpgrade, isPending }: SubscriptionUpgradeDialogProps) {
+  const [selectedPlan, setSelectedPlan] = useState(user.subscriptionPlan || 'free');
+  const [selectedDuration, setSelectedDuration] = useState('1');
+
+  const handleUpgrade = () => {
+    onUpgrade(selectedPlan, parseInt(selectedDuration));
+  };
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button size="sm" className="w-full btn-primary">
+          Upgrade Subscription
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Upgrade User Subscription</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="plan">Subscription Plan</Label>
+            <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select plan" />
+              </SelectTrigger>
+              <SelectContent>
+                {subscriptionPlans.map((plan: any) => (
+                  <SelectItem key={plan.id} value={plan.planName}>
+                    {plan.displayName} - ${plan.monthlyPrice}/month
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Label htmlFor="duration">Duration (months)</Label>
+            <Select value={selectedDuration} onValueChange={setSelectedDuration}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 Month</SelectItem>
+                <SelectItem value="3">3 Months</SelectItem>
+                <SelectItem value="6">6 Months</SelectItem>
+                <SelectItem value="12">12 Months</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <Button
+            onClick={handleUpgrade}
+            disabled={isPending}
+            className="w-full btn-primary"
+          >
+            {isPending ? 'Updating...' : 'Update Subscription'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function Admin() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,6 +108,10 @@ export default function Admin() {
 
   const { data: stats } = useQuery({
     queryKey: ["/api/admin/stats"],
+  });
+
+  const { data: subscriptionPlans = [] } = useQuery({
+    queryKey: ["/api/admin/subscription/plans"],
   });
 
   const filteredShipments = allShipments.filter((shipment: Shipment) => {
@@ -209,8 +287,36 @@ export default function Admin() {
     },
   });
 
+  const upgradeSubscriptionMutation = useMutation({
+    mutationFn: async ({ userId, planName, durationMonths }: { userId: string; planName: string; durationMonths: number }) => {
+      await apiRequest(`/api/admin/users/${userId}/subscription`, {
+        method: 'POST',
+        body: { planName, durationMonths }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Subscription Updated",
+        description: "User subscription has been updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      console.error("Error updating subscription:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update user subscription",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleValidateIRSProof = (userId: string, status: 'validated' | 'rejected') => {
     validateIRSProofMutation.mutate({ userId, status });
+  };
+
+  const handleUpgradeSubscription = (userId: string, planName: string, durationMonths: number) => {
+    upgradeSubscriptionMutation.mutate({ userId, planName, durationMonths });
   };
 
   const toggleShipmentExpansion = (shipmentId: number) => {
@@ -504,6 +610,55 @@ export default function Admin() {
           </CardContent>
         </Card>
       )}
+
+      {/* Subscription Management */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Subscription Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {allUsers.map((user: User) => (
+                <div key={user.id} className="border rounded-lg p-4 bg-white">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h4 className="font-medium">{user.firstName} {user.lastName}</h4>
+                      <p className="text-sm text-gray-600">{user.email}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {user.subscriptionPlan === 'pro' && <Crown className="w-4 h-4 text-freight-orange" />}
+                      {user.subscriptionPlan === 'starter' && <CreditCard className="w-4 h-4 text-blue-500" />}
+                      <Badge variant={user.subscriptionPlan === 'free' ? 'secondary' : 'default'}>
+                        {user.subscriptionPlan || 'free'}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="text-sm text-gray-600 mb-3">
+                    <div>Status: {user.subscriptionStatus || 'inactive'}</div>
+                    {user.subscriptionEndDate && (
+                      <div>Expires: {new Date(user.subscriptionEndDate).toLocaleDateString()}</div>
+                    )}
+                    <div>Shipments: {user.currentShipmentCount || 0} / {user.maxShipments === -1 ? '∞' : user.maxShipments}</div>
+                    <div>Documents: {user.currentDocumentCount || 0} / {user.maxDocuments === -1 ? '∞' : user.maxDocuments}</div>
+                  </div>
+
+                  <SubscriptionUpgradeDialog
+                    user={user}
+                    subscriptionPlans={subscriptionPlans}
+                    onUpgrade={(planName, duration) => handleUpgradeSubscription(user.id, planName, duration)}
+                    isPending={upgradeSubscriptionMutation.isPending}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Filters */}
       <Card className="mb-6">

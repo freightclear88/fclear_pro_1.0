@@ -2402,6 +2402,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin subscription management
+  app.post('/api/admin/users/:userId/subscription', requireAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { planName, subscriptionStatus = 'active', durationMonths = 1 } = req.body;
+      
+      // Validate plan exists
+      const plan = await storage.getSubscriptionPlan(planName);
+      if (!plan) {
+        return res.status(400).json({ message: "Invalid subscription plan" });
+      }
+      
+      // Calculate end date
+      const subscriptionEndDate = new Date();
+      subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + durationMonths);
+      
+      // Update user subscription
+      const updatedUser = await storage.updateUserSubscription(userId, {
+        subscriptionPlan: planName,
+        subscriptionStatus,
+        subscriptionStartDate: new Date(),
+        subscriptionEndDate,
+        maxShipments: plan.maxShipments,
+        maxDocuments: plan.maxDocuments,
+        currentShipmentCount: 0,
+        currentDocumentCount: 0,
+        updatedAt: new Date()
+      });
+      
+      res.json({
+        success: true,
+        message: `User subscription updated to ${plan.displayName}`,
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error("Error updating user subscription:", error);
+      res.status(500).json({ message: "Failed to update user subscription" });
+    }
+  });
+
+  app.get('/api/admin/subscription/plans', requireAdmin, async (req: any, res) => {
+    try {
+      const plans = await storage.getSubscriptionPlans();
+      res.json(plans);
+    } catch (error) {
+      console.error("Error fetching subscription plans:", error);
+      res.status(500).json({ message: "Failed to fetch subscription plans" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

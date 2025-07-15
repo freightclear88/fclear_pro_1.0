@@ -201,3 +201,6 @@ Changelog:
 - July 15, 2025: Added subscription-based chat access control with upgrade prompts for Free users
 - July 15, 2025: Enhanced subscription page with 3-column layout displaying all subscription tiers with clear feature comparisons
 - July 15, 2025: Chat system includes contextual AI responses for shipping, customs, documents, POA, and general support questions
+- July 15, 2025: Implemented admin subscription management allowing manual upgrade of any user to any plan without payment requirements
+- July 15, 2025: Added subscription management UI to admin dashboard with visual plan indicators and upgrade dialog
+- July 15, 2025: Enhanced admin capabilities with subscription plans API and user subscription status monitoring
