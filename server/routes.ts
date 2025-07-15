@@ -1748,71 +1748,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Subscription Plans Route
   app.get('/api/subscription/plans', async (req, res) => {
     try {
-      // Return predefined subscription plans (could be stored in database)
-      const plans = [
-        {
-          id: 1,
-          planName: 'basic',
-          displayName: 'Basic Plan',
-          description: 'Perfect for small businesses getting started with imports',
-          monthlyPrice: '29.99',
-          yearlyPrice: '287.90', // 20% discount
-          maxShipments: 25,
-          maxDocuments: 100,
-          maxUsers: 1,
-          features: [
-            'Basic shipment tracking',
-            'Document upload & storage',
-            'Email notifications',
-            'Standard support',
-            'Monthly usage reports'
-          ],
-          isActive: true
-        },
-        {
-          id: 2,
-          planName: 'professional',
-          displayName: 'Professional Plan',
-          description: 'Ideal for growing businesses with advanced needs',
-          monthlyPrice: '79.99',
-          yearlyPrice: '767.90', // 20% discount
-          maxShipments: 100,
-          maxDocuments: 500,
-          maxUsers: 5,
-          features: [
-            'Advanced shipment tracking',
-            'OCR document processing',
-            'API access',
-            'Priority support',
-            'Advanced analytics',
-            'Custom reporting',
-            'Bulk operations'
-          ],
-          isActive: true
-        },
-        {
-          id: 3,
-          planName: 'enterprise',
-          displayName: 'Enterprise Plan',
-          description: 'Complete solution for large-scale operations',
-          monthlyPrice: '199.99',
-          yearlyPrice: '1919.90', // 20% discount
-          maxShipments: -1, // unlimited
-          maxDocuments: -1, // unlimited
-          maxUsers: -1, // unlimited
-          features: [
-            'Unlimited everything',
-            'Dedicated account manager',
-            'Custom integrations',
-            '24/7 phone support',
-            'SLA guarantees',
-            'Advanced security features',
-            'Custom training'
-          ],
-          isActive: true
-        }
-      ];
-      
+      // Get subscription plans from database
+      const plans = await storage.getSubscriptionPlans();
       res.json(plans);
     } catch (error) {
       console.error("Error fetching subscription plans:", error);

@@ -169,3 +169,4 @@ Changelog:
 - July 15, 2025: Integrated Accept.js for secure payment processing and customer profile management in Authorize.Net
 - July 15, 2025: Created development demo mode bypassing authentication for testing subscription features
 - July 15, 2025: Added /demo route with test user to allow feature testing without login requirements
+- July 15, 2025: Simplified subscription plans to only Free and Pro ($175/month) by removing hardcoded plans from API routes and using database-stored plans exclusively
