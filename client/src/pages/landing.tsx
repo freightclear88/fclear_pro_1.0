@@ -40,13 +40,23 @@ export default function Landing() {
             Intelligent document processing and shipment management platform. 
             Upload documents, create shipments, and track your freight operations efficiently.
           </p>
-          <Button 
-            onClick={() => window.location.href = "/api/login"}
-            size="lg"
-            className="btn-primary px-12 py-4 text-lg"
-          >
-            Get Started
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              onClick={() => window.location.href = "/api/login"}
+              size="lg"
+              className="btn-primary px-12 py-4 text-lg"
+            >
+              Get Started
+            </Button>
+            <Button 
+              onClick={() => window.location.href = "/demo"}
+              size="lg"
+              variant="outline"
+              className="border-freight-orange text-freight-orange hover:bg-freight-orange hover:text-white px-12 py-4 text-lg font-semibold"
+            >
+              Try Demo
+            </Button>
+          </div>
         </div>
 
         {/* Key Features */}

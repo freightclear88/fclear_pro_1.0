@@ -167,3 +167,5 @@ Changelog:
 - July 15, 2025: Transformed payment page into subscription management dashboard with plan selection and billing cycles
 - July 15, 2025: Added subscription middleware protecting shipment and document creation routes with usage limit enforcement
 - July 15, 2025: Integrated Accept.js for secure payment processing and customer profile management in Authorize.Net
+- July 15, 2025: Created development demo mode bypassing authentication for testing subscription features
+- July 15, 2025: Added /demo route with test user to allow feature testing without login requirements
