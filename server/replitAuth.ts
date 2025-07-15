@@ -159,11 +159,18 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 // Middleware to check subscription access
 export const requireSubscription: RequestHandler = async (req: any, res, next) => {
   try {
-    if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+    let userId: string;
+    
+    // Development test mode
+    if (process.env.NODE_ENV === 'development') {
+      userId = 'demo-user-123';
+    } else {
+      // Production mode - require authentication
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      userId = req.user.claims.sub;
     }
-
-    const userId = req.user.claims.sub;
     const accessInfo = await storage.checkUserAccess(userId);
 
     if (!accessInfo.hasAccess) {

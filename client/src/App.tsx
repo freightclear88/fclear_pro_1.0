@@ -16,6 +16,7 @@ import Shipments from "@/pages/shipments";
 import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
 import Payment from "@/pages/payment";
+import Demo from "@/pages/demo";
 import { BarChart3, Ship, User, Shield, CreditCard } from "lucide-react";
 import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_1751903859339.png";
 
@@ -120,6 +121,7 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={Landing} />
+        <Route path="/demo" component={Demo} />
         <Route path="/register" component={Register} />
         <Route component={NotFound} />
       </Switch>

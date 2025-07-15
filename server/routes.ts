@@ -443,8 +443,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
+      // Development test mode - create a demo user for testing
+      if (process.env.NODE_ENV === 'development') {
+        const testUserId = 'demo-user-123';
+        let user = await storage.getUser(testUserId);
+        
+        if (!user) {
+          // Create demo user
+          user = await storage.upsertUser({
+            id: testUserId,
+            email: 'demo@freightclear.com',
+            firstName: 'Demo',
+            lastName: 'User',
+            companyName: 'Demo Logistics Inc.',
+            phone: '555-123-4567',
+            subscriptionStatus: 'trial',
+            subscriptionPlan: 'free',
+            isTrialActive: true,
+            trialStartDate: new Date(),
+            trialEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
+            maxShipments: 5,
+            maxDocuments: 20,
+            currentShipmentCount: 0,
+            currentDocumentCount: 0
+          });
+        }
+        
+        return res.json(user);
+      }
+      
+      // Production mode - require authentication
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       res.json(user);
