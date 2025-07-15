@@ -335,22 +335,29 @@ export default function Subscription() {
         </div>
 
         {/* Subscription Plans */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {plans.map((plan: SubscriptionPlan) => {
             const price = billingCycle === "monthly" ? plan.monthlyPrice : plan.yearlyPrice;
             const isFree = plan.planName === "free";
+            const isStarter = plan.planName === "starter";
             const isPro = plan.planName === "pro";
             
             return (
               <Card 
                 key={plan.id} 
                 className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg ${
-                  isPro ? "border-freight-orange shadow-lg" : "border-gray-200"
+                  isPro ? "border-freight-orange shadow-lg" : 
+                  isStarter ? "border-blue-500 shadow-md" : "border-gray-200"
                 }`}
               >
                 {isPro && (
                   <div className="absolute top-0 right-0 bg-freight-orange text-white px-3 py-1 text-xs font-medium">
                     Most Popular
+                  </div>
+                )}
+                {isStarter && (
+                  <div className="absolute top-0 right-0 bg-blue-500 text-white px-3 py-1 text-xs font-medium">
+                    Best Value
                   </div>
                 )}
                 
@@ -360,6 +367,7 @@ export default function Subscription() {
                       {plan.displayName}
                     </CardTitle>
                     {isPro && <Crown className="w-6 h-6 text-freight-orange" />}
+                    {isStarter && <Zap className="w-6 h-6 text-blue-500" />}
                     {isFree && <Sparkles className="w-6 h-6 text-teal" />}
                   </div>
                   <p className="text-gray-600 text-sm">{plan.description}</p>
@@ -380,11 +388,24 @@ export default function Subscription() {
                     )}
                   </div>
                   
-                  <ul className="space-y-3 mb-6">
+                  <div className="mb-6">
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <div>
+                        <span className="font-medium">Shipments:</span> {plan.maxShipments === -1 ? "Unlimited" : plan.maxShipments}
+                      </div>
+                      <div>
+                        <span className="font-medium">Documents:</span> {plan.maxDocuments === -1 ? "Unlimited" : plan.maxDocuments}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <ul className="space-y-2 mb-6">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                        <span className="text-sm text-gray-600">{feature}</span>
+                        <span className="text-sm text-gray-600">
+                          {feature.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -394,7 +415,9 @@ export default function Subscription() {
                     className={`w-full ${
                       isPro 
                         ? "bg-freight-orange hover:bg-freight-orange/90 text-white" 
-                        : "bg-teal hover:bg-teal/90 text-white"
+                        : isStarter 
+                          ? "bg-blue-500 hover:bg-blue-600 text-white"
+                          : "bg-teal hover:bg-teal/90 text-white"
                     }`}
                     disabled={isFree}
                   >

@@ -195,3 +195,9 @@ Changelog:
 - July 15, 2025: Enhanced payments page responsiveness with max-w-7xl container, xl:col-span-3/9 breakpoints, and improved form grid layouts with xl:grid-cols-3/4 for better space utilization
 - July 15, 2025: Added detailed instruction text to IRS proof card on profile page explaining required documents for companies/LLCs vs individual importers in 11pt font
 - July 15, 2025: Updated IRS proof validation to display green star icon (like POA) when validated, maintaining admin-only validation control
+- July 15, 2025: Implemented comprehensive chat system with AI responses, conversation management, and real-time messaging
+- July 15, 2025: Created new "Starter" subscription tier at $49/month with 20 shipments, 300 documents, and chat support access
+- July 15, 2025: Updated subscription model to 3-tier system: Free (no chat), Starter ($49/month with chat), Pro ($175/month unlimited)
+- July 15, 2025: Added subscription-based chat access control with upgrade prompts for Free users
+- July 15, 2025: Enhanced subscription page with 3-column layout displaying all subscription tiers with clear feature comparisons
+- July 15, 2025: Chat system includes contextual AI responses for shipping, customs, documents, POA, and general support questions

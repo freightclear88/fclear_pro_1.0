@@ -240,3 +240,43 @@ export const requireAdmin: RequestHandler = async (req: any, res, next) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// Middleware to check chat access based on subscription plan
+export const requireChatAccess: RequestHandler = async (req: any, res, next) => {
+  try {
+    let userId: string;
+    
+    // Development test mode
+    if (process.env.NODE_ENV === 'development') {
+      userId = 'demo-user-123';
+    } else {
+      // Production mode - require authentication
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      userId = req.user.claims.sub;
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    // Check if user has chat access based on subscription
+    const subscriptionPlan = user.subscriptionPlan || 'free';
+    
+    if (subscriptionPlan === 'free') {
+      return res.status(403).json({ 
+        message: "Chat access requires Starter or Pro subscription",
+        upgradeRequired: true,
+        requiredPlans: ['starter', 'pro']
+      });
+    }
+
+    // Allow access for starter, pro, and any other paid plans
+    next();
+  } catch (error) {
+    console.error("Chat access check error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

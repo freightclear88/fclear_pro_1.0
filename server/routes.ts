@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, requireSubscription, requireAdmin } from "./replitAuth";
+import { setupAuth, isAuthenticated, requireSubscription, requireAdmin, requireChatAccess } from "./replitAuth";
 import ApiContracts from 'authorizenet/lib/apicontracts';
 import ApiControllers from 'authorizenet/lib/apicontrollers';
 import SDKConstants from 'authorizenet/lib/constants';
@@ -2293,7 +2293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chat routes
-  app.get('/api/chat/conversations', isAuthenticated, async (req: any, res) => {
+  app.get('/api/chat/conversations', isAuthenticated, requireChatAccess, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const conversations = await storage.getChatConversationsByUserId(userId);
@@ -2304,7 +2304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/chat/conversations', isAuthenticated, async (req: any, res) => {
+  app.post('/api/chat/conversations', isAuthenticated, requireChatAccess, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const { title } = req.body;
@@ -2322,7 +2322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/chat/conversations/:id/messages', isAuthenticated, async (req: any, res) => {
+  app.get('/api/chat/conversations/:id/messages', isAuthenticated, requireChatAccess, async (req: any, res) => {
     try {
       const conversationId = parseInt(req.params.id);
       const messages = await storage.getChatMessagesByConversationId(conversationId);
@@ -2333,7 +2333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/chat/conversations/:id/messages', isAuthenticated, async (req: any, res) => {
+  app.post('/api/chat/conversations/:id/messages', isAuthenticated, requireChatAccess, async (req: any, res) => {
     try {
       const conversationId = parseInt(req.params.id);
       const userId = getUserId(req);

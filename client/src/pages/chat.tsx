@@ -8,8 +8,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageCircle, Send, Plus, User, Bot, Shield } from 'lucide-react';
+import { MessageCircle, Send, Plus, User, Bot, Shield, Lock, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'wouter';
 import type { ChatConversation, ChatMessage } from '@shared/schema';
 
 export default function Chat() {
@@ -17,14 +18,20 @@ export default function Chat() {
   const [newMessage, setNewMessage] = useState('');
   const [newConversationTitle, setNewConversationTitle] = useState('');
   const [showNewConversationForm, setShowNewConversationForm] = useState(false);
+  const [accessError, setAccessError] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Query for conversations
-  const { data: conversations = [], isLoading: conversationsLoading } = useQuery({
+  const { data: conversations = [], isLoading: conversationsLoading, error: conversationsError } = useQuery({
     queryKey: ['/api/chat/conversations'],
     refetchInterval: 5000, // Refresh every 5 seconds
+    onError: (error: any) => {
+      if (error.message?.includes('403')) {
+        setAccessError(error);
+      }
+    }
   });
 
   // Query for messages in selected conversation
@@ -122,6 +129,60 @@ export default function Chat() {
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
+
+  // Show upgrade prompt for users without chat access
+  if (conversationsError && conversationsError.message?.includes('403')) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+              <Lock className="h-8 w-8 text-amber-600" />
+            </div>
+            <CardTitle className="text-xl">Chat Access Required</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <p className="text-gray-600">
+              Chat support requires a Starter or Pro subscription plan.
+            </p>
+            <div className="space-y-3">
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-blue-900">Starter Plan</p>
+                    <p className="text-sm text-blue-700">$49/month</p>
+                    <p className="text-xs text-blue-600">20 shipments, 300 documents, chat support</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-green-900">Pro Plan</p>
+                    <p className="text-sm text-green-700">$175/month</p>
+                    <p className="text-xs text-green-600">Unlimited shipments, documents, priority support</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Link href="/subscription">
+                <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Upgrade Plan
+                </Button>
+              </Link>
+              <Link href="/">
+                <Button variant="outline" className="flex-1">
+                  Go Back
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (conversationsLoading) {
     return (
