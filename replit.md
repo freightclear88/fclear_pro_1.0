@@ -192,3 +192,4 @@ Changelog:
 - July 15, 2025: Fixed sidebar branding layout: made logo larger (h-12), changed to vertical layout with "Workflows" under logo and "Streamlined Import Management" as subtitle
 - July 15, 2025: Removed "Streamlined Import Management" subtitle from sidebar branding per user request
 - July 15, 2025: Reorganized payments page into two-column layout: invoices card (35% width) and payment area (65% width) using CSS Grid with lg:col-span-4 and lg:col-span-8
+- July 15, 2025: Enhanced payments page responsiveness with max-w-7xl container, xl:col-span-3/9 breakpoints, and improved form grid layouts with xl:grid-cols-3/4 for better space utilization

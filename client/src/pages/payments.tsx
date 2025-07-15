@@ -183,7 +183,7 @@ export default function Payments() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-freight-dark mb-2">Invoice Payments</h1>
@@ -193,7 +193,7 @@ export default function Payments() {
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Shipping Invoices List - 35% */}
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-4 xl:col-span-3">
             <Card className="h-fit">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -250,7 +250,7 @@ export default function Payments() {
           </div>
 
           {/* Payment Area - 65% */}
-          <div className="lg:col-span-8">
+          <div className="lg:col-span-8 xl:col-span-9">
             <div className="space-y-8">
               {/* Payment Information */}
               <Card>
@@ -261,7 +261,7 @@ export default function Payments() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     <div className="space-y-4">
                       <div className="flex items-center gap-3 p-4 bg-teal/5 rounded-lg">
                         <Receipt className="w-5 h-5 text-teal" />
@@ -288,6 +288,18 @@ export default function Payments() {
                           <li>• Payments are processed immediately</li>
                           <li>• You'll receive a confirmation email</li>
                           <li>• Contact support for payment questions</li>
+                        </ul>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <h4 className="font-medium text-freight-dark mb-2">Payment Security:</h4>
+                        <ul className="text-sm text-gray-600 space-y-1">
+                          <li>• 256-bit SSL encryption</li>
+                          <li>• PCI DSS compliant</li>
+                          <li>• No card data stored</li>
+                          <li>• Fraud protection enabled</li>
                         </ul>
                       </div>
                     </div>
@@ -322,7 +334,7 @@ export default function Payments() {
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-freight-dark">Invoice Details</h3>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         <div>
                           <Label htmlFor="invoiceNumber">Invoice Number *</Label>
                           <Input
@@ -399,7 +411,7 @@ export default function Payments() {
                   />
                 </div>
                 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                   <div>
                     <Label htmlFor="expiryMonth">Month *</Label>
                     <Input
@@ -442,21 +454,19 @@ export default function Payments() {
                       required
                     />
                   </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="zipCode">ZIP Code *</Label>
-                  <Input
-                    id="zipCode"
-                    value={invoiceForm.paymentMethod.zipCode}
-                    onChange={(e) => setInvoiceForm(prev => ({
-                      ...prev,
-                      paymentMethod: { ...prev.paymentMethod, zipCode: e.target.value }
-                    }))}
-                    placeholder="12345"
-                    className="max-w-xs"
-                    required
-                  />
+                  <div>
+                    <Label htmlFor="zipCode">ZIP Code *</Label>
+                    <Input
+                      id="zipCode"
+                      value={invoiceForm.paymentMethod.zipCode}
+                      onChange={(e) => setInvoiceForm(prev => ({
+                        ...prev,
+                        paymentMethod: { ...prev.paymentMethod, zipCode: e.target.value }
+                      }))}
+                      placeholder="12345"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
