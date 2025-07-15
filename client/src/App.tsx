@@ -82,10 +82,8 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                       )}
                     >
                       <Icon 
-                        className={cn(
-                          "mr-3 w-5 h-5",
-                          isActive ? "text-freight-orange" : ""
-                        )} 
+                        className="mr-3 w-5 h-5"
+                        style={isActive ? { color: "#33cccc" } : {}}
                       />
                       {item.name}
                     </a>
@@ -108,10 +106,8 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                       )}
                     >
                       <Icon 
-                        className={cn(
-                          "mr-3 w-5 h-5",
-                          isActive ? "text-freight-orange" : ""
-                        )} 
+                        className="mr-3 w-5 h-5"
+                        style={isActive ? { color: "#33cccc" } : {}}
                       />
                       {item.name}
                     </a>
