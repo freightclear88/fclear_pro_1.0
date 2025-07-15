@@ -46,10 +46,10 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       <div className="w-64 glass-effect shadow-lg border-r border-white/20 fixed h-full z-30">
         <Sidebar>
           <SidebarHeader className="p-6 border-b border-white/20">
-            <div className="flex items-center space-x-3">
-              <img src={freightclearLogo} alt="Freightclear Logo" className="h-8" />
+            <div className="flex flex-col items-center text-center space-y-2">
+              <img src={freightclearLogo} alt="Freightclear Logo" className="h-12 w-auto" />
               <div>
-                <h1 className="text-lg font-bold text-freight-dark">Freightclear Workflows</h1>
+                <h1 className="text-lg font-bold text-freight-dark">Workflows</h1>
                 <p className="text-sm text-teal">Streamlined Import Management</p>
               </div>
             </div>

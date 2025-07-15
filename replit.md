@@ -188,3 +188,5 @@ Changelog:
 - July 15, 2025: Created dedicated sub-category options: Last Mile, Customs Clearance, Port Delivery, Warehouse Receipt, Final Delivery
 - July 15, 2025: Enhanced shipment page layout with increased padding and spacing around headers and titles for better visual organization
 - July 15, 2025: Added additional left margin and padding to shipment page header area per user request
+- July 15, 2025: Implemented "shipping invoice" document category with dedicated display on payments page and popup viewing functionality
+- July 15, 2025: Fixed sidebar branding layout: made logo larger (h-12), changed to vertical layout with "Workflows" under logo and "Streamlined Import Management" as subtitle
