@@ -413,9 +413,16 @@ const upload = multer({
 
 // Helper function to get user ID in both development and production modes
 function getUserId(req: any): string {
+  // Development test mode
   if (process.env.NODE_ENV === 'development') {
     return 'demo-user-123';
   }
+  
+  // Production mode - get from authenticated user
+  if (!req.user?.claims?.sub) {
+    throw new Error('User not authenticated');
+  }
+  
   return req.user.claims.sub;
 }
 
@@ -487,7 +494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
       
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -643,7 +650,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POA upload route
   app.post('/api/profile/upload-poa', isAuthenticated, upload.single('file'), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const file = req.file;
 
       if (!file) {
@@ -670,7 +677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POA delete route
   app.delete('/api/profile/poa', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -702,7 +709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POA view route
   app.get('/api/profile/poa/view', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const user = await storage.getUser(userId);
       
       if (!user || !user.powerOfAttorneyDocumentPath) {
@@ -741,7 +748,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const fileName = `IRS_Proof_${userId}_${Date.now()}${path.extname(req.file.originalname)}`;
       const filePath = path.join('uploads', fileName);
       
@@ -768,7 +775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // IRS Proof view route
   app.get('/api/profile/irs-proof/view', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const user = await storage.getUser(userId);
       
       if (!user || !user.irsProofDocumentPath) {
@@ -804,7 +811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POA generation route
   app.post('/api/profile/generate-poa', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const poaData = req.body;
 
       // Generate HTML POA document with filled data
@@ -908,7 +915,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Document upload route with shipment creation
   app.post('/api/documents/upload', upload.array('documents', 10), requireSubscription, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      let userId: string;
+      
+      // Development test mode
+      if (process.env.NODE_ENV === 'development') {
+        userId = 'demo-user-123';
+      } else {
+        // Production mode - get from authenticated user
+        userId = req.user?.claims?.sub;
+        if (!userId) {
+          return res.status(401).json({ message: "Unauthorized" });
+        }
+      }
       const { shipmentId, category } = req.body;
       
       if (!req.files || req.files.length === 0) {
@@ -1078,7 +1096,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/shipments/:shipmentId/documents', isAuthenticated, upload.single('file'), async (req: any, res) => {
     try {
       const shipmentId = parseInt(req.params.shipmentId);
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const category = req.body.category || "other";
       
       if (!req.file) {
@@ -1185,7 +1203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all documents for user
   app.get('/api/documents', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const documents = await storage.getDocumentsByUserId(userId);
       res.json(documents);
     } catch (error) {
@@ -1198,7 +1216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/documents/:id/download', isAuthenticated, async (req: any, res) => {
     try {
       const documentId = parseInt(req.params.id);
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       
       // Get document and verify ownership
       const document = await storage.getDocumentById(documentId);
@@ -1229,7 +1247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/documents/:id/view', isAuthenticated, async (req: any, res) => {
     try {
       const documentId = parseInt(req.params.id);
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       
       // Get document and verify ownership
       const document = await storage.getDocumentById(documentId);
@@ -1262,7 +1280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/shipment-html/:id', isAuthenticated, async (req: any, res) => {
     try {
       const shipmentId = parseInt(req.params.id);
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       
       const shipment = await storage.getShipmentById(shipmentId);
       if (!shipment || shipment.userId !== userId) {
@@ -1490,7 +1508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Test data seeding only available in development" });
       }
       
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const { seedTestData } = await import('./seedData');
       const result = await seedTestData(userId);
       
@@ -1908,7 +1926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User Access Check Route
   app.get('/api/subscription/access', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const accessInfo = await storage.checkUserAccess(userId);
       res.json(accessInfo);
     } catch (error) {
@@ -1920,7 +1938,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create Subscription Route
   app.post('/api/subscription/create', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const {
         planName,
         billingCycle,
@@ -2165,7 +2183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cancel Subscription Route
   app.post('/api/subscription/cancel', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       
       await storage.updateUserSubscription(userId, {
         subscriptionStatus: 'cancelled',
@@ -2185,7 +2203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Payment History Route
   app.get('/api/payment/history', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const transactions = await storage.getPaymentTransactionsByUserId(userId);
       res.json({
         payments: transactions,

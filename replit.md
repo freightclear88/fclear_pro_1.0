@@ -176,3 +176,6 @@ Changelog:
 - July 15, 2025: Implemented admin authentication control system with isAdmin database field and requireAdmin middleware
 - July 15, 2025: Admin section now only visible to users with admin privileges, protecting all admin routes with proper authorization
 - July 15, 2025: Fixed Authorize.Net secure logo display issues by replacing external image URLs with reliable inline SVG icons and styled badges
+- July 15, 2025: Fixed critical demo user authentication issues preventing document uploads and shipment creation
+- July 15, 2025: Implemented getUserId helper function across all routes to handle both development demo mode and production authentication consistently
+- July 15, 2025: Demo user can now successfully upload documents, create shipments, and access all subscription features for testing
