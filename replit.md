@@ -179,3 +179,5 @@ Changelog:
 - July 15, 2025: Fixed critical demo user authentication issues preventing document uploads and shipment creation
 - July 15, 2025: Implemented getUserId helper function across all routes to handle both development demo mode and production authentication consistently
 - July 15, 2025: Demo user can now successfully upload documents, create shipments, and access all subscription features for testing
+- July 15, 2025: Fixed document viewing and downloading authorization issues by creating demo-compatible middleware
+- July 15, 2025: All document functionality now working in demo mode: upload, view, download, and listing

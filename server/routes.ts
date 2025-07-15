@@ -426,6 +426,26 @@ function getUserId(req: any): string {
   return req.user.claims.sub;
 }
 
+// Demo-compatible middleware for document access
+function requireDocumentAccess(req: any, res: any, next: any) {
+  try {
+    // In development mode, always allow access
+    if (process.env.NODE_ENV === 'development') {
+      return next();
+    }
+    
+    // In production, check authentication
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    next();
+  } catch (error) {
+    console.error("Document access middleware error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -1201,7 +1221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all documents for user
-  app.get('/api/documents', isAuthenticated, async (req: any, res) => {
+  app.get('/api/documents', requireDocumentAccess, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const documents = await storage.getDocumentsByUserId(userId);
@@ -1213,7 +1233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get document by ID for download
-  app.get('/api/documents/:id/download', isAuthenticated, async (req: any, res) => {
+  app.get('/api/documents/:id/download', requireDocumentAccess, async (req: any, res) => {
     try {
       const documentId = parseInt(req.params.id);
       const userId = getUserId(req);
@@ -1244,7 +1264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get document by ID for viewing (inline viewing, not download)
-  app.get('/api/documents/:id/view', isAuthenticated, async (req: any, res) => {
+  app.get('/api/documents/:id/view', requireDocumentAccess, async (req: any, res) => {
     try {
       const documentId = parseInt(req.params.id);
       const userId = getUserId(req);
