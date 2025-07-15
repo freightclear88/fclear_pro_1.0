@@ -211,37 +211,37 @@ export default function Payments() {
                     <p>No shipping invoices available</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {shippingInvoices.map((invoice: Document) => (
-                      <div key={invoice.id} className="p-4 border rounded-lg bg-gray-50">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <Receipt className="w-5 h-5 text-freight-blue flex-shrink-0" />
+                      <div key={invoice.id} className="p-3 border rounded-lg bg-gray-50">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <Receipt className="w-4 h-4 text-freight-blue flex-shrink-0" />
                             <div className="min-w-0 flex-1">
-                              <h4 className="font-medium truncate">{invoice.originalName || invoice.fileName}</h4>
-                              <p className="text-sm text-gray-600">
-                                Uploaded: {new Date(invoice.createdAt).toLocaleDateString()}
+                              <h4 className="text-sm font-medium truncate">{invoice.originalName || invoice.fileName}</h4>
+                              <p className="text-xs text-gray-500">
+                                {new Date(invoice.createdAt).toLocaleDateString()}
                               </p>
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1">
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleViewInvoice(invoice)}
-                            className="flex-1 sm:flex-none"
+                            className="h-7 px-2 text-xs flex-1 sm:flex-none"
                           >
-                            <Eye className="w-4 h-4 mr-2" />
+                            <Eye className="w-3 h-3 mr-1" />
                             View
                           </Button>
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleDownloadInvoice(invoice)}
-                            className="flex-1 sm:flex-none"
+                            className="h-7 px-2 text-xs flex-1 sm:flex-none"
                           >
-                            <Download className="w-4 h-4 mr-2" />
+                            <Download className="w-3 h-3 mr-1" />
                             Download
                           </Button>
                         </div>
