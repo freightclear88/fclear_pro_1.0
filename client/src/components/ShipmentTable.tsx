@@ -413,7 +413,7 @@ Destination: ${shipment?.destination || "N/A"}
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex items-center space-x-1 text-xs border-freight-blue text-freight-blue hover:bg-freight-blue hover:text-white"
+                          className="flex items-center space-x-1 text-xs border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white transition-colors"
                         >
                           <Plus className="w-3 h-3" />
                           <span>Add Document</span>
