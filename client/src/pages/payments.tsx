@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Receipt, CreditCard, FileText, DollarSign } from "lucide-react";
+import { Receipt, CreditCard, FileText, DollarSign, Eye, Download } from "lucide-react";
+import type { Document } from "@shared/schema";
 
 interface InvoicePaymentData {
   invoiceNumber: string;
@@ -27,6 +29,14 @@ interface InvoicePaymentData {
 export default function Payments() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
+  const [selectedInvoice, setSelectedInvoice] = useState<Document | null>(null);
+  const [isInvoiceViewOpen, setIsInvoiceViewOpen] = useState(false);
+
+  // Query to get shipping invoices
+  const { data: shippingInvoices = [] } = useQuery({
+    queryKey: ["/api/documents/category/shipping_invoice"],
+    enabled: isAuthenticated,
+  });
   
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [invoiceForm, setInvoiceForm] = useState<InvoicePaymentData>({
@@ -127,6 +137,39 @@ export default function Payments() {
     }
   };
 
+  const handleViewInvoice = (invoice: Document) => {
+    setSelectedInvoice(invoice);
+    setIsInvoiceViewOpen(true);
+  };
+
+  const handleDownloadInvoice = async (invoice: Document) => {
+    try {
+      const response = await fetch(`/api/documents/${invoice.id}/download`);
+      if (!response.ok) throw new Error("Download failed");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = invoice.originalName || invoice.fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Download Started",
+        description: `${invoice.originalName} download started successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to download document. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -146,6 +189,61 @@ export default function Payments() {
           <h1 className="text-3xl font-bold text-freight-dark mb-2">Invoice Payments</h1>
           <p className="text-gray-600">Pay your freight and customs invoices securely</p>
         </div>
+
+        {/* Shipping Invoices List */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-freight-blue" />
+              Shipping Invoices ({shippingInvoices.length})
+            </CardTitle>
+            <p className="text-sm text-gray-600">
+              View and download your shipping invoices
+            </p>
+          </CardHeader>
+          <CardContent>
+            {shippingInvoices.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>No shipping invoices available</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {shippingInvoices.map((invoice: Document) => (
+                  <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <Receipt className="w-5 h-5 text-freight-blue" />
+                      <div>
+                        <h4 className="font-medium">{invoice.originalName || invoice.fileName}</h4>
+                        <p className="text-sm text-gray-600">
+                          Uploaded: {new Date(invoice.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewInvoice(invoice)}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadInvoice(invoice)}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Payment Information */}
         <Card className="mb-8">
@@ -392,6 +490,58 @@ export default function Payments() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Invoice View Dialog */}
+      <Dialog open={isInvoiceViewOpen} onOpenChange={setIsInvoiceViewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedInvoice ? `View Invoice: ${selectedInvoice.originalName || selectedInvoice.fileName}` : "View Invoice"}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedInvoice && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Receipt className="w-5 h-5 text-freight-blue" />
+                  <div>
+                    <h3 className="font-medium">{selectedInvoice.originalName || selectedInvoice.fileName}</h3>
+                    <p className="text-sm text-gray-600">
+                      Uploaded: {new Date(selectedInvoice.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadInvoice(selectedInvoice)}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+              </div>
+              
+              {selectedInvoice.fileType === 'application/pdf' ? (
+                <div className="border rounded-lg overflow-hidden">
+                  <iframe
+                    src={`/api/documents/${selectedInvoice.id}/view`}
+                    width="100%"
+                    height="600"
+                    title="Document Preview"
+                    className="border-0"
+                  />
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <p>Preview not available for this file type</p>
+                  <p className="text-sm">Click "Download" to view the document</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

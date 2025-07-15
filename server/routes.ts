@@ -1235,6 +1235,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get documents by category
+  app.get('/api/documents/category/:category', requireDocumentAccess, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { category } = req.params;
+      const documents = await storage.getDocumentsByCategory(userId, category);
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching documents by category:", error);
+      res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
   // Get document by ID for download
   app.get('/api/documents/:id/download', requireDocumentAccess, async (req: any, res) => {
     try {
