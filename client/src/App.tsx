@@ -50,7 +50,6 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
               <img src={freightclearLogo} alt="Freightclear Logo" className="h-12 w-auto" />
               <div>
                 <h1 className="text-lg font-bold text-freight-dark">Workflows</h1>
-                <p className="text-sm text-teal">Streamlined Import Management</p>
               </div>
             </div>
           </SidebarHeader>
