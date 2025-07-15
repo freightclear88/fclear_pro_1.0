@@ -52,7 +52,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
               <div className="p-4">
                 <img src={freightclearLogo} alt="Freightclear Logo" className="h-15 w-auto mx-auto" style={{height: '60px'}} />
               </div>
-              <div style={{paddingTop: '10px'}}>
+              <div>
                 <h1 className="font-light text-freight-dark" style={{
                   fontFamily: 'Kanit, sans-serif',
                   fontWeight: 300,
