@@ -1562,31 +1562,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Payment Configuration Route
-  app.get('/api/payment/config', isAuthenticated, async (req, res) => {
+  app.get('/api/payment/config', requireSubscription, async (req, res) => {
     try {
       const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
       const clientKey = process.env.AUTHORIZE_NET_CLIENT_KEY;
       
       if (!apiLoginId || !clientKey) {
-        return res.json({ configured: false });
+        return res.json({ success: false });
       }
       
       res.json({
-        configured: true,
+        success: true,
         apiLoginId: apiLoginId,
         clientKey: clientKey,
         environment: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
       });
     } catch (error) {
       console.error("Error fetching payment config:", error);
-      res.status(500).json({ configured: false, error: "Configuration error" });
+      res.status(500).json({ success: false, error: "Configuration error" });
     }
   });
 
   // Payment Processing Route
-  app.post('/api/payment/process', isAuthenticated, async (req: any, res) => {
+  app.post('/api/payment/process', requireSubscription, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const {
         invoiceNumber,
         companyName,

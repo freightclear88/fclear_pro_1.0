@@ -280,7 +280,7 @@ export default function Payment() {
     );
   }
 
-  if (!apiConfig?.configured) {
+  if (!apiConfig?.success) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="w-full max-w-2xl mx-auto">
