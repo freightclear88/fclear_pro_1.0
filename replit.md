@@ -186,3 +186,5 @@ Changelog:
 - July 15, 2025: Updated document upload interface to include sub-category selection for delivery orders
 - July 15, 2025: Enhanced document display components to show both category and sub-category badges
 - July 15, 2025: Created dedicated sub-category options: Last Mile, Customs Clearance, Port Delivery, Warehouse Receipt, Final Delivery
+- July 15, 2025: Enhanced shipment page layout with increased padding and spacing around headers and titles for better visual organization
+- July 15, 2025: Added additional left margin and padding to shipment page header area per user request

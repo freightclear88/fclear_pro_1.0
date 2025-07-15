@@ -35,7 +35,7 @@ export default function Shipments() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex justify-between items-center pt-6 pb-4">
-        <div className="px-2">
+        <div className="px-6 ml-4">
           <h1 className="text-3xl font-bold text-gray-900 mb-3">Shipments</h1>
           <p className="text-gray-600 mt-2">Track and manage your freight shipments</p>
         </div>
