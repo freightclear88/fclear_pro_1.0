@@ -172,3 +172,6 @@ Changelog:
 - July 15, 2025: Simplified subscription plans to only Free and Pro ($175/month) by removing hardcoded plans from API routes and using database-stored plans exclusively
 - July 15, 2025: Restructured payment interface into separate "Subscription" and "Payments" sections with dedicated routes (/subscription for plan management, /payments for invoice payments)
 - July 15, 2025: Added Authorize.Net secured logos and PCI DSS compliance badges to both subscription and payments pages for enhanced trust and security assurance
+- July 15, 2025: Moved Subscription to bottom of main navigation menu as lowest option
+- July 15, 2025: Implemented admin authentication control system with isAdmin database field and requireAdmin middleware
+- July 15, 2025: Admin section now only visible to users with admin privileges, protecting all admin routes with proper authorization

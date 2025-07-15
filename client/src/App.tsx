@@ -24,10 +24,13 @@ import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_17519038593
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
   { name: "Shipments", href: "/shipments", icon: Ship },
-  { name: "Subscription", href: "/subscription", icon: CreditCard },
   { name: "Payments", href: "/payments", icon: Receipt },
-  { name: "Admin", href: "/admin", icon: Shield },
   { name: "Profile", href: "/profile", icon: User },
+  { name: "Subscription", href: "/subscription", icon: CreditCard },
+];
+
+const adminNavigation = [
+  { name: "Admin", href: "/admin", icon: Shield },
 ];
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -55,6 +58,32 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
           <SidebarContent className="mt-6">
             <div className="space-y-2">
               {navigation.map((item) => {
+                const Icon = item.icon;
+                const isActive = location === item.href;
+                return (
+                  <Link key={item.name} href={item.href}>
+                    <a
+                      className={cn(
+                        "flex items-center px-4 py-3 rounded-lg font-medium transition-colors",
+                        isActive
+                          ? "text-freight-dark bg-teal/10"
+                          : "text-gray-700 hover:text-freight-dark hover:bg-white/50"
+                      )}
+                    >
+                      <Icon 
+                        className={cn(
+                          "mr-3 w-5 h-5",
+                          isActive ? "text-freight-orange" : ""
+                        )} 
+                      />
+                      {item.name}
+                    </a>
+                  </Link>
+                );
+              })}
+              
+              {/* Admin Navigation - Only visible for admin users */}
+              {user?.isAdmin && adminNavigation.map((item) => {
                 const Icon = item.icon;
                 const isActive = location === item.href;
                 return (

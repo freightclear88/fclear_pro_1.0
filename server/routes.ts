@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, requireSubscription } from "./replitAuth";
+import { setupAuth, isAuthenticated, requireSubscription, requireAdmin } from "./replitAuth";
 import ApiContracts from 'authorizenet/lib/apicontracts';
 import ApiControllers from 'authorizenet/lib/apicontrollers';
 import SDKConstants from 'authorizenet/lib/constants';
@@ -882,7 +882,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin POA validation routes
-  app.patch('/api/admin/users/:userId/poa/validate', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/admin/users/:userId/poa/validate', requireAdmin, async (req: any, res) => {
     try {
       const { userId } = req.params;
       const { status } = req.body; // 'validated' or 'rejected'
@@ -1436,7 +1436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
-  app.get('/api/admin/shipments', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/shipments', requireAdmin, async (req: any, res) => {
     try {
       const shipments = await storage.getAllShipments();
       res.json(shipments);
@@ -1446,7 +1446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/users', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/users', requireAdmin, async (req: any, res) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
@@ -1456,7 +1456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/documents', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/documents', requireAdmin, async (req: any, res) => {
     try {
       const documents = await storage.getAllDocuments();
       res.json(documents);
@@ -1466,7 +1466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/stats', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/stats', requireAdmin, async (req: any, res) => {
     try {
       const shipments = await storage.getAllShipments();
       const users = await storage.getAllUsers();
@@ -1502,7 +1502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin IRS Proof validation route
-  app.patch('/api/admin/users/:userId/irs-proof/validate', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/admin/users/:userId/irs-proof/validate', requireAdmin, async (req: any, res) => {
     try {
       const { userId } = req.params;
       const { status } = req.body;
@@ -1526,7 +1526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin IRS Proof view route
-  app.get('/api/admin/users/:userId/irs-proof/view', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/users/:userId/irs-proof/view', requireAdmin, async (req: any, res) => {
     try {
       const { userId } = req.params;
       const user = await storage.getUser(userId);

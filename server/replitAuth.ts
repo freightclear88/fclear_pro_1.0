@@ -210,3 +210,33 @@ export const requireSubscription: RequestHandler = async (req: any, res, next) =
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// Middleware to check admin access
+export const requireAdmin: RequestHandler = async (req: any, res, next) => {
+  try {
+    let userId: string;
+    
+    // Development test mode
+    if (process.env.NODE_ENV === 'development') {
+      userId = 'demo-user-123';
+    } else {
+      // Production mode - require authentication
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      userId = req.user.claims.sub;
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user || !user.isAdmin) {
+      return res.status(403).json({ 
+        message: "Admin access required"
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Admin check error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

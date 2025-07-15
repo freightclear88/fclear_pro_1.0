@@ -74,6 +74,7 @@ export const users = pgTable("users", {
   usageResetDate: timestamp("usage_reset_date").defaultNow(), // when monthly counters reset
   
   // Access control flags
+  isAdmin: boolean("is_admin").default(false),
   canAccessAdvancedReports: boolean("can_access_advanced_reports").default(false),
   canAccessAPIIntegration: boolean("can_access_api_integration").default(false),
   canAccessPremiumSupport: boolean("can_access_premium_support").default(false),
