@@ -190,139 +190,146 @@ export default function Payments() {
           <p className="text-gray-600">Pay your freight and customs invoices securely</p>
         </div>
 
-        {/* Shipping Invoices List */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Receipt className="w-5 h-5 text-freight-blue" />
-              Shipping Invoices ({shippingInvoices.length})
-            </CardTitle>
-            <p className="text-sm text-gray-600">
-              View and download your shipping invoices
-            </p>
-          </CardHeader>
-          <CardContent>
-            {shippingInvoices.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p>No shipping invoices available</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {shippingInvoices.map((invoice: Document) => (
-                  <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <Receipt className="w-5 h-5 text-freight-blue" />
-                      <div>
-                        <h4 className="font-medium">{invoice.originalName || invoice.fileName}</h4>
-                        <p className="text-sm text-gray-600">
-                          Uploaded: {new Date(invoice.createdAt).toLocaleDateString()}
-                        </p>
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Shipping Invoices List - 35% */}
+          <div className="lg:col-span-4">
+            <Card className="h-fit">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Receipt className="w-5 h-5 text-freight-blue" />
+                  Shipping Invoices ({shippingInvoices.length})
+                </CardTitle>
+                <p className="text-sm text-gray-600">
+                  View and download your shipping invoices
+                </p>
+              </CardHeader>
+              <CardContent>
+                {shippingInvoices.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>No shipping invoices available</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {shippingInvoices.map((invoice: Document) => (
+                      <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <Receipt className="w-5 h-5 text-freight-blue" />
+                          <div>
+                            <h4 className="font-medium">{invoice.originalName || invoice.fileName}</h4>
+                            <p className="text-sm text-gray-600">
+                              Uploaded: {new Date(invoice.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewInvoice(invoice)}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadInvoice(invoice)}
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Payment Area - 65% */}
+          <div className="lg:col-span-8">
+            <div className="space-y-8">
+              {/* Payment Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-freight-orange" />
+                    Payment Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 p-4 bg-teal/5 rounded-lg">
+                        <Receipt className="w-5 h-5 text-teal" />
+                        <div>
+                          <p className="font-medium text-freight-dark">Invoice Payments</p>
+                          <p className="text-sm text-gray-600">Pay outstanding invoices for customs, duties, and freight services</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
+                        <CreditCard className="w-5 h-5 text-blue-600" />
+                        <div>
+                          <p className="font-medium text-freight-dark">Secure Processing</p>
+                          <p className="text-sm text-gray-600">All payments are processed securely through Authorize.Net</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewInvoice(invoice)}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        View
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDownloadInvoice(invoice)}
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
-                      </Button>
+                    
+                    <div className="space-y-4">
+                      <div className="bg-yellow-50 p-4 rounded-lg">
+                        <h4 className="font-medium text-freight-dark mb-2">Important Notes:</h4>
+                        <ul className="text-sm text-gray-600 space-y-1">
+                          <li>• Have your invoice number ready</li>
+                          <li>• Payments are processed immediately</li>
+                          <li>• You'll receive a confirmation email</li>
+                          <li>• Contact support for payment questions</li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
 
-        {/* Payment Information */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-freight-orange" />
-              Payment Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-teal/5 rounded-lg">
-                  <Receipt className="w-5 h-5 text-teal" />
-                  <div>
-                    <p className="font-medium text-freight-dark">Invoice Payments</p>
-                    <p className="text-sm text-gray-600">Pay outstanding invoices for customs, duties, and freight services</p>
+              {/* Invoice Payment Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-freight-orange" />
+                    Pay Invoice
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Enter your invoice details and payment information below
+                  </p>
+                  <div className="flex items-center justify-center mt-4 pt-4 border-t">
+                    <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                        <line x1="8" y1="21" x2="16" y2="21"/>
+                        <line x1="12" y1="17" x2="12" y2="21"/>
+                      </svg>
+                      <span className="text-xs text-gray-600 font-medium">Secured by Authorize.Net</span>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
-                  <CreditCard className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="font-medium text-freight-dark">Secure Processing</p>
-                    <p className="text-sm text-gray-600">All payments are processed securely through Authorize.Net</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-freight-dark mb-2">Important Notes:</h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Have your invoice number ready</li>
-                    <li>• Payments are processed immediately</li>
-                    <li>• You'll receive a confirmation email</li>
-                    <li>• Contact support for payment questions</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Invoice Payment Form */}
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-freight-orange" />
-              Pay Invoice
-            </CardTitle>
-            <p className="text-sm text-gray-600">
-              Enter your invoice details and payment information below
-            </p>
-            <div className="flex items-center justify-center mt-4 pt-4 border-t">
-              <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                  <line x1="8" y1="21" x2="16" y2="21"/>
-                  <line x1="12" y1="17" x2="12" y2="21"/>
-                </svg>
-                <span className="text-xs text-gray-600 font-medium">Secured by Authorize.Net</span>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleInvoiceSubmit} className="space-y-6">
-              {/* Invoice Details */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-freight-dark">Invoice Details</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="invoiceNumber">Invoice Number *</Label>
-                    <Input
-                      id="invoiceNumber"
-                      value={invoiceForm.invoiceNumber}
-                      onChange={(e) => setInvoiceForm(prev => ({
-                        ...prev,
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleInvoiceSubmit} className="space-y-6">
+                    {/* Invoice Details */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-freight-dark">Invoice Details</h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="invoiceNumber">Invoice Number *</Label>
+                          <Input
+                            id="invoiceNumber"
+                            value={invoiceForm.invoiceNumber}
+                            onChange={(e) => setInvoiceForm(prev => ({
+                              ...prev,
                         invoiceNumber: e.target.value
                       }))}
                       placeholder="INV-2024-001"
@@ -463,33 +470,36 @@ export default function Payments() {
                   {isProcessingPayment ? "Processing Payment..." : `Pay $${invoiceForm.amount || "0.00"}`}
                 </Button>
               </div>
-            </form>
-          </CardContent>
-        </Card>
+                    </form>
+                  </CardContent>
+                </Card>
 
-        {/* Security Notice */}
-        <Card className="mt-8 bg-gray-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-center gap-6 text-sm text-gray-600">
-              <div className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4" />
-                <span>Your payment information is secure and encrypted</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                    <line x1="8" y1="21" x2="16" y2="21"/>
-                    <line x1="12" y1="17" x2="12" y2="21"/>
-                  </svg>
-                  <span className="text-xs text-blue-600 font-medium">Authorize.Net</span>
-                </div>
-                <span>PCI DSS Compliant</span>
+                {/* Security Notice */}
+                <Card className="mt-8 bg-gray-50">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-center gap-6 text-sm text-gray-600">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-4 h-4" />
+                        <span>Your payment information is secure and encrypted</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                            <line x1="8" y1="21" x2="16" y2="21"/>
+                            <line x1="12" y1="17" x2="12" y2="21"/>
+                          </svg>
+                          <span className="text-xs text-blue-600 font-medium">Authorize.Net</span>
+                        </div>
+                        <span>PCI DSS Compliant</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
 
       {/* Invoice View Dialog */}
       <Dialog open={isInvoiceViewOpen} onOpenChange={setIsInvoiceViewOpen}>

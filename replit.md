@@ -190,3 +190,5 @@ Changelog:
 - July 15, 2025: Added additional left margin and padding to shipment page header area per user request
 - July 15, 2025: Implemented "shipping invoice" document category with dedicated display on payments page and popup viewing functionality
 - July 15, 2025: Fixed sidebar branding layout: made logo larger (h-12), changed to vertical layout with "Workflows" under logo and "Streamlined Import Management" as subtitle
+- July 15, 2025: Removed "Streamlined Import Management" subtitle from sidebar branding per user request
+- July 15, 2025: Reorganized payments page into two-column layout: invoices card (35% width) and payment area (65% width) using CSS Grid with lg:col-span-4 and lg:col-span-8
