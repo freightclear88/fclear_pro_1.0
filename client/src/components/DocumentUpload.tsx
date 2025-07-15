@@ -24,12 +24,22 @@ const DOCUMENT_CATEGORIES = [
   { value: "power_of_attorney", label: "Power of Attorney", icon: Scale, creates: null },
   { value: "airway_bill", label: "Airway Bill", icon: Plane, creates: "air" },
   { value: "isf_data_sheet", label: "ISF Data Sheet", icon: Ship, creates: "ocean" },
+  { value: "delivery_order", label: "Delivery Order", icon: Truck, creates: null },
   { value: "other", label: "Other Document", icon: FileText, creates: null },
+];
+
+const SUB_CATEGORIES = [
+  { value: "last_mile", label: "Last Mile" },
+  { value: "customs_clearance", label: "Customs Clearance" },
+  { value: "port_delivery", label: "Port Delivery" },
+  { value: "warehouse_receipt", label: "Warehouse Receipt" },
+  { value: "final_delivery", label: "Final Delivery" },
 ];
 
 export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated }: DocumentUploadProps) {
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>("");
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -50,12 +60,16 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
   });
 
   const uploadMutation = useMutation({
-    mutationFn: async ({ files, category }: { files: File[], category: string }) => {
+    mutationFn: async ({ files, category, subCategory }: { files: File[], category: string, subCategory?: string }) => {
       const formData = new FormData();
       files.forEach((file) => {
         formData.append('documents', file);
       });
       formData.append('category', category);
+      
+      if (subCategory) {
+        formData.append('subCategory', subCategory);
+      }
       
       if (shipmentId) {
         formData.append('shipmentId', shipmentId.toString());
@@ -93,6 +107,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
       
       setUploadedFiles([]);
       setSelectedCategory("");
+      setSelectedSubCategory("");
       setOpen(false);
     },
     onError: (error) => {
@@ -123,7 +138,11 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
       return;
     }
 
-    uploadMutation.mutate({ files: uploadedFiles, category: selectedCategory });
+    uploadMutation.mutate({ 
+      files: uploadedFiles, 
+      category: selectedCategory,
+      subCategory: selectedSubCategory || undefined
+    });
   };
 
   const selectedCategoryData = DOCUMENT_CATEGORIES.find(cat => cat.value === selectedCategory);
@@ -185,6 +204,36 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
               </div>
             )}
           </div>
+
+          {/* Sub-Category Selection - Show for delivery_order */}
+          {selectedCategory === "delivery_order" && (
+            <div className="space-y-2">
+              <Label htmlFor="subCategory">Sub-Category</Label>
+              <Select value={selectedSubCategory} onValueChange={setSelectedSubCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select sub-category (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUB_CATEGORIES.map((subCategory) => (
+                    <SelectItem key={subCategory.value} value={subCategory.value}>
+                      {subCategory.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {selectedSubCategory === "last_mile" && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
+                  <div className="flex items-center space-x-2 text-green-700">
+                    <Truck className="w-4 h-4" />
+                    <span className="text-sm font-medium">
+                      This delivery order will be categorized for last mile delivery tracking
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* File Upload Area */}
           <div className="space-y-2">

@@ -148,7 +148,14 @@ Destination: ${shipment?.destination || "N/A"}
                 <FileText className="w-4 h-4 text-freight-blue" />
                 <div>
                   <p className="text-sm font-medium">{doc.originalName}</p>
-                  <p className="text-xs text-gray-500 capitalize">{doc.category.replace('_', ' ')}</p>
+                  <div className="flex items-center space-x-1">
+                    <p className="text-xs text-gray-500 capitalize">{doc.category.replace('_', ' ')}</p>
+                    {doc.subCategory && (
+                      <span className="text-xs bg-orange-100 text-orange-700 px-1 rounded">
+                        {doc.subCategory.replace('_', ' ')}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center space-x-1">

@@ -947,7 +947,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(401).json({ message: "Unauthorized" });
         }
       }
-      const { shipmentId, category } = req.body;
+      const { shipmentId, category, subCategory } = req.body;
       
       if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
@@ -993,6 +993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fileType: file.mimetype,
           fileSize: file.size,
           category: documentCategory,
+          subCategory: subCategory || null,
           status: 'pending',
           filePath: file.path,
         });
@@ -1118,6 +1119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const shipmentId = parseInt(req.params.shipmentId);
       const userId = getUserId(req);
       const category = req.body.category || "other";
+      const subCategory = req.body.subCategory || null;
       
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -1138,6 +1140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fileType: req.file.mimetype,
         fileSize: req.file.size,
         category,
+        subCategory,
         status: 'pending',
         filePath: req.file.path,
       });

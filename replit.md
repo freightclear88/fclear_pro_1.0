@@ -181,3 +181,8 @@ Changelog:
 - July 15, 2025: Demo user can now successfully upload documents, create shipments, and access all subscription features for testing
 - July 15, 2025: Fixed document viewing and downloading authorization issues by creating demo-compatible middleware
 - July 15, 2025: All document functionality now working in demo mode: upload, view, download, and listing
+- July 15, 2025: Implemented "Delivery Orders" document category and "Last Mile" sub-category system
+- July 15, 2025: Added sub_category field to documents schema with database migration
+- July 15, 2025: Updated document upload interface to include sub-category selection for delivery orders
+- July 15, 2025: Enhanced document display components to show both category and sub-category badges
+- July 15, 2025: Created dedicated sub-category options: Last Mile, Customs Clearance, Port Delivery, Warehouse Receipt, Final Delivery

@@ -72,6 +72,8 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
     switch (category) {
       case 'bill_of_lading':
         return 'bg-blue-100 text-blue-800';
+      case 'delivery_order':
+        return 'bg-green-100 text-green-800';
       case 'commercial_invoice':
         return 'bg-green-100 text-green-800';
       case 'packing_list':
@@ -142,6 +144,11 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
                         <Badge className={getCategoryBadgeColor(document.category)}>
                           {formatCategoryName(document.category)}
                         </Badge>
+                        {document.subCategory && (
+                          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                            {formatCategoryName(document.subCategory)}
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
                         <span className="flex items-center">

@@ -132,7 +132,8 @@ export const documents = pgTable("documents", {
   originalName: varchar("original_name").notNull(),
   fileType: varchar("file_type").notNull(),
   fileSize: integer("file_size").notNull(),
-  category: varchar("category").notNull(),
+  category: varchar("category").notNull(), // bill_of_lading, commercial_invoice, packing_list, certificate_of_origin, delivery_order, etc.
+  subCategory: varchar("sub_category"), // last_mile, customs_clearance, port_delivery, etc.
   status: varchar("status").notNull().default("pending"),
   extractedData: jsonb("extracted_data"),
   filePath: varchar("file_path").notNull(),
