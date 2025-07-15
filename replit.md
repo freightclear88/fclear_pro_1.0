@@ -204,3 +204,6 @@ Changelog:
 - July 15, 2025: Implemented admin subscription management allowing manual upgrade of any user to any plan without payment requirements
 - July 15, 2025: Added subscription management UI to admin dashboard with visual plan indicators and upgrade dialog
 - July 15, 2025: Enhanced admin capabilities with subscription plans API and user subscription status monitoring
+- July 15, 2025: Added company name field to "Pay Invoice" form in Payments page with Authorize.Net API integration
+- July 15, 2025: Company name pre-populates from user profile and gets passed to Authorize.Net billTo.company field
+- July 15, 2025: Enhanced payment form layout with side-by-side cardholder name and company name fields

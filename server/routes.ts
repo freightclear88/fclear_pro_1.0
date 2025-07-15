@@ -1916,6 +1916,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const billTo = new ApiContracts.CustomerAddressType();
       billTo.setFirstName(paymentMethod.cardholderName.split(' ')[0] || '');
       billTo.setLastName(paymentMethod.cardholderName.split(' ').slice(1).join(' ') || '');
+      if (paymentMethod.companyName) {
+        billTo.setCompany(paymentMethod.companyName);
+      }
       billTo.setZip(paymentMethod.zipCode);
       transactionRequest.setBillTo(billTo);
 

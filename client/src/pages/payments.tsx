@@ -22,6 +22,7 @@ interface InvoicePaymentData {
     expiryYear: string;
     cardCode: string;
     cardholderName: string;
+    companyName: string;
     zipCode: string;
   };
 }
@@ -49,9 +50,25 @@ export default function Payments() {
       expiryYear: "",
       cardCode: "",
       cardholderName: "",
+      companyName: "",
       zipCode: ""
     }
   });
+
+  // Pre-populate form with user data when user loads
+  useEffect(() => {
+    if (user) {
+      setInvoiceForm(prev => ({
+        ...prev,
+        paymentMethod: {
+          ...prev.paymentMethod,
+          cardholderName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : "",
+          companyName: user.companyName || "",
+          zipCode: user.zipCode || ""
+        }
+      }));
+    }
+  }, [user]);
 
   // Invoice payment mutation
   const invoicePaymentMutation = useMutation({
@@ -77,8 +94,9 @@ export default function Payments() {
           expiryMonth: "",
           expiryYear: "",
           cardCode: "",
-          cardholderName: "",
-          zipCode: ""
+          cardholderName: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : "",
+          companyName: user?.companyName || "",
+          zipCode: user?.zipCode || ""
         }
       });
       setIsProcessingPayment(false);
@@ -388,17 +406,33 @@ export default function Payments() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-freight-dark">Payment Method</h3>
                 
-                <div>
-                  <Label htmlFor="cardholderName">Cardholder Name *</Label>
-                  <Input
-                    id="cardholderName"
-                    value={invoiceForm.paymentMethod.cardholderName}
-                    onChange={(e) => setInvoiceForm(prev => ({
-                      ...prev,
-                      paymentMethod: { ...prev.paymentMethod, cardholderName: e.target.value }
-                    }))}
-                    required
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="cardholderName">Cardholder Name *</Label>
+                    <Input
+                      id="cardholderName"
+                      value={invoiceForm.paymentMethod.cardholderName}
+                      onChange={(e) => setInvoiceForm(prev => ({
+                        ...prev,
+                        paymentMethod: { ...prev.paymentMethod, cardholderName: e.target.value }
+                      }))}
+                      placeholder="John Doe"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="companyName">Company Name</Label>
+                    <Input
+                      id="companyName"
+                      value={invoiceForm.paymentMethod.companyName}
+                      onChange={(e) => setInvoiceForm(prev => ({
+                        ...prev,
+                        paymentMethod: { ...prev.paymentMethod, companyName: e.target.value }
+                      }))}
+                      placeholder="Company LLC"
+                    />
+                  </div>
                 </div>
                 
                 <div>
