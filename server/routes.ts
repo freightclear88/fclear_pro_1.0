@@ -1757,6 +1757,154 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Invoice Payment Route
+  app.post('/api/payment/invoice', requireSubscription, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const {
+        invoiceNumber,
+        amount,
+        description,
+        paymentNonce,
+        paymentMethod
+      } = req.body;
+
+      // Validate required fields
+      if (!invoiceNumber || !amount || !paymentMethod) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required payment information"
+        });
+      }
+
+      // Validate amount
+      const paymentAmount = parseFloat(amount);
+      if (isNaN(paymentAmount) || paymentAmount <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid payment amount"
+        });
+      }
+
+      // Check for API credentials
+      const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
+      const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
+
+      if (!apiLoginId || !transactionKey) {
+        return res.status(500).json({
+          success: false,
+          error: "Payment system not configured"
+        });
+      }
+
+      // Create merchant authentication
+      const merchantAuthenticationType = new ApiContracts.MerchantAuthenticationType();
+      merchantAuthenticationType.setName(apiLoginId);
+      merchantAuthenticationType.setTransactionKey(transactionKey);
+
+      // Create transaction request
+      const transactionRequest = new ApiContracts.TransactionRequestType();
+      transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION);
+      transactionRequest.setAmount(paymentAmount.toFixed(2));
+
+      // Create payment using credit card details
+      const creditCard = new ApiContracts.CreditCardType();
+      creditCard.setCardNumber(paymentMethod.cardNumber);
+      creditCard.setExpirationDate(paymentMethod.expiryMonth + paymentMethod.expiryYear);
+      creditCard.setCardCode(paymentMethod.cardCode);
+
+      const payment = new ApiContracts.PaymentType();
+      payment.setCreditCard(creditCard);
+      transactionRequest.setPayment(payment);
+
+      // Set billing information
+      const billTo = new ApiContracts.CustomerAddressType();
+      billTo.setFirstName(paymentMethod.cardholderName.split(' ')[0] || '');
+      billTo.setLastName(paymentMethod.cardholderName.split(' ').slice(1).join(' ') || '');
+      billTo.setZip(paymentMethod.zipCode);
+      transactionRequest.setBillTo(billTo);
+
+      // Set order information
+      const order = new ApiContracts.OrderType();
+      order.setInvoiceNumber(invoiceNumber);
+      order.setDescription(description || `Payment for invoice ${invoiceNumber}`);
+      transactionRequest.setOrder(order);
+
+      // Create transaction
+      const createTransactionRequest = new ApiContracts.CreateTransactionRequest();
+      createTransactionRequest.setMerchantAuthentication(merchantAuthenticationType);
+      createTransactionRequest.setTransactionRequest(transactionRequest);
+
+      const ctrl = new ApiControllers.CreateTransactionController(createTransactionRequest.getJSON());
+      
+      // Set environment
+      if (process.env.NODE_ENV === 'production') {
+        ctrl.setEnvironment(SDKConstants.endpoint.production);
+      } else {
+        ctrl.setEnvironment(SDKConstants.endpoint.sandbox);
+      }
+
+      // Execute transaction
+      const transactionResult = await new Promise<any>((resolve, reject) => {
+        ctrl.execute(() => {
+          try {
+            const apiResponse = ctrl.getResponse();
+            const response = new ApiContracts.CreateTransactionResponse(apiResponse);
+            
+            if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
+              const transactionResponse = response.getTransactionResponse();
+              
+              if (transactionResponse && transactionResponse.getResponseCode() === '1') {
+                resolve({
+                  success: true,
+                  transactionId: transactionResponse.getTransId(),
+                  authCode: transactionResponse.getAuthCode(),
+                  amount: paymentAmount,
+                  invoiceNumber: invoiceNumber
+                });
+              } else {
+                const errorText = transactionResponse?.getErrors()?.getError()[0]?.getErrorText() || 'Transaction failed';
+                reject(new Error(errorText));
+              }
+            } else {
+              const errorText = response.getMessages().getMessage()[0]?.getText() || 'Payment processing failed';
+              reject(new Error(errorText));
+            }
+          } catch (error) {
+            reject(error);
+          }
+        });
+      });
+
+      // Record the payment transaction
+      await storage.createPaymentTransaction({
+        userId: userId,
+        transactionId: transactionResult.transactionId,
+        amount: paymentAmount,
+        currency: 'USD',
+        status: 'completed',
+        paymentMethod: 'credit_card',
+        description: `Invoice payment: ${invoiceNumber}`,
+        authorizeNetResponse: JSON.stringify(transactionResult)
+      });
+
+      res.json({
+        success: true,
+        message: "Payment processed successfully",
+        transactionId: transactionResult.transactionId,
+        amount: paymentAmount,
+        invoiceNumber: invoiceNumber
+      });
+
+    } catch (error) {
+      console.error("Error processing invoice payment:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message || "Payment processing failed"
+      });
+    }
+  });
+
   // User Access Check Route
   app.get('/api/subscription/access', isAuthenticated, async (req: any, res) => {
     try {
@@ -1788,14 +1936,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get plan details
-      const plans = [
-        { planName: 'basic', monthlyPrice: 29.99, yearlyPrice: 287.90, maxShipments: 25, maxDocuments: 100 },
-        { planName: 'professional', monthlyPrice: 79.99, yearlyPrice: 767.90, maxShipments: 100, maxDocuments: 500 },
-        { planName: 'enterprise', monthlyPrice: 199.99, yearlyPrice: 1919.90, maxShipments: -1, maxDocuments: -1 }
-      ];
-      
-      const selectedPlan = plans.find(p => p.planName === planName);
+      // Get plan details from database
+      const selectedPlan = await storage.getSubscriptionPlan(planName);
       if (!selectedPlan) {
         return res.status(400).json({
           success: false,
@@ -1803,7 +1945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const amount = billingCycle === 'yearly' ? selectedPlan.yearlyPrice : selectedPlan.monthlyPrice;
+      const amount = billingCycle === 'yearly' ? parseFloat(selectedPlan.yearlyPrice) : parseFloat(selectedPlan.monthlyPrice);
 
       // Check for API credentials
       const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
