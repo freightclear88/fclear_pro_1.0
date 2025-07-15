@@ -49,8 +49,8 @@ export const users = pgTable("users", {
   subscriptionStartDate: timestamp("subscription_start_date"),
   subscriptionEndDate: timestamp("subscription_end_date"),
   billingCycle: varchar("billing_cycle").default("monthly"), // monthly, yearly
-  subscriptionAmount: decimal("subscription_amount", { precision: 10, scale: 2 }).default("29.99"),
-  subscriptionPlan: varchar("subscription_plan").default("basic"), // trial, basic, professional, enterprise
+  subscriptionAmount: decimal("subscription_amount", { precision: 10, scale: 2 }).default("0.00"),
+  subscriptionPlan: varchar("subscription_plan").default("free"), // free, pro
   
   // Payment profile for recurring billing
   customerProfileId: varchar("customer_profile_id"), // Authorize.Net customer profile ID
@@ -66,9 +66,9 @@ export const users = pgTable("users", {
   paymentFailureCount: integer("payment_failure_count").default(0),
   
   // Account limits based on subscription tier
-  maxShipments: integer("max_shipments").default(5), // trial: 5, basic: 25, professional: 100, enterprise: unlimited
-  maxDocuments: integer("max_documents").default(20), // trial: 20, basic: 100, professional: 500, enterprise: unlimited  
-  maxUsers: integer("max_users").default(1), // trial/basic: 1, professional: 5, enterprise: unlimited
+  maxShipments: integer("max_shipments").default(5), // free: 5, pro: unlimited
+  maxDocuments: integer("max_documents").default(20), // free: 20, pro: unlimited  
+  maxUsers: integer("max_users").default(1), // free: 1, pro: unlimited
   currentShipmentCount: integer("current_shipment_count").default(0),
   currentDocumentCount: integer("current_document_count").default(0),
   usageResetDate: timestamp("usage_reset_date").defaultNow(), // when monthly counters reset

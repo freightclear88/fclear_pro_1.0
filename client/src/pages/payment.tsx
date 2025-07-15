@@ -240,18 +240,16 @@ export default function Payment() {
 
   const getPlanIcon = (planName: string) => {
     switch (planName) {
-      case 'basic': return <Zap className="w-6 h-6" />;
-      case 'professional': return <Crown className="w-6 h-6" />;
-      case 'enterprise': return <Shield className="w-6 h-6" />;
-      default: return <Sparkles className="w-6 h-6" />;
+      case 'free': return <Sparkles className="w-6 h-6" />;
+      case 'pro': return <Crown className="w-6 h-6" />;
+      default: return <Zap className="w-6 h-6" />;
     }
   };
 
   const getPlanColor = (planName: string) => {
     switch (planName) {
-      case 'basic': return 'from-teal-500 to-freight-blue';
-      case 'professional': return 'from-freight-orange to-amber-500';
-      case 'enterprise': return 'from-purple-600 to-indigo-600';
+      case 'free': return 'from-teal-500 to-freight-blue';
+      case 'pro': return 'from-freight-orange to-amber-500';
       default: return 'from-gray-400 to-gray-600';
     }
   };
@@ -381,10 +379,10 @@ export default function Payment() {
           </div>
 
           {/* Subscription Plans */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-8">
             {subscriptionPlans.map((plan: SubscriptionPlan) => {
               const price = billingCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
-              const isPopular = plan.planName === 'professional';
+              const isPopular = plan.planName === 'pro';
               
               return (
                 <Card 
@@ -447,12 +445,14 @@ export default function Payment() {
                     <Button
                       onClick={() => handlePlanSelection(plan)}
                       className={`w-full mt-6 ${
-                        isPopular 
+                        plan.planName === 'free'
+                          ? 'btn-outline-primary'
+                          : isPopular 
                           ? 'bg-gradient-to-r from-freight-orange to-amber-500 hover:from-amber-500 hover:to-freight-orange' 
                           : 'btn-primary'
                       }`}
                     >
-                      Choose {plan.displayName}
+                      {plan.planName === 'free' ? 'Start Free' : `Choose ${plan.displayName}`}
                     </Button>
                   </CardContent>
                 </Card>

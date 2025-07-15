@@ -162,7 +162,7 @@ Changelog:
 - July 08, 2025: Updated application name from "Freightclear Importer Workflow" to "Freightclear Workflows" for simplified branding
 - July 08, 2025: Fixed button visibility issues in document upload dialog by standardizing button CSS classes with explicit visibility properties
 - July 15, 2025: Implemented comprehensive subscription-based access control system using Authorize.Net for monthly billing
-- July 15, 2025: Created subscription plans (Basic $29.99/mo, Professional $79.99/mo, Enterprise $199.99/mo) with usage limits
+- July 15, 2025: Created subscription plans simplified to 2-tier system: Free and Pro ($175/month) with usage limits
 - July 15, 2025: Added database schema for user subscriptions with trial periods, payment tracking, and usage monitoring
 - July 15, 2025: Transformed payment page into subscription management dashboard with plan selection and billing cycles
 - July 15, 2025: Added subscription middleware protecting shipment and document creation routes with usage limit enforcement
