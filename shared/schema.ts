@@ -211,6 +211,20 @@ export const chatMessages = pgTable("chat_messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// AI Training Data for Chat Agent
+export const aiTrainingData = pgTable("ai_training_data", {
+  id: serial("id").primaryKey(),
+  question: text("question").notNull(),
+  answer: text("answer").notNull(),
+  keywords: text("keywords").array(), // Keywords to match against user messages
+  category: varchar("category", { length: 100 }), // e.g., "shipping", "customs", "payments"
+  priority: integer("priority").default(1), // Higher numbers = higher priority
+  isActive: boolean("is_active").default(true),
+  createdBy: varchar("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Schema types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -235,6 +249,9 @@ export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 
 export type InsertPaymentTransaction = typeof paymentTransactions.$inferInsert;
 export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
+
+export type InsertAiTrainingData = typeof aiTrainingData.$inferInsert;
+export type AiTrainingData = typeof aiTrainingData.$inferSelect;
 
 // Insert schemas
 export const insertShipmentSchema = createInsertSchema(shipments).omit({
@@ -263,4 +280,10 @@ export const insertChatConversationSchema = createInsertSchema(chatConversations
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
   id: true,
   createdAt: true,
+});
+
+export const insertAiTrainingDataSchema = createInsertSchema(aiTrainingData).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });

@@ -17,6 +17,7 @@ import { apiRequest } from "@/lib/queryClient";
 import ShipmentHtmlPage from "@/components/ShipmentHtmlPage";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
+import AiTrainingManager from "@/components/AiTrainingManager";
 
 interface SubscriptionUpgradeDialogProps {
   user: User;
@@ -860,6 +861,21 @@ export default function Admin() {
               </TableBody>
             </Table>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Training Management */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <div className="bg-freight-teal/10 p-2 rounded-lg mr-3">
+              <Shield className="w-5 h-5 text-freight-teal" />
+            </div>
+            AI Chat Training Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AiTrainingManager />
         </CardContent>
       </Card>
 

@@ -426,45 +426,61 @@ function getUserId(req: any): string {
   return req.user.claims.sub;
 }
 
-// Simple AI response generator for common questions
+// Enhanced AI response generator using trained data
 async function generateAIResponse(userMessage: string): Promise<string> {
   const message = userMessage.toLowerCase();
+  const messageWords = message.split(/\s+/).filter(word => word.length > 2);
   
-  // Common shipping/freight questions
-  if (message.includes('shipping') || message.includes('freight')) {
-    return "I can help you with shipping and freight questions! You can create shipments, track your cargo, and manage documents all in one place. What specific shipping question can I help you with?";
+  try {
+    // First, try to find a matching trained response
+    const trainedResponses = await storage.searchAiTrainingData(messageWords);
+    
+    if (trainedResponses.length > 0) {
+      // Return the highest priority trained response
+      return trainedResponses[0].answer;
+    }
+    
+    // Fall back to built-in responses if no trained data matches
+    // Common shipping/freight questions
+    if (message.includes('shipping') || message.includes('freight')) {
+      return "I can help you with shipping and freight questions! You can create shipments, track your cargo, and manage documents all in one place. What specific shipping question can I help you with?";
+    }
+    
+    if (message.includes('document') || message.includes('upload')) {
+      return "For document management, you can upload bills of lading, commercial invoices, packing lists, and other shipping documents. Each document gets automatically categorized and linked to your shipments. Need help with a specific document type?";
+    }
+    
+    if (message.includes('customs') || message.includes('clearance')) {
+      return "For customs clearance, make sure you have your Power of Attorney validated and IRS proof uploaded. Our system helps streamline the customs process by organizing all required documents. Are you having issues with customs documentation?";
+    }
+    
+    if (message.includes('payment') || message.includes('subscription')) {
+      return "For payment and subscription questions, you can manage your billing through the Subscription page. We offer Free, Starter ($49/month), and Pro ($175/month) plans. Need help with billing?";
+    }
+    
+    if (message.includes('poa') || message.includes('power of attorney')) {
+      return "The Power of Attorney (POA) is required for customs clearance. You can create and submit your POA through the Profile page. Once submitted, an admin will review and validate it. The POA authorizes WCS International Inc. to act on your behalf for customs matters.";
+    }
+    
+    if (message.includes('irs') || message.includes('tax')) {
+      return "IRS proof is required for verification. Companies/LLCs should upload IRS Letter 147C or equivalent with company name, address, and EIN. Individual importers should upload a PDF of their social security card. This gets reviewed by our admin team.";
+    }
+    
+    if (message.includes('help') || message.includes('support')) {
+      return "I'm here to help! I can assist with shipping questions, document uploads, customs clearance, payments, and general platform navigation. You can also contact our admin team for more complex issues. What do you need help with?";
+    }
+    
+    if (message.includes('admin') || message.includes('contact')) {
+      return "To contact an admin, you can continue this conversation and an admin will be notified. Alternatively, you can reach out through the support channels. Our admin team handles POA validation, IRS proof verification, and complex shipping issues.";
+    }
+    
+    // Default response
+    return "Thanks for your message! I can help with shipping, documents, customs clearance, payments, and general platform questions. For more complex issues, I can connect you with our admin team. What would you like to know about?";
+    
+  } catch (error) {
+    console.error("Error generating AI response:", error);
+    return "I'm here to help! I can assist with shipping, documents, customs clearance, payments, and general platform questions. What would you like to know about?";
   }
-  
-  if (message.includes('document') || message.includes('upload')) {
-    return "For document management, you can upload bills of lading, commercial invoices, packing lists, and other shipping documents. Each document gets automatically categorized and linked to your shipments. Need help with a specific document type?";
-  }
-  
-  if (message.includes('customs') || message.includes('clearance')) {
-    return "For customs clearance, make sure you have your Power of Attorney validated and IRS proof uploaded. Our system helps streamline the customs process by organizing all required documents. Are you having issues with customs documentation?";
-  }
-  
-  if (message.includes('payment') || message.includes('subscription')) {
-    return "For payment and subscription questions, you can manage your billing through the Subscription page. We offer Free and Pro plans ($175/month). Pro gives you unlimited shipments and documents. Need help with billing?";
-  }
-  
-  if (message.includes('poa') || message.includes('power of attorney')) {
-    return "The Power of Attorney (POA) is required for customs clearance. You can create and submit your POA through the Profile page. Once submitted, an admin will review and validate it. The POA authorizes WCS International Inc. to act on your behalf for customs matters.";
-  }
-  
-  if (message.includes('irs') || message.includes('tax')) {
-    return "IRS proof is required for verification. Companies/LLCs should upload IRS Letter 147C or equivalent with company name, address, and EIN. Individual importers should upload a PDF of their social security card. This gets reviewed by our admin team.";
-  }
-  
-  if (message.includes('help') || message.includes('support')) {
-    return "I'm here to help! I can assist with shipping questions, document uploads, customs clearance, payments, and general platform navigation. You can also contact our admin team for more complex issues. What do you need help with?";
-  }
-  
-  if (message.includes('admin') || message.includes('contact')) {
-    return "To contact an admin, you can continue this conversation and an admin will be notified. Alternatively, you can reach out through the support channels. Our admin team handles POA validation, IRS proof verification, and complex shipping issues.";
-  }
-  
-  // Default response
-  return "Thanks for your message! I can help with shipping, documents, customs clearance, payments, and general platform questions. For more complex issues, I can connect you with our admin team. What would you like to know about?";
 }
 
 // Demo-compatible middleware for document access
@@ -1574,6 +1590,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching all documents:", error);
       res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
+  // Admin AI Training Routes
+  app.get('/api/admin/ai-training', requireAdmin, async (req, res) => {
+    try {
+      const trainingData = await storage.getAllAiTrainingData();
+      res.json(trainingData);
+    } catch (error) {
+      console.error("Error fetching AI training data:", error);
+      res.status(500).json({ error: "Failed to fetch AI training data" });
+    }
+  });
+
+  app.post('/api/admin/ai-training', requireAdmin, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { question, answer, keywords, category, priority } = req.body;
+
+      if (!question || !answer) {
+        return res.status(400).json({ error: "Question and answer are required" });
+      }
+
+      const trainingData = await storage.createAiTrainingData({
+        question,
+        answer,
+        keywords: keywords || [],
+        category: category || 'general',
+        priority: priority || 1,
+        createdBy: userId,
+      });
+
+      res.json(trainingData);
+    } catch (error) {
+      console.error("Error creating AI training data:", error);
+      res.status(500).json({ error: "Failed to create AI training data" });
+    }
+  });
+
+  app.put('/api/admin/ai-training/:id', requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { question, answer, keywords, category, priority, isActive } = req.body;
+
+      const trainingData = await storage.updateAiTrainingData(parseInt(id), {
+        question,
+        answer,
+        keywords,
+        category,
+        priority,
+        isActive,
+      });
+
+      res.json(trainingData);
+    } catch (error) {
+      console.error("Error updating AI training data:", error);
+      res.status(500).json({ error: "Failed to update AI training data" });
+    }
+  });
+
+  app.delete('/api/admin/ai-training/:id', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteAiTrainingData(parseInt(id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting AI training data:", error);
+      res.status(500).json({ error: "Failed to delete AI training data" });
     }
   });
 

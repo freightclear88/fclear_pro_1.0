@@ -7,6 +7,7 @@ import {
   paymentTransactions,
   chatConversations,
   chatMessages,
+  aiTrainingData,
   type User,
   type UpsertUser,
   type Shipment,
@@ -23,6 +24,8 @@ import {
   type InsertChatConversation,
   type ChatMessage,
   type InsertChatMessage,
+  type AiTrainingData,
+  type InsertAiTrainingData,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -84,6 +87,15 @@ export interface IStorage {
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   markMessagesAsRead(conversationId: number, userId: string): Promise<void>;
   getAllChatConversations(): Promise<ChatConversation[]>;
+  
+  // AI Training operations
+  getAllAiTrainingData(): Promise<AiTrainingData[]>;
+  getActiveAiTrainingData(): Promise<AiTrainingData[]>;
+  getAiTrainingDataByCategory(category: string): Promise<AiTrainingData[]>;
+  createAiTrainingData(data: InsertAiTrainingData): Promise<AiTrainingData>;
+  updateAiTrainingData(id: number, data: Partial<InsertAiTrainingData>): Promise<AiTrainingData>;
+  deleteAiTrainingData(id: number): Promise<void>;
+  searchAiTrainingData(keywords: string[]): Promise<AiTrainingData[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -450,6 +462,55 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(chatConversations)
       .orderBy(desc(chatConversations.lastMessageAt));
+  }
+
+  // AI Training operations
+  async getAllAiTrainingData(): Promise<AiTrainingData[]> {
+    return await db.select().from(aiTrainingData).orderBy(desc(aiTrainingData.priority), desc(aiTrainingData.createdAt));
+  }
+
+  async getActiveAiTrainingData(): Promise<AiTrainingData[]> {
+    return await db.select().from(aiTrainingData)
+      .where(eq(aiTrainingData.isActive, true))
+      .orderBy(desc(aiTrainingData.priority), desc(aiTrainingData.createdAt));
+  }
+
+  async getAiTrainingDataByCategory(category: string): Promise<AiTrainingData[]> {
+    return await db.select().from(aiTrainingData)
+      .where(and(eq(aiTrainingData.category, category), eq(aiTrainingData.isActive, true)))
+      .orderBy(desc(aiTrainingData.priority), desc(aiTrainingData.createdAt));
+  }
+
+  async createAiTrainingData(data: InsertAiTrainingData): Promise<AiTrainingData> {
+    const [result] = await db.insert(aiTrainingData).values(data).returning();
+    return result;
+  }
+
+  async updateAiTrainingData(id: number, data: Partial<InsertAiTrainingData>): Promise<AiTrainingData> {
+    const [result] = await db.update(aiTrainingData)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(aiTrainingData.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteAiTrainingData(id: number): Promise<void> {
+    await db.delete(aiTrainingData).where(eq(aiTrainingData.id, id));
+  }
+
+  async searchAiTrainingData(keywords: string[]): Promise<AiTrainingData[]> {
+    const lowerKeywords = keywords.map(k => k.toLowerCase());
+    const results = await this.getActiveAiTrainingData();
+    
+    return results.filter(item => {
+      if (!item.keywords) return false;
+      const itemKeywords = item.keywords.map(k => k.toLowerCase());
+      return lowerKeywords.some(keyword => 
+        itemKeywords.some(itemKeyword => 
+          itemKeyword.includes(keyword) || keyword.includes(itemKeyword)
+        )
+      );
+    }).sort((a, b) => (b.priority || 1) - (a.priority || 1));
   }
 }
 
