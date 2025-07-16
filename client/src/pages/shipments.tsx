@@ -19,7 +19,7 @@ export default function Shipments() {
   const [shipmentsPerPage, setShipmentsPerPage] = useState(10);
 
 
-  const { data: shipments = [] } = useQuery({
+  const { data: shipments = [] } = useQuery<Shipment[]>({
     queryKey: ["/api/shipments"],
   });
 
@@ -69,6 +69,11 @@ export default function Shipments() {
         <div className="px-6 ml-4">
           <h1 className="text-3xl font-bold text-gray-900 mb-3">Shipments</h1>
           <p className="text-gray-600 mt-2">Track and manage your freight shipments</p>
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-blue-800 text-sm leading-relaxed">
+              Our AI automatically scans and transforms your BL, AWB and ISF data into a new shipment in Freightclear Workflows. Upload a doc to get started.
+            </p>
+          </div>
         </div>
         <div className="flex space-x-3 pr-8 mr-6">
           <DocumentUpload 

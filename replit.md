@@ -221,3 +221,6 @@ Changelog:
 - July 16, 2025: Implemented automatic 3.5% credit card service fee using Authorize.Net line item approach
 - July 16, 2025: Service fee automatically calculated and applied to all credit card transactions
 - July 16, 2025: Service fee appears as separate line item in Authorize.Net transactions with legal compliance notices
+- July 16, 2025: Added pagination to admin page shipments table displaying 10 shipments at a time with Previous/Next navigation controls
+- July 16, 2025: Implemented comprehensive pagination for shipments page with configurable page size options (10, 25, 50 per page)
+- July 16, 2025: Added informative AI processing paragraph to shipments page header explaining automatic BL, AWB, and ISF data transformation
