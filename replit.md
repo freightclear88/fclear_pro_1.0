@@ -212,3 +212,6 @@ Changelog:
 - July 16, 2025: Updated document subcategory display with green truck icons for Last Mile delivery documents
 - July 16, 2025: Enhanced server-side routing to automatically create Last Mile shipments (LM-prefix) from delivery order uploads
 - July 16, 2025: Added automatic subcategory assignment for delivery orders to "last_mile" category
+- July 16, 2025: Fixed Last Mile transport mode visibility in shipments table by adding truck emoji support
+- July 16, 2025: Replaced admin subscription management cards with company name search functionality
+- July 16, 2025: Admin can now search by company name, email, or user name to find and upgrade specific accounts

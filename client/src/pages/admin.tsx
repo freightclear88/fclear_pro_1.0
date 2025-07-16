@@ -91,6 +91,7 @@ export default function Admin() {
   const [dateFilter, setDateFilter] = useState("all");
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [expandedShipments, setExpandedShipments] = useState<Set<number>>(new Set());
+  const [companySearchTerm, setCompanySearchTerm] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -134,6 +135,18 @@ export default function Admin() {
     }
 
     return matchesSearch;
+  });
+
+  const filteredUsers = allUsers.filter((user: User) => {
+    if (!companySearchTerm) return false;
+    
+    const searchLower = companySearchTerm.toLowerCase();
+    return (
+      (user.firstName?.toLowerCase().includes(searchLower)) ||
+      (user.lastName?.toLowerCase().includes(searchLower)) ||
+      (user.email?.toLowerCase().includes(searchLower)) ||
+      (user.companyName?.toLowerCase().includes(searchLower))
+    );
   });
 
   const handleExportCSV = () => {
@@ -621,41 +634,76 @@ export default function Admin() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {allUsers.map((user: User) => (
-                <div key={user.id} className="border rounded-lg p-4 bg-white">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h4 className="font-medium">{user.firstName} {user.lastName}</h4>
-                      <p className="text-sm text-gray-600">{user.email}</p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {user.subscriptionPlan === 'pro' && <Crown className="w-4 h-4 text-freight-orange" />}
-                      {user.subscriptionPlan === 'starter' && <CreditCard className="w-4 h-4 text-blue-500" />}
-                      <Badge variant={user.subscriptionPlan === 'free' ? 'secondary' : 'default'}>
-                        {user.subscriptionPlan || 'free'}
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  <div className="text-sm text-gray-600 mb-3">
-                    <div>Status: {user.subscriptionStatus || 'inactive'}</div>
-                    {user.subscriptionEndDate && (
-                      <div>Expires: {new Date(user.subscriptionEndDate).toLocaleDateString()}</div>
-                    )}
-                    <div>Shipments: {user.currentShipmentCount || 0} / {user.maxShipments === -1 ? '∞' : user.maxShipments}</div>
-                    <div>Documents: {user.currentDocumentCount || 0} / {user.maxDocuments === -1 ? '∞' : user.maxDocuments}</div>
-                  </div>
-
-                  <SubscriptionUpgradeDialog
-                    user={user}
-                    subscriptionPlans={subscriptionPlans}
-                    onUpgrade={(planName, duration) => handleUpgradeSubscription(user.id, planName, duration)}
-                    isPending={upgradeSubscriptionMutation.isPending}
-                  />
-                </div>
-              ))}
+            {/* Company Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search by company name, email, or user name..."
+                value={companySearchTerm}
+                onChange={(e) => setCompanySearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
+
+            {/* Search Results */}
+            {companySearchTerm && (
+              <div className="space-y-3">
+                {filteredUsers.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No users found matching "{companySearchTerm}"
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredUsers.map((user: User) => (
+                      <div key={user.id} className="border rounded-lg p-4 bg-white">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="font-medium">{user.firstName} {user.lastName}</h4>
+                              <div className="flex items-center gap-1">
+                                {user.subscriptionPlan === 'pro' && <Crown className="w-4 h-4 text-freight-orange" />}
+                                {user.subscriptionPlan === 'starter' && <CreditCard className="w-4 h-4 text-blue-500" />}
+                                <Badge variant={user.subscriptionPlan === 'free' ? 'secondary' : 'default'}>
+                                  {user.subscriptionPlan || 'free'}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                              <div>
+                                <p><strong>Email:</strong> {user.email}</p>
+                                {user.companyName && <p><strong>Company:</strong> {user.companyName}</p>}
+                                <p><strong>Status:</strong> {user.subscriptionStatus || 'inactive'}</p>
+                              </div>
+                              <div>
+                                {user.subscriptionEndDate && (
+                                  <p><strong>Expires:</strong> {new Date(user.subscriptionEndDate).toLocaleDateString()}</p>
+                                )}
+                                <p><strong>Shipments:</strong> {user.currentShipmentCount || 0} / {user.maxShipments === -1 ? '∞' : user.maxShipments}</p>
+                                <p><strong>Documents:</strong> {user.currentDocumentCount || 0} / {user.maxDocuments === -1 ? '∞' : user.maxDocuments}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <SubscriptionUpgradeDialog
+                              user={user}
+                              subscriptionPlans={subscriptionPlans}
+                              onUpgrade={(planName, duration) => handleUpgradeSubscription(user.id, planName, duration)}
+                              isPending={upgradeSubscriptionMutation.isPending}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!companySearchTerm && (
+              <div className="text-center py-8 text-gray-500">
+                Enter a company name, email, or user name to search for accounts
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
