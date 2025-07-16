@@ -1876,6 +1876,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         invoiceNumber,
         amount,
         description,
+        includeServiceFee,
         paymentNonce,
         paymentMethod
       } = req.body;
@@ -1889,13 +1890,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Validate amount
-      const paymentAmount = parseFloat(amount);
-      if (isNaN(paymentAmount) || paymentAmount <= 0) {
+      const baseAmount = parseFloat(amount);
+      if (isNaN(baseAmount) || baseAmount <= 0) {
         return res.status(400).json({
           success: false,
           error: "Invalid payment amount"
         });
       }
+
+      // Calculate service fee and total
+      const serviceFeeRate = 0.035; // 3.5%
+      const serviceFee = includeServiceFee ? baseAmount * serviceFeeRate : 0;
+      const totalAmount = baseAmount + serviceFee;
 
       // Check for API credentials
       const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
@@ -1916,7 +1922,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create transaction request
       const transactionRequest = new ApiContracts.TransactionRequestType();
       transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION);
-      transactionRequest.setAmount(paymentAmount.toFixed(2));
+      transactionRequest.setAmount(totalAmount.toFixed(2));
 
       // Create payment using credit card details
       const creditCard = new ApiContracts.CreditCardType();
@@ -1943,6 +1949,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       order.setInvoiceNumber(invoiceNumber);
       order.setDescription(description || `Payment for invoice ${invoiceNumber}`);
       transactionRequest.setOrder(order);
+
+      // Add line items if service fee is included
+      if (includeServiceFee && serviceFee > 0) {
+        const lineItems = [];
+        
+        // Invoice amount line item
+        const invoiceLineItem = new ApiContracts.LineItemType();
+        invoiceLineItem.setItemId('invoice');
+        invoiceLineItem.setName(description || `Invoice ${invoiceNumber}`);
+        invoiceLineItem.setDescription('Invoice payment');
+        invoiceLineItem.setQuantity('1');
+        invoiceLineItem.setUnitPrice(baseAmount.toFixed(2));
+        invoiceLineItem.setTaxable(false);
+        lineItems.push(invoiceLineItem);
+        
+        // Service fee line item
+        const serviceFeeLineItem = new ApiContracts.LineItemType();
+        serviceFeeLineItem.setItemId('service_fee');
+        serviceFeeLineItem.setName('Credit Card Service Fee');
+        serviceFeeLineItem.setDescription('3.5% processing fee for credit card transactions');
+        serviceFeeLineItem.setQuantity('1');
+        serviceFeeLineItem.setUnitPrice(serviceFee.toFixed(2));
+        serviceFeeLineItem.setTaxable(false);
+        lineItems.push(serviceFeeLineItem);
+        
+        transactionRequest.setLineItems(lineItems);
+      }
 
       // Create transaction
       const createTransactionRequest = new ApiContracts.CreateTransactionRequest();
