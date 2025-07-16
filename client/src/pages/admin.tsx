@@ -10,7 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle, Receipt, ChevronDown, ChevronRight, Folder, CreditCard, Crown, Zap, Eye, Plus, ExternalLink } from "lucide-react";
+import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle, Receipt, ChevronDown, ChevronRight, ChevronLeft, Folder, CreditCard, Crown, Zap, Eye, Plus, ExternalLink } from "lucide-react";
 import type { Shipment, Document, User } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -120,6 +120,8 @@ export default function Admin() {
   const [companySearchTerm, setCompanySearchTerm] = useState("");
   const [selectedHtmlShipment, setSelectedHtmlShipment] = useState<Shipment | null>(null);
   const [isHtmlPageOpen, setIsHtmlPageOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const shipmentsPerPage = 10;
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -164,6 +166,29 @@ export default function Admin() {
 
     return matchesSearch;
   });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredShipments.length / shipmentsPerPage);
+  const startIndex = (currentPage - 1) * shipmentsPerPage;
+  const endIndex = startIndex + shipmentsPerPage;
+  const paginatedShipments = filteredShipments.slice(startIndex, endIndex);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Reset to page 1 when search or filter changes
+  const resetPagination = () => {
+    setCurrentPage(1);
+  };
 
   const filteredUsers = allUsers.filter((user: User) => {
     if (!companySearchTerm) return false;
@@ -716,13 +741,19 @@ export default function Admin() {
               <Input
                 placeholder="Search shipments by ID, origin, or destination..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  resetPagination();
+                }}
                 className="pl-10"
               />
             </div>
             <div className="flex items-center space-x-2">
               <Calendar className="w-4 h-4 text-gray-400" />
-              <Select value={dateFilter} onValueChange={setDateFilter}>
+              <Select value={dateFilter} onValueChange={(value) => {
+                setDateFilter(value);
+                resetPagination();
+              }}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Date filter" />
                 </SelectTrigger>
@@ -745,6 +776,9 @@ export default function Admin() {
               All Shipments ({filteredShipments.length})
             </CardTitle>
             <div className="text-sm text-gray-500">
+              Page {currentPage} of {totalPages} ({paginatedShipments.length} shown)
+            </div>
+            <div className="text-sm text-gray-500">
               Filter: {dateFilter === "all" ? "All Time" : dateFilter === "month" ? "This Month" : "This Year"}
             </div>
           </div>
@@ -764,11 +798,18 @@ export default function Admin() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredShipments.map((shipment) => {
-                  const user = allUsers.find(u => u.id === shipment.userId);
-                  const isExpanded = expandedShipments.has(shipment.id);
-                  
-                  return (
+                {paginatedShipments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      No shipments found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedShipments.map((shipment) => {
+                    const user = allUsers.find(u => u.id === shipment.userId);
+                    const isExpanded = expandedShipments.has(shipment.id);
+                    
+                    return (
                     <>
                       <TableRow key={shipment.id} className="hover:bg-gray-50">
                         <TableCell>
@@ -857,11 +898,50 @@ export default function Admin() {
                         </TableRow>
                       )}
                     </>
-                  );
-                })}
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </div>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t px-6 py-4">
+              <div className="text-sm text-gray-500">
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredShipments.length)} of {filteredShipments.length} shipments
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                  className="flex items-center space-x-1"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+                </Button>
+                
+                <div className="flex items-center space-x-1">
+                  <span className="text-sm font-medium">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center space-x-1"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
