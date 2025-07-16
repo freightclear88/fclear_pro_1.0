@@ -215,3 +215,6 @@ Changelog:
 - July 16, 2025: Fixed Last Mile transport mode visibility in shipments table by adding truck emoji support
 - July 16, 2025: Replaced admin subscription management cards with company name search functionality
 - July 16, 2025: Admin can now search by company name, email, or user name to find and upgrade specific accounts
+- July 16, 2025: Enhanced admin shipment management with document upload capability and HTML page access
+- July 16, 2025: Removed value column from admin shipment list for cleaner layout
+- July 16, 2025: Admin can now upload documents to any shipment and view HTML shipment data pages with copy functionality

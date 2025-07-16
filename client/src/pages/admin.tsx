@@ -10,16 +10,40 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle, Receipt, ChevronDown, ChevronRight, Folder, CreditCard, Crown, Zap } from "lucide-react";
+import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle, Receipt, ChevronDown, ChevronRight, Folder, CreditCard, Crown, Zap, Eye, Plus, ExternalLink } from "lucide-react";
 import type { Shipment, Document, User } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import ShipmentHtmlPage from "@/components/ShipmentHtmlPage";
+import DocumentUpload from "@/components/DocumentUpload";
+import DocumentList from "@/components/DocumentList";
 
 interface SubscriptionUpgradeDialogProps {
   user: User;
   subscriptionPlans: any[];
   onUpgrade: (planName: string, duration: number) => void;
   isPending: boolean;
+}
+
+// Simple DocumentFolder component for admin use
+function DocumentFolder({ shipmentId }: { shipmentId: number }) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-gray-600">Shipment Documents</span>
+        <DocumentUpload 
+          shipmentId={shipmentId}
+          trigger={
+            <Button size="sm" className="btn-primary">
+              <Plus className="w-4 h-4 mr-1" />
+              Upload Document
+            </Button>
+          }
+        />
+      </div>
+      <DocumentList shipmentId={shipmentId} />
+    </div>
+  );
 }
 
 function SubscriptionUpgradeDialog({ user, subscriptionPlans, onUpgrade, isPending }: SubscriptionUpgradeDialogProps) {
@@ -92,6 +116,8 @@ export default function Admin() {
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [expandedShipments, setExpandedShipments] = useState<Set<number>>(new Set());
   const [companySearchTerm, setCompanySearchTerm] = useState("");
+  const [selectedHtmlShipment, setSelectedHtmlShipment] = useState<Shipment | null>(null);
+  const [isHtmlPageOpen, setIsHtmlPageOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -181,38 +207,9 @@ export default function Admin() {
     });
   };
 
-  const handleCopyShipmentData = async (shipment: Shipment) => {
-    const shipmentHTML = `
-<div class="shipment-data">
-  <h2>Shipment Details - ${shipment.shipmentId}</h2>
-  <table>
-    <tr><td><strong>Shipment ID:</strong></td><td>${shipment.shipmentId}</td></tr>
-    <tr><td><strong>Origin:</strong></td><td>${shipment.origin}</td></tr>
-    <tr><td><strong>Origin Port:</strong></td><td>${shipment.originPort || 'N/A'}</td></tr>
-    <tr><td><strong>Destination:</strong></td><td>${shipment.destination}</td></tr>
-    <tr><td><strong>Destination Port:</strong></td><td>${shipment.destinationPort || 'N/A'}</td></tr>
-    <tr><td><strong>Status:</strong></td><td>${shipment.status}</td></tr>
-    <tr><td><strong>Vessel:</strong></td><td>${shipment.vessel || 'N/A'}</td></tr>
-    <tr><td><strong>Container:</strong></td><td>${shipment.containerNumber || 'N/A'}</td></tr>
-    <tr><td><strong>Bill of Lading:</strong></td><td>${shipment.billOfLading || 'N/A'}</td></tr>
-    <tr><td><strong>Total Value:</strong></td><td>$${shipment.totalValue || '0'}</td></tr>
-    <tr><td><strong>Created:</strong></td><td>${new Date(shipment.createdAt!).toLocaleDateString()}</td></tr>
-  </table>
-</div>`;
-
-    try {
-      await navigator.clipboard.writeText(shipmentHTML);
-      toast({
-        title: "HTML Copied",
-        description: "Shipment HTML data copied to clipboard",
-      });
-    } catch (error) {
-      toast({
-        title: "Copy Failed",
-        description: "Failed to copy HTML data",
-        variant: "destructive",
-      });
-    }
+  const handleViewHtmlPage = (shipment: Shipment) => {
+    setSelectedHtmlShipment(shipment);
+    setIsHtmlPageOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -760,7 +757,6 @@ export default function Admin() {
                   <TableHead>Origin</TableHead>
                   <TableHead>Destination</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Value</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -816,27 +812,38 @@ export default function Admin() {
                           {getStatusBadge(shipment.status)}
                         </TableCell>
                         <TableCell>
-                          <span className="font-medium">
-                            ${shipment.totalValue ? parseFloat(shipment.totalValue).toLocaleString() : "0"}
-                          </span>
-                        </TableCell>
-                        <TableCell>
                           {new Date(shipment.createdAt!).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCopyShipmentData(shipment)}
-                            className="text-freight-orange hover:text-freight-dark"
-                          >
-                            <Copy className="w-4 h-4" />
-                          </Button>
+                          <div className="flex space-x-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewHtmlPage(shipment)}
+                              className="text-freight-orange hover:text-freight-dark"
+                              title="View HTML Page"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </Button>
+                            <DocumentUpload 
+                              shipmentId={shipment.id}
+                              trigger={
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-freight-blue hover:text-freight-dark"
+                                  title="Upload Document"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </Button>
+                              }
+                            />
+                          </div>
                         </TableCell>
                       </TableRow>
                       {isExpanded && (
                         <TableRow>
-                          <TableCell colSpan={8} className="p-4 bg-gray-50/50">
+                          <TableCell colSpan={7} className="p-4 bg-gray-50/50">
                             <div className="border rounded-lg p-4 bg-white">
                               <h4 className="font-medium mb-3 text-freight-dark flex items-center">
                                 <FileText className="w-4 h-4 mr-2" />
@@ -855,6 +862,16 @@ export default function Admin() {
           </div>
         </CardContent>
       </Card>
+
+      {/* HTML Page Dialog */}
+      <ShipmentHtmlPage
+        shipment={selectedHtmlShipment}
+        isOpen={isHtmlPageOpen}
+        onClose={() => {
+          setIsHtmlPageOpen(false);
+          setSelectedHtmlShipment(null);
+        }}
+      />
     </div>
   );
 }
