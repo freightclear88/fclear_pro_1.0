@@ -218,6 +218,6 @@ Changelog:
 - July 16, 2025: Enhanced admin shipment management with document upload capability and HTML page access
 - July 16, 2025: Removed value column from admin shipment list for cleaner layout
 - July 16, 2025: Admin can now upload documents to any shipment and view HTML shipment data pages with copy functionality
-- July 16, 2025: Implemented 3.5% credit card service fee option using Authorize.Net line item approach
-- July 16, 2025: Added service fee checkbox to payment forms with real-time calculation display
+- July 16, 2025: Implemented automatic 3.5% credit card service fee using Authorize.Net line item approach
+- July 16, 2025: Service fee automatically calculated and applied to all credit card transactions
 - July 16, 2025: Service fee appears as separate line item in Authorize.Net transactions with legal compliance notices

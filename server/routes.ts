@@ -1876,7 +1876,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         invoiceNumber,
         amount,
         description,
-        includeServiceFee,
         paymentNonce,
         paymentMethod
       } = req.body;
@@ -1898,9 +1897,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Calculate service fee and total
+      // Calculate service fee and total (automatically applied)
       const serviceFeeRate = 0.035; // 3.5%
-      const serviceFee = includeServiceFee ? baseAmount * serviceFeeRate : 0;
+      const serviceFee = baseAmount * serviceFeeRate;
       const totalAmount = baseAmount + serviceFee;
 
       // Check for API credentials
@@ -1950,8 +1949,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       order.setDescription(description || `Payment for invoice ${invoiceNumber}`);
       transactionRequest.setOrder(order);
 
-      // Add line items if service fee is included
-      if (includeServiceFee && serviceFee > 0) {
+      // Add line items for detailed breakdown
+      if (serviceFee > 0) {
         const lineItems = [];
         
         // Invoice amount line item

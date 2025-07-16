@@ -17,7 +17,6 @@ interface InvoicePaymentData {
   invoiceNumber: string;
   amount: string;
   description: string;
-  includeServiceFee: boolean;
   paymentMethod: {
     cardNumber: string;
     expiryMonth: string;
@@ -46,7 +45,6 @@ export default function Payments() {
     invoiceNumber: "",
     amount: "",
     description: "",
-    includeServiceFee: false,
     paymentMethod: {
       cardNumber: "",
       expiryMonth: "",
@@ -58,10 +56,10 @@ export default function Payments() {
     }
   });
 
-  // Calculate service fee and total
+  // Calculate service fee and total (automatically applied)
   const baseAmount = parseFloat(invoiceForm.amount) || 0;
   const serviceFeeRate = 0.035; // 3.5%
-  const serviceFee = invoiceForm.includeServiceFee ? baseAmount * serviceFeeRate : 0;
+  const serviceFee = baseAmount * serviceFeeRate;
   const totalAmount = baseAmount + serviceFee;
 
   // Pre-populate form with user data when user loads
@@ -89,17 +87,15 @@ export default function Payments() {
       });
     },
     onSuccess: () => {
-      const serviceFeeText = invoiceForm.includeServiceFee ? ` (including $${serviceFee.toFixed(2)} service fee)` : '';
       toast({
         title: "Payment Successful",
-        description: `Payment for invoice ${invoiceForm.invoiceNumber} has been processed successfully. Total: $${totalAmount.toFixed(2)}${serviceFeeText}`,
+        description: `Payment for invoice ${invoiceForm.invoiceNumber} has been processed successfully. Total: $${totalAmount.toFixed(2)} (including $${serviceFee.toFixed(2)} service fee)`,
       });
       // Reset form
       setInvoiceForm({
         invoiceNumber: "",
         amount: "",
         description: "",
-        includeServiceFee: false,
         paymentMethod: {
           cardNumber: "",
           expiryMonth: "",
@@ -413,36 +409,17 @@ export default function Payments() {
                 </div>
               </div>
 
-              {/* Service Fee Section */}
+              {/* Payment Summary */}
               <div className="space-y-4 border-t pt-4">
-                <div className="flex items-start space-x-3">
-                  <Checkbox
-                    id="includeServiceFee"
-                    checked={invoiceForm.includeServiceFee}
-                    onCheckedChange={(checked) => setInvoiceForm(prev => ({
-                      ...prev,
-                      includeServiceFee: !!checked
-                    }))}
-                  />
-                  <div className="flex-1">
-                    <Label htmlFor="includeServiceFee" className="text-sm font-medium cursor-pointer">
-                      Add 3.5% Credit Card Service Fee
-                    </Label>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Service fee applies to credit card transactions to cover processing costs
-                    </p>
-                  </div>
-                </div>
-
-                {/* Payment Summary */}
                 <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                  <h4 className="font-medium text-freight-dark mb-2">Payment Summary</h4>
                   <div className="flex justify-between text-sm">
                     <span>Invoice Amount:</span>
                     <span>${baseAmount.toFixed(2)}</span>
                   </div>
-                  {invoiceForm.includeServiceFee && (
+                  {baseAmount > 0 && (
                     <div className="flex justify-between text-sm text-orange-600">
-                      <span>Service Fee (3.5%):</span>
+                      <span>Credit Card Service Fee (3.5%):</span>
                       <span>${serviceFee.toFixed(2)}</span>
                     </div>
                   )}
@@ -450,12 +427,12 @@ export default function Payments() {
                     <span>Total Amount:</span>
                     <span>${totalAmount.toFixed(2)}</span>
                   </div>
-                  {invoiceForm.includeServiceFee && (
+                  {baseAmount > 0 && (
                     <div className="flex items-start gap-2 mt-3 p-3 bg-yellow-50 rounded border">
                       <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
                       <div className="text-xs text-yellow-800">
                         <p className="font-medium">Service Fee Notice:</p>
-                        <p>This fee covers credit card processing costs and is capped at 3.5% as permitted by law. Debit cards are not subject to this fee.</p>
+                        <p>A 3.5% service fee is automatically applied to all credit card transactions to cover processing costs. This fee is capped at 3.5% as permitted by law.</p>
                       </div>
                     </div>
                   )}
