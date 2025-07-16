@@ -106,7 +106,7 @@ export const shipments = pgTable("shipments", {
   originPort: varchar("origin_port"),
   destination: varchar("destination").notNull(),
   destinationPort: varchar("destination_port"),
-  transportMode: varchar("transport_mode").notNull().default("ocean"), // air, ocean, trucking
+  transportMode: varchar("transport_mode").notNull().default("ocean"), // air, ocean, trucking, last_mile
   status: varchar("status").notNull().default("pending"),
   vessel: varchar("vessel"),
   voyage: varchar("voyage"),

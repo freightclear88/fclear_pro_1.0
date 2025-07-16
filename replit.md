@@ -207,3 +207,8 @@ Changelog:
 - July 15, 2025: Added company name field to "Pay Invoice" form in Payments page with Authorize.Net API integration
 - July 15, 2025: Company name pre-populates from user profile and gets passed to Authorize.Net billTo.company field
 - July 15, 2025: Enhanced payment form layout with side-by-side cardholder name and company name fields
+- July 16, 2025: Implemented "Last Mile" shipment subcategory with truck icon for port-to-door delivery document organization
+- July 16, 2025: Added Last Mile transport mode to shipment creation with automatic detection for delivery order documents
+- July 16, 2025: Updated document subcategory display with green truck icons for Last Mile delivery documents
+- July 16, 2025: Enhanced server-side routing to automatically create Last Mile shipments (LM-prefix) from delivery order uploads
+- July 16, 2025: Added automatic subcategory assignment for delivery orders to "last_mile" category

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Eye, Download, Calendar, Hash, X, ExternalLink } from "lucide-react";
+import { FileText, Eye, Download, Calendar, Hash, X, ExternalLink, Truck } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -145,7 +145,14 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
                           {formatCategoryName(document.category)}
                         </Badge>
                         {document.subCategory && (
-                          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                          <Badge variant="outline" className={
+                            document.subCategory === 'last_mile' 
+                              ? "bg-green-50 text-green-700 border-green-200 flex items-center gap-1"
+                              : "bg-orange-50 text-orange-700 border-orange-200"
+                          }>
+                            {document.subCategory === 'last_mile' && (
+                              <Truck className="w-3 h-3" />
+                            )}
                             {formatCategoryName(document.subCategory)}
                           </Badge>
                         )}

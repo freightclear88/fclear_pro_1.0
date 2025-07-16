@@ -24,7 +24,7 @@ const DOCUMENT_CATEGORIES = [
   { value: "power_of_attorney", label: "Power of Attorney", icon: Scale, creates: null },
   { value: "airway_bill", label: "Airway Bill", icon: Plane, creates: "air" },
   { value: "isf_data_sheet", label: "ISF Data Sheet", icon: Ship, creates: "ocean" },
-  { value: "delivery_order", label: "Delivery Order", icon: Truck, creates: null },
+  { value: "delivery_order", label: "Delivery Order", icon: Truck, creates: "last_mile" },
   { value: "shipping_invoice", label: "Shipping Invoice", icon: Receipt, creates: null },
   { value: "other", label: "Other Document", icon: FileText, creates: null },
 ];
@@ -139,10 +139,16 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
       return;
     }
 
+    // Auto-assign "last_mile" subcategory for delivery orders
+    let finalSubCategory = selectedSubCategory;
+    if (selectedCategory === "delivery_order" && !finalSubCategory) {
+      finalSubCategory = "last_mile";
+    }
+    
     uploadMutation.mutate({ 
       files: uploadedFiles, 
       category: selectedCategory,
-      subCategory: selectedSubCategory || undefined
+      subCategory: finalSubCategory || undefined
     });
   };
 

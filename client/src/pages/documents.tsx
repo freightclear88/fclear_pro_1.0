@@ -39,6 +39,7 @@ export default function Documents() {
       case 'air': return Plane;
       case 'ocean': return Ship;
       case 'trucking': return Truck;
+      case 'last_mile': return Truck;
       default: return Package;
     }
   };

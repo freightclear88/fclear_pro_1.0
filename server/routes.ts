@@ -998,14 +998,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let createdShipment = null;
 
       // Check if this document type should create a new shipment
-      const shouldCreateShipment = !shipmentId && ['bill_of_lading', 'arrival_notice', 'airway_bill', 'isf_data_sheet'].includes(category);
+      const shouldCreateShipment = !shipmentId && ['bill_of_lading', 'arrival_notice', 'airway_bill', 'isf_data_sheet', 'delivery_order'].includes(category);
       
       if (shouldCreateShipment) {
         // Determine transport mode based on document type
-        const transportMode = category === 'airway_bill' ? 'air' : 'ocean';
+        let transportMode = 'ocean'; // default
+        if (category === 'airway_bill') {
+          transportMode = 'air';
+        } else if (category === 'delivery_order') {
+          transportMode = 'last_mile';
+        }
         
         // Generate shipment ID based on transport mode
-        const prefix = transportMode === 'air' ? 'AIR' : 'SEA';
+        let prefix = 'SEA';
+        if (transportMode === 'air') {
+          prefix = 'AIR';
+        } else if (transportMode === 'last_mile') {
+          prefix = 'LM';
+        }
         const timestamp = Date.now().toString().slice(-6);
         const generatedShipmentId = `${prefix}-${timestamp}`;
         
@@ -1026,6 +1036,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Ensure category is always valid
         const documentCategory = category && category.trim() ? category.trim() : 'other';
         
+        // Auto-assign subcategory for delivery orders
+        let finalSubCategory = subCategory;
+        if (documentCategory === 'delivery_order' && !finalSubCategory) {
+          finalSubCategory = 'last_mile';
+        }
+
         const document = await storage.createDocument({
           userId,
           shipmentId: createdShipment?.id || (shipmentId ? parseInt(shipmentId) : undefined),
@@ -1034,7 +1050,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fileType: file.mimetype,
           fileSize: file.size,
           category: documentCategory,
-          subCategory: subCategory || null,
+          subCategory: finalSubCategory || null,
           status: 'pending',
           filePath: file.path,
         });

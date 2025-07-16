@@ -131,6 +131,12 @@ export default function CreateShipmentDialog({ trigger }: CreateShipmentDialogPr
                       <span>Trucking</span>
                     </div>
                   </SelectItem>
+                  <SelectItem value="last_mile">
+                    <div className="flex items-center space-x-2">
+                      <Truck className="w-4 h-4 text-green-600" />
+                      <span>Last Mile</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
               {errors.transportMode && (
