@@ -83,6 +83,8 @@ Destination: ${shipment?.destination || "N/A"}
         return '🚢';
       case 'trucking':
         return '🚛';
+      case 'last_mile':
+        return '🚛';
       default:
         return '📦';
     }
