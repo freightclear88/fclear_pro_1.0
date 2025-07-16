@@ -241,6 +241,36 @@ export const requireAdmin: RequestHandler = async (req: any, res, next) => {
   }
 };
 
+// Middleware to check agent access (agents have admin-like permissions but not full admin)
+export const requireAgent: RequestHandler = async (req: any, res, next) => {
+  try {
+    let userId: string;
+    
+    // Development test mode
+    if (process.env.NODE_ENV === 'development') {
+      userId = 'demo-user-123';
+    } else {
+      // Production mode - require authentication
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      userId = req.user.claims.sub;
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user || (!user.isAgent && !user.isAdmin)) {
+      return res.status(403).json({ 
+        message: "Agent access required"
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Agent check error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // Middleware to check chat access based on subscription plan
 export const requireChatAccess: RequestHandler = async (req: any, res, next) => {
   try {

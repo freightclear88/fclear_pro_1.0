@@ -15,6 +15,7 @@ import Dashboard from "@/pages/dashboard";
 import Shipments from "@/pages/shipments";
 import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
+import Agent from "@/pages/agent";
 import Subscription from "@/pages/subscription";
 import Payments from "@/pages/payments";
 import Demo from "@/pages/demo";
@@ -92,6 +93,24 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
               })}
               
               {/* Admin Navigation - Only visible for admin users */}
+              {user?.isAgent && !user?.isAdmin && (
+                <Link href="/agent">
+                  <a
+                    className={cn(
+                      "flex items-center px-4 py-3 rounded-lg font-medium transition-colors",
+                      location === "/agent"
+                        ? "text-freight-dark bg-teal/10"
+                        : "text-gray-700 hover:text-freight-dark hover:bg-white/50"
+                    )}
+                  >
+                    <Shield 
+                      className="mr-3 w-5 h-5"
+                      style={location === "/agent" ? { color: "#33cccc" } : {}}
+                    />
+                    Agent Dashboard
+                  </a>
+                </Link>
+              )}
               {user?.isAdmin && adminNavigation.map((item) => {
                 const Icon = item.icon;
                 const isActive = location === item.href;
@@ -175,6 +194,7 @@ function Router() {
         <Route path="/subscription" component={Subscription} />
         <Route path="/payments" component={Payments} />
         <Route path="/admin" component={Admin} />
+        <Route path="/agent" component={Agent} />
         <Route path="/profile" component={Profile} />
         <Route path="/demo" component={Demo} />
         <Route component={NotFound} />

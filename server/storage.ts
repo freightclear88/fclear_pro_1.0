@@ -37,6 +37,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   updateUser(id: string, userData: Partial<UpsertUser>): Promise<User>;
   getAllUsers(): Promise<User[]>;
+  setUserAgent(userId: string, isAgent: boolean): Promise<User>;
   
   // Shipment operations
   getShipmentsByUserId(userId: string): Promise<Shipment[]>;
@@ -142,6 +143,15 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .orderBy(desc(users.createdAt));
+  }
+
+  async setUserAgent(userId: string, isAgent: boolean): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ isAgent, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
   }
 
   // Shipment operations

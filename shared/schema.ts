@@ -75,6 +75,7 @@ export const users = pgTable("users", {
   
   // Access control flags
   isAdmin: boolean("is_admin").default(false),
+  isAgent: boolean("is_agent").default(false),
   canAccessAdvancedReports: boolean("can_access_advanced_reports").default(false),
   canAccessAPIIntegration: boolean("can_access_api_integration").default(false),
   canAccessPremiumSupport: boolean("can_access_premium_support").default(false),

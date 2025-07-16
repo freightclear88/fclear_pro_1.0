@@ -18,6 +18,7 @@ import ShipmentHtmlPage from "@/components/ShipmentHtmlPage";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
 import AiTrainingManager from "@/components/AiTrainingManager";
+import AgentManager from "@/components/AgentManager";
 
 interface SubscriptionUpgradeDialogProps {
   user: User;
@@ -876,6 +877,21 @@ export default function Admin() {
         </CardHeader>
         <CardContent>
           <AiTrainingManager />
+        </CardContent>
+      </Card>
+
+      {/* Agent Management */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-lg mr-3">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            Agent Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AgentManager />
         </CardContent>
       </Card>
 

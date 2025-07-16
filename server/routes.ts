@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, requireSubscription, requireAdmin, requireChatAccess } from "./replitAuth";
+import { setupAuth, isAuthenticated, requireSubscription, requireAdmin, requireAgent, requireChatAccess } from "./replitAuth";
 import ApiContracts from 'authorizenet/lib/apicontracts';
 import ApiControllers from 'authorizenet/lib/apicontrollers';
 import SDKConstants from 'authorizenet/lib/constants';
@@ -1573,6 +1573,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Agent routes (similar to admin but without user management)
+  app.get('/api/agent/shipments', requireAgent, async (req: any, res) => {
+    try {
+      const shipments = await storage.getAllShipments();
+      res.json(shipments);
+    } catch (error) {
+      console.error("Error fetching all shipments:", error);
+      res.status(500).json({ message: "Failed to fetch shipments" });
+    }
+  });
+
+  app.get('/api/agent/documents', requireAgent, async (req: any, res) => {
+    try {
+      const documents = await storage.getAllDocuments();
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching all documents:", error);
+      res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
   app.get('/api/admin/users', requireAdmin, async (req: any, res) => {
     try {
       const users = await storage.getAllUsers();
@@ -1580,6 +1601,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching all users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Admin route to set user as agent
+  app.post('/api/admin/users/:userId/agent', requireAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { isAgent } = req.body;
+      
+      const user = await storage.setUserAgent(userId, isAgent);
+      res.json({ 
+        message: isAgent ? 'User granted agent access' : 'Agent access removed',
+        user 
+      });
+    } catch (error) {
+      console.error("Error updating user agent status:", error);
+      res.status(500).json({ message: "Failed to update agent status" });
     }
   });
 
