@@ -6,9 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { UserCheck, UserX, Search, Shield } from "lucide-react";
+import { UserCheck, UserX, Search, Shield, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
+import InviteUserDialog from "@/components/InviteUserDialog";
 
 export default function AgentManager() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -22,16 +23,14 @@ export default function AgentManager() {
 
   const agentMutation = useMutation({
     mutationFn: async ({ userId, isAgent }: { userId: string; isAgent: boolean }) => {
-      return await apiRequest(`/api/admin/users/${userId}/agent`, {
-        method: "POST",
-        body: JSON.stringify({ isAgent }),
-      });
+      const response = await apiRequest("POST", `/api/admin/users/${userId}/agent`, { isAgent });
+      return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "Success",
-        description: data.message,
+        description: data.message || "Agent status updated successfully",
       });
     },
     onError: (error: Error) => {
@@ -43,7 +42,7 @@ export default function AgentManager() {
     },
   });
 
-  const filteredUsers = users.filter((user: User) => {
+  const filteredUsers = (users as User[]).filter((user: User) => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -64,13 +63,28 @@ export default function AgentManager() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Shield className="h-5 w-5" />
-          Agent Management
-        </CardTitle>
-        <CardDescription>
-          Manage agent access for users. Agents can view and edit all shipments and documents.
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Agent Management
+            </CardTitle>
+            <CardDescription>
+              Manage agent access for users. Agents can view and edit all shipments and documents.
+            </CardDescription>
+          </div>
+          <InviteUserDialog 
+            trigger={
+              <Button className="btn-primary">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Invite User
+              </Button>
+            }
+            onInviteSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+            }}
+          />
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Search */}

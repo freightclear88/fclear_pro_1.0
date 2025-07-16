@@ -226,6 +226,20 @@ export const aiTrainingData = pgTable("ai_training_data", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// User invitations table
+export const userInvitations = pgTable("user_invitations", {
+  id: serial("id").primaryKey(),
+  email: varchar("email").notNull(),
+  firstName: varchar("first_name").notNull(),
+  lastName: varchar("last_name").notNull(),
+  invitedBy: varchar("invited_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  inviteToken: varchar("invite_token").notNull().unique(),
+  status: varchar("status").default("pending"), // pending, accepted, expired
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  acceptedAt: timestamp("accepted_at"),
+});
+
 // Schema types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -253,6 +267,9 @@ export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
 
 export type InsertAiTrainingData = typeof aiTrainingData.$inferInsert;
 export type AiTrainingData = typeof aiTrainingData.$inferSelect;
+
+export type InsertUserInvitation = typeof userInvitations.$inferInsert;
+export type UserInvitation = typeof userInvitations.$inferSelect;
 
 // Insert schemas
 export const insertShipmentSchema = createInsertSchema(shipments).omit({
@@ -287,4 +304,10 @@ export const insertAiTrainingDataSchema = createInsertSchema(aiTrainingData).omi
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertUserInvitationSchema = createInsertSchema(userInvitations).omit({
+  id: true,
+  createdAt: true,
+  acceptedAt: true,
 });

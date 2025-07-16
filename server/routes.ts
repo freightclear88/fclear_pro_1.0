@@ -65,6 +65,65 @@ async function sendPOANotification(userDetails: any) {
   }
 }
 
+// Send user invitation email
+async function sendUserInvitationEmail(invitation: any, inviterUser: any) {
+  const inviteToken = invitation.inviteToken;
+  const inviteUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}/accept-invite?token=${inviteToken}`;
+  
+  const mailOptions = {
+    from: process.env.SMTP_USER || 'admin@freightclear.com',
+    to: invitation.email,
+    subject: 'You\'re Invited to Join Freightclear Workflows',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #2563eb; margin-bottom: 10px;">Freightclear Workflows</h1>
+          <p style="color: #64748b; font-size: 16px;">Streamlined Import Management</p>
+        </div>
+        
+        <h2 style="color: #1e293b;">You're Invited!</h2>
+        
+        <p>Hello ${invitation.firstName} ${invitation.lastName},</p>
+        
+        <p>${inviterUser.firstName} ${inviterUser.lastName} has invited you to join <strong>Freightclear Workflows</strong>, our comprehensive platform for managing freight shipments and documents.</p>
+        
+        <div style="background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%); border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
+          <h3 style="color: white; margin: 0 0 15px 0;">What you'll get access to:</h3>
+          <ul style="color: white; text-align: left; max-width: 400px; margin: 0 auto;">
+            <li>Shipment tracking and management</li>
+            <li>Document upload and OCR processing</li>
+            <li>Power of Attorney e-signature</li>
+            <li>Real-time carrier tracking</li>
+            <li>AI-powered document processing</li>
+          </ul>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${inviteUrl}" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+            Accept Invitation
+          </a>
+        </div>
+        
+        <p style="color: #64748b; font-size: 14px;">This invitation will expire in 7 days. If you're unable to click the button above, copy and paste this link into your browser:</p>
+        <p style="color: #3b82f6; word-break: break-all; font-size: 14px;">${inviteUrl}</p>
+        
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+        <p style="color: #64748b; font-size: 12px; text-align: center;">
+          <em>This invitation was sent by ${inviterUser.firstName} ${inviterUser.lastName} from Freightclear Workflows.</em>
+        </p>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('User invitation email sent successfully to:', invitation.email);
+  } catch (error) {
+    console.error('Failed to send user invitation email:', error);
+    throw error; // Throw error for invitation failures
+  }
+}
+
 // POA HTML template function with filled data
 function generateFilledPOADocument(data: any): string {
   return `
@@ -1713,6 +1772,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching admin stats:", error);
       res.status(500).json({ message: "Failed to fetch admin stats" });
+    }
+  });
+
+  // User invitation routes (admin and agent access)
+  app.post('/api/invitations', requireAgent, async (req: any, res) => {
+    try {
+      const inviterUserId = getUserId(req);
+      const { firstName, lastName, email } = req.body;
+
+      // Validate required fields
+      if (!firstName || !lastName || !email) {
+        return res.status(400).json({ 
+          error: "First name, last name, and email are required" 
+        });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ 
+          error: "A user with this email address already exists" 
+        });
+      }
+
+      // Check if invitation already exists for this email
+      const existingInvitations = await storage.getAllUserInvitations();
+      const pendingInvitation = existingInvitations.find(
+        inv => inv.email === email && inv.status === 'pending'
+      );
+      
+      if (pendingInvitation) {
+        return res.status(400).json({ 
+          error: "An invitation has already been sent to this email address" 
+        });
+      }
+
+      // Generate unique invitation token
+      const inviteToken = require('crypto').randomBytes(32).toString('hex');
+      
+      // Create invitation record
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7); // Expires in 7 days
+      
+      const invitation = await storage.createUserInvitation({
+        firstName,
+        lastName,
+        email,
+        inviteToken,
+        invitedBy: inviterUserId,
+        status: 'pending',
+        expiresAt
+      });
+
+      // Get inviter user details for email
+      const inviterUser = await storage.getUser(inviterUserId);
+      if (!inviterUser) {
+        return res.status(500).json({ error: "Failed to get inviter details" });
+      }
+
+      // Send invitation email
+      try {
+        await sendUserInvitationEmail(invitation, inviterUser);
+      } catch (emailError) {
+        console.error('Failed to send invitation email:', emailError);
+        return res.status(500).json({ 
+          error: "Failed to send invitation email. Please try again." 
+        });
+      }
+
+      res.json({ 
+        message: "Invitation sent successfully",
+        invitation: {
+          id: invitation.id,
+          firstName: invitation.firstName,
+          lastName: invitation.lastName,
+          email: invitation.email,
+          status: invitation.status,
+          createdAt: invitation.createdAt
+        }
+      });
+    } catch (error) {
+      console.error("Error creating invitation:", error);
+      res.status(500).json({ error: "Failed to create invitation" });
+    }
+  });
+
+  app.get('/api/invitations', requireAgent, async (req: any, res) => {
+    try {
+      const invitations = await storage.getAllUserInvitations();
+      res.json(invitations);
+    } catch (error) {
+      console.error("Error fetching invitations:", error);
+      res.status(500).json({ error: "Failed to fetch invitations" });
+    }
+  });
+
+  app.get('/api/invitations/token/:token', async (req: any, res) => {
+    try {
+      const { token } = req.params;
+      const invitation = await storage.getUserInvitationByToken(token);
+      
+      if (!invitation) {
+        return res.status(404).json({ error: "Invitation not found or expired" });
+      }
+
+      if (invitation.status !== 'pending') {
+        return res.status(400).json({ error: "Invitation has already been used" });
+      }
+
+      // Check if invitation is expired (7 days)
+      const inviteDate = new Date(invitation.createdAt!);
+      const now = new Date();
+      const daysDiff = Math.floor((now.getTime() - inviteDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff > 7) {
+        await storage.updateUserInvitation(invitation.id, { status: 'expired' });
+        return res.status(400).json({ error: "Invitation has expired" });
+      }
+
+      res.json({
+        firstName: invitation.firstName,
+        lastName: invitation.lastName,
+        email: invitation.email
+      });
+    } catch (error) {
+      console.error("Error validating invitation:", error);
+      res.status(500).json({ error: "Failed to validate invitation" });
+    }
+  });
+
+  app.post('/api/invitations/accept/:token', async (req: any, res) => {
+    try {
+      const { token } = req.params;
+      const invitation = await storage.getUserInvitationByToken(token);
+      
+      if (!invitation) {
+        return res.status(404).json({ error: "Invitation not found or expired" });
+      }
+
+      if (invitation.status !== 'pending') {
+        return res.status(400).json({ error: "Invitation has already been used" });
+      }
+
+      // Mark invitation as accepted
+      await storage.updateUserInvitation(invitation.id, { 
+        status: 'accepted',
+        acceptedAt: new Date()
+      });
+
+      res.json({ 
+        message: "Invitation accepted successfully",
+        redirectTo: "/api/login" // Redirect to login to complete registration
+      });
+    } catch (error) {
+      console.error("Error accepting invitation:", error);
+      res.status(500).json({ error: "Failed to accept invitation" });
     }
   });
 

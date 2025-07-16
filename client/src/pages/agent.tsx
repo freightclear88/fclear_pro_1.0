@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Ship, Truck, Plane, FileText, Download, Search, Plus, Shield, Users, FolderOpen, UploadCloud } from "lucide-react";
+import { Ship, Truck, Plane, FileText, Download, Search, Plus, Shield, Users, FolderOpen, UploadCloud, UserPlus } from "lucide-react";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
 import CreateShipmentDialog from "@/components/CreateShipmentDialog";
+import InviteUserDialog from "@/components/InviteUserDialog";
 import type { Shipment, Document } from "@shared/schema";
 
 interface DocumentFolder {
@@ -24,7 +25,7 @@ function DocumentFolder({ shipmentId }: { shipmentId: number }) {
     retry: false,
   });
 
-  if (documents.length === 0) {
+  if ((documents as Document[]).length === 0) {
     return (
       <div className="text-center py-4 text-gray-500">
         <FileText className="w-8 h-8 mx-auto mb-2 text-gray-300" />
@@ -35,7 +36,7 @@ function DocumentFolder({ shipmentId }: { shipmentId: number }) {
 
   return (
     <div className="space-y-2">
-      {documents.map((document: Document) => (
+      {(documents as Document[]).map((document: Document) => (
         <div key={document.id} className="flex items-center justify-between p-2 border rounded hover:bg-gray-50">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-gray-500" />
@@ -77,7 +78,7 @@ export default function Agent() {
     retry: false,
   });
 
-  const filteredShipments = allShipments.filter((shipment: Shipment) => {
+  const filteredShipments = (allShipments as Shipment[]).filter((shipment: Shipment) => {
     const matchesSearch = shipment.shipmentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          shipment.origin.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          shipment.destination.toLowerCase().includes(searchTerm.toLowerCase());
@@ -122,6 +123,14 @@ export default function Agent() {
           </p>
         </div>
         <div className="flex gap-3">
+          <InviteUserDialog 
+            trigger={
+              <Button variant="outline">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Invite User
+              </Button>
+            }
+          />
           <CreateShipmentDialog 
             trigger={
               <Button className="bg-teal-600 hover:bg-teal-700">
@@ -149,7 +158,7 @@ export default function Agent() {
             <Ship className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{allShipments.length}</div>
+            <div className="text-2xl font-bold">{(allShipments as Shipment[]).length}</div>
           </CardContent>
         </Card>
         
@@ -159,7 +168,7 @@ export default function Agent() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{allDocuments.length}</div>
+            <div className="text-2xl font-bold">{(allDocuments as Document[]).length}</div>
           </CardContent>
         </Card>
 
@@ -170,7 +179,7 @@ export default function Agent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Set(allShipments.map((s: Shipment) => s.userId)).size}
+              {new Set((allShipments as Shipment[]).map((s: Shipment) => s.userId)).size}
             </div>
           </CardContent>
         </Card>

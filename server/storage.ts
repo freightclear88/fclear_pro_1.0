@@ -8,6 +8,7 @@ import {
   chatConversations,
   chatMessages,
   aiTrainingData,
+  userInvitations,
   type User,
   type UpsertUser,
   type Shipment,
@@ -26,6 +27,8 @@ import {
   type InsertChatMessage,
   type AiTrainingData,
   type InsertAiTrainingData,
+  type UserInvitation,
+  type InsertUserInvitation,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -97,6 +100,13 @@ export interface IStorage {
   updateAiTrainingData(id: number, data: Partial<InsertAiTrainingData>): Promise<AiTrainingData>;
   deleteAiTrainingData(id: number): Promise<void>;
   searchAiTrainingData(keywords: string[]): Promise<AiTrainingData[]>;
+  
+  // User invitation operations
+  createUserInvitation(invitation: InsertUserInvitation): Promise<UserInvitation>;
+  getUserInvitationByToken(token: string): Promise<UserInvitation | undefined>;
+  getUserInvitationsByUserId(userId: string): Promise<UserInvitation[]>;
+  getAllUserInvitations(): Promise<UserInvitation[]>;
+  updateUserInvitation(id: number, data: Partial<InsertUserInvitation>): Promise<UserInvitation>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -368,7 +378,7 @@ export class DatabaseStorage implements IStorage {
 
     return {
       hasAccess: isTrialActive || hasActiveSubscription,
-      isTrialActive: isTrialActive || false,
+      isTrialActive: !!isTrialActive,
       subscriptionStatus: user.subscriptionStatus || 'inactive',
       daysUntilExpiry,
       usageLimits: {
@@ -521,6 +531,44 @@ export class DatabaseStorage implements IStorage {
         )
       );
     }).sort((a, b) => (b.priority || 1) - (a.priority || 1));
+  }
+
+  // User invitation operations
+  async createUserInvitation(invitationData: InsertUserInvitation): Promise<UserInvitation> {
+    const [invitation] = await db.insert(userInvitations).values(invitationData).returning();
+    return invitation;
+  }
+
+  async getUserInvitationByToken(token: string): Promise<UserInvitation | undefined> {
+    const [invitation] = await db
+      .select()
+      .from(userInvitations)
+      .where(eq(userInvitations.inviteToken, token));
+    return invitation;
+  }
+
+  async getUserInvitationsByUserId(userId: string): Promise<UserInvitation[]> {
+    return await db
+      .select()
+      .from(userInvitations)
+      .where(eq(userInvitations.invitedBy, userId))
+      .orderBy(desc(userInvitations.createdAt));
+  }
+
+  async getAllUserInvitations(): Promise<UserInvitation[]> {
+    return await db
+      .select()
+      .from(userInvitations)
+      .orderBy(desc(userInvitations.createdAt));
+  }
+
+  async updateUserInvitation(id: number, data: Partial<InsertUserInvitation>): Promise<UserInvitation> {
+    const [invitation] = await db
+      .update(userInvitations)
+      .set(data)
+      .where(eq(userInvitations.id, id))
+      .returning();
+    return invitation;
   }
 }
 
