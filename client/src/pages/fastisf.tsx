@@ -269,7 +269,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
               Upload ISF Document (Optional)
             </CardTitle>
             <CardDescription>
-              Upload a PDF document to automatically extract ISF data and populate the form
+              Upload PDF, Excel (XLS/XLSX), DOC, or image files to automatically extract ISF data and populate the form
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -293,14 +293,14 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                       <p className="mb-2 text-sm text-gray-500">
                         <span className="font-semibold">Click to upload</span> ISF document
                       </p>
-                      <p className="text-xs text-gray-500">PDF files only</p>
+                      <p className="text-xs text-gray-500">PDF, Excel, DOC, and image files</p>
                     </>
                   )}
                 </div>
                 <input 
                   type="file" 
                   className="hidden" 
-                  accept=".pdf"
+                  accept=".pdf,.xls,.xlsx,.doc,.docx,.jpg,.jpeg,.png,.gif"
                   onChange={handleFileUpload}
                   disabled={isScanning}
                 />

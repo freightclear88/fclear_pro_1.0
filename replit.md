@@ -241,3 +241,7 @@ Changelog:
 - July 17, 2025: Integrated Fast ISF with Authorize.Net $35 payment processing and XML data storage for CBP compliance
 - July 17, 2025: Enhanced ISF form with professional gradient UI design using teal, cyan, and multi-colored card sections for improved user experience
 - July 17, 2025: Fixed ISF API authentication to work with demo mode and subscription-based access control system
+- July 17, 2025: Added comprehensive Excel/XLS file support to ISF document scanning system with XLSX library integration
+- July 17, 2025: Enhanced multer file upload configuration to accept .xls/.xlsx files with proper MIME type validation
+- July 17, 2025: Implemented intelligent Excel data extraction with keyword-based pattern matching for ISF fields
+- July 17, 2025: Updated ISF form UI to clearly indicate Excel file support alongside PDF, DOC, and image formats
