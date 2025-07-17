@@ -7,12 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Ship, Truck, Plane, FileText, Download, Search, Plus, Shield, Users, FolderOpen, UploadCloud, UserPlus } from "lucide-react";
+import { Ship, Truck, Plane, FileText, Download, Search, Plus, Shield, Users, FolderOpen, UploadCloud, UserPlus, Receipt } from "lucide-react";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
 import CreateShipmentDialog from "@/components/CreateShipmentDialog";
 import InviteUserDialog from "@/components/InviteUserDialog";
 import XMLIntegrationManager from "@/components/XMLIntegrationManager";
+import AdminInvoiceUpload from "@/components/AdminInvoiceUpload";
 import type { Shipment, Document } from "@shared/schema";
 
 interface DocumentFolder {
@@ -377,6 +378,24 @@ export default function Agent() {
         </CardHeader>
         <CardContent>
           <XMLIntegrationManager />
+        </CardContent>
+      </Card>
+
+      {/* Invoice Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-2 rounded-lg mr-3">
+              <Receipt className="w-5 h-5 text-white" />
+            </div>
+            Invoice Management
+          </CardTitle>
+          <CardDescription>
+            Upload and send invoices directly to user accounts with automatic email notifications
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AdminInvoiceUpload />
         </CardContent>
       </Card>
     </div>

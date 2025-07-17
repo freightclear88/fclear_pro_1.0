@@ -233,3 +233,5 @@ Changelog:
 - July 17, 2025: Enhanced payments page with improved invoice display showing amounts, due dates, payment status, and "Pay Now" functionality
 - July 17, 2025: Created AdminInvoiceUpload component with user search, shipment linking, and customizable email notifications
 - July 17, 2025: Added admin invoice management section to admin dashboard with comprehensive file upload and user targeting capabilities
+- July 17, 2025: Extended invoice upload functionality to agent users by adding AdminInvoiceUpload component to agent dashboard
+- July 17, 2025: Updated API route permissions to allow agents access to invoice upload endpoints and user data queries

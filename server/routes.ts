@@ -1723,7 +1723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/users', requireAdmin, async (req: any, res) => {
+  app.get('/api/admin/users', requireAgent, async (req: any, res) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
@@ -2910,8 +2910,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin route to get user shipments
-  app.get('/api/admin/user-shipments/:userId', requireAdmin, async (req: any, res) => {
+  // Admin/Agent route to get user shipments
+  app.get('/api/admin/user-shipments/:userId', requireAgent, async (req: any, res) => {
     try {
       const { userId } = req.params;
       const shipments = await storage.getShipmentsByUserId(userId);
@@ -2922,8 +2922,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin invoice upload endpoint
-  app.post('/api/admin/upload-invoice', requireAdmin, upload.single('invoice'), async (req: any, res) => {
+  // Admin/Agent invoice upload endpoint
+  app.post('/api/admin/upload-invoice', requireAgent, upload.single('invoice'), async (req: any, res) => {
     try {
       const adminUserId = getUserId(req);
       const adminUser = await storage.getUser(adminUserId);
