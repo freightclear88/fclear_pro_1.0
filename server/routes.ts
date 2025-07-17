@@ -14,6 +14,14 @@ import { z } from "zod";
 import { detectCarrierFromBL, generateTrackingUrl, generateContainerTrackingUrl } from "./carrierTracking";
 import nodemailer from "nodemailer";
 import { xmlIntegrator } from './xmlIntegration';
+import zendesk from 'node-zendesk';
+
+// Zendesk API configuration
+const zendeskClient = zendesk.createClient({
+  username: process.env.ZENDESK_USERNAME || 'admin@freightclear.com',
+  token: process.env.ZENDESK_API_TOKEN || 'your-api-token',
+  remoteUri: process.env.ZENDESK_URI || 'https://freightclear.zendesk.com/api/v2',
+});
 
 // Email configuration
 const transporter = nodemailer.createTransport({
@@ -4137,4 +4145,67 @@ function generateIsfXml(formData: any, isfNumber: string): string {
     <terms>${formData.terms || ''}</terms>
   </commercial_info>
 </isf_filing>`;
+
+  // Zendesk API routes for admin and agent dashboards
+  app.get('/api/zendesk/tickets', requireAgent, async (req: any, res) => {
+    try {
+      const { status = 'open', per_page = 25 } = req.query;
+      
+      // Mock response until Zendesk is configured
+      res.json({
+        tickets: [],
+        total: 0,
+        isConfigured: false,
+        message: "Zendesk API not configured. Please set ZENDESK_USERNAME, ZENDESK_API_TOKEN, and ZENDESK_URI environment variables."
+      });
+    } catch (error) {
+      console.error("Error fetching Zendesk tickets:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch tickets",
+        isConfigured: false
+      });
+    }
+  });
+
+  app.post('/api/zendesk/tickets', requireAgent, async (req: any, res) => {
+    try {
+      // Mock response until Zendesk is configured
+      res.status(500).json({
+        message: "Zendesk API not configured. Please set ZENDESK_USERNAME, ZENDESK_API_TOKEN, and ZENDESK_URI environment variables.",
+        isConfigured: false
+      });
+    } catch (error) {
+      console.error("Error creating Zendesk ticket:", error);
+      res.status(500).json({ message: "Failed to create ticket" });
+    }
+  });
+
+  app.get('/api/zendesk/stats', requireAgent, async (req: any, res) => {
+    try {
+      res.json({
+        open_tickets: 0,
+        pending_tickets: 0,
+        solved_tickets: 0,
+        total_tickets: 0,
+        isConfigured: false,
+        message: "Zendesk API not configured"
+      });
+    } catch (error) {
+      console.error("Error fetching Zendesk stats:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch stats",
+        isConfigured: false,
+        stats: {
+          open_tickets: 0,
+          pending_tickets: 0,
+          solved_tickets: 0,
+          total_tickets: 0
+        }
+      });
+    }
+  });
+
+  // Create HTTP server and return it
+  const httpServer = createServer(app);
+  return httpServer;
 }

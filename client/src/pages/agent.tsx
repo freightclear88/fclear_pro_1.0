@@ -14,6 +14,7 @@ import CreateShipmentDialog from "@/components/CreateShipmentDialog";
 import InviteUserDialog from "@/components/InviteUserDialog";
 import XMLIntegrationManager from "@/components/XMLIntegrationManager";
 import AdminInvoiceUpload from "@/components/AdminInvoiceUpload";
+import ZendeskTicketManager from "@/components/ZendeskTicketManager";
 import type { Shipment, Document } from "@shared/schema";
 
 interface DocumentFolder {
@@ -396,6 +397,24 @@ export default function Agent() {
         </CardHeader>
         <CardContent>
           <AdminInvoiceUpload />
+        </CardContent>
+      </Card>
+
+      {/* Zendesk Support Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-2 rounded-lg mr-3">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            Customer Support - Zendesk
+          </CardTitle>
+          <CardDescription>
+            Manage customer support tickets and track support statistics through Zendesk integration
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ZendeskTicketManager />
         </CardContent>
       </Card>
     </div>

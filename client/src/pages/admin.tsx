@@ -20,6 +20,7 @@ import DocumentList from "@/components/DocumentList";
 
 import XMLIntegrationManager from "@/components/XMLIntegrationManager";
 import AdminInvoiceUpload from "@/components/AdminInvoiceUpload";
+import ZendeskTicketManager from "@/components/ZendeskTicketManager";
 
 interface SubscriptionUpgradeDialogProps {
   user: User;
@@ -1059,6 +1060,24 @@ export default function Admin() {
         </CardHeader>
         <CardContent>
           <AdminInvoiceUpload />
+        </CardContent>
+      </Card>
+
+      {/* Zendesk Support Management */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-2 rounded-lg mr-3">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            Zendesk Support Management
+          </CardTitle>
+          <CardDescription>
+            Manage customer support tickets, create new tickets, and monitor support statistics through Zendesk integration
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ZendeskTicketManager />
         </CardContent>
       </Card>
 
