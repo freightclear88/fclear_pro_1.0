@@ -17,8 +17,7 @@ import { apiRequest } from "@/lib/queryClient";
 import ShipmentHtmlPage from "@/components/ShipmentHtmlPage";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
-import AiTrainingManager from "@/components/AiTrainingManager";
-import AgentManager from "@/components/AgentManager";
+import TalkJSChat from "@/components/TalkJSChat";
 import XMLIntegrationManager from "@/components/XMLIntegrationManager";
 import AdminInvoiceUpload from "@/components/AdminInvoiceUpload";
 
@@ -947,33 +946,21 @@ export default function Admin() {
         </CardContent>
       </Card>
 
-      {/* AI Training Management */}
+      {/* Admin Chat Support */}
       <Card className="mt-8">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <div className="bg-freight-teal/10 p-2 rounded-lg mr-3">
-              <Shield className="w-5 h-5 text-freight-teal" />
-            </div>
-            AI Chat Training Management
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AiTrainingManager />
-        </CardContent>
-      </Card>
-
-      {/* Agent Management */}
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-lg mr-3">
+            <div className="bg-gradient-to-br from-freight-blue to-freight-green p-2 rounded-lg mr-3">
               <Shield className="w-5 h-5 text-white" />
             </div>
-            Agent Management
+            Admin Support Chat
           </CardTitle>
+          <CardDescription>
+            Direct communication with users for support requests and system management
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <AgentManager />
+          <TalkJSChat conversationId="admin-support" className="h-[500px]" />
         </CardContent>
       </Card>
 

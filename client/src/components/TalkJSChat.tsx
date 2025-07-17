@@ -31,13 +31,14 @@ export default function TalkJSChat({ conversationId = "support", className = "" 
         role: "default",
       });
 
-      // Create support agent user
+      // Create support agent user (different for admin vs regular users)
+      const isAdminChat = conversationId === "admin-support";
       const supportAgent = new window.Talk.User({
-        id: "freightclear-support",
-        name: "Freightclear Support",
-        email: "support@freightclear.com",
+        id: isAdminChat ? "freightclear-admin" : "freightclear-support",
+        name: isAdminChat ? "Freightclear Admin" : "Freightclear Support",
+        email: isAdminChat ? "admin@freightclear.com" : "support@freightclear.com",
         photoUrl: undefined,
-        role: "support",
+        role: isAdminChat ? "admin" : "support",
       });
 
       // Create session (using demo app ID for now)
@@ -51,10 +52,12 @@ export default function TalkJSChat({ conversationId = "support", className = "" 
       conversation.setParticipant(currentUser);
       conversation.setParticipant(supportAgent);
       
-      // Set conversation attributes
+      // Set conversation attributes based on type
       conversation.setAttributes({
-        subject: "Customer Support",
-        welcomeMessages: ["👋 Hi! How can we help you with your shipments today?"],
+        subject: isAdminChat ? "Admin Support Channel" : "Customer Support",
+        welcomeMessages: isAdminChat 
+          ? ["🔧 Admin Support Channel - Direct access to user support requests and system management"]
+          : ["👋 Hi! How can we help you with your shipments today?"]
       });
 
       // Create and mount the chatbox
