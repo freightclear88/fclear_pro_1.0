@@ -3,29 +3,62 @@ import type { InsertShipment, Shipment } from '@shared/schema';
 import { parseStringPromise } from 'xml2js';
 import { z } from 'zod';
 
-// XML Schema validation for incoming shipment data
+// Enhanced XML Schema validation for cross-compatible shipment data
 const XMLShipmentSchema = z.object({
+  // Core identification
   shipment_id: z.string(),
+  external_id: z.string().optional(),
   user_id: z.string().optional(),
   reference_number: z.string().optional(),
+  booking_number: z.string().optional(),
+  source_system: z.string().optional(),
+  
+  // Documentation
   bill_of_lading: z.string().optional(),
   container_number: z.string().optional(),
+  container_numbers: z.array(z.string()).optional(),
+  
+  // Location data
   origin: z.string(),
   origin_port: z.string().optional(),
   destination: z.string(),
   destination_port: z.string().optional(),
+  
+  // Transport information
   transport_mode: z.enum(['air', 'ocean', 'trucking', 'last_mile']).default('ocean'),
   status: z.string().default('pending'),
   vessel: z.string().optional(),
   voyage: z.string().optional(),
+  
+  // Enhanced timing
   eta: z.string().optional(), // ISO 8601 date string
   ata: z.string().optional(), // ISO 8601 date string
+  etd: z.string().optional(), // ISO 8601 date string
+  atd: z.string().optional(), // ISO 8601 date string
+  
+  // Enhanced party information
   shipper_name: z.string().optional(),
+  shipper_address: z.string().optional(),
   consignee_name: z.string().optional(),
+  consignee_address: z.string().optional(),
+  notify_party: z.string().optional(),
+  
+  // Financial
   freight_charges: z.string().optional(), // decimal as string
   destination_charges: z.string().optional(), // decimal as string
   customs_broker: z.string().optional(),
   total_value: z.string().optional(), // decimal as string
+  currency: z.string().default('USD'),
+  
+  // Cargo details
+  cargo_description: z.string().optional(),
+  weight: z.string().optional(), // decimal as string
+  weight_unit: z.string().default('KG'),
+  volume: z.string().optional(), // decimal as string
+  volume_unit: z.string().default('CBM'),
+  
+  // XML metadata
+  xml_version: z.string().optional(),
 });
 
 export type XMLShipmentData = z.infer<typeof XMLShipmentSchema>;
@@ -66,6 +99,36 @@ export class XMLShipmentIntegrator {
       console.error('XML parsing error:', error);
       return [{ success: false, error: `XML parsing failed: ${error.message}` }];
     }
+  }
+
+  /**
+   * Convert XML shipment data to database format using the new mapper
+   */
+  async convertXMLToShipment(
+    xmlData: XMLShipmentData, 
+    userId: string, 
+    originalXML?: string
+  ): Promise<InsertShipment> {
+    const { ShipmentXMLMapper } = await import('./shipmentXmlMapper');
+    return ShipmentXMLMapper.xmlToDatabase(xmlData, userId, originalXML);
+  }
+
+  /**
+   * Convert database shipment to XML format
+   */
+  async convertShipmentToXML(shipment: Shipment, format: 'edifact' | 'smdg' | 'custom' = 'custom'): Promise<string> {
+    const { ShipmentXMLMapper } = await import('./shipmentXmlMapper');
+    return ShipmentXMLMapper.generateXML(shipment, format);
+  }
+
+  /**
+   * Check for duplicate XML processing
+   */
+  async isDuplicateXML(xmlContent: string): Promise<boolean> {
+    const { ShipmentXMLMapper } = await import('./shipmentXmlMapper');
+    const { createHash } = await import('crypto');
+    const xmlHash = createHash('sha256').update(xmlContent).digest('hex');
+    return ShipmentXMLMapper.isDuplicateXML(xmlHash);
   }
 
   /**

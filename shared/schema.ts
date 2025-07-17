@@ -103,24 +103,62 @@ export const shipments = pgTable("shipments", {
   id: serial("id").primaryKey(),
   shipmentId: varchar("shipment_id").notNull().unique(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // XML Integration fields for cross-compatibility
+  externalId: varchar("external_id"), // Original XML system ID
+  sourceSystem: varchar("source_system"), // maersk, msc, hapag-lloyd, manual, etc.
+  referenceNumber: varchar("reference_number"), // External reference from XML
+  bookingNumber: varchar("booking_number"), // Common in XML feeds
+  xmlData: jsonb("xml_data"), // Store original XML for reference
+  xmlHash: varchar("xml_hash"), // Prevent duplicate processing
+  lastXmlUpdate: timestamp("last_xml_update"), // Track XML sync status
+  xmlVersion: varchar("xml_version"), // Track format version
+  
+  // Location data
   origin: varchar("origin").notNull(),
   originPort: varchar("origin_port"),
   destination: varchar("destination").notNull(),
   destinationPort: varchar("destination_port"),
+  
+  // Transport information
   transportMode: varchar("transport_mode").notNull().default("ocean"), // air, ocean, trucking, last_mile
   status: varchar("status").notNull().default("pending"),
   vessel: varchar("vessel"),
   voyage: varchar("voyage"),
+  
+  // Container and documentation
   containerNumber: varchar("container_number"),
+  containerNumbers: text("container_numbers").array(), // Multiple containers from XML
   billOfLading: varchar("bill_of_lading"),
+  
+  // Enhanced timing for XML compatibility
   eta: timestamp("eta"),
   ata: timestamp("ata"),
+  etd: timestamp("etd"), // Estimated Time of Departure
+  atd: timestamp("atd"), // Actual Time of Departure
+  
+  // Enhanced party information for XML compatibility
   shipperName: varchar("shipper_name"),
+  shipperAddress: text("shipper_address"),
   consigneeName: varchar("consignee_name"),
+  consigneeAddress: text("consignee_address"),
+  notifyParty: varchar("notify_party"),
+  
+  // Financial
   freightCharges: decimal("freight_charges", { precision: 12, scale: 2 }),
   destinationCharges: decimal("destination_charges", { precision: 12, scale: 2 }),
   customsBroker: varchar("customs_broker"),
   totalValue: decimal("total_value", { precision: 12, scale: 2 }),
+  currency: varchar("currency").default("USD"),
+  
+  // Cargo details for XML compatibility
+  cargoDescription: text("cargo_description"),
+  weight: decimal("weight", { precision: 10, scale: 2 }),
+  weightUnit: varchar("weight_unit").default("KG"),
+  volume: decimal("volume", { precision: 10, scale: 2 }),
+  volumeUnit: varchar("volume_unit").default("CBM"),
+  
+  // Timestamps
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

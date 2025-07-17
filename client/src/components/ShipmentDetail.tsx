@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Copy, Download, X, FileUp } from "lucide-react";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
+import { XmlCompatibilityPanel } from "@/components/XmlCompatibilityPanel";
 import type { Shipment, Document } from "@shared/schema";
 
 interface ShipmentDetailProps {
@@ -72,11 +73,15 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg py-2">Shipment Information</CardTitle>
-            </CardHeader>
+        <div className="space-y-6">
+          {/* XML Compatibility Panel */}
+          <XmlCompatibilityPanel shipment={shipment} />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg py-2">Shipment Information</CardTitle>
+              </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Shipment ID:</span>
@@ -201,6 +206,7 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
             >
               Close
             </Button>
+          </div>
           </div>
         </div>
       </DialogContent>

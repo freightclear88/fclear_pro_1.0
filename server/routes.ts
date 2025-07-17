@@ -3691,6 +3691,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cross-compatibility XML Export Routes
+  
+  // Export single shipment as XML
+  app.get('/api/shipments/:id/xml', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { format = 'custom' } = req.query;
+      
+      const shipment = await storage.getShipmentById(parseInt(id));
+      if (!shipment) {
+        return res.status(404).json({ message: 'Shipment not found' });
+      }
+
+      const { ShipmentXMLMapper } = await import('./shipmentXmlMapper');
+      const xmlContent = ShipmentXMLMapper.generateXML(
+        shipment, 
+        format as 'edifact' | 'smdg' | 'custom'
+      );
+
+      res.set({
+        'Content-Type': 'application/xml',
+        'Content-Disposition': `attachment; filename="${shipment.shipmentId}_${format}.xml"`
+      });
+      res.send(xmlContent);
+    } catch (error) {
+      console.error('XML export error:', error);
+      res.status(500).json({ message: 'XML export failed', error: error.message });
+    }
+  });
+
+  // Bulk XML export for multiple shipments
+  app.post('/api/shipments/bulk-xml-export', async (req, res) => {
+    try {
+      const { shipmentIds, format = 'custom' } = req.body;
+      
+      if (!shipmentIds || !Array.isArray(shipmentIds)) {
+        return res.status(400).json({ message: 'Shipment IDs array is required' });
+      }
+
+      const { ShipmentXMLMapper } = await import('./shipmentXmlMapper');
+      const xmlResults = [];
+
+      for (const id of shipmentIds) {
+        try {
+          const shipment = await storage.getShipmentById(id);
+          if (shipment) {
+            const xmlContent = ShipmentXMLMapper.generateXML(shipment, format);
+            xmlResults.push({
+              shipmentId: shipment.shipmentId,
+              xmlContent,
+              success: true
+            });
+          }
+        } catch (error) {
+          xmlResults.push({
+            shipmentId: id,
+            error: error.message,
+            success: false
+          });
+        }
+      }
+
+      res.json({
+        message: 'Bulk XML export completed',
+        results: xmlResults,
+        successful: xmlResults.filter(r => r.success).length,
+        total: xmlResults.length
+      });
+    } catch (error) {
+      console.error('Bulk XML export error:', error);
+      res.status(500).json({ message: 'Bulk XML export failed', error: error.message });
+    }
+  });
+
+  // Cross-compatibility synchronization endpoint
+  app.post('/api/xml/sync-shipment', async (req, res) => {
+    try {
+      const { shipmentId, xmlData, sourceSystem } = req.body;
+      
+      if (!shipmentId || !xmlData) {
+        return res.status(400).json({ message: 'Shipment ID and XML data are required' });
+      }
+
+      const existingShipment = await storage.getShipmentByShipmentId(shipmentId);
+      if (!existingShipment) {
+        return res.status(404).json({ message: 'Shipment not found' });
+      }
+
+      const { ShipmentXMLMapper } = await import('./shipmentXmlMapper');
+      const updatedData = ShipmentXMLMapper.mergeXMLUpdate(
+        existingShipment, 
+        xmlData, 
+        JSON.stringify(xmlData)
+      );
+
+      const result = await storage.updateShipment(existingShipment.id, updatedData);
+      
+      res.json({
+        success: true,
+        message: 'Shipment synchronized with XML data',
+        shipment: result,
+        sourceSystem: sourceSystem || 'unknown'
+      });
+    } catch (error) {
+      console.error('XML sync error:', error);
+      res.status(500).json({ message: 'XML synchronization failed', error: error.message });
+    }
+  });
+
+  // Get shipment's XML compatibility status
+  app.get('/api/shipments/:id/xml-status', async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const shipment = await storage.getShipmentById(parseInt(id));
+      if (!shipment) {
+        return res.status(404).json({ message: 'Shipment not found' });
+      }
+
+      const xmlStatus = {
+        has_xml_data: !!shipment.xmlData,
+        source_system: shipment.sourceSystem || 'manual',
+        external_id: shipment.externalId,
+        last_xml_update: shipment.lastXmlUpdate,
+        xml_version: shipment.xmlVersion,
+        supports_export: true,
+        available_formats: ['custom', 'edifact', 'smdg'],
+        cross_compatible: true
+      };
+
+      res.json({
+        success: true,
+        shipment_id: shipment.shipmentId,
+        xml_status: xmlStatus
+      });
+    } catch (error) {
+      console.error('XML status error:', error);
+      res.status(500).json({ message: 'Failed to get XML status', error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
