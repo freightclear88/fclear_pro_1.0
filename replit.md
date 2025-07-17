@@ -256,3 +256,7 @@ Changelog:
 - July 17, 2025: Added comprehensive API endpoints for XML export, bulk export, synchronization, and compatibility status checking
 - July 17, 2025: Extended database schema with enhanced party information, cargo details, and timing fields for full XML compatibility
 - July 17, 2025: Created cross-platform XML integration system supporting external shipment database updates and real-time synchronization
+- July 17, 2025: Replaced custom AI chat system with TalkJS 3rd party API for reliable customer support integration
+- July 17, 2025: Implemented professional chat interface with subscription-based access control and real-time messaging
+- July 17, 2025: Added TalkJS CDN integration and simplified chat authentication using window.Talk global object
+- July 17, 2025: Removed complex server-side chat authentication issues by migrating to established TalkJS platform
