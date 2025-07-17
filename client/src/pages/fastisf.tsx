@@ -225,15 +225,28 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           if (value && value.toString().trim()) {
             console.log(`Attempting to set ${formFieldKey} = ${value}`);
             
-            // Use setValue with proper type assertion and trigger validation
-            try {
-              (form.setValue as any)(formFieldKey, value.toString().trim(), { shouldValidate: true, shouldDirty: true });
-              console.log(`Successfully set ${formFieldKey}`);
-            } catch (error) {
-              console.error(`Failed to set ${formFieldKey}:`, error);
+            // Check if this field exists in the form
+            const currentValue = form.getValues()[formFieldKey as keyof IsfFormData];
+            if (currentValue !== undefined) {
+              try {
+                form.setValue(formFieldKey as keyof IsfFormData, value.toString().trim(), { 
+                  shouldValidate: false, 
+                  shouldDirty: true 
+                });
+                console.log(`Successfully set ${formFieldKey} = ${value}`);
+              } catch (error) {
+                console.error(`Failed to set ${formFieldKey}:`, error);
+              }
+            } else {
+              console.warn(`Field ${formFieldKey} does not exist in form schema`);
             }
           }
         });
+
+        // Force form re-render by triggering a validation
+        setTimeout(() => {
+          form.trigger();
+        }, 100);
 
         toast({
           title: "Document scanned successfully",

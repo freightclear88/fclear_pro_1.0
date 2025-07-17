@@ -245,3 +245,6 @@ Changelog:
 - July 17, 2025: Enhanced multer file upload configuration to accept .xls/.xlsx files with proper MIME type validation
 - July 17, 2025: Implemented intelligent Excel data extraction with keyword-based pattern matching for ISF fields
 - July 17, 2025: Updated ISF form UI to clearly indicate Excel file support alongside PDF, DOC, and image formats
+- July 17, 2025: Enhanced ISF document scanning with improved field mapping and form population logic for better data extraction
+- July 17, 2025: Fixed form field validation and re-rendering issues in ISF document scanning functionality
+- July 17, 2025: Updated document scanning card text to specify PDF and Excel XLS format support per user request
