@@ -224,3 +224,7 @@ Changelog:
 - July 16, 2025: Added pagination to admin page shipments table displaying 10 shipments at a time with Previous/Next navigation controls
 - July 16, 2025: Implemented comprehensive pagination for shipments page with configurable page size options (10, 25, 50 per page)
 - July 16, 2025: Added informative AI processing paragraph to shipments page header explaining automatic BL, AWB, and ISF data transformation
+- July 17, 2025: Implemented comprehensive XML-based integration system for external shipment database updates with UN/EDIFACT COPRAR, COPARN, generic shipments, and container status formats
+- July 17, 2025: Added XML Integration Manager to admin and agent dashboards with file upload, manual entry, templates, and monitoring capabilities
+- July 17, 2025: Created server-side XML processing engine with automatic format detection and shipment creation/updates
+- July 17, 2025: Changed main navigation "Chat" to "Chat/Support" to better reflect the support functionality

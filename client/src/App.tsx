@@ -26,7 +26,7 @@ import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_17519038593
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
   { name: "Shipments", href: "/shipments", icon: Ship },
-  { name: "Chat", href: "/chat", icon: MessageCircle },
+  { name: "Chat/Support", href: "/chat", icon: MessageCircle },
   { name: "Payments", href: "/payments", icon: Receipt },
   { name: "Profile", href: "/profile", icon: User },
   { name: "Subscription", href: "/subscription", icon: CreditCard },
