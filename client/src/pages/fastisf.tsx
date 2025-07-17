@@ -201,18 +201,18 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       if (result.extractedData) {
         console.log("Extracted data received:", result.extractedData);
         
-        // Map extracted fields to actual ISF form fields based on schema
+        // Map extracted fields to actual ISF form fields based on console output
         const fieldMapping: Record<string, string> = {
-          importerName: 'buyerName',
-          consigneeName: 'consigneeName',
-          manufacturerCountry: 'manufacturerCountry',
-          countryOfOrigin: 'countryOfOrigin',
-          htsusNumber: 'htsusNumber',
-          commodityDescription: 'commodityDescription',
-          portOfEntry: 'portOfEntry',
-          billOfLading: 'vesselVoyage',
-          vesselName: 'vesselVoyage',
-          estimatedArrivalDate: 'estimatedArrivalDate'
+          importerName: 'importerName', // This field exists in the form
+          consigneeName: 'consigneeName', // This field exists in the form  
+          manufacturerCountry: 'manufacturerCountry', // This field exists in the form
+          countryOfOrigin: 'countryOfOrigin', // This field exists in the form
+          htsusNumber: 'htsusNumber', // This field exists in the form
+          commodityDescription: 'commodityDescription', // This field exists in the form
+          portOfEntry: 'portOfEntry', // This field exists in the form
+          billOfLading: 'billOfLading', // Use correct field name
+          vesselName: 'vesselName', // This field exists in the form
+          estimatedArrivalDate: 'estimatedArrivalDate' // This field exists in the form
         };
 
         // First, let's see what form fields are available
@@ -225,9 +225,9 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           if (value && value.toString().trim()) {
             console.log(`Attempting to set ${formFieldKey} = ${value}`);
             
-            // Check if this field exists in the form
-            const currentValue = form.getValues()[formFieldKey as keyof IsfFormData];
-            if (currentValue !== undefined) {
+            // Check if this field exists in the form by looking at all form field names
+            const allFormFields = Object.keys(form.getValues());
+            if (allFormFields.includes(formFieldKey)) {
               try {
                 form.setValue(formFieldKey as keyof IsfFormData, value.toString().trim(), { 
                   shouldValidate: false, 
