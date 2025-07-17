@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +20,7 @@ import DocumentList from "@/components/DocumentList";
 import AiTrainingManager from "@/components/AiTrainingManager";
 import AgentManager from "@/components/AgentManager";
 import XMLIntegrationManager from "@/components/XMLIntegrationManager";
+import AdminInvoiceUpload from "@/components/AdminInvoiceUpload";
 
 interface SubscriptionUpgradeDialogProps {
   user: User;
@@ -988,6 +989,24 @@ export default function Admin() {
         </CardHeader>
         <CardContent>
           <XMLIntegrationManager />
+        </CardContent>
+      </Card>
+
+      {/* Invoice Management */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-2 rounded-lg mr-3">
+              <Receipt className="w-5 h-5 text-white" />
+            </div>
+            Invoice Management
+          </CardTitle>
+          <CardDescription>
+            Upload and send invoices directly to user accounts with automatic email notifications
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AdminInvoiceUpload />
         </CardContent>
       </Card>
 

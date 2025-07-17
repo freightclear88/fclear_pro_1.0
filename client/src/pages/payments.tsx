@@ -243,10 +243,36 @@ export default function Payments() {
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <Receipt className="w-4 h-4 text-freight-blue flex-shrink-0" />
                             <div className="min-w-0 flex-1">
-                              <h4 className="text-sm font-medium truncate">{invoice.originalName || invoice.fileName}</h4>
-                              <p className="text-xs text-gray-500">
-                                {new Date(invoice.createdAt).toLocaleDateString()}
-                              </p>
+                              <h4 className="text-sm font-medium truncate">
+                                {invoice.invoiceNumber || invoice.originalName || invoice.fileName}
+                              </h4>
+                              <div className="space-y-1">
+                                {invoice.invoiceAmount && (
+                                  <p className="text-sm font-medium text-green-600">
+                                    ${parseFloat(invoice.invoiceAmount).toFixed(2)} USD
+                                  </p>
+                                )}
+                                <p className="text-xs text-gray-500">
+                                  {invoice.emailSentAt ? `Sent: ${new Date(invoice.emailSentAt).toLocaleDateString()}` 
+                                    : `Created: ${new Date(invoice.createdAt).toLocaleDateString()}`}
+                                </p>
+                                {invoice.dueDate && (
+                                  <p className="text-xs text-gray-500">
+                                    Due: {new Date(invoice.dueDate).toLocaleDateString()}
+                                  </p>
+                                )}
+                              </div>
+                              {invoice.invoiceStatus && (
+                                <div className="mt-2">
+                                  <Badge 
+                                    variant={invoice.invoiceStatus === 'paid' ? 'default' : 
+                                           invoice.invoiceStatus === 'overdue' ? 'destructive' : 'secondary'}
+                                    className="text-xs"
+                                  >
+                                    {invoice.invoiceStatus.charAt(0).toUpperCase() + invoice.invoiceStatus.slice(1)}
+                                  </Badge>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -269,6 +295,23 @@ export default function Payments() {
                             <Download className="w-3 h-3 mr-1" />
                             Download
                           </Button>
+                          {invoice.invoiceStatus !== 'paid' && invoice.invoiceAmount && (
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setInvoiceForm(prev => ({
+                                  ...prev,
+                                  invoiceNumber: invoice.invoiceNumber || '',
+                                  amount: invoice.invoiceAmount?.toString() || '',
+                                  description: `Payment for invoice ${invoice.invoiceNumber || invoice.originalName}`
+                                }));
+                              }}
+                              className="h-7 px-2 text-xs flex-1 sm:flex-none btn-primary"
+                            >
+                              <CreditCard className="w-3 h-3 mr-1" />
+                              Pay Now
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}

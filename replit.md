@@ -228,3 +228,8 @@ Changelog:
 - July 17, 2025: Added XML Integration Manager to admin and agent dashboards with file upload, manual entry, templates, and monitoring capabilities
 - July 17, 2025: Created server-side XML processing engine with automatic format detection and shipment creation/updates
 - July 17, 2025: Changed main navigation "Chat" to "Chat/Support" to better reflect the support functionality
+- July 17, 2025: Implemented comprehensive admin invoice upload system targeting specific user accounts with automatic email notifications
+- July 17, 2025: Added invoice-specific database fields (invoice_number, invoice_amount, due_date, invoice_status, email_sent_at) to documents schema
+- July 17, 2025: Enhanced payments page with improved invoice display showing amounts, due dates, payment status, and "Pay Now" functionality
+- July 17, 2025: Created AdminInvoiceUpload component with user search, shipment linking, and customizable email notifications
+- July 17, 2025: Added admin invoice management section to admin dashboard with comprehensive file upload and user targeting capabilities

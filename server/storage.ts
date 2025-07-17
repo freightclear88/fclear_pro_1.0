@@ -202,6 +202,14 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(shipments.createdAt));
   }
 
+  async getShipmentsByUserId(userId: string): Promise<Shipment[]> {
+    return await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.userId, userId))
+      .orderBy(desc(shipments.createdAt));
+  }
+
   // Document operations
   async getDocumentsByShipmentId(shipmentId: number): Promise<Document[]> {
     return await db

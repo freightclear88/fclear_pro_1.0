@@ -139,6 +139,18 @@ export const documents = pgTable("documents", {
   extractedData: jsonb("extracted_data"),
   filePath: varchar("file_path").notNull(),
   uploadedAt: timestamp("uploaded_at").defaultNow(),
+  
+  // Invoice-specific fields
+  invoiceNumber: varchar("invoice_number"),
+  invoiceAmount: decimal("invoice_amount", { precision: 12, scale: 2 }),
+  dueDate: timestamp("due_date"),
+  invoiceStatus: varchar("invoice_status").default("sent"), // sent, viewed, paid, overdue
+  sentToUserId: varchar("sent_to_user_id").references(() => users.id), // for admin-generated invoices
+  sentByUserId: varchar("sent_by_user_id").references(() => users.id), // admin who sent the invoice
+  emailSentAt: timestamp("email_sent_at"),
+  viewedAt: timestamp("viewed_at"),
+  paidAt: timestamp("paid_at"),
+  paymentTransactionId: varchar("payment_transaction_id").references(() => paymentTransactions.transactionId),
 });
 
 // Subscription plans table

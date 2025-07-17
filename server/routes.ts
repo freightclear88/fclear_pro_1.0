@@ -66,6 +66,75 @@ async function sendPOANotification(userDetails: any) {
   }
 }
 
+// Send invoice notification email
+async function sendInvoiceNotification(userDetails: any, invoiceDetails: any, adminUser: any) {
+  const domainUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+  
+  const mailOptions = {
+    from: process.env.SMTP_USER || 'admin@freightclear.com',
+    to: userDetails.email,
+    subject: invoiceDetails.emailSubject || 'New Invoice from Freightclear Workflows',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #2563eb; margin-bottom: 10px;">Freightclear Workflows</h1>
+          <p style="color: #64748b; font-size: 16px;">Streamlined Import Management</p>
+        </div>
+        
+        <h2 style="color: #1e293b;">📧 New Invoice Available</h2>
+        
+        <p>Hello ${userDetails.firstName} ${userDetails.lastName},</p>
+        
+        <p>${invoiceDetails.emailMessage || 'You have received a new invoice. Please log in to your account to view and pay this invoice.'}</p>
+        
+        <div style="background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%); border-radius: 10px; padding: 20px; margin: 20px 0;">
+          <h3 style="color: white; margin: 0 0 15px 0;">📋 Invoice Details</h3>
+          <div style="color: white;">
+            <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${invoiceDetails.invoiceNumber}</p>
+            <p style="margin: 5px 0;"><strong>Amount:</strong> $${parseFloat(invoiceDetails.invoiceAmount).toFixed(2)} USD</p>
+            ${invoiceDetails.dueDate ? `<p style="margin: 5px 0;"><strong>Due Date:</strong> ${new Date(invoiceDetails.dueDate).toLocaleDateString()}</p>` : ''}
+            ${invoiceDetails.description ? `<p style="margin: 5px 0;"><strong>Description:</strong> ${invoiceDetails.description}</p>` : ''}
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${domainUrl}/payments" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+            💳 View & Pay Invoice
+          </a>
+        </div>
+        
+        <div style="background: #f8fafc; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0;">
+          <h4 style="color: #1e293b; margin: 0 0 10px 0;">💡 How to Pay:</h4>
+          <ol style="color: #64748b; margin: 0; padding-left: 20px;">
+            <li>Log in to your Freightclear Workflows account</li>
+            <li>Navigate to the Payments section</li>
+            <li>Find your invoice in the "Shipping Invoices" section</li>
+            <li>Click "View" to see details or "Pay Now" to process payment</li>
+          </ol>
+        </div>
+        
+        <p style="color: #64748b; font-size: 14px; margin-top: 30px;">
+          If you have any questions about this invoice, please contact us or reply to this email.
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+        <p style="color: #64748b; font-size: 12px; text-align: center;">
+          <em>This invoice was sent by ${adminUser.firstName} ${adminUser.lastName} from Freightclear Workflows.<br>
+          Invoice sent on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</em>
+        </p>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Invoice notification email sent successfully to:', userDetails.email);
+  } catch (error) {
+    console.error('Failed to send invoice notification email:', error);
+    // Don't throw error - email failure shouldn't stop invoice upload
+  }
+}
+
 // Send user invitation email
 async function sendUserInvitationEmail(invitation: any, inviterUser: any) {
   const inviteToken = invitation.inviteToken;
@@ -2838,6 +2907,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching subscription plans:", error);
       res.status(500).json({ message: "Failed to fetch subscription plans" });
+    }
+  });
+
+  // Admin route to get user shipments
+  app.get('/api/admin/user-shipments/:userId', requireAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const shipments = await storage.getShipmentsByUserId(userId);
+      res.json(shipments);
+    } catch (error) {
+      console.error("Error fetching user shipments:", error);
+      res.status(500).json({ message: "Failed to fetch user shipments" });
+    }
+  });
+
+  // Admin invoice upload endpoint
+  app.post('/api/admin/upload-invoice', requireAdmin, upload.single('invoice'), async (req: any, res) => {
+    try {
+      const adminUserId = getUserId(req);
+      const adminUser = await storage.getUser(adminUserId);
+      
+      if (!req.file) {
+        return res.status(400).json({ error: "No invoice file uploaded" });
+      }
+
+      const {
+        targetUserId,
+        invoiceNumber,
+        invoiceAmount,
+        dueDate,
+        description,
+        shipmentId,
+        emailSubject,
+        emailMessage
+      } = req.body;
+
+      // Validate required fields
+      if (!targetUserId || !invoiceNumber || !invoiceAmount) {
+        return res.status(400).json({ 
+          error: "Target user, invoice number, and amount are required" 
+        });
+      }
+
+      // Get target user details
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(400).json({ error: "Target user not found" });
+      }
+
+      // Create document entry with invoice-specific fields
+      const documentData = {
+        userId: targetUserId, // Document belongs to target user
+        shipmentId: shipmentId ? parseInt(shipmentId) : null,
+        fileName: req.file.filename,
+        originalName: req.file.originalname,
+        fileType: req.file.mimetype,
+        fileSize: req.file.size,
+        category: 'shipping_invoice',
+        status: 'completed',
+        filePath: req.file.path,
+        
+        // Invoice-specific fields
+        invoiceNumber,
+        invoiceAmount: parseFloat(invoiceAmount),
+        dueDate: dueDate ? new Date(dueDate) : null,
+        invoiceStatus: 'sent',
+        sentToUserId: targetUserId,
+        sentByUserId: adminUserId,
+        emailSentAt: new Date(),
+      };
+
+      const document = await storage.createDocument(documentData);
+
+      // Send email notification to target user
+      const invoiceDetails = {
+        invoiceNumber,
+        invoiceAmount,
+        dueDate,
+        description,
+        emailSubject,
+        emailMessage
+      };
+
+      await sendInvoiceNotification(targetUser, invoiceDetails, adminUser);
+
+      res.json({
+        success: true,
+        message: "Invoice uploaded and notification sent successfully",
+        document,
+        targetUser: {
+          email: targetUser.email,
+          name: `${targetUser.firstName} ${targetUser.lastName}`,
+          company: targetUser.companyName
+        }
+      });
+
+    } catch (error) {
+      console.error("Error uploading admin invoice:", error);
+      res.status(500).json({ 
+        error: "Failed to upload invoice",
+        details: error.message 
+      });
     }
   });
 
