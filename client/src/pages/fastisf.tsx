@@ -201,26 +201,37 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       if (result.extractedData) {
         console.log("Extracted data received:", result.extractedData);
         
-        // Map extracted fields to form fields
-        const fieldMapping = {
+        // Map extracted fields to actual ISF form fields based on schema
+        const fieldMapping: Record<string, string> = {
           importerName: 'buyerName',
-          consigneeName: 'consigneeName', 
+          consigneeName: 'consigneeName',
           manufacturerCountry: 'manufacturerCountry',
           countryOfOrigin: 'countryOfOrigin',
           htsusNumber: 'htsusNumber',
           commodityDescription: 'commodityDescription',
           portOfEntry: 'portOfEntry',
-          billOfLading: 'vesselVoyage', // Map to vessel/voyage field
+          billOfLading: 'vesselVoyage',
           vesselName: 'vesselVoyage',
           estimatedArrivalDate: 'estimatedArrivalDate'
         };
 
+        // First, let's see what form fields are available
+        console.log("Current form values:", form.getValues());
+        console.log("Form field names:", Object.keys(form.getValues()));
+
         Object.entries(result.extractedData).forEach(([extractedKey, value]) => {
-          const formFieldKey = fieldMapping[extractedKey as keyof typeof fieldMapping] || extractedKey;
+          const formFieldKey = fieldMapping[extractedKey] || extractedKey;
           
           if (value && value.toString().trim()) {
-            console.log(`Setting ${formFieldKey} = ${value}`);
-            form.setValue(formFieldKey as keyof IsfFormData, value.toString().trim());
+            console.log(`Attempting to set ${formFieldKey} = ${value}`);
+            
+            // Use setValue with proper type assertion and trigger validation
+            try {
+              (form.setValue as any)(formFieldKey, value.toString().trim(), { shouldValidate: true, shouldDirty: true });
+              console.log(`Successfully set ${formFieldKey}`);
+            } catch (error) {
+              console.error(`Failed to set ${formFieldKey}:`, error);
+            }
           }
         });
 

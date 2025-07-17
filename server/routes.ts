@@ -3409,7 +3409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           consigneeName: "XYZ Warehouse LLC", 
           manufacturerCountry: "China",
           countryOfOrigin: "China",
-          htsusNumber: "8471.30.0100",
+          htsusNumber: "8471300100", // 10-digit HTS number
           commodityDescription: "Computer hardware components",
           portOfEntry: "Los Angeles, CA",
           billOfLading: "DEMO123456789",
