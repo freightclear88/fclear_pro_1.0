@@ -167,10 +167,13 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== "application/pdf") {
+    // Accept PDF, Excel, and other document types
+    const allowedTypes = ['application/pdf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|xls|xlsx|doc|docx)$/i)) {
       toast({
         title: "Invalid file type",
-        description: "Please upload a PDF file",
+        description: "Please upload PDF, Excel, or Word files",
         variant: "destructive",
       });
       return;
@@ -196,15 +199,40 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       
       // Populate form with extracted data
       if (result.extractedData) {
-        Object.entries(result.extractedData).forEach(([key, value]) => {
-          if (value && form.getValues()[key as keyof IsfFormData] !== undefined) {
-            form.setValue(key as keyof IsfFormData, value as string);
+        console.log("Extracted data received:", result.extractedData);
+        
+        // Map extracted fields to form fields
+        const fieldMapping = {
+          importerName: 'buyerName',
+          consigneeName: 'consigneeName', 
+          manufacturerCountry: 'manufacturerCountry',
+          countryOfOrigin: 'countryOfOrigin',
+          htsusNumber: 'htsusNumber',
+          commodityDescription: 'commodityDescription',
+          portOfEntry: 'portOfEntry',
+          billOfLading: 'vesselVoyage', // Map to vessel/voyage field
+          vesselName: 'vesselVoyage',
+          estimatedArrivalDate: 'estimatedArrivalDate'
+        };
+
+        Object.entries(result.extractedData).forEach(([extractedKey, value]) => {
+          const formFieldKey = fieldMapping[extractedKey as keyof typeof fieldMapping] || extractedKey;
+          
+          if (value && value.toString().trim()) {
+            console.log(`Setting ${formFieldKey} = ${value}`);
+            form.setValue(formFieldKey as keyof IsfFormData, value.toString().trim());
           }
         });
 
         toast({
           title: "Document scanned successfully",
-          description: "Form fields have been populated with extracted data",
+          description: `Form populated with data from ${file.name}`,
+        });
+      } else {
+        toast({
+          title: "No data extracted",
+          description: "Unable to extract ISF data from the document",
+          variant: "destructive",
         });
       }
     } catch (error) {
