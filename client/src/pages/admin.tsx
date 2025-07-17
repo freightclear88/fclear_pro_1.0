@@ -19,6 +19,7 @@ import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
 import AiTrainingManager from "@/components/AiTrainingManager";
 import AgentManager from "@/components/AgentManager";
+import XMLIntegrationManager from "@/components/XMLIntegrationManager";
 
 interface SubscriptionUpgradeDialogProps {
   user: User;
@@ -972,6 +973,21 @@ export default function Admin() {
         </CardHeader>
         <CardContent>
           <AgentManager />
+        </CardContent>
+      </Card>
+
+      {/* XML Integration Management */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <div className="bg-gradient-to-br from-orange-500 to-red-600 p-2 rounded-lg mr-3">
+              <FileText className="w-5 h-5 text-white" />
+            </div>
+            XML Integration Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <XMLIntegrationManager />
         </CardContent>
       </Card>
 

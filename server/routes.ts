@@ -14,6 +14,7 @@ import { z } from "zod";
 import { detectCarrierFromBL, generateTrackingUrl, generateContainerTrackingUrl } from "./carrierTracking";
 import puppeteer from "puppeteer";
 import nodemailer from "nodemailer";
+import { xmlIntegrator } from './xmlIntegration';
 
 // Email configuration
 const transporter = nodemailer.createTransport({
@@ -2837,6 +2838,312 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching subscription plans:", error);
       res.status(500).json({ message: "Failed to fetch subscription plans" });
+    }
+  });
+
+  // ================================
+  // XML INTEGRATION ENDPOINTS
+  // ================================
+
+  // XML Shipment Data Upload - Admin/Agent Only
+  app.post('/api/xml/shipments/upload', requireAgent, async (req: any, res) => {
+    try {
+      const { xmlContent, sourceSystem, userId } = req.body;
+      
+      if (!xmlContent) {
+        return res.status(400).json({
+          success: false,
+          error: 'XML content is required'
+        });
+      }
+
+      if (!sourceSystem) {
+        return res.status(400).json({
+          success: false,
+          error: 'Source system identifier is required'
+        });
+      }
+
+      console.log(`Processing XML data from ${sourceSystem}`);
+      
+      const results = await xmlIntegrator.processXMLShipmentData(
+        xmlContent, 
+        sourceSystem, 
+        userId
+      );
+
+      const successCount = results.filter(r => r.success).length;
+      const errorCount = results.filter(r => !r.success).length;
+
+      res.json({
+        success: true,
+        message: `Processed ${results.length} records: ${successCount} successful, ${errorCount} failed`,
+        results: results,
+        summary: {
+          total: results.length,
+          successful: successCount,
+          failed: errorCount
+        }
+      });
+
+    } catch (error) {
+      console.error('XML upload error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to process XML data',
+        details: error.message
+      });
+    }
+  });
+
+  // XML Shipment Data Upload via File - Admin/Agent Only
+  app.post('/api/xml/shipments/upload-file', requireAgent, upload.single('xmlFile'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: 'XML file is required'
+        });
+      }
+
+      const { sourceSystem, userId } = req.body;
+      
+      if (!sourceSystem) {
+        return res.status(400).json({
+          success: false,
+          error: 'Source system identifier is required'
+        });
+      }
+
+      // Read XML file content
+      const xmlContent = fs.readFileSync(req.file.path, 'utf-8');
+      
+      console.log(`Processing XML file from ${sourceSystem}: ${req.file.originalname}`);
+      
+      const results = await xmlIntegrator.processXMLShipmentData(
+        xmlContent, 
+        sourceSystem, 
+        userId
+      );
+
+      // Clean up uploaded file
+      fs.unlinkSync(req.file.path);
+
+      const successCount = results.filter(r => r.success).length;
+      const errorCount = results.filter(r => !r.success).length;
+
+      res.json({
+        success: true,
+        message: `Processed ${results.length} records from ${req.file.originalname}: ${successCount} successful, ${errorCount} failed`,
+        results: results,
+        summary: {
+          total: results.length,
+          successful: successCount,
+          failed: errorCount,
+          fileName: req.file.originalname
+        }
+      });
+
+    } catch (error) {
+      console.error('XML file upload error:', error);
+      
+      // Clean up file if it exists
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      
+      res.status(500).json({
+        success: false,
+        error: 'Failed to process XML file',
+        details: error.message
+      });
+    }
+  });
+
+  // Get XML Integration Templates - Admin/Agent Only
+  app.get('/api/xml/templates', requireAgent, async (req, res) => {
+    try {
+      const templates = {
+        coprar: {
+          name: 'UN/EDIFACT COPRAR (Container Report)',
+          description: 'Container discharge/loading report format',
+          example: `<?xml version="1.0" encoding="UTF-8"?>
+<COPRAR>
+  <message_header>
+    <sender>SHIPPING_LINE</sender>
+    <receiver>TERMINAL</receiver>
+    <date>2025-01-17</date>
+    <time>10:30:00</time>
+  </message_header>
+  <container>
+    <container_number>MSKU1234567</container_number>
+    <equipment_id>MSKU1234567</equipment_id>
+    <bill_of_lading>MAEU123456789</bill_of_lading>
+    <status>DISC</status>
+    <movement_type>DISCHARGE</movement_type>
+    <loading_port>CNSHA</loading_port>
+    <discharge_port>USLAX</discharge_port>
+    <vessel_name>MSC MAYA</vessel_name>
+    <voyage_number>025W</voyage_number>
+    <estimated_arrival_time>2025-01-20T14:00:00Z</estimated_arrival_time>
+    <actual_arrival_time>2025-01-20T13:45:00Z</actual_arrival_time>
+    <shipper>ACME CORPORATION</shipper>
+    <consignee>TARGET IMPORTS LLC</consignee>
+  </container>
+</COPRAR>`
+        },
+        coparn: {
+          name: 'UN/EDIFACT COPARN (Container Announcement)',
+          description: 'Container announcement message format',
+          example: `<?xml version="1.0" encoding="UTF-8"?>
+<COPARN>
+  <message_header>
+    <sender>FREIGHT_FORWARDER</sender>
+    <receiver>TERMINAL</receiver>
+    <date>2025-01-17</date>
+  </message_header>
+  <container>
+    <equipment_id>HLBU5678901</equipment_id>
+    <container_number>HLBU5678901</container_number>
+    <bill_of_lading>HLCU987654321</bill_of_lading>
+    <place_of_loading>DEHAM</place_of_loading>
+    <place_of_discharge>USNYC</place_of_discharge>
+    <vessel_name>HAPAG EXPRESS</vessel_name>
+    <voyage_number>052E</voyage_number>
+    <estimated_time_arrival>2025-01-25T08:00:00Z</estimated_time_arrival>
+    <shipper_party>EUROPEAN EXPORTS GMBH</shipper_party>
+    <consignee_party>AMERICAN IMPORTS INC</consignee_party>
+  </container>
+</COPARN>`
+        },
+        generic: {
+          name: 'Generic Shipments Format',
+          description: 'Simple shipments XML format',
+          example: `<?xml version="1.0" encoding="UTF-8"?>
+<shipments>
+  <shipment>
+    <shipment_id>SEA-2025-001</shipment_id>
+    <bill_of_lading>OOLU123456789</bill_of_lading>
+    <container_number>OOLU1234567</container_number>
+    <origin>Shanghai, China</origin>
+    <origin_port>CNSHA</origin_port>
+    <destination>Los Angeles, CA</destination>
+    <destination_port>USLAX</destination_port>
+    <transport_mode>ocean</transport_mode>
+    <status>in_transit</status>
+    <vessel>OOCL SHANGHAI</vessel>
+    <voyage>038W</voyage>
+    <eta>2025-01-22T10:00:00Z</eta>
+    <shipper>SHANGHAI MANUFACTURING CO</shipper>
+    <consignee>LA DISTRIBUTION CENTER</consignee>
+    <freight_charges>2500.00</freight_charges>
+    <total_value>45000.00</total_value>
+  </shipment>
+  <shipment>
+    <shipment_id>AIR-2025-002</shipment_id>
+    <bill_of_lading>180-12345678</bill_of_lading>
+    <origin>Frankfurt, Germany</origin>
+    <destination>Miami, FL</destination>
+    <transport_mode>air</transport_mode>
+    <status>departed</status>
+    <vessel>LH441</vessel>
+    <eta>2025-01-18T15:30:00Z</eta>
+    <shipper>GERMAN PRECISION TOOLS</shipper>
+    <consignee>MIAMI IMPORTS LLC</consignee>
+    <freight_charges>890.00</freight_charges>
+    <total_value>12000.00</total_value>
+  </shipment>
+</shipments>`
+        },
+        status_update: {
+          name: 'Container Status Update',
+          description: 'Status update format for existing containers',
+          example: `<?xml version="1.0" encoding="UTF-8"?>
+<container_status>
+  <update>
+    <container_number>MSKU1234567</container_number>
+    <bill_of_lading>MAEU123456789</bill_of_lading>
+    <status>delivered</status>
+    <movement_type>DLVR</movement_type>
+    <location>Customer Warehouse</location>
+    <timestamp>2025-01-17T14:30:00Z</timestamp>
+  </update>
+  <update>
+    <container_number>HLBU5678901</container_number>
+    <status>customs_hold</status>
+    <location>CBP Examination Station</location>
+    <timestamp>2025-01-17T09:15:00Z</timestamp>
+  </update>
+</container_status>`
+        }
+      };
+
+      res.json({
+        success: true,
+        templates: templates,
+        supported_formats: [
+          'UN/EDIFACT COPRAR',
+          'UN/EDIFACT COPARN', 
+          'Generic Shipments XML',
+          'Container Status Updates',
+          'Custom formats (auto-detected)'
+        ]
+      });
+
+    } catch (error) {
+      console.error('Template retrieval error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve XML templates'
+      });
+    }
+  });
+
+  // XML Integration Status - Admin Only
+  app.get('/api/xml/integration/status', requireAdmin, async (req, res) => {
+    try {
+      // Get recent XML integration activity
+      const allShipments = await storage.getAllShipments();
+      const xmlShipments = allShipments.filter(s => 
+        s.shipmentId.includes('COPRAR-') || 
+        s.shipmentId.includes('COPARN-') || 
+        s.shipmentId.includes('CUSTOM-')
+      );
+
+      const stats = {
+        total_xml_shipments: xmlShipments.length,
+        recent_activity: xmlShipments
+          .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0))
+          .slice(0, 10)
+          .map(s => ({
+            shipment_id: s.shipmentId,
+            status: s.status,
+            transport_mode: s.transportMode,
+            created_at: s.createdAt,
+            source: s.shipmentId.startsWith('COPRAR-') ? 'COPRAR' :
+                   s.shipmentId.startsWith('COPARN-') ? 'COPARN' : 'Custom'
+          })),
+        status_distribution: {
+          pending: xmlShipments.filter(s => s.status === 'pending').length,
+          in_transit: xmlShipments.filter(s => s.status === 'in_transit').length,
+          delivered: xmlShipments.filter(s => s.status === 'delivered').length,
+          customs_hold: xmlShipments.filter(s => s.status === 'customs_hold').length,
+          other: xmlShipments.filter(s => !['pending', 'in_transit', 'delivered', 'customs_hold'].includes(s.status)).length
+        }
+      };
+
+      res.json({
+        success: true,
+        integration_status: 'active',
+        statistics: stats
+      });
+
+    } catch (error) {
+      console.error('XML integration status error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve integration status'
+      });
     }
   });
 

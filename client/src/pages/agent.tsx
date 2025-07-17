@@ -12,6 +12,7 @@ import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
 import CreateShipmentDialog from "@/components/CreateShipmentDialog";
 import InviteUserDialog from "@/components/InviteUserDialog";
+import XMLIntegrationManager from "@/components/XMLIntegrationManager";
 import type { Shipment, Document } from "@shared/schema";
 
 interface DocumentFolder {
@@ -358,6 +359,24 @@ export default function Agent() {
           ) : (
             <DocumentList showAll={true} />
           )}
+        </CardContent>
+      </Card>
+
+      {/* XML Integration Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <div className="bg-gradient-to-br from-orange-500 to-red-600 p-2 rounded-lg mr-3">
+              <FileText className="w-5 h-5 text-white" />
+            </div>
+            XML Integration Manager
+          </CardTitle>
+          <CardDescription>
+            Process shipment data from external systems using industry-standard XML formats
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <XMLIntegrationManager />
         </CardContent>
       </Card>
     </div>
