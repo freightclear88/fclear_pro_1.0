@@ -623,15 +623,15 @@ function requireDocumentAccess(req: any, res: any, next: any) {
       return next();
     }
     
-    // In production, check authentication
+    // Production mode - require authentication
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     
-    next();
+    return next();
   } catch (error) {
-    console.error("Document access middleware error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Authentication error:", error);
+    return res.status(401).json({ message: "Unauthorized" });
   }
 }
 
@@ -674,8 +674,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const testUserId = 'demo-user-123';
         let user = await storage.getUser(testUserId);
         
+        // Ensure demo user has sample POA document
+        const samplePOAPath = path.join('uploads', 'demo_poa_sample.html');
+        const samplePOAContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Power of Attorney - Demo User</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+    .header { text-align: center; margin-bottom: 30px; }
+    .form-group { margin-bottom: 20px; }
+    h3 { color: #333; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>POWER OF ATTORNEY</h1>
+    <h2>FOR CUSTOMS BUSINESS</h2>
+  </div>
+  
+  <div class="form-group">
+    <h3>PRINCIPAL INFORMATION</h3>
+    <p><strong>Full Legal Name:</strong> Demo User</p>
+    <p><strong>Company Name:</strong> Demo Logistics Inc.</p>
+    <p><strong>Address:</strong> 123 Demo Street, Demo City, NY 10001</p>
+    <p><strong>Tax ID/EIN:</strong> 12-3456789</p>
+  </div>
+  
+  <div class="form-group">
+    <h3>AGENT INFORMATION</h3>
+    <p><strong>Agent Name:</strong> WCS International Inc.</p>
+    <p><strong>Address:</strong> 371 Merrick Rd, suite 305, Rockville Centre, NY 11570</p>
+  </div>
+  
+  <div class="form-group">
+    <h3>SIGNATURE</h3>
+    <p><strong>Electronically Signed:</strong> Demo User</p>
+    <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+  </div>
+  
+  <div style="margin-top: 50px; font-size: 12px; text-align: center; color: #666;">
+    Generated electronically by Freightclear Workflows - ${new Date().toLocaleString()}
+  </div>
+</body>
+</html>`;
+          
+        // Create sample POA file if it doesn't exist
+        if (!fs.existsSync(samplePOAPath)) {
+          fs.writeFileSync(samplePOAPath, samplePOAContent);
+        }
+        
         if (!user) {
-          // Create demo user
           user = await storage.upsertUser({
             id: testUserId,
             email: 'demo@freightclear.com',
@@ -691,7 +741,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             maxShipments: 5,
             maxDocuments: 20,
             currentShipmentCount: 0,
-            currentDocumentCount: 0
+            currentDocumentCount: 0,
+            powerOfAttorneyStatus: 'validated',
+            powerOfAttorneyDocumentPath: samplePOAPath,
+            powerOfAttorneyUploadedAt: new Date()
+          });
+        } else if (!user.powerOfAttorneyDocumentPath) {
+          // Update existing demo user with POA document
+          user = await storage.updateUser(testUserId, {
+            powerOfAttorneyStatus: 'validated',
+            powerOfAttorneyDocumentPath: samplePOAPath,
+            powerOfAttorneyUploadedAt: new Date()
           });
         }
         
@@ -916,7 +976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POA view route
-  app.get('/api/profile/poa/view', isAuthenticated, async (req: any, res) => {
+  app.get('/api/profile/poa/view', requireDocumentAccess, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const user = await storage.getUser(userId);
