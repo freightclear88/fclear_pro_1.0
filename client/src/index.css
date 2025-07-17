@@ -376,4 +376,52 @@
   .border-freight-green {
     border-color: var(--freight-green);
   }
+
+  /* Mobile Touch Optimizations */
+  @media (max-width: 768px) {
+    /* Better touch targets */
+    button, .btn, a[role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Improved spacing for mobile */
+    .space-y-4 > * + * {
+      margin-top: 1.5rem;
+    }
+    
+    .space-y-6 > * + * {
+      margin-top: 2rem;
+    }
+    
+    /* Mobile text adjustments */
+    h1 { font-size: 1.5rem !important; line-height: 2rem; }
+    h2 { font-size: 1.25rem !important; line-height: 1.75rem; }
+    h3 { font-size: 1.125rem !important; line-height: 1.5rem; }
+    
+    /* Better card padding on mobile */
+    .card {
+      margin: 0.5rem;
+    }
+    
+    /* Responsive table scrolling */
+    .table-responsive {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Mobile hover states become active states */
+    .hover-glow:active {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      transform: translateY(-1px);
+      transition: all 0.15s ease;
+    }
+  }
+
+  /* Tablet optimizations */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .hover-glow:hover {
+      transform: translateY(-1px);
+    }
+  }
 }

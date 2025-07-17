@@ -286,7 +286,7 @@ Destination: ${shipment?.destination || "N/A"}
                     <Folder className="w-4 h-4 text-freight-blue" />
                   </div>
                   
-                  <div className="flex-1 grid grid-cols-6 gap-4">
+                  <div className="flex-1 grid grid-cols-2 lg:grid-cols-6 gap-2 lg:gap-4">
                     {/* Shipment ID & Transport Mode */}
                     <div>
                       <div className="font-medium text-freight-dark flex items-center space-x-2">

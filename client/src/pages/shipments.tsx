@@ -63,29 +63,29 @@ export default function Shipments() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 lg:space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center pt-6 pb-4">
-        <div className="px-6 ml-4">
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">Shipments</h1>
-          <p className="text-gray-600 mt-2">Track and manage your freight shipments</p>
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-blue-800 text-sm leading-relaxed">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start space-y-4 lg:space-y-0 pt-2 lg:pt-6 pb-4">
+        <div className="px-2 lg:px-6 lg:ml-4">
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">Shipments</h1>
+          <p className="text-gray-600 text-sm lg:text-base">Track and manage your freight shipments</p>
+          <div className="mt-3 lg:mt-4 p-3 lg:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-blue-800 text-xs lg:text-sm leading-relaxed">
               Our AI automatically scans and transforms your BL, AWB and ISF data into a new shipment in Freightclear Workflows. Upload a doc to get started.
             </p>
           </div>
         </div>
-        <div className="flex space-x-3 pr-8 mr-6">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 px-2 lg:pr-8 lg:mr-6">
           <DocumentUpload 
             trigger={
-              <Button className="btn-outline-primary">
+              <Button className="btn-outline-primary w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
                 Upload Documents
               </Button>
             }
           />
           <CreateShipmentDialog trigger={
-            <Button className="btn-secondary mr-4">
+            <Button className="btn-secondary w-full sm:w-auto lg:mr-4">
               <Plus className="w-4 h-4 mr-2" />
               Create Shipment
             </Button>
@@ -95,14 +95,14 @@ export default function Shipments() {
 
       {/* Search */}
       <Card>
-        <CardContent className="p-8">
+        <CardContent className="p-4 lg:p-8">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               placeholder="Search shipments by ID, origin, or destination..."
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-10"
+              className="pl-10 text-sm lg:text-base"
             />
           </div>
         </CardContent>
@@ -110,17 +110,17 @@ export default function Shipments() {
 
       {/* Shipments Table */}
       <Card>
-        <CardHeader className="pb-6">
-          <div className="flex justify-between items-center">
-            <CardTitle className="flex items-center text-2xl py-2">
-              <Ship className="w-6 h-6 mr-3 text-freight-blue" />
+        <CardHeader className="pb-4 lg:pb-6">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-3 lg:space-y-0">
+            <CardTitle className="flex items-center text-lg lg:text-2xl py-1 lg:py-2">
+              <Ship className="w-5 h-5 lg:w-6 lg:h-6 mr-2 lg:mr-3 text-freight-blue" />
               Active Shipments ({filteredShipments.length})
             </CardTitle>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">Show:</span>
+                <span className="text-xs lg:text-sm text-gray-600">Show:</span>
                 <Select value={shipmentsPerPage.toString()} onValueChange={handlePageSizeChange}>
-                  <SelectTrigger className="w-20">
+                  <SelectTrigger className="w-16 lg:w-20 text-xs lg:text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -129,10 +129,10 @@ export default function Shipments() {
                     <SelectItem value="50">50</SelectItem>
                   </SelectContent>
                 </Select>
-                <span className="text-sm text-gray-600">per page</span>
+                <span className="text-xs lg:text-sm text-gray-600">per page</span>
               </div>
               {totalPages > 1 && (
-                <div className="text-sm text-gray-500">
+                <div className="text-xs lg:text-sm text-gray-500">
                   Page {currentPage} of {totalPages}
                 </div>
               )}
@@ -144,24 +144,25 @@ export default function Shipments() {
           
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t pt-6 mt-6">
-              <div className="text-sm text-gray-500">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between border-t pt-4 lg:pt-6 mt-4 lg:mt-6 space-y-3 lg:space-y-0">
+              <div className="text-xs lg:text-sm text-gray-500 text-center lg:text-left">
                 Showing {startIndex + 1} to {Math.min(endIndex, filteredShipments.length)} of {filteredShipments.length} shipments
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-center space-x-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handlePreviousPage}
                   disabled={currentPage === 1}
-                  className="flex items-center space-x-1"
+                  className="flex items-center space-x-1 text-xs lg:text-sm"
                 >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Previous</span>
+                  <ChevronLeft className="w-3 h-3 lg:w-4 lg:h-4" />
+                  <span className="hidden sm:inline">Previous</span>
+                  <span className="sm:hidden">Prev</span>
                 </Button>
                 
                 <div className="flex items-center space-x-1">
-                  <span className="text-sm font-medium">
+                  <span className="text-xs lg:text-sm font-medium">
                     Page {currentPage} of {totalPages}
                   </span>
                 </div>
@@ -171,10 +172,11 @@ export default function Shipments() {
                   size="sm"
                   onClick={handleNextPage}
                   disabled={currentPage === totalPages}
-                  className="flex items-center space-x-1"
+                  className="flex items-center space-x-1 text-xs lg:text-sm"
                 >
-                  <span>Next</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <span className="hidden sm:inline">Next</span>
+                  <span className="sm:hidden">Next</span>
+                  <ChevronRight className="w-3 h-3 lg:w-4 lg:h-4" />
                 </Button>
               </div>
             </div>

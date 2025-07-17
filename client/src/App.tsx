@@ -1,4 +1,5 @@
 import { Switch, Route } from "wouter";
+import { useState } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -21,7 +22,7 @@ import Payments from "@/pages/payments";
 import Demo from "@/pages/demo";
 import Chat from "@/pages/chat";
 import FastIsf from "@/pages/fastisf";
-import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle, FileText } from "lucide-react";
+import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle, FileText, Menu, X } from "lucide-react";
 import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_1751903859339.png";
 
 const navigation = [
@@ -41,14 +42,37 @@ const adminNavigation = [
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [location] = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen gradient-secondary">
       {/* Flowing Wave Background */}
       <div className="wave-background"></div>
       
+      {/* Mobile Menu Button */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 rounded-lg bg-white/90 backdrop-blur-sm shadow-lg border border-white/20 text-freight-dark hover:bg-white transition-all"
+        >
+          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </div>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+      
       {/* Sidebar */}
-      <div className="w-64 glass-effect shadow-lg border-r border-white/20 fixed h-full z-30">
+      <div className={cn(
+        "w-64 glass-effect shadow-lg border-r border-white/20 fixed h-full z-30 transition-transform duration-300 ease-in-out",
+        "lg:translate-x-0", // Always visible on large screens
+        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full" // Hidden/shown on mobile
+      )}>
         <Sidebar>
           <SidebarHeader className="p-8 border-b border-white/20">
             <div className="flex flex-col items-center text-center">
@@ -83,6 +107,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                           ? "text-freight-dark bg-teal/10"
                           : "text-gray-700 hover:text-freight-dark hover:bg-white/50"
                       )}
+                      onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <Icon 
                         className="mr-3 w-5 h-5"
@@ -104,6 +129,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                         ? "text-freight-dark bg-teal/10"
                         : "text-gray-700 hover:text-freight-dark hover:bg-white/50"
                     )}
+                    onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <Shield 
                       className="mr-3 w-5 h-5"
@@ -125,6 +151,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                           ? "text-freight-dark bg-teal/10"
                           : "text-gray-700 hover:text-freight-dark hover:bg-white/50"
                       )}
+                      onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <Icon 
                         className="mr-3 w-5 h-5"
@@ -164,8 +191,8 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 ml-64">
-        <div className="min-h-screen">
+      <div className="flex-1 lg:ml-64 ml-0">
+        <div className="min-h-screen p-4 lg:p-8 pt-16 lg:pt-8">
           {children}
         </div>
       </div>

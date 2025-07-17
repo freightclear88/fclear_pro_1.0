@@ -44,25 +44,25 @@ export default function Dashboard() {
   const recentShipments = shipments.slice(0, 3);
 
   return (
-    <div className="p-6">
+    <div className="p-3 lg:p-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 lg:mb-8 space-y-4 lg:space-y-0">
         <div>
-          <h2 className="text-2xl font-bold text-freight-dark">Dashboard</h2>
-          <p className="text-gray-600">
+          <h2 className="text-xl lg:text-2xl font-bold text-freight-dark">Dashboard</h2>
+          <p className="text-gray-600 text-sm lg:text-base">
             Welcome back, {user?.firstName || "User"}
           </p>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
           <CreateShipmentDialog trigger={
-            <Button className="btn-secondary">
+            <Button className="btn-secondary w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Create Shipment
             </Button>
           } />
           <DocumentUpload 
             trigger={
-              <Button className="btn-outline-primary">
+              <Button className="btn-outline-primary w-full sm:w-auto">
                 <FileUp className="w-4 h-4 mr-2" />
                 Upload Documents
               </Button>
@@ -74,7 +74,7 @@ export default function Dashboard() {
             }} 
           />
 
-          <Button className="btn-ghost relative">
+          <Button className="btn-ghost relative w-full sm:w-auto">
             <Bell className="w-5 h-5" />
             <Badge className="absolute -top-1 -right-1 bg-neon-green text-white text-xs w-5 h-5 flex items-center justify-center p-0">
               3
@@ -84,9 +84,9 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
         <Card className="gradient-card hover-glow border-0">
-          <CardContent className="p-6">
+          <CardContent className="p-4 lg:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Active Shipments</p>
@@ -102,7 +102,7 @@ export default function Dashboard() {
         </Card>
 
         <Card className="gradient-card hover-glow border-0">
-          <CardContent className="p-6">
+          <CardContent className="p-4 lg:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Documents</p>
@@ -118,7 +118,7 @@ export default function Dashboard() {
         </Card>
 
         <Card className="gradient-card hover-glow border-0">
-          <CardContent className="p-6">
+          <CardContent className="p-4 lg:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Processed This Month</p>
@@ -137,14 +137,14 @@ export default function Dashboard() {
       </div>
 
       {/* Document Upload and Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
         <div className="lg:col-span-2">
           {recentShipments.length > 0 ? (
             <DocumentUpload shipmentId={recentShipments[0].id} />
           ) : (
             <Card>
-              <CardContent className="p-6">
-                <p className="text-gray-500 text-center">
+              <CardContent className="p-4 lg:p-6">
+                <p className="text-gray-500 text-center text-sm lg:text-base">
                   Create your first shipment to start uploading documents
                 </p>
               </CardContent>
@@ -153,10 +153,10 @@ export default function Dashboard() {
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+          <CardHeader className="p-4 lg:p-6">
+            <CardTitle className="text-lg lg:text-xl">Recent Activity</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 lg:p-6">
             {recentShipments.length > 0 ? (
               <div className="space-y-4">
                 {recentShipments.map((shipment) => (
