@@ -3402,27 +3402,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           extractedData = getDefaultExtractedData();
         }
       } else if (fileExtension === 'pdf') {
-        // For PDF files, extract text content using pdf-parse
+        // For PDF files, use dynamic import to avoid module loading issues
         try {
-          const fs = require('fs');
-          const pdf = require('pdf-parse');
+          const pdfParse = await import('pdf-parse');
           
           // Read PDF file and extract text
           const dataBuffer = fs.readFileSync(req.file.path);
-          const pdfData = await pdf(dataBuffer);
+          const pdfData = await pdfParse.default(dataBuffer);
           const textContent = pdfData.text.toLowerCase();
+          
+          console.log("PDF text extracted:", textContent.substring(0, 200) + "...");
           
           // Extract data using text pattern matching
           extractedData = extractPdfData(textContent);
           
-          // If no meaningful data extracted, provide sample data
+          console.log("Extracted data from PDF:", extractedData);
+          
+          // If no meaningful data extracted, use extracted data with fallback for empty fields
           if (Object.keys(extractedData).length === 0) {
-            extractedData = getDefaultExtractedData();
+            console.log("No data extracted from PDF");
+            extractedData = {};
           }
           
         } catch (pdfError) {
           console.error("PDF parsing error:", pdfError);
-          extractedData = getDefaultExtractedData();
+          // Don't provide default data if PDF parsing fails - let user know scanning failed
+          extractedData = {};
         }
       } else {
         // For other file types (DOC, images), use enhanced sample data

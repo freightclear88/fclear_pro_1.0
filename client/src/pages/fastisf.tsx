@@ -269,7 +269,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
               Upload ISF Document (Optional)
             </CardTitle>
             <CardDescription>
-              Upload PDF, Excel (XLS/XLSX), DOC, or image files to automatically extract ISF data and populate the form
+              Upload your own ISF info sheet in PDF or Excel XLS format and our system will automatically extract ISF data
             </CardDescription>
           </CardHeader>
           <CardContent>
