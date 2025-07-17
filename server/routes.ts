@@ -3401,8 +3401,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("Excel parsing error:", excelError);
           extractedData = getDefaultExtractedData();
         }
+      } else if (fileExtension === 'pdf') {
+        // For PDF files, extract text content using pdf-parse
+        try {
+          const fs = require('fs');
+          const pdf = require('pdf-parse');
+          
+          // Read PDF file and extract text
+          const dataBuffer = fs.readFileSync(req.file.path);
+          const pdfData = await pdf(dataBuffer);
+          const textContent = pdfData.text.toLowerCase();
+          
+          // Extract data using text pattern matching
+          extractedData = extractPdfData(textContent);
+          
+          // If no meaningful data extracted, provide sample data
+          if (Object.keys(extractedData).length === 0) {
+            extractedData = getDefaultExtractedData();
+          }
+          
+        } catch (pdfError) {
+          console.error("PDF parsing error:", pdfError);
+          extractedData = getDefaultExtractedData();
+        }
       } else {
-        // For non-Excel files, use enhanced sample data extraction
+        // For other file types (DOC, images), use enhanced sample data
         extractedData = getDefaultExtractedData();
       }
 
@@ -3703,7 +3726,115 @@ function findExcelData(flatData: any[], keywords: string[]): string | null {
   return null;
 }
 
-// Default extracted data for demonstration
+// Extract data from PDF text content
+function extractPdfData(textContent: string): any {
+  const extractedData: any = {};
+  
+  // Define comprehensive patterns to search for in the PDF text
+  const patterns = {
+    importerName: [
+      'importer:', 'buyer:', 'company:', 'importer of record:', 'consigned to:', 'sold to:',
+      'importer name:', 'importing company:', 'purchaser:', 'customer:'
+    ],
+    consigneeName: [
+      'consignee:', 'notify party:', 'delivery to:', 'ship to:', 'delivered to:',
+      'consignee name:', 'destination:', 'final destination:', 'receiver:'
+    ],
+    manufacturerCountry: [
+      'manufacturer:', 'origin:', 'country of manufacture:', 'made in:', 'manufactured in:',
+      'supplier country:', 'factory location:', 'production country:'
+    ],
+    countryOfOrigin: [
+      'country of origin:', 'origin:', 'coo:', 'manufactured in:', 'produced in:',
+      'country of manufacture:', 'origin country:', 'source country:'
+    ],
+    htsusNumber: [
+      'hts:', 'htsus:', 'tariff:', 'commodity code:', 'schedule b:', 'hs code:',
+      'harmonized code:', 'classification:', 'tariff code:', 'hs number:'
+    ],
+    commodityDescription: [
+      'description:', 'commodity:', 'goods:', 'merchandise:', 'products:', 'items:',
+      'cargo description:', 'goods description:', 'commodity description:', 'product description:'
+    ],
+    portOfEntry: [
+      'port of entry:', 'destination port:', 'discharge port:', 'arrival port:', 'entry port:',
+      'us port:', 'port of arrival:', 'discharge at:', 'final port:'
+    ],
+    billOfLading: [
+      'bill of lading:', 'bl number:', 'bol:', 'bl#:', 'b/l:', 'master bl:', 'house bl:',
+      'bl no:', 'bill of lading no:', 'bl reference:', 'lading number:'
+    ],
+    vesselName: [
+      'vessel:', 'ship:', 'vessel name:', 'carrying vessel:', 'vessel/voyage:',
+      'ship name:', 'vessel/flight:', 'carrier name:', 'transport:'
+    ],
+    estimatedArrivalDate: [
+      'eta:', 'arrival date:', 'estimated arrival:', 'delivery date:', 'arrival:',
+      'eta date:', 'expected arrival:', 'arrival time:', 'discharge date:'
+    ]
+  };
+  
+  // Search for each pattern in the text with improved extraction
+  for (const [field, keywords] of Object.entries(patterns)) {
+    for (const keyword of keywords) {
+      const regex = new RegExp(keyword.replace(':', '\\s*:?\\s*'), 'gi');
+      const match = textContent.match(regex);
+      if (match) {
+        const index = textContent.indexOf(match[0].toLowerCase());
+        if (index !== -1) {
+          // Extract text after the keyword (next 150 characters for more context)
+          const afterKeyword = textContent.substring(index + match[0].length, index + match[0].length + 150);
+          const extracted = extractValueFromText(afterKeyword);
+          if (extracted && extracted.length > 2 && !extracted.includes('____')) {
+            extractedData[field] = extracted;
+            break; // Found a value for this field, move to next field
+          }
+        }
+      }
+    }
+  }
+  
+  return extractedData;
+}
+
+// Helper function to extract clean value from text
+function extractValueFromText(text: string): string {
+  // Remove leading/trailing whitespace and common separators
+  text = text.trim().replace(/^[:;\-\s\/_]+/, '').trim();
+  
+  // Skip if text starts with common filler patterns
+  if (/^(\.|_|x{2,}|\.{2,}|\s*$)/i.test(text)) {
+    return '';
+  }
+  
+  // Find the end of the value - improved pattern matching
+  let extracted = '';
+  
+  // Look for value ending at newline, tab, or significant spacing
+  const lineEndMatch = text.match(/^([^\n\r\t]{2,80}?)(\s{3,}|[\n\r\t]|$)/);
+  if (lineEndMatch) {
+    extracted = lineEndMatch[1];
+  } else {
+    // Look for value ending at punctuation or formatting
+    const punctEndMatch = text.match(/^([^\.]{2,60}?)[\.\s]{2,}/);
+    if (punctEndMatch) {
+      extracted = punctEndMatch[1];
+    } else {
+      // Fallback: take reasonable length
+      extracted = text.substring(0, 60);
+    }
+  }
+  
+  // Clean up the extracted value
+  extracted = extracted.trim()
+    .replace(/[_\.]{3,}.*$/, '') // Remove trailing dots/underscores
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .replace(/[^\w\s\-\.,&()]+$/, ''); // Remove trailing special chars
+  
+  return extracted.trim();
+}
+
+// Default extracted data for demonstration when no real data found
 function getDefaultExtractedData() {
   return {
     importerName: "Sample Importer Inc.",
