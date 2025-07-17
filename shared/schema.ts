@@ -252,6 +252,128 @@ export const userInvitations = pgTable("user_invitations", {
   acceptedAt: timestamp("accepted_at"),
 });
 
+// ISF 10+2 Filing table - all mandatory fields for customs import filing
+export const isfFilings = pgTable("isf_filings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // ISF Filing Basic Information
+  isfNumber: varchar("isf_number").notNull().unique(), // Auto-generated ISF reference number
+  status: varchar("status").notNull().default("draft"), // draft, submitted, paid, processed, completed, rejected
+  filingDate: timestamp("filing_date"),
+  
+  // 10+2 Required Data Elements
+  
+  // 1. Importer of Record Number/FTZ Applicant Identification Number
+  importerOfRecord: varchar("importer_of_record").notNull(),
+  importerName: varchar("importer_name").notNull(),
+  importerAddress: text("importer_address").notNull(),
+  importerCity: varchar("importer_city").notNull(),
+  importerState: varchar("importer_state").notNull(),
+  importerZip: varchar("importer_zip").notNull(),
+  importerCountry: varchar("importer_country").notNull().default("US"),
+  
+  // 2. Consignee Number(s)
+  consigneeNumber: varchar("consignee_number").notNull(),
+  consigneeName: varchar("consignee_name").notNull(),
+  consigneeAddress: text("consignee_address").notNull(),
+  consigneeCity: varchar("consignee_city").notNull(),
+  consigneeState: varchar("consignee_state").notNull(),
+  consigneeZip: varchar("consignee_zip").notNull(),
+  consigneeCountry: varchar("consignee_country").notNull().default("US"),
+  
+  // 3. Manufacturer (or Supplier) Name and Address
+  manufacturerName: varchar("manufacturer_name").notNull(),
+  manufacturerAddress: text("manufacturer_address").notNull(),
+  manufacturerCity: varchar("manufacturer_city").notNull(),
+  manufacturerState: varchar("manufacturer_state"),
+  manufacturerCountry: varchar("manufacturer_country").notNull(),
+  
+  // 4. Ship to Party Name and Address
+  shipToPartyName: varchar("ship_to_party_name").notNull(),
+  shipToPartyAddress: text("ship_to_party_address").notNull(),
+  shipToPartyCity: varchar("ship_to_party_city").notNull(),
+  shipToPartyState: varchar("ship_to_party_state").notNull(),
+  shipToPartyZip: varchar("ship_to_party_zip").notNull(),
+  shipToPartyCountry: varchar("ship_to_party_country").notNull().default("US"),
+  
+  // 5. Country of Origin
+  countryOfOrigin: varchar("country_of_origin").notNull(),
+  
+  // 6. Commodity HTSUS Number
+  htsusNumber: varchar("htsus_number").notNull(), // 6-digit minimum, 10-digit preferred
+  commodityDescription: text("commodity_description").notNull(),
+  
+  // 7. Container Stuffing Location
+  containerStuffingLocation: text("container_stuffing_location").notNull(),
+  containerStuffingCity: varchar("container_stuffing_city").notNull(),
+  containerStuffingCountry: varchar("container_stuffing_country").notNull(),
+  
+  // 8. Consolidator (Stuffer) Name and Address
+  consolidatorName: varchar("consolidator_name"),
+  consolidatorAddress: text("consolidator_address"),
+  consolidatorCity: varchar("consolidator_city"),
+  consolidatorCountry: varchar("consolidator_country"),
+  
+  // 9. Buyer Name and Address (if other than consignee)
+  buyerName: varchar("buyer_name"),
+  buyerAddress: text("buyer_address"),
+  buyerCity: varchar("buyer_city"),
+  buyerState: varchar("buyer_state"),
+  buyerZip: varchar("buyer_zip"),
+  buyerCountry: varchar("buyer_country"),
+  
+  // 10. Seller Name and Address (if other than manufacturer)
+  sellerName: varchar("seller_name"),
+  sellerAddress: text("seller_address"),
+  sellerCity: varchar("seller_city"),
+  sellerState: varchar("seller_state"),
+  sellerCountry: varchar("seller_country"),
+  
+  // +2 Additional Data Elements
+  
+  // +1. Booking Party Name and Address
+  bookingPartyName: varchar("booking_party_name").notNull(),
+  bookingPartyAddress: text("booking_party_address").notNull(),
+  bookingPartyCity: varchar("booking_party_city").notNull(),
+  bookingPartyCountry: varchar("booking_party_country").notNull(),
+  
+  // +2. Foreign Port of Unlading
+  foreignPortOfUnlading: varchar("foreign_port_of_unlading").notNull(),
+  
+  // Shipment Details
+  billOfLading: varchar("bill_of_lading"),
+  containerNumbers: text("container_numbers"), // JSON array of container numbers
+  vesselName: varchar("vessel_name"),
+  voyageNumber: varchar("voyage_number"),
+  estimatedArrivalDate: timestamp("estimated_arrival_date"),
+  portOfEntry: varchar("port_of_entry").notNull(),
+  
+  // Commercial Information
+  invoiceNumber: varchar("invoice_number"),
+  invoiceDate: timestamp("invoice_date"),
+  invoiceValue: decimal("invoice_value", { precision: 12, scale: 2 }),
+  currency: varchar("currency").default("USD"),
+  terms: varchar("terms"), // FOB, CIF, etc.
+  
+  // Document Management
+  uploadedDocumentId: integer("uploaded_document_id").references(() => documents.id),
+  extractedData: jsonb("extracted_data"), // Data extracted from PDF scanning
+  xmlData: text("xml_data"), // ISF data stored as XML
+  
+  // Payment Information
+  paymentRequired: boolean("payment_required").default(true),
+  paymentAmount: decimal("payment_amount", { precision: 10, scale: 2 }).default("35.00"),
+  paymentStatus: varchar("payment_status").default("pending"), // pending, processing, completed, failed
+  paymentTransactionId: varchar("payment_transaction_id"),
+  paidAt: timestamp("paid_at"),
+  
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  submittedAt: timestamp("submitted_at"),
+});
+
 // Schema types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -282,6 +404,9 @@ export type AiTrainingData = typeof aiTrainingData.$inferSelect;
 
 export type InsertUserInvitation = typeof userInvitations.$inferInsert;
 export type UserInvitation = typeof userInvitations.$inferSelect;
+
+export type InsertIsfFiling = typeof isfFilings.$inferInsert;
+export type IsfFiling = typeof isfFilings.$inferSelect;
 
 // Insert schemas
 export const insertShipmentSchema = createInsertSchema(shipments).omit({
@@ -322,4 +447,13 @@ export const insertUserInvitationSchema = createInsertSchema(userInvitations).om
   id: true,
   createdAt: true,
   acceptedAt: true,
+});
+
+export const insertIsfFilingSchema = createInsertSchema(isfFilings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  submittedAt: true,
+  filingDate: true,
+  paidAt: true,
 });

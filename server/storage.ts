@@ -9,6 +9,7 @@ import {
   chatMessages,
   aiTrainingData,
   userInvitations,
+  isfFilings,
   type User,
   type UpsertUser,
   type Shipment,
@@ -29,9 +30,12 @@ import {
   type InsertAiTrainingData,
   type UserInvitation,
   type InsertUserInvitation,
+  type IsfFiling,
+  type InsertIsfFiling,
+  isfFilings,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -107,6 +111,15 @@ export interface IStorage {
   getUserInvitationsByUserId(userId: string): Promise<UserInvitation[]>;
   getAllUserInvitations(): Promise<UserInvitation[]>;
   updateUserInvitation(id: number, data: Partial<InsertUserInvitation>): Promise<UserInvitation>;
+
+  // ISF Filing operations
+  getIsfFilingsByUserId(userId: string): Promise<IsfFiling[]>;
+  getIsfFilingById(id: number): Promise<IsfFiling | undefined>;
+  getIsfFilingByNumber(isfNumber: string): Promise<IsfFiling | undefined>;
+  getAllIsfFilings(): Promise<IsfFiling[]>;
+  createIsfFiling(filing: InsertIsfFiling): Promise<IsfFiling>;
+  updateIsfFiling(id: number, filing: Partial<InsertIsfFiling>): Promise<IsfFiling>;
+  generateIsfNumber(): Promise<string>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -577,6 +590,63 @@ export class DatabaseStorage implements IStorage {
       .where(eq(userInvitations.id, id))
       .returning();
     return invitation;
+  }
+
+  // ISF Filing operations
+  async getIsfFilingsByUserId(userId: string): Promise<IsfFiling[]> {
+    return await db
+      .select()
+      .from(isfFilings)
+      .where(eq(isfFilings.userId, userId))
+      .orderBy(desc(isfFilings.createdAt));
+  }
+
+  async getIsfFilingById(id: number): Promise<IsfFiling | undefined> {
+    const [filing] = await db.select().from(isfFilings).where(eq(isfFilings.id, id));
+    return filing;
+  }
+
+  async getIsfFilingByNumber(isfNumber: string): Promise<IsfFiling | undefined> {
+    const [filing] = await db.select().from(isfFilings).where(eq(isfFilings.isfNumber, isfNumber));
+    return filing;
+  }
+
+  async getAllIsfFilings(): Promise<IsfFiling[]> {
+    return await db
+      .select()
+      .from(isfFilings)
+      .orderBy(desc(isfFilings.createdAt));
+  }
+
+  async createIsfFiling(filingData: InsertIsfFiling): Promise<IsfFiling> {
+    const [filing] = await db.insert(isfFilings).values(filingData).returning();
+    return filing;
+  }
+
+  async updateIsfFiling(id: number, filingData: Partial<InsertIsfFiling>): Promise<IsfFiling> {
+    const [filing] = await db
+      .update(isfFilings)
+      .set({
+        ...filingData,
+        updatedAt: new Date(),
+      })
+      .where(eq(isfFilings.id, id))
+      .returning();
+    return filing;
+  }
+
+  async generateIsfNumber(): Promise<string> {
+    const year = new Date().getFullYear();
+    const prefix = `ISF${year}`;
+    
+    // Get the count of ISF filings this year
+    const existingFilings = await db
+      .select()
+      .from(isfFilings)
+      .where(sql`isf_number LIKE ${prefix + '%'}`);
+    
+    const nextNumber = (existingFilings.length + 1).toString().padStart(6, '0');
+    return `${prefix}${nextNumber}`;
   }
 }
 

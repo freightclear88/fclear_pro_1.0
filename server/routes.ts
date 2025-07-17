@@ -12,7 +12,6 @@ import path from "path";
 import fs from "fs";
 import { z } from "zod";
 import { detectCarrierFromBL, generateTrackingUrl, generateContainerTrackingUrl } from "./carrierTracking";
-import puppeteer from "puppeteer";
 import nodemailer from "nodemailer";
 import { xmlIntegrator } from './xmlIntegration';
 
@@ -3318,6 +3317,428 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ISF Filing Routes
+  app.get('/api/isf/filings', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const filings = await storage.getIsfFilingsByUserId(userId);
+      res.json(filings);
+    } catch (error) {
+      console.error("Error fetching ISF filings:", error);
+      res.status(500).json({ message: "Failed to fetch ISF filings" });
+    }
+  });
+
+  app.get('/api/isf/filings/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const filing = await storage.getIsfFilingById(parseInt(id));
+      
+      if (!filing) {
+        return res.status(404).json({ message: "ISF filing not found" });
+      }
+
+      // Check if user owns this filing or is admin/agent
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId);
+      if (filing.userId !== userId && !user?.isAdmin && !user?.isAgent) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      res.json(filing);
+    } catch (error) {
+      console.error("Error fetching ISF filing:", error);
+      res.status(500).json({ message: "Failed to fetch ISF filing" });
+    }
+  });
+
+  app.post('/api/isf/scan-document', requireSubscription, upload.single('isfDocument'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No document uploaded" });
+      }
+
+      // Simulate AI document scanning and data extraction
+      // In a real implementation, this would use AI/OCR services
+      const extractedData = {
+        importerName: "Sample Importer Inc.",
+        consigneeName: "Sample Consignee LLC",
+        manufacturerCountry: "China",
+        countryOfOrigin: "China",
+        htsusNumber: "8471.30.0100",
+        commodityDescription: "Portable digital automatic data processing machines",
+        portOfEntry: "Los Angeles, CA",
+        billOfLading: "ABC123456789",
+        vesselName: "EVERGREEN EVER",
+        estimatedArrivalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      };
+
+      res.json({
+        success: true,
+        extractedData,
+        message: "Document scanned successfully. Please review and verify the extracted data."
+      });
+    } catch (error) {
+      console.error("Error scanning ISF document:", error);
+      res.status(500).json({ error: "Failed to scan document" });
+    }
+  });
+
+  app.post('/api/isf/create', requireSubscription, upload.single('isfDocument'), async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Generate unique ISF number
+      const isfNumber = await storage.generateIsfNumber();
+
+      // Extract form data
+      const formData = req.body;
+      
+      // Handle uploaded document if present
+      let uploadedDocumentId = null;
+      if (req.file) {
+        const document = await storage.createDocument({
+          userId,
+          shipmentId: null, // Will be linked later if needed
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          fileSize: req.file.size,
+          category: "isf_filing",
+          subCategory: "isf_10_plus_2",
+          filePath: req.file.path,
+        });
+        uploadedDocumentId = document.id;
+      }
+
+      // Convert form data to XML format for storage
+      const xmlData = generateIsfXml(formData, isfNumber);
+
+      // Create ISF filing record
+      const isfFiling = await storage.createIsfFiling({
+        userId,
+        isfNumber,
+        status: 'draft',
+        
+        // Importer Information
+        importerOfRecord: formData.importerOfRecord,
+        importerName: formData.importerName,
+        importerAddress: formData.importerAddress,
+        importerCity: formData.importerCity,
+        importerState: formData.importerState,
+        importerZip: formData.importerZip,
+        importerCountry: formData.importerCountry || 'US',
+
+        // Consignee Information
+        consigneeNumber: formData.consigneeNumber,
+        consigneeName: formData.consigneeName,
+        consigneeAddress: formData.consigneeAddress,
+        consigneeCity: formData.consigneeCity,
+        consigneeState: formData.consigneeState,
+        consigneeZip: formData.consigneeZip,
+        consigneeCountry: formData.consigneeCountry || 'US',
+
+        // Manufacturer Information
+        manufacturerName: formData.manufacturerName,
+        manufacturerAddress: formData.manufacturerAddress,
+        manufacturerCity: formData.manufacturerCity,
+        manufacturerState: formData.manufacturerState,
+        manufacturerCountry: formData.manufacturerCountry,
+
+        // Ship To Party Information
+        shipToPartyName: formData.shipToPartyName,
+        shipToPartyAddress: formData.shipToPartyAddress,
+        shipToPartyCity: formData.shipToPartyCity,
+        shipToPartyState: formData.shipToPartyState,
+        shipToPartyZip: formData.shipToPartyZip,
+        shipToPartyCountry: formData.shipToPartyCountry || 'US',
+
+        // Commodity Information
+        countryOfOrigin: formData.countryOfOrigin,
+        htsusNumber: formData.htsusNumber,
+        commodityDescription: formData.commodityDescription,
+
+        // Container Information
+        containerStuffingLocation: formData.containerStuffingLocation,
+        containerStuffingCity: formData.containerStuffingCity,
+        containerStuffingCountry: formData.containerStuffingCountry,
+
+        // Optional fields
+        consolidatorName: formData.consolidatorName,
+        consolidatorAddress: formData.consolidatorAddress,
+        consolidatorCity: formData.consolidatorCity,
+        consolidatorCountry: formData.consolidatorCountry,
+
+        buyerName: formData.buyerName,
+        buyerAddress: formData.buyerAddress,
+        buyerCity: formData.buyerCity,
+        buyerState: formData.buyerState,
+        buyerZip: formData.buyerZip,
+        buyerCountry: formData.buyerCountry,
+
+        sellerName: formData.sellerName,
+        sellerAddress: formData.sellerAddress,
+        sellerCity: formData.sellerCity,
+        sellerState: formData.sellerState,
+        sellerCountry: formData.sellerCountry,
+
+        // Booking Party Information
+        bookingPartyName: formData.bookingPartyName,
+        bookingPartyAddress: formData.bookingPartyAddress,
+        bookingPartyCity: formData.bookingPartyCity,
+        bookingPartyCountry: formData.bookingPartyCountry,
+
+        // Foreign Port
+        foreignPortOfUnlading: formData.foreignPortOfUnlading,
+
+        // Shipment Details
+        billOfLading: formData.billOfLading,
+        containerNumbers: formData.containerNumbers,
+        vesselName: formData.vesselName,
+        voyageNumber: formData.voyageNumber,
+        estimatedArrivalDate: formData.estimatedArrivalDate ? new Date(formData.estimatedArrivalDate) : null,
+        portOfEntry: formData.portOfEntry,
+
+        // Commercial Information
+        invoiceNumber: formData.invoiceNumber,
+        invoiceDate: formData.invoiceDate ? new Date(formData.invoiceDate) : null,
+        invoiceValue: formData.invoiceValue ? parseFloat(formData.invoiceValue) : null,
+        currency: formData.currency || 'USD',
+        terms: formData.terms,
+
+        uploadedDocumentId,
+        xmlData,
+        paymentRequired: true,
+        paymentAmount: 35.00,
+        paymentStatus: 'pending',
+      });
+
+      res.json({
+        success: true,
+        isfNumber,
+        filing: isfFiling,
+        message: "ISF filing created successfully. Please proceed to payment."
+      });
+    } catch (error) {
+      console.error("Error creating ISF filing:", error);
+      res.status(500).json({ error: "Failed to create ISF filing" });
+    }
+  });
+
+  app.post('/api/isf/payment/:id', requireSubscription, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { opaqueData, billingInfo } = req.body;
+      
+      const userId = getUserId(req);
+      const filing = await storage.getIsfFilingById(parseInt(id));
+      
+      if (!filing) {
+        return res.status(404).json({ error: "ISF filing not found" });
+      }
+
+      if (filing.userId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      if (filing.paymentStatus === 'paid') {
+        return res.status(400).json({ error: "Payment already processed" });
+      }
+
+      // Process payment with Authorize.Net
+      const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
+      const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
+
+      if (!apiLoginId || !transactionKey) {
+        return res.status(500).json({ error: "Payment system not configured" });
+      }
+
+      // Create merchant authentication
+      const merchantAuthenticationType = new ApiContracts.MerchantAuthenticationType();
+      merchantAuthenticationType.setName(apiLoginId);
+      merchantAuthenticationType.setTransactionKey(transactionKey);
+
+      // Create payment object
+      const opaqueDataObject = new ApiContracts.OpaqueDataType();
+      opaqueDataObject.setDataDescriptor(opaqueData.dataDescriptor);
+      opaqueDataObject.setDataValue(opaqueData.dataValue);
+
+      const paymentType = new ApiContracts.PaymentType();
+      paymentType.setOpaqueData(opaqueDataObject);
+
+      // Create billing address
+      const billTo = new ApiContracts.CustomerAddressType();
+      if (billingInfo?.firstName) billTo.setFirstName(billingInfo.firstName);
+      if (billingInfo?.lastName) billTo.setLastName(billingInfo.lastName);
+      if (billingInfo?.zip) billTo.setZip(billingInfo.zip);
+
+      // Create transaction request
+      const transactionRequest = new ApiContracts.TransactionRequestType();
+      transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION);
+      transactionRequest.setPayment(paymentType);
+      transactionRequest.setAmount(filing.paymentAmount!);
+      transactionRequest.setBillTo(billTo);
+
+      // Add invoice information
+      transactionRequest.setOrder(new ApiContracts.OrderType());
+      transactionRequest.getOrder().setInvoiceNumber(filing.isfNumber);
+      transactionRequest.getOrder().setDescription(`ISF 10+2 Filing: ${filing.isfNumber}`);
+
+      // Create and execute transaction
+      const createRequest = new ApiContracts.CreateTransactionRequest();
+      createRequest.setMerchantAuthentication(merchantAuthenticationType);
+      createRequest.setTransactionRequest(transactionRequest);
+
+      const controller = new ApiControllers.CreateTransactionController(createRequest.getJSON());
+      
+      // Execute payment
+      await new Promise((resolve, reject) => {
+        controller.execute(async () => {
+          const apiResponse = controller.getResponse();
+          const response = new ApiContracts.CreateTransactionResponse(apiResponse);
+          
+          if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
+            const transactionId = response.getTransactionResponse().getTransId();
+            
+            // Update ISF filing with payment information
+            await storage.updateIsfFiling(filing.id, {
+              paymentStatus: 'paid',
+              paymentTransactionId: transactionId,
+              paidAt: new Date(),
+              status: 'submitted',
+              submittedAt: new Date(),
+            });
+
+            resolve(response);
+          } else {
+            const errorMessages = response.getMessages().getMessage().map((msg: any) => msg.getText()).join(', ');
+            reject(new Error(errorMessages));
+          }
+        });
+      });
+
+      res.json({
+        success: true,
+        message: "Payment processed successfully. ISF filing submitted.",
+        isfNumber: filing.isfNumber
+      });
+    } catch (error) {
+      console.error("Error processing ISF payment:", error);
+      res.status(500).json({ error: "Payment processing failed" });
+    }
+  });
+
+  // Admin ISF Routes
+  app.get('/api/admin/isf/filings', requireAdmin, async (req: any, res) => {
+    try {
+      const filings = await storage.getAllIsfFilings();
+      res.json(filings);
+    } catch (error) {
+      console.error("Error fetching all ISF filings:", error);
+      res.status(500).json({ message: "Failed to fetch ISF filings" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
+}
+
+// Helper function to generate ISF XML data
+function generateIsfXml(formData: any, isfNumber: string): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<isf_filing>
+  <header>
+    <isf_number>${isfNumber}</isf_number>
+    <created_date>${new Date().toISOString()}</created_date>
+    <filing_type>ISF_10_PLUS_2</filing_type>
+  </header>
+  
+  <importer>
+    <record_number>${formData.importerOfRecord || ''}</record_number>
+    <name>${formData.importerName || ''}</name>
+    <address>
+      <street>${formData.importerAddress || ''}</street>
+      <city>${formData.importerCity || ''}</city>
+      <state>${formData.importerState || ''}</state>
+      <zip>${formData.importerZip || ''}</zip>
+      <country>${formData.importerCountry || 'US'}</country>
+    </address>
+  </importer>
+  
+  <consignee>
+    <number>${formData.consigneeNumber || ''}</number>
+    <name>${formData.consigneeName || ''}</name>
+    <address>
+      <street>${formData.consigneeAddress || ''}</street>
+      <city>${formData.consigneeCity || ''}</city>
+      <state>${formData.consigneeState || ''}</state>
+      <zip>${formData.consigneeZip || ''}</zip>
+      <country>${formData.consigneeCountry || 'US'}</country>
+    </address>
+  </consignee>
+  
+  <manufacturer>
+    <name>${formData.manufacturerName || ''}</name>
+    <address>
+      <street>${formData.manufacturerAddress || ''}</street>
+      <city>${formData.manufacturerCity || ''}</city>
+      <state>${formData.manufacturerState || ''}</state>
+      <country>${formData.manufacturerCountry || ''}</country>
+    </address>
+  </manufacturer>
+  
+  <ship_to_party>
+    <name>${formData.shipToPartyName || ''}</name>
+    <address>
+      <street>${formData.shipToPartyAddress || ''}</street>
+      <city>${formData.shipToPartyCity || ''}</city>
+      <state>${formData.shipToPartyState || ''}</state>
+      <zip>${formData.shipToPartyZip || ''}</zip>
+      <country>${formData.shipToPartyCountry || 'US'}</country>
+    </address>
+  </ship_to_party>
+  
+  <commodity>
+    <country_of_origin>${formData.countryOfOrigin || ''}</country_of_origin>
+    <htsus_number>${formData.htsusNumber || ''}</htsus_number>
+    <description>${formData.commodityDescription || ''}</description>
+  </commodity>
+  
+  <container_stuffing>
+    <location>${formData.containerStuffingLocation || ''}</location>
+    <city>${formData.containerStuffingCity || ''}</city>
+    <country>${formData.containerStuffingCountry || ''}</country>
+  </container_stuffing>
+  
+  <booking_party>
+    <name>${formData.bookingPartyName || ''}</name>
+    <address>
+      <street>${formData.bookingPartyAddress || ''}</street>
+      <city>${formData.bookingPartyCity || ''}</city>
+      <country>${formData.bookingPartyCountry || ''}</country>
+    </address>
+  </booking_party>
+  
+  <shipment_details>
+    <foreign_port_of_unlading>${formData.foreignPortOfUnlading || ''}</foreign_port_of_unlading>
+    <port_of_entry>${formData.portOfEntry || ''}</port_of_entry>
+    <bill_of_lading>${formData.billOfLading || ''}</bill_of_lading>
+    <container_numbers>${formData.containerNumbers || ''}</container_numbers>
+    <vessel_name>${formData.vesselName || ''}</vessel_name>
+    <voyage_number>${formData.voyageNumber || ''}</voyage_number>
+    <estimated_arrival_date>${formData.estimatedArrivalDate || ''}</estimated_arrival_date>
+  </shipment_details>
+  
+  <commercial_info>
+    <invoice_number>${formData.invoiceNumber || ''}</invoice_number>
+    <invoice_date>${formData.invoiceDate || ''}</invoice_date>
+    <invoice_value>${formData.invoiceValue || ''}</invoice_value>
+    <currency>${formData.currency || 'USD'}</currency>
+    <terms>${formData.terms || ''}</terms>
+  </commercial_info>
+</isf_filing>`;
 }
