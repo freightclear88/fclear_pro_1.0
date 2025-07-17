@@ -20,8 +20,16 @@ export default function TalkJSChat({ conversationId = "support", className = "" 
   useEffect(() => {
     if (!user || !chatboxElement.current) return;
 
-    // Initialize TalkJS
-    window.Talk.ready.then(() => {
+    // Wait for TalkJS to load
+    const initTalkJS = () => {
+      if (!window.Talk) {
+        // TalkJS not loaded yet, wait and try again
+        setTimeout(initTalkJS, 100);
+        return;
+      }
+
+      // Initialize TalkJS
+      window.Talk.ready.then(() => {
       // Create current user
       const currentUser = new window.Talk.User({
         id: user.id,
@@ -65,19 +73,37 @@ export default function TalkJSChat({ conversationId = "support", className = "" 
       chatbox.select(conversation);
       chatbox.mount(chatboxElement.current);
 
-      // Cleanup function
-      return () => {
-        if (chatboxElement.current) {
-          chatboxElement.current.innerHTML = '';
-        }
-      };
-    });
+        // Cleanup function
+        return () => {
+          if (chatboxElement.current) {
+            chatboxElement.current.innerHTML = '';
+          }
+        };
+      }).catch((error) => {
+        console.error("TalkJS initialization error:", error);
+      });
+    };
+
+    // Start initialization
+    initTalkJS();
   }, [user, conversationId]);
 
   if (!user) {
     return (
       <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg">
         <p className="text-gray-500">Please log in to access chat support</p>
+      </div>
+    );
+  }
+
+  // Check if TalkJS is loading
+  if (typeof window !== 'undefined' && !window.Talk) {
+    return (
+      <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-freight-blue mx-auto mb-2"></div>
+          <p className="text-gray-500">Loading chat support...</p>
+        </div>
       </div>
     );
   }
