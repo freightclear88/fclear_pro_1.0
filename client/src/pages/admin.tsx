@@ -17,7 +17,7 @@ import { apiRequest } from "@/lib/queryClient";
 import ShipmentHtmlPage from "@/components/ShipmentHtmlPage";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
-import TalkJSChat from "@/components/TalkJSChat";
+
 import XMLIntegrationManager from "@/components/XMLIntegrationManager";
 import AdminInvoiceUpload from "@/components/AdminInvoiceUpload";
 
@@ -946,21 +946,86 @@ export default function Admin() {
         </CardContent>
       </Card>
 
-      {/* Admin Chat Support */}
+      {/* Admin Support System */}
       <Card className="mt-8">
         <CardHeader>
           <CardTitle className="flex items-center">
             <div className="bg-gradient-to-br from-freight-blue to-freight-green p-2 rounded-lg mr-3">
               <Shield className="w-5 h-5 text-white" />
             </div>
-            Admin Support Chat
+            Admin Support System
           </CardTitle>
           <CardDescription>
-            Direct communication with users for support requests and system management
+            Centralized support management and user communication hub
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <TalkJSChat conversationId="admin-support" className="h-[500px]" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 border rounded-lg bg-gradient-to-br from-blue-50 to-indigo-100">
+              <h4 className="font-medium mb-2 flex items-center">
+                <Shield className="w-4 h-4 mr-2 text-blue-600" />
+                Support Channels
+              </h4>
+              <p className="text-sm text-gray-600 mb-3">
+                Professional chat support system ready for integration
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span>TalkJS Integration</span>
+                  <Badge variant="outline" className="text-amber-600 border-amber-600">Pending Setup</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Email Notifications</span>
+                  <Badge variant="outline" className="text-green-600 border-green-600">Active</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Admin Channels</span>
+                  <Badge variant="outline" className="text-blue-600 border-blue-600">Ready</Badge>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 border rounded-lg bg-gradient-to-br from-green-50 to-emerald-100">
+              <h4 className="font-medium mb-2 flex items-center">
+                <Users className="w-4 h-4 mr-2 text-green-600" />
+                User Management
+              </h4>
+              <p className="text-sm text-gray-600 mb-3">
+                Direct access to user accounts and subscription management
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span>Account Search</span>
+                  <Badge variant="outline" className="text-green-600 border-green-600">Active</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Subscription Control</span>
+                  <Badge variant="outline" className="text-green-600 border-green-600">Active</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Document Validation</span>
+                  <Badge variant="outline" className="text-green-600 border-green-600">Active</Badge>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start">
+              <div className="bg-amber-100 p-2 rounded-lg mr-3">
+                <ExternalLink className="w-4 h-4 text-amber-600" />
+              </div>
+              <div>
+                <h5 className="font-medium text-amber-800 mb-1">TalkJS Integration Setup Required</h5>
+                <p className="text-sm text-amber-700 mb-2">
+                  To enable live chat support, configure your TalkJS API credentials in the environment settings.
+                </p>
+                <p className="text-xs text-amber-600">
+                  Contact your system administrator to set up VITE_TALKJS_APP_ID for full chat functionality.
+                </p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
