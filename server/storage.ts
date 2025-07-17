@@ -149,6 +149,40 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  // ISF Filing operations
+  async getIsfFilingsByUserId(userId: string): Promise<IsfFiling[]> {
+    const filings = await db.select().from(isfFilings).where(eq(isfFilings.userId, userId));
+    return filings;
+  }
+
+  async getIsfFilingById(id: number): Promise<IsfFiling | undefined> {
+    const [filing] = await db.select().from(isfFilings).where(eq(isfFilings.id, id));
+    return filing;
+  }
+
+  async createIsfFiling(filingData: InsertIsfFiling): Promise<IsfFiling> {
+    const [filing] = await db
+      .insert(isfFilings)
+      .values(filingData)
+      .returning();
+    return filing;
+  }
+
+  async updateIsfFiling(id: number, updates: Partial<InsertIsfFiling>): Promise<IsfFiling> {
+    const [filing] = await db
+      .update(isfFilings)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(isfFilings.id, id))
+      .returning();
+    return filing;
+  }
+
+  async generateIsfNumber(): Promise<string> {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    return `ISF${timestamp}${random}`;
+  }
+
   async updateUser(id: string, userData: Partial<UpsertUser>): Promise<User> {
     const [user] = await db
       .update(users)

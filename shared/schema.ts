@@ -338,8 +338,8 @@ export const isfFilings = pgTable("isf_filings", {
   bookingPartyCity: varchar("booking_party_city").notNull(),
   bookingPartyCountry: varchar("booking_party_country").notNull(),
   
-  // +2. Foreign Port of Unlading
-  foreignPortOfUnlading: varchar("foreign_port_of_unlading").notNull(),
+  // +2. Foreign Port of Unlading (same as foreign port of lading for most cases)
+  foreignPortOfUnlading: varchar("foreign_port_of_unlading"),
   
   // Shipment Details
   billOfLading: varchar("bill_of_lading"),

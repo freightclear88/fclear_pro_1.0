@@ -18,10 +18,94 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { IsfFiling } from "@shared/schema";
 
-// ISF Form Schema with all required fields
+// ISF 10+2 Form Schema with all mandatory CBP fields
 const isfFormSchema = z.object({
-  // Importer Information
-  importerOfRecord: z.string().min(1, "Importer of Record is required"),
+  // ISF 10 Required Data Elements (from Importer)
+  
+  // 1. Seller (Entity that sold the goods to the buyer)
+  sellerName: z.string().min(1, "Seller name is required"),
+  sellerAddress: z.string().min(1, "Seller address is required"),
+  sellerCity: z.string().min(1, "Seller city is required"),
+  sellerState: z.string().optional(),
+  sellerCountry: z.string().min(1, "Seller country is required"),
+
+  // 2. Buyer (Entity to whom the goods are sold) 
+  buyerName: z.string().min(1, "Buyer name is required"),
+  buyerAddress: z.string().min(1, "Buyer address is required"),
+  buyerCity: z.string().min(1, "Buyer city is required"),
+  buyerState: z.string().optional(),
+  buyerZip: z.string().optional(),
+  buyerCountry: z.string().min(1, "Buyer country is required"),
+
+  // 3. Importer of Record Number (IRS/EIN/SSN/CBP number)
+  importerOfRecord: z.string().min(1, "Importer of Record Number is required"),
+
+  // 4. Consignee Number (IRS/EIN/SSN/CBP number) 
+  consigneeNumber: z.string().min(1, "Consignee Number is required"),
+
+  // 5. Manufacturer/Supplier (Last entity that manufactured/assembled the goods)
+  manufacturerName: z.string().min(1, "Manufacturer name is required"),
+  manufacturerAddress: z.string().min(1, "Manufacturer address is required"),
+  manufacturerCity: z.string().min(1, "Manufacturer city is required"),
+  manufacturerState: z.string().optional(),
+  manufacturerCountry: z.string().min(1, "Manufacturer country is required"),
+
+  // 6. Ship-to Party (First party to receive goods after customs release)
+  shipToPartyName: z.string().min(1, "Ship-to party name is required"),
+  shipToPartyAddress: z.string().min(1, "Ship-to party address is required"),
+  shipToPartyCity: z.string().min(1, "Ship-to party city is required"),
+  shipToPartyState: z.string().min(1, "Ship-to party state is required"),
+  shipToPartyZip: z.string().min(1, "Ship-to party ZIP is required"),
+  shipToPartyCountry: z.string().default("US"),
+
+  // 7. Country of Origin (Where goods were manufactured/produced/grown)
+  countryOfOrigin: z.string().min(1, "Country of origin is required"),
+
+  // 8. Harmonized Tariff Schedule Number (10-digit for unified filing)
+  htsusNumber: z.string().min(10, "HTS number must be 10 digits for unified filing").max(10, "HTS number must be exactly 10 digits"),
+
+  // 9. Container Stuffing Location (Can be filed later - flexible timing)
+  containerStuffingLocation: z.string().min(1, "Container stuffing location is required"),
+  containerStuffingCity: z.string().min(1, "Container stuffing city is required"),
+  containerStuffingState: z.string().optional(),
+  containerStuffingCountry: z.string().min(1, "Container stuffing country is required"),
+
+  // 10. Consolidator/Stuffer (Can be filed later - flexible timing)
+  consolidatorName: z.string().min(1, "Consolidator/Stuffer name is required"),
+  consolidatorAddress: z.string().min(1, "Consolidator address is required"),
+  consolidatorCity: z.string().min(1, "Consolidator city is required"),
+  consolidatorState: z.string().optional(),
+  consolidatorCountry: z.string().min(1, "Consolidator country is required"),
+
+  // Additional Required Fields for Complete ISF
+  
+  // Bill of Lading (Links ISF to manifest data)
+  billOfLading: z.string().min(1, "Bill of Lading number is required"),
+  
+  // Vessel Information
+  vesselName: z.string().min(1, "Vessel name is required"),
+  voyageNumber: z.string().min(1, "Voyage number is required"),
+  
+  // Port Information
+  foreignPortOfLading: z.string().min(1, "Foreign port of lading is required"),
+  portOfEntry: z.string().min(1, "US port of entry is required"),
+  
+  // Dates
+  estimatedDepartureDate: z.string().min(1, "Estimated departure date is required"),
+  estimatedArrivalDate: z.string().min(1, "Estimated arrival date is required"),
+
+  // Container Information
+  containerNumbers: z.string().min(1, "Container numbers are required"),
+
+  // Commercial Information (Optional but commonly included)
+  commodityDescription: z.string().min(1, "Commodity description is required"),
+  invoiceNumber: z.string().optional(),
+  invoiceDate: z.string().optional(),
+  invoiceValue: z.string().optional(),
+  currency: z.string().default("USD"),
+  terms: z.string().optional(), // FOB, CIF, etc.
+  
+  // Additional party information for completeness
   importerName: z.string().min(1, "Importer name is required"),
   importerAddress: z.string().min(1, "Importer address is required"),
   importerCity: z.string().min(1, "Importer city is required"),
@@ -29,82 +113,12 @@ const isfFormSchema = z.object({
   importerZip: z.string().min(1, "Importer ZIP is required"),
   importerCountry: z.string().default("US"),
 
-  // Consignee Information
-  consigneeNumber: z.string().min(1, "Consignee number is required"),
   consigneeName: z.string().min(1, "Consignee name is required"),
   consigneeAddress: z.string().min(1, "Consignee address is required"),
   consigneeCity: z.string().min(1, "Consignee city is required"),
   consigneeState: z.string().min(1, "Consignee state is required"),
   consigneeZip: z.string().min(1, "Consignee ZIP is required"),
   consigneeCountry: z.string().default("US"),
-
-  // Manufacturer Information
-  manufacturerName: z.string().min(1, "Manufacturer name is required"),
-  manufacturerAddress: z.string().min(1, "Manufacturer address is required"),
-  manufacturerCity: z.string().min(1, "Manufacturer city is required"),
-  manufacturerState: z.string().optional(),
-  manufacturerCountry: z.string().min(1, "Manufacturer country is required"),
-
-  // Ship To Party Information
-  shipToPartyName: z.string().min(1, "Ship to party name is required"),
-  shipToPartyAddress: z.string().min(1, "Ship to party address is required"),
-  shipToPartyCity: z.string().min(1, "Ship to party city is required"),
-  shipToPartyState: z.string().min(1, "Ship to party state is required"),
-  shipToPartyZip: z.string().min(1, "Ship to party ZIP is required"),
-  shipToPartyCountry: z.string().default("US"),
-
-  // Commodity Information
-  countryOfOrigin: z.string().min(1, "Country of origin is required"),
-  htsusNumber: z.string().min(6, "HTSUS number must be at least 6 digits"),
-  commodityDescription: z.string().min(1, "Commodity description is required"),
-
-  // Container Information
-  containerStuffingLocation: z.string().min(1, "Container stuffing location is required"),
-  containerStuffingCity: z.string().min(1, "Container stuffing city is required"),
-  containerStuffingCountry: z.string().min(1, "Container stuffing country is required"),
-
-  // Optional fields
-  consolidatorName: z.string().optional(),
-  consolidatorAddress: z.string().optional(),
-  consolidatorCity: z.string().optional(),
-  consolidatorCountry: z.string().optional(),
-
-  buyerName: z.string().optional(),
-  buyerAddress: z.string().optional(),
-  buyerCity: z.string().optional(),
-  buyerState: z.string().optional(),
-  buyerZip: z.string().optional(),
-  buyerCountry: z.string().optional(),
-
-  sellerName: z.string().optional(),
-  sellerAddress: z.string().optional(),
-  sellerCity: z.string().optional(),
-  sellerState: z.string().optional(),
-  sellerCountry: z.string().optional(),
-
-  // Booking Party Information (+1)
-  bookingPartyName: z.string().min(1, "Booking party name is required"),
-  bookingPartyAddress: z.string().min(1, "Booking party address is required"),
-  bookingPartyCity: z.string().min(1, "Booking party city is required"),
-  bookingPartyCountry: z.string().min(1, "Booking party country is required"),
-
-  // Foreign Port (+2)
-  foreignPortOfUnlading: z.string().min(1, "Foreign port of unlading is required"),
-
-  // Shipment Details
-  billOfLading: z.string().optional(),
-  containerNumbers: z.string().optional(),
-  vesselName: z.string().optional(),
-  voyageNumber: z.string().optional(),
-  estimatedArrivalDate: z.string().optional(),
-  portOfEntry: z.string().min(1, "Port of entry is required"),
-
-  // Commercial Information
-  invoiceNumber: z.string().optional(),
-  invoiceDate: z.string().optional(),
-  invoiceValue: z.string().optional(),
-  currency: z.string().default("USD"),
-  terms: z.string().optional(),
 });
 
 type IsfFormData = z.infer<typeof isfFormSchema>;
@@ -297,24 +311,24 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
 
         {/* ISF 10+2 Required Data Elements */}
         <div className="grid gap-6">
-          {/* 1. Importer Information */}
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          {/* 1. Seller Information */}
+          <Card className="bg-gradient-to-r from-red-50 to-pink-50 border-red-200">
             <CardHeader>
-              <CardTitle className="text-blue-700 flex items-center">
+              <CardTitle className="text-red-700 flex items-center">
                 <Building2 className="w-5 h-5 mr-2" />
-                1. Importer of Record Information
+                1. Seller Information
               </CardTitle>
-              <CardDescription>Primary importer responsible for the shipment</CardDescription>
+              <CardDescription>Last known entity that sold the goods to the buyer</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="importerOfRecord"
+                name="sellerName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Importer of Record Number *</FormLabel>
+                    <FormLabel>Seller Name *</FormLabel>
                     <FormControl>
-                      <Input placeholder="IOR Number or FTZ ID" {...field} />
+                      <Input placeholder="Selling company name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -322,12 +336,785 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
               />
               <FormField
                 control={form.control}
+                name="sellerCountry"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Seller Country *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country} value={country}>{country}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="sellerAddress"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Seller Address *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Complete seller address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="sellerCity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="City" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="sellerState"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State/Province</FormLabel>
+                    <FormControl>
+                      <Input placeholder="State or Province (if applicable)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 2. Buyer Information */}
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+            <CardHeader>
+              <CardTitle className="text-blue-700 flex items-center">
+                <Building2 className="w-5 h-5 mr-2" />
+                2. Buyer Information
+              </CardTitle>
+              <CardDescription>Entity to whom the goods are sold</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="buyerName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Buyer Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Buying company name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="buyerCountry"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Buyer Country *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || "United States"}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="United States">United States</SelectItem>
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country} value={country}>{country}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="buyerAddress"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Buyer Address *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Complete buyer address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="buyerCity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="City" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="buyerState"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State/Province</FormLabel>
+                    <FormControl>
+                      <Input placeholder="State or Province" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="buyerZip"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ZIP/Postal Code</FormLabel>
+                    <FormControl>
+                      <Input placeholder="ZIP or Postal Code" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 3. Importer of Record Number */}
+          <Card className="bg-gradient-to-r from-purple-50 to-violet-50 border-purple-200">
+            <CardHeader>
+              <CardTitle className="text-purple-700 flex items-center">
+                <FileText className="w-5 h-5 mr-2" />
+                3. Importer of Record Number
+              </CardTitle>
+              <CardDescription>IRS number, EIN, SSN, or CBP-assigned number</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="importerOfRecord"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Importer of Record Number *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="EIN, IRS Number, SSN, or CBP-assigned number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 4. Consignee Number */}
+          <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+            <CardHeader>
+              <CardTitle className="text-green-700 flex items-center">
+                <FileText className="w-5 h-5 mr-2" />
+                4. Consignee Number
+              </CardTitle>
+              <CardDescription>IRS number, EIN, SSN, or CBP-assigned number of US consignee</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="consigneeNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Consignee Number *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="EIN, IRS Number, SSN, or CBP-assigned number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 5. Manufacturer/Supplier */}
+          <Card className="bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200">
+            <CardHeader>
+              <CardTitle className="text-orange-700 flex items-center">
+                <Building2 className="w-5 h-5 mr-2" />
+                5. Manufacturer/Supplier
+              </CardTitle>
+              <CardDescription>Last entity that manufactured, assembled, produced, or grew the goods</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="manufacturerName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Manufacturer Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Manufacturing company name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="manufacturerCountry"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Manufacturer Country *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country} value={country}>{country}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="manufacturerAddress"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Manufacturer Address *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Complete manufacturer address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="manufacturerCity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="City" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="manufacturerState"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State/Province</FormLabel>
+                    <FormControl>
+                      <Input placeholder="State or Province (if applicable)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 6. Ship-to Party */}
+          <Card className="bg-gradient-to-r from-teal-50 to-cyan-50 border-teal-200">
+            <CardHeader>
+              <CardTitle className="text-teal-700 flex items-center">
+                <MapPin className="w-5 h-5 mr-2" />
+                6. Ship-to Party
+              </CardTitle>
+              <CardDescription>First party to physically receive goods after customs release</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="shipToPartyName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ship-to Party Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Final delivery party name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="shipToPartyCountry"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country *</FormLabel>
+                    <FormControl>
+                      <Input value="US" disabled />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="shipToPartyAddress"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Ship-to Address *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Final delivery address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="shipToPartyCity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="City" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="shipToPartyState"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select state" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {US_STATES.map((state) => (
+                          <SelectItem key={state} value={state}>{state}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="shipToPartyZip"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ZIP Code *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="ZIP Code" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 7. Country of Origin */}
+          <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200">
+            <CardHeader>
+              <CardTitle className="text-yellow-700 flex items-center">
+                <MapPin className="w-5 h-5 mr-2" />
+                7. Country of Origin
+              </CardTitle>
+              <CardDescription>Country where goods were manufactured, produced, or grown</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="countryOfOrigin"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country of Origin *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select origin country" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country} value={country}>{country}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 8. HTS Number */}
+          <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
+            <CardHeader>
+              <CardTitle className="text-indigo-700 flex items-center">
+                <FileText className="w-5 h-5 mr-2" />
+                8. Harmonized Tariff Schedule (HTS) Number
+              </CardTitle>
+              <CardDescription>10-digit HTS classification number (required for unified filing)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="htsusNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>HTS Number (10 digits) *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="1234567890" 
+                        maxLength={10}
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 9. Container Stuffing Location */}
+          <Card className="bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200">
+            <CardHeader>
+              <CardTitle className="text-gray-700 flex items-center">
+                <MapPin className="w-5 h-5 mr-2" />
+                9. Container Stuffing Location
+              </CardTitle>
+              <CardDescription>Physical location where goods were stuffed into container (flexible timing)</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="containerStuffingLocation"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Stuffing Location *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Name and address of stuffing location" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="containerStuffingCity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Stuffing city" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="containerStuffingCountry"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country} value={country}>{country}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 10. Consolidator/Stuffer */}
+          <Card className="bg-gradient-to-r from-rose-50 to-pink-50 border-rose-200">
+            <CardHeader>
+              <CardTitle className="text-rose-700 flex items-center">
+                <Building2 className="w-5 h-5 mr-2" />
+                10. Consolidator/Stuffer
+              </CardTitle>
+              <CardDescription>Party who stuffed the container or arranged for stuffing (flexible timing)</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="consolidatorName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Consolidator Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Consolidator company name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="consolidatorCountry"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country} value={country}>{country}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="consolidatorAddress"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Consolidator Address *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Complete consolidator address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="consolidatorCity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="City" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="consolidatorState"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State/Province</FormLabel>
+                    <FormControl>
+                      <Input placeholder="State or Province (if applicable)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Shipment Information Section */}
+          <Card className="bg-gradient-to-r from-slate-50 to-gray-50 border-slate-200">
+            <CardHeader>
+              <CardTitle className="text-slate-700 flex items-center">
+                <Ship className="w-5 h-5 mr-2" />
+                Shipment Details
+              </CardTitle>
+              <CardDescription>Required shipment and vessel information</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="billOfLading"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bill of Lading Number *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Master BL or House BL number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="containerNumbers"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Container Numbers *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Container numbers (comma-separated)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="vesselName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vessel Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Name of carrying vessel" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="voyageNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Voyage Number *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Voyage or trip number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="foreignPortOfLading"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Foreign Port of Lading *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Port where cargo was loaded" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="portOfEntry"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>US Port of Entry *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select US port" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Los Angeles">Los Angeles, CA</SelectItem>
+                        <SelectItem value="Long Beach">Long Beach, CA</SelectItem>
+                        <SelectItem value="New York">New York, NY</SelectItem>
+                        <SelectItem value="Newark">Newark, NJ</SelectItem>
+                        <SelectItem value="Savannah">Savannah, GA</SelectItem>
+                        <SelectItem value="Charleston">Charleston, SC</SelectItem>
+                        <SelectItem value="Houston">Houston, TX</SelectItem>
+                        <SelectItem value="Seattle">Seattle, WA</SelectItem>
+                        <SelectItem value="Oakland">Oakland, CA</SelectItem>
+                        <SelectItem value="Miami">Miami, FL</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="estimatedDepartureDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estimated Departure Date *</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="estimatedArrivalDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estimated Arrival Date *</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Importer Contact Information */}
+          <Card className="bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200">
+            <CardHeader>
+              <CardTitle className="text-cyan-700 flex items-center">
+                <Building2 className="w-5 h-5 mr-2" />
+                Importer Contact Information
+              </CardTitle>
+              <CardDescription>Complete importer details for ISF filing</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="importerName"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Importer Name *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Company Name" {...field} />
+                      <Input placeholder="Importer company name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="importerCountry"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country *</FormLabel>
+                    <FormControl>
+                      <Input value="US" disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -338,9 +1125,9 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                 name="importerAddress"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
-                    <FormLabel>Address *</FormLabel>
+                    <FormLabel>Importer Address *</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Street Address" {...field} />
+                      <Textarea placeholder="Complete importer address" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -397,29 +1184,16 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
             </CardContent>
           </Card>
 
-          {/* 2. Consignee Information */}
-          <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+          {/* Consignee Contact Information */}
+          <Card className="bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200">
             <CardHeader>
-              <CardTitle className="text-green-700 flex items-center">
+              <CardTitle className="text-emerald-700 flex items-center">
                 <Building2 className="w-5 h-5 mr-2" />
-                2. Consignee Information
+                Consignee Contact Information
               </CardTitle>
-              <CardDescription>Party to whom the goods are consigned</CardDescription>
+              <CardDescription>Complete consignee details for ISF filing</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="consigneeNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Consignee Number *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Consignee ID" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <FormField
                 control={form.control}
                 name="consigneeName"
@@ -427,7 +1201,20 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                   <FormItem>
                     <FormLabel>Consignee Name *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Company Name" {...field} />
+                      <Input placeholder="Consignee company name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="consigneeCountry"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country *</FormLabel>
+                    <FormControl>
+                      <Input value="US" disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -438,9 +1225,9 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                 name="consigneeAddress"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
-                    <FormLabel>Address *</FormLabel>
+                    <FormLabel>Consignee Address *</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Street Address" {...field} />
+                      <Textarea placeholder="Complete consignee address" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -497,7 +1284,120 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
             </CardContent>
           </Card>
 
-          {/* Continue with remaining sections... This is getting quite long, so I'll create the core sections */}
+          {/* Commercial Information */}
+          <Card className="bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200">
+            <CardHeader>
+              <CardTitle className="text-amber-700 flex items-center">
+                <FileText className="w-5 h-5 mr-2" />
+                Commercial Information
+              </CardTitle>
+              <CardDescription>Commodity and commercial details</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="commodityDescription"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Commodity Description *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Detailed description of goods" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="invoiceNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Commercial Invoice Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Invoice number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="invoiceDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Invoice Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="invoiceValue"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Invoice Value</FormLabel>
+                    <FormControl>
+                      <Input placeholder="0.00" type="number" step="0.01" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="currency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Currency</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || "USD"}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="CNY">CNY</SelectItem>
+                        <SelectItem value="JPY">JPY</SelectItem>
+                        <SelectItem value="GBP">GBP</SelectItem>
+                        <SelectItem value="CAD">CAD</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="terms"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Terms of Sale</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select terms" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="FOB">FOB - Free on Board</SelectItem>
+                        <SelectItem value="CIF">CIF - Cost, Insurance & Freight</SelectItem>
+                        <SelectItem value="CFR">CFR - Cost and Freight</SelectItem>
+                        <SelectItem value="EXW">EXW - Ex Works</SelectItem>
+                        <SelectItem value="FCA">FCA - Free Carrier</SelectItem>
+                        <SelectItem value="DDP">DDP - Delivered Duty Paid</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
           
           {/* Submit Button */}
           <div className="flex justify-end pt-6">

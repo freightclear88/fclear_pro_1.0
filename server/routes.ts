@@ -3318,7 +3318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ISF Filing Routes
-  app.get('/api/isf/filings', isAuthenticated, async (req: any, res) => {
+  app.get('/api/isf/filings', async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const filings = await storage.getIsfFilingsByUserId(userId);
@@ -3329,7 +3329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/isf/filings/:id', isAuthenticated, async (req: any, res) => {
+  app.get('/api/isf/filings/:id', async (req: any, res) => {
     try {
       const { id } = req.params;
       const filing = await storage.getIsfFilingById(parseInt(id));
