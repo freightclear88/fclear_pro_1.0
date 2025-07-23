@@ -20,7 +20,7 @@ import zendesk from 'node-zendesk';
 const zendeskClient = zendesk.createClient({
   username: process.env.ZENDESK_USERNAME || 'admin@freightclear.com',
   token: process.env.ZENDESK_API_TOKEN || 'your-api-token',
-  remoteUri: process.env.ZENDESK_URI || 'https://freightclear.zendesk.com/api/v2',
+  remoteUri: 'https://wcscargo.zendesk.com/api/v2',
 });
 
 // Email configuration
@@ -4149,14 +4149,29 @@ function generateIsfXml(formData: any, isfNumber: string): string {
   // Zendesk API routes for admin and agent dashboards
   app.get('/api/zendesk/tickets', requireAgent, async (req: any, res) => {
     try {
-      const { status = 'open', per_page = 25 } = req.query;
+      const { status = 'open', per_page = 25, sort_by = 'created_at', sort_order = 'desc' } = req.query;
       
-      // Mock response until Zendesk is configured
-      res.json({
-        tickets: [],
-        total: 0,
-        isConfigured: false,
-        message: "Zendesk API not configured. Please set ZENDESK_USERNAME, ZENDESK_API_TOKEN, and ZENDESK_URI environment variables."
+      // Get tickets from Zendesk
+      zendeskClient.tickets.list({
+        status,
+        per_page: parseInt(per_page),
+        sort_by,
+        sort_order
+      }, (err: any, statusList: any, body: any, responseList: any, resultList: any) => {
+        if (err) {
+          console.error('Zendesk API error:', err);
+          return res.status(500).json({ 
+            message: "Failed to fetch tickets from Zendesk",
+            error: err.message,
+            isConfigured: false
+          });
+        }
+        
+        res.json({
+          tickets: resultList || [],
+          total: body?.count || 0,
+          isConfigured: true
+        });
       });
     } catch (error) {
       console.error("Error fetching Zendesk tickets:", error);
@@ -4169,10 +4184,36 @@ function generateIsfXml(formData: any, isfNumber: string): string {
 
   app.post('/api/zendesk/tickets', requireAgent, async (req: any, res) => {
     try {
-      // Mock response until Zendesk is configured
-      res.status(500).json({
-        message: "Zendesk API not configured. Please set ZENDESK_USERNAME, ZENDESK_API_TOKEN, and ZENDESK_URI environment variables.",
-        isConfigured: false
+      const { subject, description, priority = 'normal', type = 'question', requester_email, tags } = req.body;
+      
+      if (!subject || !description) {
+        return res.status(400).json({ message: "Subject and description are required" });
+      }
+
+      const ticketData = {
+        subject,
+        comment: { body: description },
+        priority,
+        type,
+        requester: { email: requester_email || 'noreply@freightclear.com' },
+        tags: tags || ['freightclear', 'workflow']
+      };
+
+      zendeskClient.tickets.create({
+        ticket: ticketData
+      }, (err: any, req: any, result: any) => {
+        if (err) {
+          console.error('Zendesk ticket creation error:', err);
+          return res.status(500).json({ 
+            message: "Failed to create ticket in Zendesk",
+            error: err.message 
+          });
+        }
+        
+        res.status(201).json({
+          message: "Ticket created successfully",
+          ticket: result
+        });
       });
     } catch (error) {
       console.error("Error creating Zendesk ticket:", error);
@@ -4180,15 +4221,108 @@ function generateIsfXml(formData: any, isfNumber: string): string {
     }
   });
 
+  app.patch('/api/zendesk/tickets/:ticketId', requireAgent, async (req: any, res) => {
+    try {
+      const { ticketId } = req.params;
+      const { status, priority, assignee_id, comment } = req.body;
+      
+      const updateData: any = {};
+      if (status) updateData.status = status;
+      if (priority) updateData.priority = priority;
+      if (assignee_id) updateData.assignee_id = assignee_id;
+      if (comment) updateData.comment = { body: comment, public: false };
+
+      zendeskClient.tickets.update(ticketId, {
+        ticket: updateData
+      }, (err: any, req: any, result: any) => {
+        if (err) {
+          console.error('Zendesk ticket update error:', err);
+          return res.status(500).json({ 
+            message: "Failed to update ticket in Zendesk",
+            error: err.message 
+          });
+        }
+        
+        res.json({
+          message: "Ticket updated successfully",
+          ticket: result
+        });
+      });
+    } catch (error) {
+      console.error("Error updating Zendesk ticket:", error);
+      res.status(500).json({ message: "Failed to update ticket" });
+    }
+  });
+
+  app.get('/api/zendesk/users', requireAgent, async (req: any, res) => {
+    try {
+      const { query = '', per_page = 25 } = req.query;
+      
+      if (query) {
+        zendeskClient.users.search({ query, per_page: parseInt(per_page) }, (err: any, statusList: any, body: any, responseList: any, resultList: any) => {
+          if (err) {
+            console.error('Zendesk user search error:', err);
+            return res.status(500).json({ message: "Failed to search users" });
+          }
+          
+          res.json({
+            users: resultList || [],
+            total: body?.count || 0
+          });
+        });
+      } else {
+        zendeskClient.users.list({ per_page: parseInt(per_page) }, (err: any, statusList: any, body: any, responseList: any, resultList: any) => {
+          if (err) {
+            console.error('Zendesk users list error:', err);
+            return res.status(500).json({ message: "Failed to fetch users" });
+          }
+          
+          res.json({
+            users: resultList || [],
+            total: body?.count || 0
+          });
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching Zendesk users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
   app.get('/api/zendesk/stats', requireAgent, async (req: any, res) => {
     try {
-      res.json({
+      // Get basic ticket statistics
+      const stats = {
         open_tickets: 0,
         pending_tickets: 0,
         solved_tickets: 0,
         total_tickets: 0,
-        isConfigured: false,
-        message: "Zendesk API not configured"
+        isConfigured: true
+      };
+
+      // Get open tickets count
+      zendeskClient.tickets.list({ status: 'open', per_page: 1 }, (err: any, statusList: any, body: any) => {
+        if (!err && body) stats.open_tickets = body.count || 0;
+        
+        // Get pending tickets count
+        zendeskClient.tickets.list({ status: 'pending', per_page: 1 }, (err2: any, statusList2: any, body2: any) => {
+          if (!err2 && body2) stats.pending_tickets = body2.count || 0;
+          
+          // Get solved tickets count (last 30 days)
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          
+          zendeskClient.tickets.list({ 
+            status: 'solved', 
+            per_page: 1,
+            created_after: thirtyDaysAgo.toISOString()
+          }, (err3: any, statusList3: any, body3: any) => {
+            if (!err3 && body3) stats.solved_tickets = body3.count || 0;
+            stats.total_tickets = stats.open_tickets + stats.pending_tickets + stats.solved_tickets;
+            
+            res.json(stats);
+          });
+        });
       });
     } catch (error) {
       console.error("Error fetching Zendesk stats:", error);
