@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Ship, Truck, Plane, FileText, Download, Search, Plus, Shield, Users, FolderOpen, UploadCloud, UserPlus, Receipt } from "lucide-react";
+import { Ship, Truck, Plane, FileText, Download, Search, Plus, Shield, Users, FolderOpen, UploadCloud, UserPlus, Receipt, Headphones } from "lucide-react";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
 import CreateShipmentDialog from "@/components/CreateShipmentDialog";
