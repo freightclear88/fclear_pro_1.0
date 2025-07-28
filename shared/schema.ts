@@ -76,6 +76,7 @@ export const users = pgTable("users", {
   // Access control flags
   isAdmin: boolean("is_admin").default(false),
   isAgent: boolean("is_agent").default(false),
+  assignedAgentId: varchar("assigned_agent_id"),
   canAccessAdvancedReports: boolean("can_access_advanced_reports").default(false),
   canAccessAPIIntegration: boolean("can_access_api_integration").default(false),
   canAccessPremiumSupport: boolean("can_access_premium_support").default(false),
@@ -446,6 +447,22 @@ export type UserInvitation = typeof userInvitations.$inferSelect;
 export type InsertIsfFiling = typeof isfFilings.$inferInsert;
 export type IsfFiling = typeof isfFilings.$inferSelect;
 
+// Agent assignments table for tracking agent-user relationships
+export const agentAssignments = pgTable("agent_assignments", {
+  id: serial("id").primaryKey(),
+  agentId: varchar("agent_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  assignedAt: timestamp("assigned_at").defaultNow(),
+  assignedBy: varchar("assigned_by").notNull(), // admin who made the assignment
+  isActive: boolean("is_active").default(true),
+  notes: text("notes"), // optional notes about the assignment
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type InsertAgentAssignment = typeof agentAssignments.$inferInsert;
+export type AgentAssignment = typeof agentAssignments.$inferSelect;
+
 // Insert schemas
 export const insertShipmentSchema = createInsertSchema(shipments).omit({
   id: true,
@@ -494,4 +511,11 @@ export const insertIsfFilingSchema = createInsertSchema(isfFilings).omit({
   submittedAt: true,
   filingDate: true,
   paidAt: true,
+});
+
+export const insertAgentAssignmentSchema = createInsertSchema(agentAssignments).omit({
+  id: true,
+  assignedAt: true,
+  createdAt: true,
+  updatedAt: true,
 });

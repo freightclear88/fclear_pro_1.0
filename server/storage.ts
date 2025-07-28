@@ -10,6 +10,7 @@ import {
   aiTrainingData,
   userInvitations,
   isfFilings,
+  agentAssignments,
   type User,
   type UpsertUser,
   type Shipment,
@@ -32,7 +33,8 @@ import {
   type InsertUserInvitation,
   type IsfFiling,
   type InsertIsfFiling,
-  isfFilings,
+  type AgentAssignment,
+  type InsertAgentAssignment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -120,6 +122,15 @@ export interface IStorage {
   createIsfFiling(filing: InsertIsfFiling): Promise<IsfFiling>;
   updateIsfFiling(id: number, filing: Partial<InsertIsfFiling>): Promise<IsfFiling>;
   generateIsfNumber(): Promise<string>;
+
+  // Agent assignment operations
+  assignAgentToUser(assignment: InsertAgentAssignment): Promise<AgentAssignment>;
+  removeAgentFromUser(agentId: string, userId: string): Promise<void>;
+  getAgentAssignments(agentId: string): Promise<AgentAssignment[]>;
+  getUsersByAgent(agentId: string): Promise<User[]>;
+  getAgentForUser(userId: string): Promise<User | undefined>;
+  getAllAgentAssignments(): Promise<AgentAssignment[]>;
+  updateAssignedAgent(userId: string, newAgentId: string | null, assignedBy: string): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -695,6 +706,126 @@ export class DatabaseStorage implements IStorage {
     
     const nextNumber = (existingFilings.length + 1).toString().padStart(6, '0');
     return `${prefix}${nextNumber}`;
+  }
+
+  // Agent assignment operations
+  async assignAgentToUser(assignment: InsertAgentAssignment): Promise<AgentAssignment> {
+    // First deactivate any existing assignments for this user
+    await db
+      .update(agentAssignments)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(and(
+        eq(agentAssignments.userId, assignment.userId),
+        eq(agentAssignments.isActive, true)
+      ));
+
+    // Create the new assignment
+    const [newAssignment] = await db
+      .insert(agentAssignments)
+      .values(assignment)
+      .returning();
+
+    // Update the user's assignedAgentId field
+    await db
+      .update(users)
+      .set({ 
+        assignedAgentId: assignment.agentId,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, assignment.userId));
+
+    return newAssignment;
+  }
+
+  async removeAgentFromUser(agentId: string, userId: string): Promise<void> {
+    // Deactivate the assignment
+    await db
+      .update(agentAssignments)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(and(
+        eq(agentAssignments.agentId, agentId),
+        eq(agentAssignments.userId, userId),
+        eq(agentAssignments.isActive, true)
+      ));
+
+    // Clear the user's assignedAgentId
+    await db
+      .update(users)
+      .set({ 
+        assignedAgentId: null,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async getAgentAssignments(agentId: string): Promise<AgentAssignment[]> {
+    return await db
+      .select()
+      .from(agentAssignments)
+      .where(and(
+        eq(agentAssignments.agentId, agentId),
+        eq(agentAssignments.isActive, true)
+      ))
+      .orderBy(desc(agentAssignments.assignedAt));
+  }
+
+  async getUsersByAgent(agentId: string): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.assignedAgentId, agentId))
+      .orderBy(desc(users.createdAt));
+  }
+
+  async getAgentForUser(userId: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId));
+
+    if (!user?.assignedAgentId) {
+      return undefined;
+    }
+
+    const [agent] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, user.assignedAgentId));
+
+    return agent;
+  }
+
+  async getAllAgentAssignments(): Promise<AgentAssignment[]> {
+    return await db
+      .select()
+      .from(agentAssignments)
+      .where(eq(agentAssignments.isActive, true))
+      .orderBy(desc(agentAssignments.assignedAt));
+  }
+
+  async updateAssignedAgent(userId: string, newAgentId: string | null, assignedBy: string): Promise<User> {
+    if (newAgentId) {
+      // Create new assignment
+      await this.assignAgentToUser({
+        agentId: newAgentId,
+        userId,
+        assignedBy,
+        isActive: true,
+        notes: `Assigned by ${assignedBy}`
+      });
+    } else {
+      // Remove existing assignment
+      const user = await this.getUser(userId);
+      if (user?.assignedAgentId) {
+        await this.removeAgentFromUser(user.assignedAgentId, userId);
+      }
+    }
+
+    const updatedUser = await this.getUser(userId);
+    if (!updatedUser) {
+      throw new Error('User not found');
+    }
+    return updatedUser;
   }
 }
 

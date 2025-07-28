@@ -71,8 +71,12 @@ export default function Agent() {
   const [transportFilter, setTransportFilter] = useState("all");
   const [expandedShipments, setExpandedShipments] = useState<Set<number>>(new Set());
 
+  const { data: assignedUsers = [] } = useQuery<any[]>({
+    queryKey: ["/api/agent/assigned-users"],
+  });
+
   const { data: allShipments = [], isLoading: shipmentsLoading } = useQuery({
-    queryKey: ["/api/agent/shipments"],
+    queryKey: ["/api/admin/shipments"],
     retry: false,
   });
 
@@ -122,7 +126,7 @@ export default function Agent() {
             Agent Dashboard
           </h1>
           <p className="text-gray-600 mt-2">
-            Manage all shipments and documents across the platform
+            Manage assigned users and their shipments
           </p>
         </div>
         <div className="flex gap-3">
@@ -177,13 +181,11 @@ export default function Agent() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+            <CardTitle className="text-sm font-medium">Assigned Users</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {new Set((allShipments as Shipment[]).map((s: Shipment) => s.userId)).size}
-            </div>
+            <div className="text-2xl font-bold">{assignedUsers.length}</div>
           </CardContent>
         </Card>
       </div>

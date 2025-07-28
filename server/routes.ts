@@ -4378,6 +4378,179 @@ function generateIsfXml(formData: any, isfNumber: string): string {
     }
   });
 
+  // Agent assignment routes
+  app.get('/api/admin/agents', requireAdmin, async (req: any, res) => {
+    try {
+      const agents = await storage.getAllUsers();
+      const agentUsers = agents.filter(user => user.isAgent);
+      res.json(agentUsers);
+    } catch (error) {
+      console.error("Error fetching agents:", error);
+      res.status(500).json({ message: "Failed to fetch agents" });
+    }
+  });
+
+  app.get('/api/admin/agent-assignments', requireAdmin, async (req: any, res) => {
+    try {
+      const assignments = await storage.getAllAgentAssignments();
+      res.json(assignments);
+    } catch (error) {
+      console.error("Error fetching agent assignments:", error);
+      res.status(500).json({ message: "Failed to fetch agent assignments" });
+    }
+  });
+
+  app.post('/api/admin/assign-agent', requireAdmin, async (req: any, res) => {
+    try {
+      const { userId, agentId, notes } = req.body;
+      
+      if (!userId || !agentId) {
+        return res.status(400).json({ message: "User ID and Agent ID are required" });
+      }
+
+      let adminUserId: string;
+      if (process.env.NODE_ENV === 'development') {
+        adminUserId = 'demo-user-123';
+      } else {
+        adminUserId = req.user.claims.sub;
+      }
+
+      const assignment = await storage.assignAgentToUser({
+        agentId,
+        userId,
+        assignedBy: adminUserId,
+        notes: notes || `Assigned by admin`,
+        isActive: true
+      });
+
+      res.json({
+        message: "Agent assigned successfully",
+        assignment
+      });
+    } catch (error) {
+      console.error("Error assigning agent:", error);
+      res.status(500).json({ message: "Failed to assign agent" });
+    }
+  });
+
+  app.delete('/api/admin/remove-agent/:userId/:agentId', requireAdmin, async (req: any, res) => {
+    try {
+      const { userId, agentId } = req.params;
+      
+      await storage.removeAgentFromUser(agentId, userId);
+      
+      res.json({ message: "Agent removed successfully" });
+    } catch (error) {
+      console.error("Error removing agent:", error);
+      res.status(500).json({ message: "Failed to remove agent" });
+    }
+  });
+
+  app.get('/api/agent/assigned-users', requireAgent, async (req: any, res) => {
+    try {
+      let agentId: string;
+      if (process.env.NODE_ENV === 'development') {
+        agentId = 'demo-user-123';
+      } else {
+        agentId = req.user.claims.sub;
+      }
+
+      const assignedUsers = await storage.getUsersByAgent(agentId);
+      res.json(assignedUsers);
+    } catch (error) {
+      console.error("Error fetching assigned users:", error);
+      res.status(500).json({ message: "Failed to fetch assigned users" });
+    }
+  });
+
+  app.post('/api/agent/create-user', requireAgent, async (req: any, res) => {
+    try {
+      const userData = req.body;
+      
+      let agentId: string;
+      if (process.env.NODE_ENV === 'development') {
+        agentId = 'demo-user-123';
+      } else {
+        agentId = req.user.claims.sub;
+      }
+
+      // Create the new user
+      const newUser = await storage.upsertUser(userData);
+
+      // Assign the creating agent to the new user
+      await storage.assignAgentToUser({
+        agentId,
+        userId: newUser.id,
+        assignedBy: agentId,
+        notes: 'Auto-assigned to creating agent',
+        isActive: true
+      });
+
+      res.status(201).json({
+        message: "User created and assigned successfully",
+        user: newUser
+      });
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  // Modify existing routes to check agent access for assigned users
+  app.get('/api/agent/user/:userId/shipments', requireAgent, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      
+      let agentId: string;
+      if (process.env.NODE_ENV === 'development') {
+        agentId = 'demo-user-123';
+      } else {
+        agentId = req.user.claims.sub;
+      }
+
+      // Check if the agent is assigned to this user
+      const assignedUsers = await storage.getUsersByAgent(agentId);
+      const hasAccess = assignedUsers.some(user => user.id === userId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied: User not assigned to this agent" });
+      }
+
+      const shipments = await storage.getShipmentsByUserId(userId);
+      res.json(shipments);
+    } catch (error) {
+      console.error("Error fetching user shipments:", error);
+      res.status(500).json({ message: "Failed to fetch shipments" });
+    }
+  });
+
+  app.get('/api/agent/user/:userId/documents', requireAgent, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      
+      let agentId: string;
+      if (process.env.NODE_ENV === 'development') {
+        agentId = 'demo-user-123';
+      } else {
+        agentId = req.user.claims.sub;
+      }
+
+      // Check if the agent is assigned to this user
+      const assignedUsers = await storage.getUsersByAgent(agentId);
+      const hasAccess = assignedUsers.some(user => user.id === userId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied: User not assigned to this agent" });
+      }
+
+      const documents = await storage.getDocumentsByUserId(userId);
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching user documents:", error);
+      res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
   // Create HTTP server and return it
   const httpServer = createServer(app);
   return httpServer;
