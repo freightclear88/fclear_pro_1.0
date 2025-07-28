@@ -17,11 +17,23 @@ import { xmlIntegrator } from './xmlIntegration';
 import zendesk from 'node-zendesk';
 
 // Zendesk API configuration
-const zendeskClient = zendesk.createClient({
-  username: process.env.ZENDESK_USERNAME || 'admin@freightclear.com',
-  token: process.env.ZENDESK_API_TOKEN || 'your-api-token',
-  remoteUri: 'https://wcscargo.zendesk.com/api/v2',
-});
+let zendeskClient: any = null;
+
+// Initialize Zendesk client if credentials are available
+if (process.env.ZENDESK_USERNAME && process.env.ZENDESK_API_TOKEN) {
+  try {
+    zendeskClient = zendesk.createClient({
+      username: process.env.ZENDESK_USERNAME,
+      token: process.env.ZENDESK_API_TOKEN,
+      remoteUri: 'https://wcscargo.zendesk.com/api/v2',
+    });
+    console.log('Zendesk client initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize Zendesk client:', error);
+  }
+} else {
+  console.log('Zendesk credentials not found - API will return configuration message');
+}
 
 // Email configuration
 const transporter = nodemailer.createTransport({
@@ -4149,6 +4161,15 @@ function generateIsfXml(formData: any, isfNumber: string): string {
   // Zendesk API routes for admin and agent dashboards
   app.get('/api/zendesk/tickets', requireAgent, async (req: any, res) => {
     try {
+      if (!zendeskClient) {
+        return res.json({
+          tickets: [],
+          total: 0,
+          isConfigured: false,
+          message: "Zendesk API not configured. Please set ZENDESK_USERNAME and ZENDESK_API_TOKEN environment variables."
+        });
+      }
+
       const { status = 'open', per_page = 25, sort_by = 'created_at', sort_order = 'desc' } = req.query;
       
       // Get tickets from Zendesk
@@ -4184,6 +4205,13 @@ function generateIsfXml(formData: any, isfNumber: string): string {
 
   app.post('/api/zendesk/tickets', requireAgent, async (req: any, res) => {
     try {
+      if (!zendeskClient) {
+        return res.status(500).json({
+          message: "Zendesk API not configured. Please set ZENDESK_USERNAME and ZENDESK_API_TOKEN environment variables.",
+          isConfigured: false
+        });
+      }
+
       const { subject, description, priority = 'normal', type = 'question', requester_email, tags } = req.body;
       
       if (!subject || !description) {
@@ -4291,6 +4319,17 @@ function generateIsfXml(formData: any, isfNumber: string): string {
 
   app.get('/api/zendesk/stats', requireAgent, async (req: any, res) => {
     try {
+      if (!zendeskClient) {
+        return res.json({
+          open_tickets: 0,
+          pending_tickets: 0,
+          solved_tickets: 0,
+          total_tickets: 0,
+          isConfigured: false,
+          message: "Zendesk API not configured. Please check ZENDESK_USERNAME and ZENDESK_API_TOKEN environment variables."
+        });
+      }
+
       // Get basic ticket statistics
       const stats = {
         open_tickets: 0,
