@@ -594,9 +594,9 @@ export default function Payments() {
                 <Button
                   type="submit"
                   disabled={isProcessingPayment}
-                  className="w-full bg-freight-orange hover:bg-freight-orange/90 text-white"
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 shadow-lg"
                 >
-                  {isProcessingPayment ? "Processing Payment..." : `Pay $${invoiceForm.amount || "0.00"}`}
+                  {isProcessingPayment ? "Processing Payment..." : `Pay $${totalAmount.toFixed(2)}`}
                 </Button>
               </div>
                     </form>

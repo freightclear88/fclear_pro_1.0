@@ -281,3 +281,6 @@ Changelog:
 - July 28, 2025: Successfully integrated Zendesk module access for agents with complete customer support functionality
 - July 28, 2025: Agents now have full access to ZendeskTicketManager component for creating, updating, and managing customer support tickets
 - July 28, 2025: Added visual Customer Support section to agent dashboard with Zendesk integration and support statistics
+- July 28, 2025: Fixed "Pay Invoice" button visibility issue in payments page by updating from custom freight-orange color to standard orange-500 with proper hover states
+- July 28, 2025: Enhanced payment button styling with improved visibility, font weight, padding, and shadow for better user experience
+- July 28, 2025: Updated button to display total amount including service fee for accurate payment processing
