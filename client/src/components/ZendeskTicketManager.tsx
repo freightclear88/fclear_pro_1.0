@@ -169,7 +169,10 @@ export default function ZendeskTicketManager() {
     });
   };
 
-  if (!stats?.isConfigured) {
+  // Check if Zendesk is configured by looking at stats
+  const isConfigured = stats && (stats.isConfigured !== false);
+  
+  if (!isConfigured && stats?.isConfigured === false) {
     return (
       <Card>
         <CardContent className="p-6">
