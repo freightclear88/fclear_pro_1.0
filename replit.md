@@ -284,3 +284,7 @@ Changelog:
 - July 28, 2025: Fixed "Pay Invoice" button visibility issue in payments page by updating from custom freight-orange color to standard orange-500 with proper hover states
 - July 28, 2025: Enhanced payment button styling with improved visibility, font weight, padding, and shadow for better user experience
 - July 28, 2025: Updated button to display total amount including service fee for accurate payment processing
+- July 29, 2025: Fixed demo user subscription access by extending trial period to August 15th for continued testing
+- July 29, 2025: Resolved AuthorizeNet ES module import issues by adding explicit .js extensions for deployment compatibility
+- July 29, 2025: Updated TypeScript configuration with allowSyntheticDefaultImports for better ES module support
+- July 29, 2025: Confirmed all file upload functionality working correctly after dependency updates (form-data and multer)
