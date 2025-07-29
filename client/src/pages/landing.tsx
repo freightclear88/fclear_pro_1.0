@@ -36,9 +36,13 @@ export default function Landing() {
           <h1 className="text-5xl font-bold text-freight-dark mb-6">
             <span className="gradient-text">Freightclear Workflows</span>
           </h1>
-          <p className="text-xl text-gray-700 mb-8 max-w-4xl mx-auto">
+          <p className="text-xl text-gray-700 mb-6 max-w-4xl mx-auto">
             Intelligent document processing and shipment management platform. 
             Upload documents, create shipments, and track your freight operations efficiently.
+          </p>
+          <p className="text-sm text-gray-600 mb-8 max-w-2xl mx-auto">
+            Create your free account to get started with professional freight management tools. 
+            Registration takes just 2 minutes and includes a free trial period.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
@@ -46,7 +50,7 @@ export default function Landing() {
               size="lg"
               className="btn-primary px-12 py-4 text-lg"
             >
-              Get Started
+              Create Free Account
             </Button>
             <Button 
               onClick={() => window.location.href = "/demo"}
@@ -136,15 +140,18 @@ export default function Landing() {
           <h2 className="text-3xl font-bold text-white mb-4">
             Ready to streamline your freight operations?
           </h2>
-          <p className="text-xl text-white/90 mb-8">
-            Join freight professionals who trust Freight Flow for their shipping needs.
+          <p className="text-xl text-white/90 mb-6">
+            Join freight professionals who trust Freightclear Workflows for their shipping needs.
+          </p>
+          <p className="text-sm text-white/80 mb-8">
+            Click below to create your account and start your free trial. You'll be guided through a secure registration process.
           </p>
           <Button 
             onClick={() => window.location.href = "/register"}
             size="lg"
             className="bg-white text-teal hover:bg-white/90 px-12 py-4 text-lg font-semibold border-0"
           >
-            Get Started
+            Create Free Account
           </Button>
         </div>
       </main>

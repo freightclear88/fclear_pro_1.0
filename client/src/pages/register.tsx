@@ -83,15 +83,20 @@ export default function Register() {
         <CardHeader className="text-center pb-6">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <img src={freightclearLogo} alt="Freightclear Logo" className="h-10" />
-            <span className="text-2xl font-bold text-freight-dark">Freight Flow</span>
+            <span className="text-2xl font-bold text-freight-dark">Freightclear Workflows</span>
           </div>
           <CardTitle className="flex items-center justify-center space-x-2 text-2xl text-freight-dark">
             <UserPlus className="w-6 h-6 text-freight-blue" />
             <span>Create Your Account</span>
           </CardTitle>
           <p className="text-gray-600 mt-2">
-            Join freight professionals who trust Freight Flow for their shipping needs
+            Join freight professionals who trust Freightclear Workflows for their shipping needs
           </p>
+          <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+            <p className="text-sm text-blue-700">
+              <strong>2-Step Process:</strong> Fill out your information below, then complete secure authentication to access your account.
+            </p>
+          </div>
         </CardHeader>
         
         <CardContent>
