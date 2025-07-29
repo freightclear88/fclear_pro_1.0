@@ -42,7 +42,7 @@ export default function Landing() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
-              onClick={() => window.location.href = "/api/login"}
+              onClick={() => window.location.href = "/register"}
               size="lg"
               className="btn-primary px-12 py-4 text-lg"
             >
