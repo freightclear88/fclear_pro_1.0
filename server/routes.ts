@@ -15,6 +15,7 @@ import { detectCarrierFromBL, generateTrackingUrl, generateContainerTrackingUrl 
 import nodemailer from "nodemailer";
 import { xmlIntegrator } from './xmlIntegration';
 import zendesk from 'node-zendesk';
+import { aiDocProcessor } from './aiDocumentProcessor';
 // PDF parsing will be dynamically imported when needed
 
 // Zendesk API configuration
@@ -1150,12 +1151,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const timestamp = Date.now().toString().slice(-6);
         const generatedShipmentId = `${prefix}-${timestamp}`;
         
-        // Create new shipment - fields will be populated from document data
+        // Create new shipment - set minimal required fields, will be updated with AI extraction
         createdShipment = await storage.createShipment({
           userId,
           shipmentId: generatedShipmentId,
-          origin: null,
-          destination: null,
+          origin: 'Processing',
+          destination: 'Processing',
           transportMode,
           status: 'pending',
         });
@@ -1198,54 +1199,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const processingTime = currentTime.toLocaleTimeString('en-US', { hour12: false, timeZone: 'America/New_York' });
         
         try {
-          // Attempt to extract real data from the document
+          // Use AI-powered document processing for intelligent data extraction
           if (file.mimetype === 'application/pdf') {
-            console.log(`Processing PDF file: ${file.originalname} at path: ${file.path}`);
+            console.log(`Processing PDF with AI: ${file.originalname} at ${file.path}`);
             
-            // Extract text from PDF using pdfjs-dist
             try {
-              const pdfjs = await import('pdfjs-dist');
-              const pdfBuffer = fs.readFileSync(file.path);
-              
-              console.log(`Processing PDF: ${file.originalname} (${pdfBuffer.length} bytes)`);
-              
-              // Load the PDF document
-              const pdfDoc = await pdfjs.getDocument({ data: pdfBuffer }).promise;
-              let fullText = '';
-              
-              // Extract text from all pages
-              const numPages = pdfDoc.numPages;
-              console.log(`PDF has ${numPages} pages`);
-              
-              for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-                const page = await pdfDoc.getPage(pageNum);
-                const textContent = await page.getTextContent();
-                const pageText = textContent.items.map(item => item.str).join(' ');
-                fullText += pageText + '\n';
+              // Check if OpenAI API key is available
+              if (!process.env.OPENAI_API_KEY) {
+                console.log('OpenAI API key not found - using basic extraction');
+                arrivalNoticeData = {
+                  documentType: documentCategory.replace('_', ' ').toUpperCase(),
+                  fileName: file.originalname,
+                  extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nUploaded: ${new Date().toISOString()}\nNote: AI processing requires OpenAI API key\nProcessed at: ${processingTime} EST`,
+                  processingNote: 'AI processing unavailable - API key required'
+                };
+              } else {
+                // Use AI to extract structured data from the document
+                console.log('Starting AI document analysis...');
+                const extractedData = await aiDocProcessor.extractShipmentData(
+                  file.path, 
+                  documentCategory.replace('_', ' ')
+                );
+                
+                console.log('AI extracted data:', extractedData);
+                
+                // Map AI extracted data to our format
+                arrivalNoticeData = {
+                  documentType: documentCategory.replace('_', ' ').toUpperCase(),
+                  fileName: file.originalname,
+                  
+                  // Core shipping data from AI
+                  billOfLading: extractedData.billOfLading,
+                  vesselName: extractedData.vesselName,
+                  voyage: extractedData.voyage,
+                  containerNumber: extractedData.containerNumber,
+                  origin: extractedData.origin || extractedData.portOfLoading,
+                  destination: extractedData.destination || extractedData.portOfDischarge,
+                  portOfLoading: extractedData.portOfLoading,
+                  portOfDischarge: extractedData.portOfDischarge,
+                  
+                  // Company information
+                  shipperName: extractedData.shipperName,
+                  consigneeName: extractedData.consigneeName,
+                  notifyParty: extractedData.notifyParty,
+                  
+                  // Cargo details
+                  cargoDescription: extractedData.cargoDescription,
+                  weight: extractedData.weight,
+                  packageCount: extractedData.packageCount,
+                  commodity: extractedData.commodity,
+                  countryOfOrigin: extractedData.countryOfOrigin,
+                  htsCode: extractedData.htsCode,
+                  value: extractedData.value,
+                  currency: extractedData.currency,
+                  
+                  // Dates
+                  eta: extractedData.eta ? new Date(extractedData.eta) : null,
+                  dateIssued: extractedData.dateIssued,
+                  
+                  // Processing metadata
+                  extractedText: `AI-processed document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nData fields extracted: ${Object.keys(extractedData).length}\nProcessed at: ${processingTime} EST`,
+                  processingNote: `AI successfully extracted ${Object.keys(extractedData).length} data fields`
+                };
               }
               
-              console.log(`Extracted ${fullText.length} characters from PDF`);
-              console.log(`First 200 characters: "${fullText.substring(0, 200)}"`);
-              
-              // Use the existing extraction function
-              const extractedData = extractPdfData(fullText);
-              console.log('Extracted shipment data:', extractedData);
-              
+            } catch (aiError) {
+              console.error('AI document processing failed:', aiError);
               arrivalNoticeData = {
                 documentType: documentCategory.replace('_', ' ').toUpperCase(),
                 fileName: file.originalname,
-                extractedText: fullText.substring(0, 1000), // Store first 1000 chars
-                ...extractedData, // Include all extracted fields
-                processingNote: `Successfully extracted data from ${numPages} page(s)`
-              };
-              
-            } catch (pdfError) {
-              console.error('PDF extraction failed:', pdfError);
-              arrivalNoticeData = {
-                documentType: documentCategory.replace('_', ' ').toUpperCase(),
-                fileName: file.originalname,
-                extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nUploaded: ${new Date().toISOString()}\nError: ${pdfError.message}\nProcessed at: ${processingTime} EST`,
-                processingNote: 'PDF extraction failed'
+                extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nUploaded: ${new Date().toISOString()}\nAI Error: ${aiError.message}\nProcessed at: ${processingTime} EST`,
+                processingNote: 'AI processing failed - document stored'
               };
             }
           } else {
@@ -1281,27 +1305,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: 'completed'
         });
 
-        // Only update shipment with extracted data if we have real values (not placeholders)
-        if (createdShipment && arrivalNoticeData && arrivalNoticeData.billOfLading) {
-          // Only update if we have real extracted data
-          const updateData = {};
+        // Update shipment with AI-extracted data
+        if (createdShipment && arrivalNoticeData) {
+          const updateData: any = {};
           
-          // Add fields only if they contain real extracted values
-          if (arrivalNoticeData.billOfLading) updateData.billOfLading = arrivalNoticeData.billOfLading;
-          if (arrivalNoticeData.vessel) updateData.vessel = arrivalNoticeData.vessel;
+          // Map extracted data to shipment fields (only if values exist and aren't placeholders)
+          if (arrivalNoticeData.billOfLading && arrivalNoticeData.billOfLading !== 'Processing') {
+            updateData.billOfLading = arrivalNoticeData.billOfLading;
+          }
+          if (arrivalNoticeData.vesselName) updateData.vessel = arrivalNoticeData.vesselName;
+          if (arrivalNoticeData.voyage) updateData.voyage = arrivalNoticeData.voyage;
           if (arrivalNoticeData.containerNumber) updateData.containerNumber = arrivalNoticeData.containerNumber;
-          if (arrivalNoticeData.origin) updateData.origin = arrivalNoticeData.origin;
-          if (arrivalNoticeData.destination) updateData.destination = arrivalNoticeData.destination;
+          
+          // Update origin/destination with real extracted data, or keep "Processing" if no data found
+          if (arrivalNoticeData.origin && arrivalNoticeData.origin !== 'Processing') {
+            updateData.origin = arrivalNoticeData.origin;
+          }
+          if (arrivalNoticeData.destination && arrivalNoticeData.destination !== 'Processing') {
+            updateData.destination = arrivalNoticeData.destination;
+          }
+          
+          // Additional shipping details
           if (arrivalNoticeData.shipperName) updateData.shipperName = arrivalNoticeData.shipperName;
           if (arrivalNoticeData.consigneeName) updateData.consigneeName = arrivalNoticeData.consigneeName;
+          if (arrivalNoticeData.cargoDescription) updateData.cargoDescription = arrivalNoticeData.cargoDescription;
           if (arrivalNoticeData.eta) updateData.eta = arrivalNoticeData.eta;
+          if (arrivalNoticeData.weight) updateData.weight = arrivalNoticeData.weight;
+          if (arrivalNoticeData.value) updateData.value = arrivalNoticeData.value;
           
+          // Always update the shipment, even if just with processing metadata
           if (Object.keys(updateData).length > 0) {
             const updatedShipment = await storage.updateShipment(createdShipment.id, updateData);
             createdShipment = updatedShipment;
-            console.log('Updated shipment with extracted data:', Object.keys(updateData));
+            console.log('Updated shipment with AI-extracted data:', Object.keys(updateData));
           } else {
-            console.log('No extracted data to update shipment with');
+            console.log('No AI-extracted data to update shipment fields');
           }
         }
 
