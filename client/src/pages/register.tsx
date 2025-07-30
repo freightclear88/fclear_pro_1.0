@@ -203,7 +203,7 @@ export default function Register() {
             <div className="flex flex-col space-y-4 pt-4">
               <Button
                 type="submit"
-                className="w-full btn-primary py-3 text-lg font-semibold"
+                className="w-full btn-primary py-3 text-lg font-semibold bg-teal-600 hover:bg-teal-700 text-white"
                 disabled={registerMutation.isPending}
               >
                 {registerMutation.isPending ? "Creating Account..." : "Create Account"}
