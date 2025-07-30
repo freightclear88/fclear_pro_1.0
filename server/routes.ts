@@ -15,6 +15,7 @@ import { detectCarrierFromBL, generateTrackingUrl, generateContainerTrackingUrl 
 import nodemailer from "nodemailer";
 import { xmlIntegrator } from './xmlIntegration';
 import zendesk from 'node-zendesk';
+// PDF parsing will be dynamically imported when needed
 
 // Zendesk API configuration
 let zendeskClient: any = null;
@@ -1191,48 +1192,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: 'pending',
         });
 
-        // Realistic arrival notice data extraction (in production, this would be processed by real OCR AI)
+        // Real document data extraction using PDF parsing
+        let arrivalNoticeData = {};
         const currentTime = new Date();
         const processingTime = currentTime.toLocaleTimeString('en-US', { hour12: false, timeZone: 'America/New_York' });
-        const docTransportMode = documentCategory === 'airway_bill' ? 'air' : 'ocean';
-        const arrivalNoticeData = {
-          // Core identification
-          shipmentId: `${docTransportMode === 'air' ? 'AIR' : 'SEA'}-${Math.floor(Math.random() * 900000) + 100000}`,
-          billOfLading: `MSKU${Math.floor(Math.random() * 9000000) + 1000000}`,
-          
-          // Transport details
-          vessel: docTransportMode === 'ocean' ? ['MV MAERSK SENTOSA', 'MV EVER GIVEN', 'MV CMA CGM MARCO POLO'][Math.floor(Math.random() * 3)] : null,
-          voyage: docTransportMode === 'ocean' ? `${Math.floor(Math.random() * 900) + 100}W` : null,
-          containerNumber: docTransportMode === 'ocean' ? `MSCU${Math.floor(Math.random() * 9000000) + 1000000}` : null,
-          
-          // Locations
-          origin: 'Shanghai, China',
-          originPort: docTransportMode === 'ocean' ? 'Port of Shanghai' : 'Shanghai Pudong International Airport',
-          destination: file.originalname.toLowerCase().includes('miami') ? 'Miami, FL' : 
-                      file.originalname.toLowerCase().includes('houston') ? 'Houston, TX' :
-                      file.originalname.toLowerCase().includes('los angeles') ? 'Los Angeles, CA' : 'Long Beach, CA',
-          destinationPort: file.originalname.toLowerCase().includes('miami') ? 'Port of Miami' :
-                          file.originalname.toLowerCase().includes('houston') ? 'Port of Houston' :
-                          file.originalname.toLowerCase().includes('los angeles') ? 'Port of Los Angeles' : 'Port of Long Beach',
-          
-          // Arrival notice specific timing
-          eta: new Date(Date.now() + Math.floor(Math.random() * 7) * 24 * 60 * 60 * 1000),
-          ata: Math.random() > 0.5 ? new Date(Date.now() - Math.floor(Math.random() * 3) * 24 * 60 * 60 * 1000) : null,
-          
-          // Party information
-          shipperName: 'Shanghai Export Manufacturing Co., Ltd.',
-          consigneeName: 'American Retail Solutions Inc.',
-          customsBroker: ['ABC Customs Brokerage', 'Expedited Trade Services', 'Global Clearance Solutions'][Math.floor(Math.random() * 3)],
-          
-          // Financial information (typical arrival notice charges)
-          freightCharges: (Math.random() * 5000 + 1500).toFixed(2),
-          destinationCharges: (Math.random() * 800 + 200).toFixed(2),
-          
-          // Cargo details
-          cargoDescription: ['Electronics & Computer Parts', 'Textiles & Apparel', 'Home & Garden Products', 'Industrial Equipment'][Math.floor(Math.random() * 4)],
-          
-          extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nStatus: Arrival Notice - Vessel/Flight has arrived at destination port\nProcessed at: ${processingTime} EST\nDocument Status: ✓ Successfully processed and extracted shipment data`
-        };
+        
+        try {
+          // Attempt to extract real data from the document
+          if (file.mimetype === 'application/pdf') {
+            console.log(`Processing PDF file: ${file.originalname}`);
+            const pdfParse = await import('pdf-parse');
+            const pdfData = await pdfParse.default(fs.readFileSync(file.path));
+            const extractedFromPdf = extractPdfData(pdfData.text);
+            
+            // Map the extracted data to shipment fields
+            arrivalNoticeData = {
+              // Use extracted data if available, otherwise generate reasonable defaults
+              shipmentId: extractedFromPdf.billOfLading || `SEA-${Date.now().toString().slice(-6)}`,
+              billOfLading: extractedFromPdf.billOfLading || null,
+              vessel: extractedFromPdf.vesselName || null,
+              voyage: extractedFromPdf.voyage || null,
+              containerNumber: extractedFromPdf.containerNumber || null,
+              origin: extractedFromPdf.origin || 'From Document Processing',
+              originPort: extractedFromPdf.originPort || null,
+              destination: extractedFromPdf.destination || extractedFromPdf.portOfEntry || 'From Document Processing',
+              destinationPort: extractedFromPdf.portOfEntry || null,
+              eta: extractedFromPdf.estimatedArrivalDate ? new Date(extractedFromPdf.estimatedArrivalDate) : null,
+              shipperName: extractedFromPdf.shipperName || null,
+              consigneeName: extractedFromPdf.consigneeName || extractedFromPdf.importerName || null,
+              customsBroker: extractedFromPdf.customsBroker || null,
+              cargoDescription: extractedFromPdf.commodityDescription || null,
+              extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nExtracted Data: ${Object.keys(extractedFromPdf).length} fields found\nProcessed at: ${processingTime} EST\nDocument Status: ✓ Successfully processed with real data extraction`
+            };
+            
+            console.log(`Extracted data from PDF:`, extractedFromPdf);
+          } else {
+            // For non-PDF files, create basic structure
+            arrivalNoticeData = {
+              shipmentId: `DOC-${Date.now().toString().slice(-6)}`,
+              extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nNote: Real data extraction available for PDF files\nProcessed at: ${processingTime} EST`
+            };
+          }
+        } catch (error) {
+          console.error('Error extracting data from document:', error);
+          // Fallback to basic structure if extraction fails
+          arrivalNoticeData = {
+            shipmentId: `ERR-${Date.now().toString().slice(-6)}`,
+            extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nError: Failed to extract data from document\nProcessed at: ${processingTime} EST`
+          };
+        }
 
         // Update document with extracted data including tracking URLs
         await storage.updateDocument(document.id, {
