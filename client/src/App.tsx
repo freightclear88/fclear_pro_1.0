@@ -19,7 +19,7 @@ import Admin from "@/pages/admin";
 import Agent from "@/pages/agent";
 import Subscription from "@/pages/subscription";
 import Payments from "@/pages/payments";
-import Demo from "@/pages/demo";
+
 import Chat from "@/pages/chat";
 import FastIsf from "@/pages/fastisf";
 import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle, FileText, Menu, X } from "lucide-react";
@@ -226,7 +226,6 @@ function Router() {
       <Switch>
         <Route path="/" component={isAuthenticated ? Dashboard : Landing} />
         <Route path="/landing" component={Landing} />
-        <Route path="/demo" component={Demo} />
         <Route path="/register" component={Register} />
         <Route component={NotFound} />
       </Switch>
@@ -246,7 +245,6 @@ function Router() {
         <Route path="/admin" component={Admin} />
         <Route path="/agent" component={Agent} />
         <Route path="/profile" component={Profile} />
-        <Route path="/demo" component={Demo} />
         <Route component={NotFound} />
       </Switch>
     </AuthenticatedLayout>

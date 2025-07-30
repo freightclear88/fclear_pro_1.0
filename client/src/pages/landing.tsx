@@ -59,7 +59,7 @@ export default function Landing() {
             Create your free account to get started with professional freight management tools. 
             Registration takes just 2 minutes and includes a free trial period.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex justify-center">
             <a href="/register">
               <Button 
                 size="lg"
@@ -68,14 +68,6 @@ export default function Landing() {
                 Create Free Account
               </Button>
             </a>
-            <Button 
-              onClick={() => window.location.href = "/demo"}
-              size="lg"
-              variant="outline"
-              className="border-freight-orange text-freight-orange hover:bg-freight-orange hover:text-white px-12 py-4 text-lg font-semibold"
-            >
-              Try Demo
-            </Button>
           </div>
         </div>
 

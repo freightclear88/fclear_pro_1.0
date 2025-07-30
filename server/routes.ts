@@ -565,12 +565,7 @@ const upload = multer({
 
 // Helper function to get user ID in both development and production modes
 function getUserId(req: any): string {
-  // Development test mode
-  if (process.env.NODE_ENV === 'development') {
-    return 'demo-user-123';
-  }
-  
-  // Production mode - get from authenticated user
+  // Get from authenticated user
   if (!req.user?.claims?.sub) {
     throw new Error('User not authenticated');
   }
@@ -696,96 +691,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      // Development test mode - create a demo user for testing
-      if (process.env.NODE_ENV === 'development') {
-        const testUserId = 'demo-user-123';
-        let user = await storage.getUser(testUserId);
-        
-        // Ensure demo user has sample POA document
-        const samplePOAPath = path.join('uploads', 'demo_poa_sample.html');
-        const samplePOAContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Power of Attorney - Demo User</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-    .header { text-align: center; margin-bottom: 30px; }
-    .form-group { margin-bottom: 20px; }
-    h3 { color: #333; margin-top: 30px; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>POWER OF ATTORNEY</h1>
-    <h2>FOR CUSTOMS BUSINESS</h2>
-  </div>
-  
-  <div class="form-group">
-    <h3>PRINCIPAL INFORMATION</h3>
-    <p><strong>Full Legal Name:</strong> Demo User</p>
-    <p><strong>Company Name:</strong> Demo Logistics Inc.</p>
-    <p><strong>Address:</strong> 123 Demo Street, Demo City, NY 10001</p>
-    <p><strong>Tax ID/EIN:</strong> 12-3456789</p>
-  </div>
-  
-  <div class="form-group">
-    <h3>AGENT INFORMATION</h3>
-    <p><strong>Agent Name:</strong> WCS International Inc.</p>
-    <p><strong>Address:</strong> 371 Merrick Rd, suite 305, Rockville Centre, NY 11570</p>
-  </div>
-  
-  <div class="form-group">
-    <h3>SIGNATURE</h3>
-    <p><strong>Electronically Signed:</strong> Demo User</p>
-    <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-  </div>
-  
-  <div style="margin-top: 50px; font-size: 12px; text-align: center; color: #666;">
-    Generated electronically by Freightclear Workflows - ${new Date().toLocaleString()}
-  </div>
-</body>
-</html>`;
-          
-        // Create sample POA file if it doesn't exist
-        if (!fs.existsSync(samplePOAPath)) {
-          fs.writeFileSync(samplePOAPath, samplePOAContent);
-        }
-        
-        if (!user) {
-          user = await storage.upsertUser({
-            id: testUserId,
-            email: 'demo@freightclear.com',
-            firstName: 'Demo',
-            lastName: 'User',
-            companyName: 'Demo Logistics Inc.',
-            phone: '555-123-4567',
-            subscriptionStatus: 'trial',
-            subscriptionPlan: 'free',
-            isTrialActive: true,
-            trialStartDate: new Date(),
-            trialEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
-            maxShipments: 5,
-            maxDocuments: 20,
-            currentShipmentCount: 0,
-            currentDocumentCount: 0,
-            powerOfAttorneyStatus: 'validated',
-            powerOfAttorneyDocumentPath: samplePOAPath,
-            powerOfAttorneyUploadedAt: new Date()
-          });
-        } else if (!user.powerOfAttorneyDocumentPath) {
-          // Update existing demo user with POA document
-          user = await storage.updateUser(testUserId, {
-            powerOfAttorneyStatus: 'validated',
-            powerOfAttorneyDocumentPath: samplePOAPath,
-            powerOfAttorneyUploadedAt: new Date()
-          });
-        }
-        
-        return res.json(user);
-      }
-      
-      // Production mode - require authentication
+      // Require authentication
       if (!req.isAuthenticated() || !req.user) {
         return res.status(401).json({ message: "Unauthorized" });
       }
@@ -1211,18 +1117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Document upload route with shipment creation
   app.post('/api/documents/upload', upload.array('documents', 10), requireSubscription, async (req: any, res) => {
     try {
-      let userId: string;
-      
-      // Development test mode
-      if (process.env.NODE_ENV === 'development') {
-        userId = 'demo-user-123';
-      } else {
-        // Production mode - get from authenticated user
-        userId = req.user?.claims?.sub;
-        if (!userId) {
-          return res.status(401).json({ message: "Unauthorized" });
-        }
-      }
+      const userId = getUserId(req);
       const { shipmentId, category, subCategory } = req.body;
       
       if (!req.files || req.files.length === 0) {
@@ -4415,12 +4310,7 @@ function generateIsfXml(formData: any, isfNumber: string): string {
         return res.status(400).json({ message: "User ID and Agent ID are required" });
       }
 
-      let adminUserId: string;
-      if (process.env.NODE_ENV === 'development') {
-        adminUserId = 'demo-user-123';
-      } else {
-        adminUserId = req.user.claims.sub;
-      }
+      const adminUserId = req.user.claims.sub;
 
       const assignment = await storage.assignAgentToUser({
         agentId,
@@ -4455,12 +4345,7 @@ function generateIsfXml(formData: any, isfNumber: string): string {
 
   app.get('/api/agent/assigned-users', requireAgent, async (req: any, res) => {
     try {
-      let agentId: string;
-      if (process.env.NODE_ENV === 'development') {
-        agentId = 'demo-user-123';
-      } else {
-        agentId = req.user.claims.sub;
-      }
+      const agentId = req.user.claims.sub;
 
       const assignedUsers = await storage.getUsersByAgent(agentId);
       res.json(assignedUsers);
@@ -4473,13 +4358,7 @@ function generateIsfXml(formData: any, isfNumber: string): string {
   app.post('/api/agent/create-user', requireAgent, async (req: any, res) => {
     try {
       const userData = req.body;
-      
-      let agentId: string;
-      if (process.env.NODE_ENV === 'development') {
-        agentId = 'demo-user-123';
-      } else {
-        agentId = req.user.claims.sub;
-      }
+      const agentId = req.user.claims.sub;
 
       // Create the new user
       const newUser = await storage.upsertUser(userData);
@@ -4507,13 +4386,7 @@ function generateIsfXml(formData: any, isfNumber: string): string {
   app.get('/api/agent/user/:userId/shipments', requireAgent, async (req: any, res) => {
     try {
       const { userId } = req.params;
-      
-      let agentId: string;
-      if (process.env.NODE_ENV === 'development') {
-        agentId = 'demo-user-123';
-      } else {
-        agentId = req.user.claims.sub;
-      }
+      const agentId = req.user.claims.sub;
 
       // Check if the agent is assigned to this user
       const assignedUsers = await storage.getUsersByAgent(agentId);
@@ -4534,13 +4407,7 @@ function generateIsfXml(formData: any, isfNumber: string): string {
   app.get('/api/agent/user/:userId/documents', requireAgent, async (req: any, res) => {
     try {
       const { userId } = req.params;
-      
-      let agentId: string;
-      if (process.env.NODE_ENV === 'development') {
-        agentId = 'demo-user-123';
-      } else {
-        agentId = req.user.claims.sub;
-      }
+      const agentId = req.user.claims.sub;
 
       // Check if the agent is assigned to this user
       const assignedUsers = await storage.getUsersByAgent(agentId);
