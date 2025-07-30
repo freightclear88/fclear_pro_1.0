@@ -1200,10 +1200,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Attempt to extract real data from the document
           if (file.mimetype === 'application/pdf') {
-            console.log(`Processing PDF file: ${file.originalname}`);
-            const pdfParse = await import('pdf-parse');
-            const pdfData = await pdfParse.default(fs.readFileSync(file.path));
-            const extractedFromPdf = extractPdfData(pdfData.text);
+            console.log(`Processing PDF file: ${file.originalname} at path: ${file.path}`);
+            
+            // Extract real data from PDF using proper import
+            let extractedFromPdf = {};
+            
+            try {
+              const fileStats = fs.statSync(file.path);
+              console.log(`PDF file size: ${fileStats.size} bytes`);
+              
+              // Use dynamic import with proper error handling
+              const pdfBuffer = fs.readFileSync(file.path);
+              
+              // Import pdf-parse dynamically and handle it properly
+              const { default: pdfParse } = await import('pdf-parse');
+              const pdfData = await pdfParse(pdfBuffer, {
+                // Options to avoid test file conflicts
+                max: 0 // Extract all pages
+              });
+              
+              console.log(`PDF text extracted: ${pdfData.text.length} characters`);
+              console.log(`First 300 characters: "${pdfData.text.substring(0, 300)}"`);
+              
+              // Use the existing extractPdfData function to find shipment data
+              extractedFromPdf = extractPdfData(pdfData.text);
+              console.log('Extracted shipment data:', extractedFromPdf);
+              
+            } catch (pdfError) {
+              console.error('PDF extraction error:', pdfError);
+              extractedFromPdf = {
+                fileName: file.originalname,
+                extractionError: pdfError.message,
+                processingNote: 'PDF text extraction failed - using filename analysis'
+              };
+            }
             
             // Map the extracted data to shipment fields
             arrivalNoticeData = {
@@ -3885,11 +3915,11 @@ function extractPdfData(textContent: string): any {
     ],
     billOfLading: [
       'bill of lading:', 'bl number:', 'bol:', 'bl#:', 'b/l:', 'master bl:', 'house bl:',
-      'bl no:', 'bill of lading no:', 'bl reference:', 'lading number:'
+      'bl no:', 'bill of lading no:', 'bl reference:', 'lading number:', 'b/l no:', 'bill#:', 'bl:', 'b.l.'
     ],
     vesselName: [
       'vessel:', 'ship:', 'vessel name:', 'carrying vessel:', 'vessel/voyage:',
-      'ship name:', 'vessel/flight:', 'carrier name:', 'transport:'
+      'ship name:', 'vessel/flight:', 'carrier name:', 'transport:', 'mv ', 'ms ', 'vessel/voy:', 'vsl:'
     ],
     estimatedArrivalDate: [
       'eta:', 'arrival date:', 'estimated arrival:', 'delivery date:', 'arrival:',
