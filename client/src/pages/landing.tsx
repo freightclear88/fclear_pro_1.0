@@ -23,15 +23,13 @@ export default function Landing() {
               </div>
             </div>
             <div className="flex space-x-3">
-              <Button 
-                onClick={() => {
-                  console.log("Get Started button clicked - navigating to /register");
-                  setLocation("/register");
-                }}
-                className="gradient-accent hover-glow text-white border-0"
-              >
-                Get Started
-              </Button>
+              <a href="/register">
+                <Button 
+                  className="gradient-accent hover-glow text-white border-0"
+                >
+                  Get Started
+                </Button>
+              </a>
               <Button 
                 onClick={() => {
                   console.log("Sign In button clicked - navigating to /api/login");
@@ -62,16 +60,14 @@ export default function Landing() {
             Registration takes just 2 minutes and includes a free trial period.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              onClick={() => {
-                console.log("Create Free Account button clicked - navigating to /register");
-                setLocation("/register");
-              }}
-              size="lg"
-              className="btn-primary px-12 py-4 text-lg"
-            >
-              Create Free Account
-            </Button>
+            <a href="/register">
+              <Button 
+                size="lg"
+                className="btn-primary px-12 py-4 text-lg"
+              >
+                Create Free Account
+              </Button>
+            </a>
             <Button 
               onClick={() => window.location.href = "/demo"}
               size="lg"
@@ -166,16 +162,14 @@ export default function Landing() {
           <p className="text-sm text-white/80 mb-8">
             Click below to create your account and start your free trial. You'll be guided through a secure registration process.
           </p>
-          <Button 
-            onClick={() => {
-              console.log("Bottom CTA button clicked - navigating to /register");
-              setLocation("/register");
-            }}
-            size="lg"
-            className="bg-white text-teal hover:bg-white/90 px-12 py-4 text-lg font-semibold border-0"
-          >
-            Create Free Account
-          </Button>
+          <a href="/register">
+            <Button 
+              size="lg"
+              className="bg-white text-teal hover:bg-white/90 px-12 py-4 text-lg font-semibold border-0"
+            >
+              Create Free Account
+            </Button>
+          </a>
         </div>
       </main>
 
