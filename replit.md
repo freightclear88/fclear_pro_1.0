@@ -293,3 +293,4 @@ Changelog:
 - July 30, 2025: Updated all authentication middleware to require proper Replit OAuth authentication instead of demo bypasses
 - July 30, 2025: Removed demo user (demo-user-123) and associated data: 6 documents, 4 shipments from database for security compliance
 - July 30, 2025: Application now requires authentic Replit authentication for all functionality, eliminating development-mode security bypasses
+- July 30, 2025: Created admin account for chris@wcscargo.com with full administrative privileges and unlimited trial access
