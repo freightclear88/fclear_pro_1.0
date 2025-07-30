@@ -22,13 +22,19 @@ export default function Landing() {
             </div>
             <div className="flex space-x-3">
               <Button 
-                onClick={() => window.location.href = "/register"}
+                onClick={() => {
+                  console.log("Get Started button clicked - navigating to /register");
+                  window.location.href = "/register";
+                }}
                 className="gradient-accent hover-glow text-white border-0"
               >
                 Get Started
               </Button>
               <Button 
-                onClick={() => window.location.href = "/api/login"}
+                onClick={() => {
+                  console.log("Sign In button clicked - navigating to /api/login");
+                  window.location.href = "/api/login";
+                }}
                 variant="outline"
                 className="border-teal text-teal hover:bg-teal hover:text-white"
               >
@@ -55,7 +61,10 @@ export default function Landing() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
-              onClick={() => window.location.href = "/register"}
+              onClick={() => {
+                console.log("Create Free Account button clicked - navigating to /register");
+                window.location.href = "/register";
+              }}
               size="lg"
               className="btn-primary px-12 py-4 text-lg"
             >
