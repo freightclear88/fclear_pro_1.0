@@ -1150,12 +1150,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const timestamp = Date.now().toString().slice(-6);
         const generatedShipmentId = `${prefix}-${timestamp}`;
         
-        // Create new shipment
+        // Create new shipment - fields will be populated from document data
         createdShipment = await storage.createShipment({
           userId,
           shipmentId: generatedShipmentId,
-          origin: "TBD - From Document Processing",
-          destination: "TBD - From Document Processing",
+          origin: null,
+          destination: null,
           transportMode,
           status: 'pending',
         });
@@ -1202,60 +1202,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (file.mimetype === 'application/pdf') {
             console.log(`Processing PDF file: ${file.originalname} at path: ${file.path}`);
             
-            // Extract real data from PDF using proper import
-            let extractedFromPdf = {};
-            
+            // Extract text from PDF using pdfjs-dist
             try {
-              const fileStats = fs.statSync(file.path);
-              console.log(`PDF file size: ${fileStats.size} bytes`);
-              
-              // Use dynamic import with proper error handling
+              const pdfjs = await import('pdfjs-dist');
               const pdfBuffer = fs.readFileSync(file.path);
               
-              // Import pdf-parse dynamically and handle it properly
-              const { default: pdfParse } = await import('pdf-parse');
-              const pdfData = await pdfParse(pdfBuffer, {
-                // Options to avoid test file conflicts
-                max: 0 // Extract all pages
-              });
+              console.log(`Processing PDF: ${file.originalname} (${pdfBuffer.length} bytes)`);
               
-              console.log(`PDF text extracted: ${pdfData.text.length} characters`);
-              console.log(`First 300 characters: "${pdfData.text.substring(0, 300)}"`);
+              // Load the PDF document
+              const pdfDoc = await pdfjs.getDocument({ data: pdfBuffer }).promise;
+              let fullText = '';
               
-              // Use the existing extractPdfData function to find shipment data
-              extractedFromPdf = extractPdfData(pdfData.text);
-              console.log('Extracted shipment data:', extractedFromPdf);
+              // Extract text from all pages
+              const numPages = pdfDoc.numPages;
+              console.log(`PDF has ${numPages} pages`);
+              
+              for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                const page = await pdfDoc.getPage(pageNum);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                fullText += pageText + '\n';
+              }
+              
+              console.log(`Extracted ${fullText.length} characters from PDF`);
+              console.log(`First 200 characters: "${fullText.substring(0, 200)}"`);
+              
+              // Use the existing extraction function
+              const extractedData = extractPdfData(fullText);
+              console.log('Extracted shipment data:', extractedData);
+              
+              arrivalNoticeData = {
+                documentType: documentCategory.replace('_', ' ').toUpperCase(),
+                fileName: file.originalname,
+                extractedText: fullText.substring(0, 1000), // Store first 1000 chars
+                ...extractedData, // Include all extracted fields
+                processingNote: `Successfully extracted data from ${numPages} page(s)`
+              };
               
             } catch (pdfError) {
-              console.error('PDF extraction error:', pdfError);
-              extractedFromPdf = {
+              console.error('PDF extraction failed:', pdfError);
+              arrivalNoticeData = {
+                documentType: documentCategory.replace('_', ' ').toUpperCase(),
                 fileName: file.originalname,
-                extractionError: pdfError.message,
-                processingNote: 'PDF text extraction failed - using filename analysis'
+                extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nUploaded: ${new Date().toISOString()}\nError: ${pdfError.message}\nProcessed at: ${processingTime} EST`,
+                processingNote: 'PDF extraction failed'
               };
             }
-            
-            // Map the extracted data to shipment fields
-            arrivalNoticeData = {
-              // Use extracted data if available, otherwise generate reasonable defaults
-              shipmentId: extractedFromPdf.billOfLading || `SEA-${Date.now().toString().slice(-6)}`,
-              billOfLading: extractedFromPdf.billOfLading || null,
-              vessel: extractedFromPdf.vesselName || null,
-              voyage: extractedFromPdf.voyage || null,
-              containerNumber: extractedFromPdf.containerNumber || null,
-              origin: extractedFromPdf.origin || 'From Document Processing',
-              originPort: extractedFromPdf.originPort || null,
-              destination: extractedFromPdf.destination || extractedFromPdf.portOfEntry || 'From Document Processing',
-              destinationPort: extractedFromPdf.portOfEntry || null,
-              eta: extractedFromPdf.estimatedArrivalDate ? new Date(extractedFromPdf.estimatedArrivalDate) : null,
-              shipperName: extractedFromPdf.shipperName || null,
-              consigneeName: extractedFromPdf.consigneeName || extractedFromPdf.importerName || null,
-              customsBroker: extractedFromPdf.customsBroker || null,
-              cargoDescription: extractedFromPdf.commodityDescription || null,
-              extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nExtracted Data: ${Object.keys(extractedFromPdf).length} fields found\nProcessed at: ${processingTime} EST\nDocument Status: ✓ Successfully processed with real data extraction`
-            };
-            
-            console.log(`Extracted data from PDF:`, extractedFromPdf);
           } else {
             // For non-PDF files, create basic structure
             arrivalNoticeData = {
@@ -1289,40 +1281,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: 'completed'
         });
 
-        // Update the shipment with comprehensive arrival notice data
-        if (createdShipment && arrivalNoticeData) {
-          const updatedShipment = await storage.updateShipment(createdShipment.id, {
-            // Core identification
-            shipmentId: arrivalNoticeData.shipmentId || createdShipment.shipmentId,
-            billOfLading: arrivalNoticeData.billOfLading || createdShipment.billOfLading,
-            
-            // Transport details
-            vessel: arrivalNoticeData.vessel || createdShipment.vessel,
-            voyage: arrivalNoticeData.voyage || createdShipment.voyage,
-            containerNumber: arrivalNoticeData.containerNumber || createdShipment.containerNumber,
-            
-            // Locations
-            origin: arrivalNoticeData.origin || createdShipment.origin,
-            originPort: arrivalNoticeData.originPort || createdShipment.originPort,
-            destination: arrivalNoticeData.destination || createdShipment.destination,
-            destinationPort: arrivalNoticeData.destinationPort || createdShipment.destinationPort,
-            
-            // Timing
-            eta: arrivalNoticeData.eta || createdShipment.eta,
-            ata: arrivalNoticeData.ata || createdShipment.ata,
-            
-            // Parties
-            shipperName: arrivalNoticeData.shipperName || createdShipment.shipperName,
-            consigneeName: arrivalNoticeData.consigneeName || createdShipment.consigneeName,
-            customsBroker: arrivalNoticeData.customsBroker || createdShipment.customsBroker,
-            
-            // Financial
-            freightCharges: arrivalNoticeData.freightCharges || createdShipment.freightCharges,
-            destinationCharges: arrivalNoticeData.destinationCharges || createdShipment.destinationCharges,
-          });
+        // Only update shipment with extracted data if we have real values (not placeholders)
+        if (createdShipment && arrivalNoticeData && arrivalNoticeData.billOfLading) {
+          // Only update if we have real extracted data
+          const updateData = {};
           
-          // Update the reference to the updated shipment
-          createdShipment = updatedShipment;
+          // Add fields only if they contain real extracted values
+          if (arrivalNoticeData.billOfLading) updateData.billOfLading = arrivalNoticeData.billOfLading;
+          if (arrivalNoticeData.vessel) updateData.vessel = arrivalNoticeData.vessel;
+          if (arrivalNoticeData.containerNumber) updateData.containerNumber = arrivalNoticeData.containerNumber;
+          if (arrivalNoticeData.origin) updateData.origin = arrivalNoticeData.origin;
+          if (arrivalNoticeData.destination) updateData.destination = arrivalNoticeData.destination;
+          if (arrivalNoticeData.shipperName) updateData.shipperName = arrivalNoticeData.shipperName;
+          if (arrivalNoticeData.consigneeName) updateData.consigneeName = arrivalNoticeData.consigneeName;
+          if (arrivalNoticeData.eta) updateData.eta = arrivalNoticeData.eta;
+          
+          if (Object.keys(updateData).length > 0) {
+            const updatedShipment = await storage.updateShipment(createdShipment.id, updateData);
+            createdShipment = updatedShipment;
+            console.log('Updated shipment with extracted data:', Object.keys(updateData));
+          } else {
+            console.log('No extracted data to update shipment with');
+          }
         }
 
         uploadedDocuments.push({...document, extractedData: arrivalNoticeData});
