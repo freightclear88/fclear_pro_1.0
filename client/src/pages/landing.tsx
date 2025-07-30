@@ -20,12 +20,21 @@ export default function Landing() {
                 <p className="text-sm text-teal">Streamlined Import Management</p>
               </div>
             </div>
-            <Button 
-              onClick={() => window.location.href = "/api/login"}
-              className="gradient-accent hover-glow text-white border-0"
-            >
-              Sign In
-            </Button>
+            <div className="flex space-x-3">
+              <Button 
+                onClick={() => window.location.href = "/register"}
+                className="gradient-accent hover-glow text-white border-0"
+              >
+                Get Started
+              </Button>
+              <Button 
+                onClick={() => window.location.href = "/api/login"}
+                variant="outline"
+                className="border-teal text-teal hover:bg-teal hover:text-white"
+              >
+                Sign In
+              </Button>
+            </div>
           </div>
         </div>
       </header>
