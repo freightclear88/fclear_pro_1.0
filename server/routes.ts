@@ -659,6 +659,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
+  // Allow access to registration and landing pages without authentication
+  app.get(['/', '/register', '/landing'], (req, res, next) => {
+    // These routes should be accessible without authentication
+    // Pass through to client-side routing (Vite middleware)
+    next();
+  });
+
   // Registration route
   app.post('/api/register', async (req, res) => {
     try {

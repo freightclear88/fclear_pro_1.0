@@ -202,11 +202,30 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [location] = useLocation();
 
-  if (isLoading || !isAuthenticated) {
+  // Always show public pages when explicitly requested, regardless of auth status
+  const publicPaths = ['/landing', '/register'];
+  const isPublicPath = publicPaths.includes(location);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center gradient-secondary">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-teal mx-auto mb-4"></div>
+          <p className="text-teal">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show public pages when requested or when not authenticated
+  if (isPublicPath || !isAuthenticated) {
     return (
       <Switch>
-        <Route path="/" component={Landing} />
+        <Route path="/" component={isAuthenticated ? Dashboard : Landing} />
+        <Route path="/landing" component={Landing} />
         <Route path="/demo" component={Demo} />
         <Route path="/register" component={Register} />
         <Route component={NotFound} />
@@ -214,6 +233,7 @@ function Router() {
     );
   }
 
+  // Show authenticated pages
   return (
     <AuthenticatedLayout>
       <Switch>
