@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ship, FileText, BarChart3, FileUp, Eye, Truck, Plane } from "lucide-react";
+import { useLocation } from "wouter";
 import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_1751903859339.png";
 
 export default function Landing() {
+  const [, setLocation] = useLocation();
   return (
     <div className="min-h-screen gradient-secondary">
       {/* Flowing Wave Background */}
@@ -24,7 +26,7 @@ export default function Landing() {
               <Button 
                 onClick={() => {
                   console.log("Get Started button clicked - navigating to /register");
-                  window.location.href = "/register";
+                  setLocation("/register");
                 }}
                 className="gradient-accent hover-glow text-white border-0"
               >
@@ -63,7 +65,7 @@ export default function Landing() {
             <Button 
               onClick={() => {
                 console.log("Create Free Account button clicked - navigating to /register");
-                window.location.href = "/register";
+                setLocation("/register");
               }}
               size="lg"
               className="btn-primary px-12 py-4 text-lg"
@@ -165,7 +167,10 @@ export default function Landing() {
             Click below to create your account and start your free trial. You'll be guided through a secure registration process.
           </p>
           <Button 
-            onClick={() => window.location.href = "/register"}
+            onClick={() => {
+              console.log("Bottom CTA button clicked - navigating to /register");
+              setLocation("/register");
+            }}
             size="lg"
             className="bg-white text-teal hover:bg-white/90 px-12 py-4 text-lg font-semibold border-0"
           >
