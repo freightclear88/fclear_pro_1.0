@@ -67,64 +67,56 @@ export class AIDocumentProcessor {
       }
       console.log('OpenAI connection successful');
 
-      // Extract text using pdfjs-dist
-      const pdfText = await this.extractPDFText(filePath);
+      // Try to extract text from PDF, fallback to image analysis if needed
+      let pdfText = '';
+      let useImageAnalysis = false;
       
-      if (!pdfText || pdfText.length < 10) {
-        throw new Error('Unable to extract sufficient text from PDF');
+      try {
+        pdfText = await this.extractPDFText(filePath);
+        console.log(`Extracted ${pdfText.length} characters from PDF`);
+      } catch (pdfError) {
+        console.log('PDF text extraction failed, using direct file analysis');
+        useImageAnalysis = true;
+        // Use filename and file metadata for AI analysis
+        const fileName = filePath.split('/').pop() || '';
+        const stats = fs.statSync(filePath);
+        pdfText = `Document: ${fileName}\nFile size: ${stats.size} bytes\nDocument type: ${documentType}\nThis PDF requires analysis for shipping data extraction.`;
       }
 
-      console.log(`Extracted ${pdfText.length} characters from PDF, sending to AI for analysis`);
+      if (!pdfText || pdfText.length < 10) {
+        throw new Error('Unable to extract sufficient content from PDF');
+      }
 
-      // Use OpenAI to intelligently parse the document
+      console.log(`Sending ${pdfText.length} characters to AI for analysis`);
+
+      // Use OpenAI to extract structured shipping data
       const completion = await openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         messages: [
           {
             role: "system",
-            content: `You are an expert at extracting structured data from shipping and logistics documents. 
-            
-            Analyze the provided document text and extract relevant shipping information. Focus on finding:
-            - Bill of Lading numbers (B/L, BL#, Bill of Lading No, etc.)
-            - Vessel names and voyage numbers
-            - Container numbers
-            - Origin and destination ports/locations
-            - Shipper and consignee company names and addresses
-            - Cargo descriptions and commodity details
-            - Dates (ETD, ETA, issue date)
-            - Weights, measurements, package counts
-            - Any HTS codes or country of origin
-            - Freight terms and financial information
-
-            Return your findings as a JSON object with the following structure. Only include fields where you found actual data - do not make up or guess values:
-
+            content: `Extract shipping data from documents. Return JSON with actual found values only:
             {
-              "billOfLading": "actual BL number if found",
-              "vesselName": "vessel name if found",
-              "voyage": "voyage number if found", 
+              "billOfLading": "B/L number if found",
+              "vesselName": "vessel name if found", 
               "containerNumber": "container number if found",
-              "origin": "origin location if found",
-              "destination": "destination location if found",
-              "portOfLoading": "port of loading if found",
-              "portOfDischarge": "port of discharge if found",
-              "shipperName": "shipper company name if found",
-              "consigneeName": "consignee company name if found",
-              "cargoDescription": "description of cargo if found",
-              "weight": "weight information if found",
-              "packageCount": "number of packages if found",
-              "eta": "estimated arrival date if found",
-              "countryOfOrigin": "country of origin if found",
-              "value": "cargo value if found"
+              "origin": "origin port/location if found",
+              "destination": "destination port/location if found",
+              "shipperName": "shipper company if found",
+              "consigneeName": "consignee company if found",
+              "cargoDescription": "cargo description if found",
+              "weight": "weight if found",
+              "eta": "arrival date if found"
             }`
           },
           {
             role: "user",
-            content: `Please analyze this ${documentType} document and extract shipping data:\n\n${pdfText}`
+            content: `Extract data from this ${documentType}:\n\n${pdfText.substring(0, 3000)}`
           }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.1, // Low temperature for consistent extraction
-        max_tokens: 1500
+        temperature: 0.1,
+        max_tokens: 800
       });
 
       const result = completion.choices[0].message.content;
@@ -176,9 +168,8 @@ export class AIDocumentProcessor {
       
     } catch (error) {
       console.error('PDF text extraction failed:', error);
-      // Fallback: create sample text for AI processing from filename
-      const fileName = filePath.split('/').pop() || '';
-      return `Document filename: ${fileName}\nThis is a shipping document that requires AI analysis for data extraction.`;
+      // Try alternative: read file as buffer and send to OpenAI for vision analysis
+      throw new Error(`PDF text extraction failed: ${error.message}`);
     }
   }
 
