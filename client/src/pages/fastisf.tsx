@@ -197,61 +197,64 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
 
       const result = await response.json();
       
-      // Populate form with extracted data
-      if (result.extractedData) {
-        console.log("Extracted data received:", result.extractedData);
-        
-        // Map extracted fields to actual ISF form fields based on console output
-        const fieldMapping: Record<string, string> = {
-          importerName: 'importerName', // This field exists in the form
-          consigneeName: 'consigneeName', // This field exists in the form  
-          manufacturerCountry: 'manufacturerCountry', // This field exists in the form
-          countryOfOrigin: 'countryOfOrigin', // This field exists in the form
-          htsusNumber: 'htsusNumber', // This field exists in the form
-          commodityDescription: 'commodityDescription', // This field exists in the form
-          portOfEntry: 'portOfEntry', // This field exists in the form
-          billOfLading: 'billOfLading', // Use correct field name
-          vesselName: 'vesselName', // This field exists in the form
-          estimatedArrivalDate: 'estimatedArrivalDate' // This field exists in the form
-        };
-
-        // First, let's see what form fields are available
-        console.log("Current form values:", form.getValues());
-        console.log("Form field names:", Object.keys(form.getValues()));
-
-        Object.entries(result.extractedData).forEach(([extractedKey, value]) => {
-          const formFieldKey = fieldMapping[extractedKey] || extractedKey;
+      // Handle the new response format with auto-created ISF filing
+      if (result.success) {
+        if (result.isfFiling) {
+          // ISF filing was automatically created - inform user and close form
+          toast({
+            title: "ISF Filing Created",
+            description: `ISF ${result.isfFiling.isfNumber} created from scanned document. Check your filings list to edit and complete details.`,
+          });
           
-          if (value && value.toString().trim()) {
-            console.log(`Attempting to set ${formFieldKey} = ${value}`);
+          // Close the form and refresh the filings list
+          onSuccess();
+          return;
+        }
+        
+        // Fallback: only extracted data without filing creation
+        if (result.extractedData) {
+          console.log("Extracted data received:", result.extractedData);
+          
+          const fieldMapping: Record<string, string> = {
+            importerName: 'importerName',
+            consigneeName: 'consigneeName',  
+            manufacturerCountry: 'manufacturerCountry',
+            countryOfOrigin: 'countryOfOrigin',
+            htsusNumber: 'htsusNumber',
+            commodityDescription: 'commodityDescription',
+            portOfEntry: 'portOfEntry',
+            billOfLading: 'billOfLading',
+            vesselName: 'vesselName',
+            estimatedArrivalDate: 'estimatedArrivalDate'
+          };
+
+          Object.entries(result.extractedData).forEach(([extractedKey, value]) => {
+            const formFieldKey = fieldMapping[extractedKey] || extractedKey;
             
-            // Check if this field exists in the form by looking at all form field names
-            const allFormFields = Object.keys(form.getValues());
-            if (allFormFields.includes(formFieldKey)) {
-              try {
-                form.setValue(formFieldKey as keyof IsfFormData, value.toString().trim(), { 
-                  shouldValidate: false, 
-                  shouldDirty: true 
-                });
-                console.log(`Successfully set ${formFieldKey} = ${value}`);
-              } catch (error) {
-                console.error(`Failed to set ${formFieldKey}:`, error);
+            if (value && value.toString().trim()) {
+              const allFormFields = Object.keys(form.getValues());
+              if (allFormFields.includes(formFieldKey)) {
+                try {
+                  form.setValue(formFieldKey as keyof IsfFormData, value.toString().trim(), { 
+                    shouldValidate: false, 
+                    shouldDirty: true 
+                  });
+                } catch (error) {
+                  console.error(`Failed to set ${formFieldKey}:`, error);
+                }
               }
-            } else {
-              console.warn(`Field ${formFieldKey} does not exist in form schema`);
             }
-          }
-        });
+          });
 
-        // Force form re-render by triggering a validation
-        setTimeout(() => {
-          form.trigger();
-        }, 100);
+          setTimeout(() => {
+            form.trigger();
+          }, 100);
 
-        toast({
-          title: "Document scanned successfully",
-          description: `Form populated with data from ${file.name}`,
-        });
+          toast({
+            title: "Document scanned successfully",
+            description: `Form populated with data from ${file.name}`,
+          });
+        }
       } else {
         toast({
           title: "No data extracted",
