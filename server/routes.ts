@@ -3911,25 +3911,123 @@ ${fullText}`;
           }
         }
       } else if (fileExtension === 'doc' || fileExtension === 'docx') {
-        // Handle DOC/DOCX files using OpenAI vision for text extraction
-        console.log("DOC/DOCX file detected, using text extraction");
+        // Handle DOC/DOCX files using Azure Document Intelligence
+        console.log("DOC/DOCX file detected, using Azure Document Intelligence for extraction");
+        let fullText = "";
         try {
-          // For DOC files, we'll use a basic approach since they're binary
-          extractedData = {
-            importerName: `Document uploaded: ${req.file.originalname}`,
-            consigneeName: "Please review document and complete",
-            manufacturerCountry: null,
-            countryOfOrigin: null,
-            htsusNumber: null,
-            commodityDescription: "Please extract from DOC file",
-            portOfEntry: null,
-            billOfLading: null,
-            vesselName: null,
-            estimatedArrivalDate: null,
-          };
-        } catch (docError) {
-          console.error("DOC processing error:", docError);
+          const { DocumentAnalysisClient, AzureKeyCredential } = await import("@azure/ai-form-recognizer");
+          const fs = await import('fs');
+          
+          const client = new DocumentAnalysisClient(
+            process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT!,
+            new AzureKeyCredential(process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY!)
+          );
+          
+          const documentBuffer = fs.default.readFileSync(req.file.path);
+          const poller = await client.beginAnalyzeDocument("prebuilt-document", documentBuffer);
+          const result = await poller.pollUntilDone();
+          
+          // Extract text content from the document
+          fullText = result.content || "";
+          console.log("Extracted DOC/DOCX text:", fullText.substring(0, 500) + "...");
+          
+          // Use OpenAI to extract structured ISF data from the document text
+          const OpenAI = await import('openai');
+          const openaiClient = new OpenAI.default({ apiKey: process.env.OPENAI_API_KEY });
+          
+          const prompt = `Extract ISF (Importer Security Filing) data from this shipping document text. Return ONLY a JSON object with these exact fields (use null for missing data):
+
+{
+  "importerName": "company name of importer",
+  "consigneeName": "company name of consignee", 
+  "manufacturerCountry": "country where goods were manufactured",
+  "countryOfOrigin": "country of origin",
+  "htsusNumber": "10-digit HTS/tariff code",
+  "commodityDescription": "description of goods",
+  "portOfEntry": "US port of entry",
+  "billOfLading": "bill of lading number",
+  "vesselName": "vessel/ship name",
+  "estimatedArrivalDate": "YYYY-MM-DD format"
+}
+
+Document text:
+${fullText}`;
+
+          const aiResponse = await openaiClient.chat.completions.create({
+            model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+            messages: [{ role: "user", content: prompt }],
+            response_format: { type: "json_object" },
+            max_tokens: 1000,
+          });
+
+          const aiExtractedData = JSON.parse(aiResponse.choices[0].message.content);
+          console.log("AI extracted DOC/DOCX ISF data:", aiExtractedData);
+          
+          // Clean and validate the extracted data
           extractedData = {};
+          Object.entries(aiExtractedData).forEach(([key, value]) => {
+            if (value && value !== "null" && value !== "") {
+              extractedData[key] = value;
+            }
+          });
+          
+        } catch (docError) {
+          console.error("DOC/DOCX processing error:", docError);
+          
+          // Fallback: Attempt basic text extraction if AI processing fails
+          if (fullText) {
+            console.log("Using fallback pattern matching for DOC/DOCX data extraction...");
+            
+            // Extract vessel information
+            const vesselMatch = fullText.match(/Vessel[\/\s]*(?:voyage\s*)?[\s:]*([A-Z\s]+)\s+V?\.?(\w+)/i);
+            let vesselName = null, voyageNumber = null;
+            if (vesselMatch) {
+              vesselName = vesselMatch[1].trim();
+              voyageNumber = vesselMatch[2];
+            }
+            
+            // Extract container number
+            const containerMatch = fullText.match(/Container[^:]*[:]*\s*([A-Z]{4}\d{7})/i);
+            const containerNumbers = containerMatch ? containerMatch[1] : null;
+            
+            // Extract Bill of Lading
+            const blMatch = fullText.match(/(?:HB\/L|MB\/L|BL)\s*NO[\.\s]*[:]*\s*([A-Z0-9]+)/i);
+            const billOfLading = blMatch ? blMatch[1] : null;
+            
+            // Extract destination port
+            const portMatch = fullText.match(/(?:Destinat|Destination)[^:]*[:]*\s*([A-Z\s,]+)/i);
+            const portOfEntry = portMatch ? portMatch[1].trim() : null;
+            
+            // Extract arrival date
+            const dateMatch = fullText.match(/Arrival\s+date[^:]*[:]*\s*(\d{1,2}\/\d{1,2}\/\d{4})/i);
+            let estimatedArrivalDate = null;
+            if (dateMatch) {
+              const [month, day, year] = dateMatch[1].split('/');
+              estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            }
+            
+            extractedData = {
+              importerName: null,
+              consigneeName: null, 
+              manufacturerCountry: null,
+              countryOfOrigin: null,
+              htsusNumber: null,
+              commodityDescription: null,
+              portOfEntry,
+              billOfLading,
+              vesselName,
+              voyageNumber,
+              containerNumbers,
+              estimatedArrivalDate
+            };
+            
+            // Filter out null values
+            extractedData = Object.fromEntries(
+              Object.entries(extractedData).filter(([_, value]) => value !== null)
+            );
+          } else {
+            extractedData = {};
+          }
         }
       } else if (fileExtension === 'jpg' || fileExtension === 'jpeg' || fileExtension === 'png') {
         // Handle Image files using OpenAI Vision API
