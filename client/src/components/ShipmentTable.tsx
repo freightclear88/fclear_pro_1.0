@@ -98,34 +98,34 @@ Weight: ${shipment?.weight || "N/A"}
     const [viewingDocument, setViewingDocument] = useState<Document | null>(null);
     const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
     
-    const { data: documents = [] } = useQuery({
+    const { data: documents = [] } = useQuery<Document[]>({
       queryKey: ["/api/documents", shipmentId],
     });
 
-    const handleViewPdf = (document: Document) => {
-      setViewingDocument(document);
+    const handleViewPdf = (doc: Document) => {
+      setViewingDocument(doc);
       setIsPdfViewerOpen(true);
     };
 
-    const handleDownload = async (document: Document) => {
+    const handleDownload = async (doc: Document) => {
       try {
-        const response = await fetch(`/api/documents/${document.id}/download`);
+        const response = await fetch(`/api/documents/${doc.id}/download`);
         if (!response.ok) throw new Error('Download failed');
         
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = window.document.createElement('a');
         a.style.display = 'none';
         a.href = url;
-        a.download = document.originalName || 'document';
-        document.body.appendChild(a);
+        a.download = doc.originalName || 'document';
+        window.document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        window.document.body.removeChild(a);
         
         toast({
           title: "Download Complete",
-          description: `Downloaded ${document.originalName}`,
+          description: `Downloaded ${doc.originalName}`,
         });
       } catch (error) {
         toast({
@@ -435,11 +435,13 @@ Weight: ${shipment?.weight || "N/A"}
       })}
 
       {/* HTML Page Modal */}
-      <ShipmentHtmlPage
-        shipment={selectedShipment}
-        isOpen={isHtmlPageOpen}
-        onClose={() => setIsHtmlPageOpen(false)}
-      />
+      {selectedShipment && (
+        <ShipmentHtmlPage
+          shipment={selectedShipment}
+          isOpen={isHtmlPageOpen}
+          onClose={() => setIsHtmlPageOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -86,6 +86,28 @@ export const OCEAN_CARRIERS: CarrierInfo[] = [
     trackingUrl: "https://www.hmm21.com/cms/business/ebiz/trackTrace/trackTrace/index.jsp",
     blPattern: /^HDMU\d{9}$/,
     containerPrefixes: ["HDMU"]
+  },
+  // Generic patterns for non-SCAC BL numbers (forwarders, smaller carriers)
+  {
+    name: "Generic Ocean Carrier",
+    scacCode: "GENERIC",
+    trackingUrl: "https://www.track-trace.com/container",
+    blPattern: /^\d{8,12}$/,  // 8-12 digit numeric BL numbers
+    containerPrefixes: []
+  },
+  {
+    name: "Mixed Alphanumeric Carrier",
+    scacCode: "MIXED",
+    trackingUrl: "https://www.searates.com/container/tracking/",
+    blPattern: /^[A-Z]{2,6}\d{6,10}$/,  // 2-6 letters + 6-10 digits
+    containerPrefixes: []
+  },
+  {
+    name: "Forwarding Agent BL",
+    scacCode: "FORWARDER", 
+    trackingUrl: "https://www.track-trace.com/container",
+    blPattern: /^[A-Z0-9]{8,15}$/,  // Mixed alphanumeric 8-15 chars
+    containerPrefixes: []
   }
 ];
 
@@ -146,6 +168,12 @@ export function generateTrackingUrl(blNumber: string): string | null {
       return `${carrier.trackingUrl}?trackingNumber=${blNumber}`;
     case 'CMAU':
       return `${carrier.trackingUrl}?trackingNumber=${blNumber}`;
+    case 'GENERIC':
+      return `${carrier.trackingUrl}?number=${blNumber}`;
+    case 'MIXED':
+      return `${carrier.trackingUrl}?container=${blNumber}`;
+    case 'FORWARDER':
+      return `${carrier.trackingUrl}?number=${blNumber}`;
     default:
       return carrier.trackingUrl;
   }
