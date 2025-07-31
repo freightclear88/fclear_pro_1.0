@@ -22,6 +22,7 @@ import Payments from "@/pages/payments";
 
 import Chat from "@/pages/chat";
 import FastIsf from "@/pages/fastisf";
+import IsfEdit from "@/pages/isf-edit";
 import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle, FileText, Menu, X } from "lucide-react";
 import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_1751903859339.png";
 
@@ -239,6 +240,7 @@ function Router() {
         <Route path="/" component={Dashboard} />
         <Route path="/shipments" component={Shipments} />
         <Route path="/fastisf" component={FastIsf} />
+        <Route path="/isf/edit/:id" component={IsfEdit} />
         <Route path="/chat" component={Chat} />
         <Route path="/subscription" component={Subscription} />
         <Route path="/payments" component={Payments} />

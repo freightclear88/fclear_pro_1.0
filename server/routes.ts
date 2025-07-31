@@ -3573,6 +3573,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update ISF filing
+  app.put('/api/isf/filings/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = getUserId(req);
+      
+      // Get existing filing to check ownership
+      const existingFiling = await storage.getIsfFilingById(parseInt(id));
+      if (!existingFiling) {
+        return res.status(404).json({ message: "ISF filing not found" });
+      }
+
+      // Check if user owns this filing or is admin/agent
+      const user = await storage.getUser(userId);
+      if (existingFiling.userId !== userId && !user?.isAdmin && !user?.isAgent) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Don't allow updates to submitted/paid filings unless admin
+      if (existingFiling.status === 'submitted' && !user?.isAdmin) {
+        return res.status(400).json({ message: "Cannot modify submitted ISF filing" });
+      }
+
+      // Update the filing with new data
+      const updatedFiling = await storage.updateIsfFiling(parseInt(id), req.body);
+      
+      res.json({
+        success: true,
+        isfFiling: updatedFiling,
+        message: "ISF filing updated successfully"
+      });
+
+    } catch (error) {
+      console.error("Error updating ISF filing:", error);
+      res.status(500).json({ message: "Failed to update ISF filing" });
+    }
+  });
+
+  // Submit ISF filing for processing
+  app.post('/api/isf/filings/:id/submit', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = getUserId(req);
+      
+      // Get existing filing to check ownership and completeness
+      const existingFiling = await storage.getIsfFilingById(parseInt(id));
+      if (!existingFiling) {
+        return res.status(404).json({ message: "ISF filing not found" });
+      }
+
+      // Check if user owns this filing
+      if (existingFiling.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Check if already submitted
+      if (existingFiling.status === 'submitted') {
+        return res.status(400).json({ message: "ISF filing already submitted" });
+      }
+
+      // Validate required fields are not TBD
+      const requiredFields = [
+        'importerOfRecord', 'importerName', 'consigneeName', 'consigneeNumber',
+        'manufacturerName', 'manufacturerCountry', 'shipToPartyName', 
+        'countryOfOrigin', 'htsusNumber', 'commodityDescription',
+        'containerStuffingLocation', 'bookingPartyName', 'portOfEntry', 'foreignPortOfUnlading'
+      ];
+
+      const missingFields = requiredFields.filter(field => 
+        !existingFiling[field] || existingFiling[field] === 'TBD'
+      );
+
+      if (missingFields.length > 0) {
+        return res.status(400).json({ 
+          message: "Please complete all required fields before submission",
+          missingFields
+        });
+      }
+
+      // Update status to submitted and set submission timestamp
+      const updatedFiling = await storage.updateIsfFiling(parseInt(id), {
+        status: 'submitted',
+        submittedAt: new Date()
+      });
+
+      res.json({
+        success: true,
+        isfFiling: updatedFiling,
+        message: "ISF filing submitted successfully. Proceed to payment.",
+        paymentRequired: true,
+        amount: 35.00
+      });
+
+    } catch (error) {
+      console.error("Error submitting ISF filing:", error);
+      res.status(500).json({ message: "Failed to submit ISF filing" });
+    }
+  });
+
   app.post('/api/isf/scan-document', requireSubscription, upload.single('isfDocument'), async (req: any, res) => {
     try {
       if (!req.file) {
@@ -3870,7 +3969,8 @@ ${fullText}`;
           createdAt: isfFiling.createdAt
         },
         documentId: document.id,
-        message: `Document scanned successfully (${fileExtension?.toUpperCase()} file). ISF filing ${isfNumber} created with extracted data. Please review and complete the remaining details.`
+        message: `Document scanned successfully (${fileExtension?.toUpperCase()} file). ISF filing ${isfNumber} created with extracted data. Please review and complete the remaining details.`,
+        editUrl: `/isf/edit/${isfFiling.id}`
       });
     } catch (error) {
       console.error("Error scanning ISF document:", error);

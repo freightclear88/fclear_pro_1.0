@@ -35,7 +35,7 @@ The application follows a modern full-stack architecture with clear separation b
 -   **API Structure**: RESTful endpoints
 -   **Payment Gateway**: Authorize.Net integration for subscription billing
 -   **Access Control**: Subscription middleware enforcing usage limits
--   **Document Processing**: AI-powered OCR using OpenAI GPT-4o and Azure Document Intelligence for data extraction (supporting PDF, JPEG, PNG, TIFF, BMP)
+-   **Document Processing**: AI-powered OCR using OpenAI GPT-4o and Azure Document Intelligence for data extraction (supporting PDF, Excel, Word documents) with automatic ISF filing creation and intelligent field mapping
 -   **Reporting**: CSV export for shipments
 -   **XML Integration**: Server-side XML processing engine for UN/EDIFACT COPRAR, COPARN, generic shipments, and container status formats.
 
@@ -60,7 +60,7 @@ The application follows a modern full-stack architecture with clear separation b
 -   **IRS Proof Upload**: User profile integration with admin verification.
 -   **Invoice Management**: Admin/agent upload of invoices, user-specific invoice display, and "Pay Now" functionality.
 -   **Last Mile Integration**: Dedicated document categories and sub-categories, with automatic shipment creation from delivery orders.
--   **Fast ISF Filing**: Comprehensive 10+2 form, integration with Authorize.Net for payments, and Excel/XLS file support for data scanning.
+-   **Fast ISF Filing**: Comprehensive 10+2 form with AI-powered document scanning, automatic ISF filing creation from uploaded documents, ISF editing workflow, and Stripe payment integration ($35.00 filing fee).
 -   **XML Integration**: Support for external shipment database updates using XML (UN/EDIFACT, SMDG) with bidirectional data mapping.
 -   **Chat/Support System**: Integrated customer support via Zendesk API for ticket management.
 -   **Pagination**: Implemented for large data sets (e.g., shipments table) for improved performance.

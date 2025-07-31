@@ -13,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Link } from "wouter";
 import { FileText, Upload, CreditCard, Ship, Plane, Truck, Calendar, MapPin, Building2, DollarSign, CheckCircle, Clock, AlertCircle, FileUp } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -200,14 +201,19 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       // Handle the new response format with auto-created ISF filing
       if (result.success) {
         if (result.isfFiling) {
-          // ISF filing was automatically created - inform user and close form
+          // ISF filing was automatically created - inform user and redirect to edit page
           toast({
-            title: "ISF Filing Created",
-            description: `ISF ${result.isfFiling.isfNumber} created from scanned document. Check your filings list to edit and complete details.`,
+            title: "Document Scanned Successfully",
+            description: `ISF ${result.isfFiling.isfNumber} created with extracted data. Complete the remaining fields and submit for payment.`,
           });
           
-          // Close the form and refresh the filings list
+          // Close the form and redirect to edit page
           onSuccess();
+          
+          // Redirect to edit page after a brief delay
+          setTimeout(() => {
+            window.location.href = `/isf/edit/${result.isfFiling.id}`;
+          }, 1500);
           return;
         }
         
@@ -1578,9 +1584,11 @@ function IsfFilingsList() {
                   <TableCell>
                     <div className="flex gap-2">
                       {filing.status === "draft" && (
-                        <Button variant="outline" size="sm">
-                          Edit
-                        </Button>
+                        <Link href={`/isf/edit/${filing.id}`}>
+                          <Button variant="outline" size="sm">
+                            Edit
+                          </Button>
+                        </Link>
                       )}
                       {filing.paymentStatus === "pending" && (
                         <Button size="sm" className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600">
