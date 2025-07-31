@@ -3830,19 +3830,67 @@ ${fullText}`;
           
         } catch (pdfError) {
           console.error("PDF parsing error:", pdfError);
-          // Fallback to basic text extraction if Azure fails
-          extractedData = {
-            importerName: "Data extraction in progress",
-            consigneeName: "Please review and complete", 
-            manufacturerCountry: "TBD",
-            countryOfOrigin: "TBD",
-            htsusNumber: "0000000000",
-            commodityDescription: "Please verify commodity details",
-            portOfEntry: "TBD",
-            billOfLading: "TBD",
-            vesselName: "TBD",
-            estimatedArrivalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          };
+          
+          // Fallback: Extract data using pattern matching if OpenAI fails
+          if (fullText) {
+            console.log("Using fallback pattern matching for PDF data extraction...");
+            
+            // Extract vessel information
+            const vesselMatch = fullText.match(/Vessel[\/\s]*(?:voyage\s*)?[\s:]*([A-Z\s]+)\s+V?\.?(\w+)/i);
+            let vesselName = null, voyageNumber = null;
+            if (vesselMatch) {
+              vesselName = vesselMatch[1].trim();
+              voyageNumber = vesselMatch[2];
+            }
+            
+            // Extract container number
+            const containerMatch = fullText.match(/Container[^:]*[:]*\s*([A-Z]{4}\d{7})/i);
+            const containerNumbers = containerMatch ? containerMatch[1] : null;
+            
+            // Extract Bill of Lading
+            const blMatch = fullText.match(/(?:HB\/L|MB\/L|BL)\s*NO[\.\s]*[:]*\s*([A-Z0-9]+)/i);
+            const billOfLading = blMatch ? blMatch[1] : null;
+            
+            // Extract destination port
+            const portMatch = fullText.match(/(?:Destinat|Destination)[^:]*[:]*\s*([A-Z\s,]+)/i);
+            const portOfEntry = portMatch ? portMatch[1].trim() : "TBD";
+            
+            // Extract arrival date
+            const dateMatch = fullText.match(/Arrival\s+date[^:]*[:]*\s*(\d{1,2}\/\d{1,2}\/\d{4})/i);
+            let estimatedArrivalDate = null;
+            if (dateMatch) {
+              const [month, day, year] = dateMatch[1].split('/');
+              estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            }
+            
+            extractedData = {
+              importerName: 'TBD',
+              consigneeName: 'TBD', 
+              manufacturerCountry: 'TBD',
+              countryOfOrigin: 'TBD',
+              htsusNumber: 'TBD',
+              commodityDescription: 'TBD',
+              portOfEntry,
+              billOfLading,
+              vesselName,
+              voyageNumber,
+              containerNumbers,
+              estimatedArrivalDate
+            };
+          } else {
+            extractedData = {
+              importerName: "Data extraction in progress",
+              consigneeName: "Please review and complete", 
+              manufacturerCountry: "TBD",
+              countryOfOrigin: "TBD",
+              htsusNumber: "0000000000",
+              commodityDescription: "Please verify commodity details",
+              portOfEntry: "TBD",
+              billOfLading: "TBD",
+              vesselName: "TBD",
+              estimatedArrivalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            };
+          }
         }
       } else {
         // For other file types (DOC, images), use enhanced sample data
@@ -3937,9 +3985,9 @@ ${fullText}`;
         foreignPortOfUnlading: 'TBD',
 
         billOfLading: extractedData.billOfLading || null,
-        containerNumbers: null,
+        containerNumbers: extractedData.containerNumbers || null,
         vesselName: extractedData.vesselName || null,
-        voyageNumber: null,
+        voyageNumber: extractedData.voyageNumber || null,
         estimatedArrivalDate: extractedData.estimatedArrivalDate ? new Date(extractedData.estimatedArrivalDate) : null,
         portOfEntry: extractedData.portOfEntry || 'TBD',
 
