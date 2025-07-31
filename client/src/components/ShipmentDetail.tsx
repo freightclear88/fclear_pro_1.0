@@ -53,7 +53,7 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     
     return (
-      <Badge variant={config.variant} className={config.className}>
+      <Badge variant={config.variant} className={config.className || ""}>
         {config.label}
       </Badge>
     );
@@ -115,15 +115,15 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
                 </div>
               )}
 
-              {shipment.billOfLading && (
+              {shipment.billOfLadingNumber && (
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Bill of Lading:</span>
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium">{shipment.billOfLading}</span>
+                    <span className="font-medium">{shipment.billOfLadingNumber}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleCopyField("Bill of Lading", shipment.billOfLading!)}
+                      onClick={() => handleCopyField("Bill of Lading", shipment.billOfLadingNumber!)}
                       className="text-freight-orange hover:text-freight-dark"
                     >
                       <Copy className="w-3 h-3" />
@@ -132,15 +132,15 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
                 </div>
               )}
 
-              {shipment.vessel && (
+              {shipment.vesselAndVoyage && (
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Vessel:</span>
+                  <span className="text-gray-600">Vessel & Voyage:</span>
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium">{shipment.vessel}</span>
+                    <span className="font-medium">{shipment.vesselAndVoyage}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleCopyField("Vessel", shipment.vessel!)}
+                      onClick={() => handleCopyField("Vessel & Voyage", shipment.vesselAndVoyage!)}
                       className="text-freight-orange hover:text-freight-dark"
                     >
                       <Copy className="w-3 h-3" />
@@ -150,14 +150,21 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
               )}
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Origin:</span>
-                <span className="font-medium">{shipment.origin}</span>
+                <span className="text-gray-600">Port of Loading:</span>
+                <span className="font-medium">{shipment.portOfLoading}</span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Destination:</span>
-                <span className="font-medium">{shipment.destination}</span>
+                <span className="text-gray-600">Port of Discharge:</span>
+                <span className="font-medium">{shipment.portOfDischarge}</span>
               </div>
+
+              {shipment.weight && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Weight:</span>
+                  <span className="font-medium">{shipment.weight} {shipment.weightUnit || 'KG'}</span>
+                </div>
+              )}
 
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Status:</span>
@@ -167,6 +174,63 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
               </div>
             </CardContent>
           </Card>
+
+          {/* Ocean Bill of Lading Party Information */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg py-2">Parties Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {shipment.shipperName && (
+                <div className="border-l-4 border-freight-blue pl-4">
+                  <h4 className="font-semibold text-freight-blue mb-2">Shipper</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="font-medium">{shipment.shipperName}</div>
+                    {shipment.shipperAddress && <div className="text-gray-600">{shipment.shipperAddress}</div>}
+                    {(shipment.shipperCity || shipment.shipperState || shipment.shipperZipCode) && (
+                      <div className="text-gray-600">
+                        {[shipment.shipperCity, shipment.shipperState, shipment.shipperZipCode].filter(Boolean).join(', ')}
+                      </div>
+                    )}
+                    {shipment.shipperCountry && <div className="text-gray-600">{shipment.shipperCountry}</div>}
+                  </div>
+                </div>
+              )}
+
+              {shipment.consigneeName && (
+                <div className="border-l-4 border-freight-green pl-4">
+                  <h4 className="font-semibold text-freight-green mb-2">Consignee</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="font-medium">{shipment.consigneeName}</div>
+                    {shipment.consigneeAddress && <div className="text-gray-600">{shipment.consigneeAddress}</div>}
+                    {(shipment.consigneeCity || shipment.consigneeState || shipment.consigneeZipCode) && (
+                      <div className="text-gray-600">
+                        {[shipment.consigneeCity, shipment.consigneeState, shipment.consigneeZipCode].filter(Boolean).join(', ')}
+                      </div>
+                    )}
+                    {shipment.consigneeCountry && <div className="text-gray-600">{shipment.consigneeCountry}</div>}
+                  </div>
+                </div>
+              )}
+
+              {shipment.notifyPartyName && (
+                <div className="border-l-4 border-freight-orange pl-4">
+                  <h4 className="font-semibold text-freight-orange mb-2">Notify Party</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="font-medium">{shipment.notifyPartyName}</div>
+                    {shipment.notifyPartyAddress && <div className="text-gray-600">{shipment.notifyPartyAddress}</div>}
+                    {(shipment.notifyPartyCity || shipment.notifyPartyState || shipment.notifyPartyZipCode) && (
+                      <div className="text-gray-600">
+                        {[shipment.notifyPartyCity, shipment.notifyPartyState, shipment.notifyPartyZipCode].filter(Boolean).join(', ')}
+                      </div>
+                    )}
+                    {shipment.notifyPartyCountry && <div className="text-gray-600">{shipment.notifyPartyCountry}</div>}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between py-2">
@@ -206,7 +270,6 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
             >
               Close
             </Button>
-          </div>
           </div>
         </div>
       </DialogContent>
