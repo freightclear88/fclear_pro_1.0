@@ -1203,8 +1203,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         try {
           // Use AI-powered document processing for intelligent data extraction
-          if (file.mimetype === 'application/pdf') {
-            console.log(`Processing PDF with AI: ${file.originalname} at ${file.path}`);
+          const supportedMimeTypes = [
+            'application/pdf',
+            'image/jpeg',
+            'image/jpg', 
+            'image/png',
+            'image/tiff',
+            'image/bmp'
+          ];
+          
+          if (supportedMimeTypes.includes(file.mimetype)) {
+            console.log(`Processing ${file.mimetype} with AI: ${file.originalname} at ${file.path}`);
             
             try {
               // Check if Azure Document Intelligence is available
@@ -1276,10 +1285,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               };
             }
           } else {
-            // For non-PDF files, create basic structure
+            // For unsupported file types, create basic structure
             arrivalNoticeData = {
               shipmentId: `DOC-${Date.now().toString().slice(-6)}`,
-              extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nNote: Real data extraction available for PDF files\nProcessed at: ${processingTime} EST`
+              extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nNote: AI data extraction supports PDF, JPEG, PNG, TIFF, and BMP files\nFile type: ${file.mimetype}\nProcessed at: ${processingTime} EST`
             };
           }
         } catch (error) {
