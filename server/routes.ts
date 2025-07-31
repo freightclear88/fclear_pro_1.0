@@ -3986,7 +3986,7 @@ ${fullText}`;
 
         billOfLading: extractedData.billOfLading || null,
         containerNumbers: extractedData.containerNumbers || null,
-        vesselName: extractedData.vesselName || null,
+        vesselName: extractedData.vesselName || 'TBD',
         voyageNumber: extractedData.voyageNumber || null,
         estimatedArrivalDate: extractedData.estimatedArrivalDate ? new Date(extractedData.estimatedArrivalDate) : null,
         portOfEntry: extractedData.portOfEntry || 'TBD',
