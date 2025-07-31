@@ -116,11 +116,11 @@ export const shipments = pgTable("shipments", {
   xmlVersion: varchar("xml_version"), // Track format version
   
   // Location data - Port and Place Details
-  portOfLoading: varchar("port_of_loading").notNull(), // Renamed from "origin"
+  portOfLoading: varchar("port_of_loading"), // Renamed from "origin"
   originPort: varchar("origin_port"),
   placeOfReceipt: varchar("place_of_receipt"),
   
-  portOfDischarge: varchar("port_of_discharge").notNull(), // Renamed from "destination"
+  portOfDischarge: varchar("port_of_discharge"), // Renamed from "destination"
   placeOfDelivery: varchar("place_of_delivery"), // Additional field for final destination
   destinationPort: varchar("destination_port"),
   
