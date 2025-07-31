@@ -260,8 +260,24 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         // Handle consolidated party information
         const data = result.extractedData;
         
-        // Build consolidated seller information
-        if (data.sellerName || data.sellerAddress || data.sellerCity || data.sellerCountry) {
+        // Handle the new consolidated info fields from backend
+        if (data.sellerInfo && data.sellerInfo.trim()) {
+          form.setValue('sellerInformation', data.sellerInfo);
+          console.log('Set sellerInformation to:', data.sellerInfo);
+        }
+        
+        if (data.buyerInfo && data.buyerInfo.trim()) {
+          form.setValue('buyerInformation', data.buyerInfo);
+          console.log('Set buyerInformation to:', data.buyerInfo);
+        }
+        
+        if (data.manufacturerInfo && data.manufacturerInfo.trim()) {
+          form.setValue('manufacturerInformation', data.manufacturerInfo);
+          console.log('Set manufacturerInformation to:', data.manufacturerInfo);
+        }
+        
+        // Build consolidated seller information (fallback for old format)
+        if (!data.sellerInfo && (data.sellerName || data.sellerAddress || data.sellerCity || data.sellerCountry)) {
           const sellerParts = [];
           if (data.sellerName) sellerParts.push(data.sellerName);
           if (data.sellerAddress) sellerParts.push(data.sellerAddress);
@@ -275,8 +291,8 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           }
         }
 
-        // Build consolidated buyer information
-        if (data.buyerName || data.buyerAddress || data.buyerCity || data.buyerCountry) {
+        // Build consolidated buyer information (fallback for old format)
+        if (!data.buyerInfo && (data.buyerName || data.buyerAddress || data.buyerCity || data.buyerCountry)) {
           const buyerParts = [];
           if (data.buyerName) buyerParts.push(data.buyerName);
           if (data.buyerAddress) buyerParts.push(data.buyerAddress);
@@ -290,8 +306,8 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           }
         }
 
-        // Build consolidated manufacturer information
-        if (data.manufacturerName || data.manufacturerAddress || data.manufacturerCity || data.manufacturerCountry) {
+        // Build consolidated manufacturer information (fallback for old format)
+        if (!data.manufacturerInfo && (data.manufacturerName || data.manufacturerAddress || data.manufacturerCity || data.manufacturerCountry)) {
           const manufacturerParts = [];
           if (data.manufacturerName) manufacturerParts.push(data.manufacturerName);
           if (data.manufacturerAddress) manufacturerParts.push(data.manufacturerAddress);
