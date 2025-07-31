@@ -198,69 +198,60 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
 
       const result = await response.json();
       
-      // Handle the new response format with auto-created ISF filing
-      if (result.success) {
-        if (result.isfFiling) {
-          // ISF filing was automatically created - inform user and redirect to edit page
-          toast({
-            title: "Document Scanned Successfully",
-            description: `ISF ${result.isfFiling.isfNumber} created with extracted data. Complete the remaining fields and submit for payment.`,
-          });
-          
-          // Close the form and redirect to edit page
-          onSuccess();
-          
-          // Redirect to edit page after a brief delay
-          setTimeout(() => {
-            window.location.href = `/isf/edit/${result.isfFiling.id}`;
-          }, 1500);
-          return;
-        }
+      // Handle the response with extracted data
+      if (result.success && result.extractedData) {
+        console.log("Extracted data received:", result.extractedData);
         
-        // Fallback: only extracted data without filing creation
-        if (result.extractedData) {
-          console.log("Extracted data received:", result.extractedData);
-          
-          const fieldMapping: Record<string, string> = {
-            importerName: 'importerName',
-            consigneeName: 'consigneeName',  
-            manufacturerCountry: 'manufacturerCountry',
-            countryOfOrigin: 'countryOfOrigin',
-            htsusNumber: 'htsusNumber',
-            commodityDescription: 'commodityDescription',
-            portOfEntry: 'portOfEntry',
-            billOfLading: 'billOfLading',
-            vesselName: 'vesselName',
-            estimatedArrivalDate: 'estimatedArrivalDate'
-          };
+        // Map extracted data to form fields
+        const fieldMapping: Record<string, keyof IsfFormData> = {
+          importerName: 'importerName',
+          consigneeName: 'consigneeName',  
+          vesselName: 'vesselName',
+          voyageNumber: 'voyageNumber',
+          containerNumbers: 'containerNumbers',
+          billOfLading: 'billOfLading',
+          portOfEntry: 'portOfEntry',
+          estimatedArrivalDate: 'estimatedArrivalDate',
+          manufacturerCountry: 'manufacturerCountry',
+          countryOfOrigin: 'countryOfOrigin',
+          htsusNumber: 'htsusNumber',
+          commodityDescription: 'commodityDescription'
+        };
 
-          Object.entries(result.extractedData).forEach(([extractedKey, value]) => {
-            const formFieldKey = fieldMapping[extractedKey] || extractedKey;
-            
-            if (value && value.toString().trim()) {
-              const allFormFields = Object.keys(form.getValues());
-              if (allFormFields.includes(formFieldKey)) {
-                try {
-                  form.setValue(formFieldKey as keyof IsfFormData, value.toString().trim(), { 
+        // Populate form with extracted data
+        Object.entries(result.extractedData).forEach(([extractedKey, value]) => {
+          const formFieldKey = fieldMapping[extractedKey];
+          
+          if (formFieldKey && value && value.toString().trim()) {
+            try {
+              // Handle date fields specially
+              if (formFieldKey === 'estimatedArrivalDate' && value) {
+                const dateValue = new Date(value.toString());
+                if (!isNaN(dateValue.getTime())) {
+                  form.setValue(formFieldKey, dateValue.toISOString().split('T')[0], { 
                     shouldValidate: false, 
                     shouldDirty: true 
                   });
-                } catch (error) {
-                  console.error(`Failed to set ${formFieldKey}:`, error);
                 }
+              } else {
+                form.setValue(formFieldKey, value.toString().trim(), { 
+                  shouldValidate: false, 
+                  shouldDirty: true 
+                });
               }
+            } catch (error) {
+              console.error(`Failed to set ${formFieldKey}:`, error);
             }
-          });
+          }
+        });
 
-          setTimeout(() => {
-            form.trigger();
-          }, 100);
+        toast({
+          title: "Document Scanned Successfully",
+          description: `Extracted shipping data from ${file.name}. Review and complete the remaining fields before submitting.`,
+        });
+        
+        return;
 
-          toast({
-            title: "Document scanned successfully",
-            description: `Form populated with data from ${file.name}`,
-          });
-        }
       } else {
         toast({
           title: "No data extracted",

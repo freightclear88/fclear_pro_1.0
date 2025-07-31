@@ -3693,6 +3693,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req);
       const fileExtension = req.file.originalname.split('.').pop()?.toLowerCase();
       let extractedData: any = {};
+      
+      // Only extract data for display in form - don't create ISF filing yet
 
       // Handle Excel files (.xls, .xlsx)
       if (fileExtension === 'xlsx' || fileExtension === 'xls') {
@@ -3910,128 +3912,10 @@ ${fullText}`;
         extractedData = getDefaultExtractedData();
       }
 
-      // Create document record for uploaded file
-      const document = await storage.createDocument({
-        userId,
-        shipmentId: null, // ISF documents are not linked to shipments
-        fileName: req.file.filename,
-        originalName: req.file.originalname,
-        fileType: req.file.mimetype || 'application/pdf',
-        fileSize: req.file.size,
-        category: "isf_filing",
-        subCategory: "isf_document_scan",
-        filePath: req.file.path,
-      });
-
-      // Generate unique ISF number for the filing
-      const isfNumber = await storage.generateIsfNumber();
-
-      // Create ISF filing in database with extracted data
-      // Convert extracted data to fit ISF schema with default values
-      const isfFilingData = {
-        userId,
-        isfNumber,
-        status: 'draft',
-        
-        // Map extracted data to ISF schema fields with defaults
-        importerOfRecord: extractedData.importerName || 'TBD',
-        importerName: extractedData.importerName || 'TBD',
-        importerAddress: '123 Main Street', // Default - user needs to update
-        importerCity: 'New York',
-        importerState: 'NY',
-        importerZip: '10001',
-        importerCountry: 'US',
-
-        consigneeNumber: 'TBD',
-        consigneeName: extractedData.consigneeName || 'TBD',
-        consigneeAddress: '456 Business Ave',
-        consigneeCity: 'Los Angeles',
-        consigneeState: 'CA',
-        consigneeZip: '90001',
-        consigneeCountry: 'US',
-
-        manufacturerName: 'TBD',
-        manufacturerAddress: 'TBD',
-        manufacturerCity: 'TBD',
-        manufacturerState: null,
-        manufacturerCountry: extractedData.manufacturerCountry || extractedData.countryOfOrigin || 'TBD',
-
-        shipToPartyName: extractedData.consigneeName || 'TBD',
-        shipToPartyAddress: '789 Delivery St',
-        shipToPartyCity: 'Miami',
-        shipToPartyState: 'FL',
-        shipToPartyZip: '33101',
-        shipToPartyCountry: 'US',
-
-        countryOfOrigin: extractedData.countryOfOrigin || 'TBD',
-        htsusNumber: extractedData.htsusNumber || 'TBD',
-        commodityDescription: extractedData.commodityDescription || 'TBD',
-
-        containerStuffingLocation: 'TBD',
-        containerStuffingCity: 'TBD',
-        containerStuffingCountry: extractedData.manufacturerCountry || extractedData.countryOfOrigin || 'TBD',
-
-        // Optional fields
-        consolidatorName: null,
-        consolidatorAddress: null,
-        consolidatorCity: null,
-        consolidatorCountry: null,
-
-        buyerName: null,
-        buyerAddress: null,
-        buyerCity: null,
-        buyerState: null,
-        buyerZip: null,
-        buyerCountry: null,
-
-        sellerName: null,
-        sellerAddress: null,
-        sellerCity: null,
-        sellerState: null,
-        sellerCountry: null,
-
-        bookingPartyName: 'TBD',
-        bookingPartyAddress: 'TBD',
-        bookingPartyCity: 'TBD',
-        bookingPartyCountry: 'TBD',
-
-        foreignPortOfUnlading: 'TBD',
-
-        billOfLading: extractedData.billOfLading || null,
-        containerNumbers: extractedData.containerNumbers || null,
-        vesselName: extractedData.vesselName || 'TBD',
-        voyageNumber: extractedData.voyageNumber || null,
-        estimatedArrivalDate: extractedData.estimatedArrivalDate ? new Date(extractedData.estimatedArrivalDate) : null,
-        portOfEntry: extractedData.portOfEntry || 'TBD',
-
-        invoiceNumber: null,
-        invoiceDate: null,
-        invoiceValue: null,
-        currency: 'USD',
-        terms: null,
-
-        uploadedDocumentId: document.id,
-        xmlData: null, // Will be generated when filing is submitted
-        paymentRequired: true,
-        paymentAmount: 35.00,
-        paymentStatus: 'pending',
-      };
-
-      // Create the ISF filing
-      const isfFiling = await storage.createIsfFiling(isfFilingData);
-
       res.json({
         success: true,
         extractedData,
-        isfFiling: {
-          id: isfFiling.id,
-          isfNumber: isfFiling.isfNumber,
-          status: isfFiling.status,
-          createdAt: isfFiling.createdAt
-        },
-        documentId: document.id,
-        message: `Document scanned successfully (${fileExtension?.toUpperCase()} file). ISF filing ${isfNumber} created with extracted data. Please review and complete the remaining details.`,
-        editUrl: `/isf/edit/${isfFiling.id}`
+        message: `Document scanned successfully (${fileExtension?.toUpperCase()} file). Review the extracted data and complete remaining fields before submitting.`,
       });
     } catch (error) {
       console.error("Error scanning ISF document:", error);
