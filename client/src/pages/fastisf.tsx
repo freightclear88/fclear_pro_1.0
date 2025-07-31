@@ -162,34 +162,11 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       estimatedDepartureDate: "",
       estimatedArrivalDate: "",
       
-      // Manufacturer/Supplier
-      manufacturerName: "",
-      manufacturerAddress: "",
-      manufacturerCity: "",
-      manufacturerState: "",
-      manufacturerCountry: "",
-      
-      // Seller/Buyer
-      sellerName: "",
-      sellerAddress: "",
-      sellerCity: "",
-      sellerState: "",
-      sellerCountry: "",
-      
-      buyerName: "",
-      buyerAddress: "",
-      buyerCity: "",
-      buyerState: "",
-      buyerZip: "",
-      buyerCountry: "",
-      
-      // Ship-to Party
-      shipToPartyName: "",
-      shipToPartyAddress: "",
-      shipToPartyCity: "",
-      shipToPartyState: "",
-      shipToPartyZip: "",
-      shipToPartyCountry: "US",
+      // Consolidated party information
+      manufacturerInformation: "Enter manufacturer/supplier name\nStreet Address\nCity, State\nCountry",
+      sellerInformation: "Enter seller company name\nStreet Address\nCity, State\nCountry",
+      buyerInformation: "Enter buyer company name\nStreet Address\nCity, State ZIP\nCountry",
+      shipToPartyInformation: "Enter ship-to party name\nStreet Address\nCity, State ZIP\nUSA",
       
       // Container Stuffing Location & Consolidator (Separate)
       containerStuffingLocation: "",
@@ -264,7 +241,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       if (result.success && result.extractedData) {
         console.log("Extracted data received:", result.extractedData);
         
-        // Map extracted data to form fields - ensure exact field name matching
+        // Map extracted data to form fields - using new consolidated field structure
         const fieldMapping: Record<string, string> = {
           vesselName: 'vesselName',
           voyageNumber: 'voyageNumber', 
@@ -272,9 +249,6 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           billOfLading: 'billOfLading',
           portOfEntry: 'portOfEntry',
           estimatedArrivalDate: 'estimatedArrivalDate',
-          importerName: 'importerName',
-          consigneeName: 'consigneeName',
-          manufacturerCountry: 'manufacturerCountry',
           countryOfOrigin: 'countryOfOrigin',
           htsusNumber: 'htsusNumber',
           commodityDescription: 'commodityDescription',
@@ -282,6 +256,68 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           hblScacCode: 'hblScacCode',
           consolidatorStufferInfo: 'consolidatorStufferInfo'
         };
+
+        // Handle consolidated party information
+        const data = result.extractedData;
+        
+        // Build consolidated seller information
+        if (data.sellerName || data.sellerAddress || data.sellerCity || data.sellerCountry) {
+          const sellerParts = [];
+          if (data.sellerName) sellerParts.push(data.sellerName);
+          if (data.sellerAddress) sellerParts.push(data.sellerAddress);
+          if (data.sellerCity && data.sellerCountry) sellerParts.push(`${data.sellerCity}, ${data.sellerCountry}`);
+          else if (data.sellerCity) sellerParts.push(data.sellerCity);
+          else if (data.sellerCountry) sellerParts.push(data.sellerCountry);
+          
+          if (sellerParts.length > 0) {
+            form.setValue('sellerInformation', sellerParts.join('\n'));
+            console.log('Set sellerInformation to:', sellerParts.join('\n'));
+          }
+        }
+
+        // Build consolidated buyer information
+        if (data.buyerName || data.buyerAddress || data.buyerCity || data.buyerCountry) {
+          const buyerParts = [];
+          if (data.buyerName) buyerParts.push(data.buyerName);
+          if (data.buyerAddress) buyerParts.push(data.buyerAddress);
+          if (data.buyerCity && data.buyerCountry) buyerParts.push(`${data.buyerCity}, ${data.buyerCountry}`);
+          else if (data.buyerCity) buyerParts.push(data.buyerCity);
+          else if (data.buyerCountry) buyerParts.push(data.buyerCountry);
+          
+          if (buyerParts.length > 0) {
+            form.setValue('buyerInformation', buyerParts.join('\n'));
+            console.log('Set buyerInformation to:', buyerParts.join('\n'));
+          }
+        }
+
+        // Build consolidated manufacturer information
+        if (data.manufacturerName || data.manufacturerAddress || data.manufacturerCity || data.manufacturerCountry) {
+          const manufacturerParts = [];
+          if (data.manufacturerName) manufacturerParts.push(data.manufacturerName);
+          if (data.manufacturerAddress) manufacturerParts.push(data.manufacturerAddress);
+          if (data.manufacturerCity && data.manufacturerCountry) manufacturerParts.push(`${data.manufacturerCity}, ${data.manufacturerCountry}`);
+          else if (data.manufacturerCity) manufacturerParts.push(data.manufacturerCity);
+          else if (data.manufacturerCountry) manufacturerParts.push(data.manufacturerCountry);
+          
+          if (manufacturerParts.length > 0) {
+            form.setValue('manufacturerInformation', manufacturerParts.join('\n'));
+            console.log('Set manufacturerInformation to:', manufacturerParts.join('\n'));
+          }
+        }
+
+        // Build consolidated ship-to party information
+        if (data.shipToPartyName || data.shipToPartyAddress || data.shipToPartyCity) {
+          const shipToParts = [];
+          if (data.shipToPartyName) shipToParts.push(data.shipToPartyName);
+          if (data.shipToPartyAddress) shipToParts.push(data.shipToPartyAddress);
+          if (data.shipToPartyCity) shipToParts.push(`${data.shipToPartyCity}, USA`);
+          else shipToParts.push('USA');
+          
+          if (shipToParts.length > 0) {
+            form.setValue('shipToPartyInformation', shipToParts.join('\n'));
+            console.log('Set shipToPartyInformation to:', shipToParts.join('\n'));
+          }
+        }
 
         // Store extracted data and populate form
         setExtractedData(result.extractedData);
@@ -320,7 +356,6 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         });
 
         // Handle separate container stuffing location and consolidator/stuffer info from extracted data
-        const data = result.extractedData;
         
         // Build container stuffing location info
         if (!data.containerStuffingLocation && (data.containerStuffingCity || data.containerStuffingCountry)) {
