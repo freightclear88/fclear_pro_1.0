@@ -31,31 +31,116 @@ function getDocumentClient(): DocumentAnalysisClient {
 }
 
 interface ExtractedShipmentData {
+  // Core shipping data
   billOfLading?: string;
   vesselName?: string;
   voyage?: string;
   containerNumber?: string;
+  containerType?: string;
+  sealNumbers?: string[];
+  
+  // Location information
   origin?: string;
   destination?: string;
   portOfLoading?: string;
   portOfDischarge?: string;
+  placeOfReceipt?: string;
+  placeOfDelivery?: string;
+  
+  // Shipper information
   shipperName?: string;
+  shipperAddress?: string;
+  shipperCity?: string;
+  shipperState?: string;
+  shipperZipCode?: string;
+  shipperCountry?: string;
+  shipperContactPerson?: string;
+  shipperPhone?: string;
+  shipperEmail?: string;
+  
+  // Consignee information
   consigneeName?: string;
-  notifyParty?: string;
+  consigneeAddress?: string;
+  consigneeCity?: string;
+  consigneeState?: string;
+  consigneeZipCode?: string;
+  consigneeCountry?: string;
+  consigneeContactPerson?: string;
+  consigneePhone?: string;
+  consigneeEmail?: string;
+  
+  // Notify party information
+  notifyPartyName?: string;
+  notifyPartyAddress?: string;
+  notifyPartyCity?: string;
+  notifyPartyState?: string;
+  notifyPartyZipCode?: string;
+  notifyPartyCountry?: string;
+  notifyPartyContactPerson?: string;
+  notifyPartyPhone?: string;
+  notifyPartyEmail?: string;
+  
+  // Forwarding agent
+  forwardingAgentName?: string;
+  forwardingAgentAddress?: string;
+  forwardingAgentPhone?: string;
+  forwardingAgentEmail?: string;
+  
+  // Cargo details
   cargoDescription?: string;
-  weight?: string;
-  measurement?: string;
-  packageCount?: string;
-  dateIssued?: string;
-  eta?: string;
-  freightPrepaid?: boolean;
-  freightCollect?: boolean;
-  marks?: string;
   commodity?: string;
-  htsCode?: string;
-  countryOfOrigin?: string;
-  value?: string;
+  numberOfPackages?: number;
+  kindOfPackages?: string;
+  grossWeight?: number;
+  netWeight?: number;
+  weight?: string; // Backward compatibility
+  weightUnit?: string;
+  volume?: number;
+  volumeUnit?: string;
+  measurement?: string;
+  marksAndNumbers?: string;
+  
+  // Hazardous materials
+  isHazardous?: boolean;
+  hazardClass?: string;
+  unNumber?: string;
+  properShippingName?: string;
+  packingGroup?: string;
+  emergencyContact?: string;
+  
+  // Commercial details
+  bookingNumber?: string;
+  bookingConfirmationNumber?: string;
+  freightCharges?: number;
+  freightPaymentTerms?: string;
+  freightPayableAt?: string;
+  prepaidCollectDesignation?: string;
+  destinationCharges?: number;
+  declaredValue?: number;
+  totalValue?: number;
   currency?: string;
+  freightCurrency?: string;
+  
+  // Regulatory information
+  countryOfOrigin?: string;
+  countryOfManufacture?: string;
+  htsCode?: string;
+  scheduleBCode?: string;
+  exportLicense?: string;
+  importLicense?: string;
+  
+  // Customs and broker
+  customsBroker?: string;
+  customsBrokerLicense?: string;
+  
+  // Dates
+  dateIssued?: string;
+  dateOfShipment?: string;
+  onBoardDate?: string;
+  eta?: string;
+  etd?: string;
+  ata?: string;
+  atd?: string;
 }
 
 export class AzureDocumentProcessor {

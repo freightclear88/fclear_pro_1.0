@@ -115,11 +115,16 @@ export const shipments = pgTable("shipments", {
   lastXmlUpdate: timestamp("last_xml_update"), // Track XML sync status
   xmlVersion: varchar("xml_version"), // Track format version
   
-  // Location data
+  // Location data - Port and Place Details
   origin: varchar("origin").notNull(),
   originPort: varchar("origin_port"),
+  portOfLoading: varchar("port_of_loading"),
+  placeOfReceipt: varchar("place_of_receipt"),
+  
   destination: varchar("destination").notNull(),
   destinationPort: varchar("destination_port"),
+  portOfDischarge: varchar("port_of_discharge"),
+  placeOfDelivery: varchar("place_of_delivery"),
   
   // Transport information
   transportMode: varchar("transport_mode").notNull().default("ocean"), // air, ocean, trucking, last_mile
@@ -130,34 +135,105 @@ export const shipments = pgTable("shipments", {
   // Container and documentation
   containerNumber: varchar("container_number"),
   containerNumbers: text("container_numbers").array(), // Multiple containers from XML
+  sealNumbers: text("seal_numbers").array(), // Container seal numbers
   billOfLading: varchar("bill_of_lading"),
   
-  // Enhanced timing for XML compatibility
+  // Additional commercial identifiers
+  bookingConfirmationNumber: varchar("booking_confirmation_number"),
+  containerType: varchar("container_type"), // 20GP, 40GP, 40HC, etc.
+  marksAndNumbers: text("marks_and_numbers"), // Package markings
+  
+  // Enhanced timing for XML compatibility  
   eta: timestamp("eta"),
   ata: timestamp("ata"),
   etd: timestamp("etd"), // Estimated Time of Departure
   atd: timestamp("atd"), // Actual Time of Departure
+  dateOfShipment: timestamp("date_of_shipment"), // Date goods shipped
+  onBoardDate: timestamp("on_board_date"), // Date cargo loaded on vessel
+  issueDate: timestamp("issue_date"), // Bill of lading issue date
   
-  // Enhanced party information for XML compatibility
+  // Enhanced party information - Shipper and Consignee Details
   shipperName: varchar("shipper_name"),
   shipperAddress: text("shipper_address"),
+  shipperCity: varchar("shipper_city"),
+  shipperState: varchar("shipper_state"),
+  shipperZipCode: varchar("shipper_zip_code"),
+  shipperCountry: varchar("shipper_country"),
+  shipperContactPerson: varchar("shipper_contact_person"),
+  shipperPhone: varchar("shipper_phone"),
+  shipperEmail: varchar("shipper_email"),
+  
   consigneeName: varchar("consignee_name"),
   consigneeAddress: text("consignee_address"),
-  notifyParty: varchar("notify_party"),
+  consigneeCity: varchar("consignee_city"),
+  consigneeState: varchar("consignee_state"),
+  consigneeZipCode: varchar("consignee_zip_code"),
+  consigneeCountry: varchar("consignee_country"),
+  consigneeContactPerson: varchar("consignee_contact_person"),
+  consigneePhone: varchar("consignee_phone"),
+  consigneeEmail: varchar("consignee_email"),
   
-  // Financial
+  notifyPartyName: varchar("notify_party_name"),
+  notifyPartyAddress: text("notify_party_address"),
+  notifyPartyCity: varchar("notify_party_city"),
+  notifyPartyState: varchar("notify_party_state"),
+  notifyPartyZipCode: varchar("notify_party_zip_code"),
+  notifyPartyCountry: varchar("notify_party_country"),
+  notifyPartyContactPerson: varchar("notify_party_contact_person"),
+  notifyPartyPhone: varchar("notify_party_phone"),
+  notifyPartyEmail: varchar("notify_party_email"),
+  
+  forwardingAgentName: varchar("forwarding_agent_name"),
+  forwardingAgentAddress: text("forwarding_agent_address"),
+  forwardingAgentPhone: varchar("forwarding_agent_phone"),
+  forwardingAgentEmail: varchar("forwarding_agent_email"),
+  
+  // Comprehensive commercial and financial details
   freightCharges: decimal("freight_charges", { precision: 12, scale: 2 }),
+  freightPaymentTerms: varchar("freight_payment_terms"), // Prepaid, Collect, Third Party
+  freightPayableAt: varchar("freight_payable_at"), // Location where freight is payable
+  prepaidCollectDesignation: varchar("prepaid_collect_designation"), // PREPAID or COLLECT
   destinationCharges: decimal("destination_charges", { precision: 12, scale: 2 }),
-  customsBroker: varchar("customs_broker"),
-  totalValue: decimal("total_value", { precision: 12, scale: 2 }),
-  currency: varchar("currency").default("USD"),
   
-  // Cargo details for XML compatibility
+  customsBroker: varchar("customs_broker"),
+  customsBrokerLicense: varchar("customs_broker_license"),
+  
+  totalValue: decimal("total_value", { precision: 12, scale: 2 }),
+  declaredValue: decimal("declared_value", { precision: 12, scale: 2 }),
+  currency: varchar("currency").default("USD"),
+  freightCurrency: varchar("freight_currency").default("USD"),
+  
+  // Trade and regulatory information
+  countryOfOrigin: varchar("country_of_origin"),
+  countryOfManufacture: varchar("country_of_manufacture"),
+  exportLicense: varchar("export_license"),
+  importLicense: varchar("import_license"),
+  htsCode: varchar("hts_code"), // Harmonized Tariff Schedule code
+  scheduleBCode: varchar("schedule_b_code"), // Export commodity classification
+  
+  // Comprehensive cargo information
   cargoDescription: text("cargo_description"),
-  weight: decimal("weight", { precision: 10, scale: 2 }),
+  commodity: varchar("commodity"), // General commodity type
+  numberOfPackages: integer("number_of_packages"),
+  kindOfPackages: varchar("kind_of_packages"), // CTN, PLT, PKG, etc.
+  
+  // Weight and measurement details
+  grossWeight: decimal("gross_weight", { precision: 10, scale: 2 }),
+  netWeight: decimal("net_weight", { precision: 10, scale: 2 }),
+  weight: decimal("weight", { precision: 10, scale: 2 }), // Backward compatibility
   weightUnit: varchar("weight_unit").default("KG"),
+  
   volume: decimal("volume", { precision: 10, scale: 2 }),
   volumeUnit: varchar("volume_unit").default("CBM"),
+  measurement: varchar("measurement"), // Dimensions if needed
+  
+  // Hazardous material information
+  isHazardous: boolean("is_hazardous").default(false),
+  hazardClass: varchar("hazard_class"), // UN hazard class
+  unNumber: varchar("un_number"), // UN identification number
+  properShippingName: varchar("proper_shipping_name"),
+  packingGroup: varchar("packing_group"),
+  emergencyContact: varchar("emergency_contact"),
   
   // Timestamps
   createdAt: timestamp("created_at").defaultNow(),

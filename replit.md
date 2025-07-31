@@ -300,3 +300,7 @@ Changelog:
 - July 30, 2025: Enhanced shipment creation workflow to populate database fields with real AI-extracted data instead of placeholder text
 - July 30, 2025: Integrated intelligent document analysis that extracts bill of lading numbers, shipper/consignee info, ports, dates, and cargo descriptions
 - July 30, 2025: System now requires OpenAI API key for AI processing functionality - falls back to basic document storage when unavailable
+- July 31, 2025: Implemented comprehensive Ocean Bill of Lading database schema with all standard shipping document fields including detailed shipper/consignee addresses, container specifications, hazardous materials, commercial terms, and regulatory information
+- July 31, 2025: Extended Azure Document Intelligence to support JPEG, PNG, TIFF, and BMP image processing alongside PDF documents
+- July 31, 2025: Enhanced document processing pipeline to extract and map 80+ Ocean Bill of Lading fields including party information, vessel details, cargo specifications, commercial terms, dates, and regulatory compliance data
+- July 31, 2025: Updated shipment database schema with comprehensive fields for complete Ocean Bill of Lading data storage and retrieval including forwarding agents, hazardous materials, freight terms, and trade regulations

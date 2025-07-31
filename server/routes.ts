@@ -1235,7 +1235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 console.log('Azure Document Intelligence extracted data:', extractedData);
                 
-                // Map extracted data to our format
+                // Map extracted data to our comprehensive Ocean Bill of Lading format
                 arrivalNoticeData = {
                   documentType: documentCategory.replace('_', ' ').toUpperCase(),
                   fileName: file.originalname,
@@ -1245,33 +1245,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   vesselName: extractedData.vesselName,
                   voyage: extractedData.voyage,
                   containerNumber: extractedData.containerNumber,
+                  containerType: extractedData.containerType,
+                  sealNumbers: extractedData.sealNumbers,
+                  
+                  // Location information
                   origin: extractedData.origin || extractedData.portOfLoading,
                   destination: extractedData.destination || extractedData.portOfDischarge,
                   portOfLoading: extractedData.portOfLoading,
                   portOfDischarge: extractedData.portOfDischarge,
+                  placeOfReceipt: extractedData.placeOfReceipt,
+                  placeOfDelivery: extractedData.placeOfDelivery,
                   
-                  // Company information
+                  // Comprehensive shipper information
                   shipperName: extractedData.shipperName,
+                  shipperAddress: extractedData.shipperAddress,
+                  shipperCity: extractedData.shipperCity,
+                  shipperState: extractedData.shipperState,
+                  shipperZipCode: extractedData.shipperZipCode,
+                  shipperCountry: extractedData.shipperCountry,
+                  shipperContactPerson: extractedData.shipperContactPerson,
+                  shipperPhone: extractedData.shipperPhone,
+                  shipperEmail: extractedData.shipperEmail,
+                  
+                  // Comprehensive consignee information
                   consigneeName: extractedData.consigneeName,
-                  notifyParty: extractedData.notifyParty,
+                  consigneeAddress: extractedData.consigneeAddress,
+                  consigneeCity: extractedData.consigneeCity,
+                  consigneeState: extractedData.consigneeState,
+                  consigneeZipCode: extractedData.consigneeZipCode,
+                  consigneeCountry: extractedData.consigneeCountry,
+                  consigneeContactPerson: extractedData.consigneeContactPerson,
+                  consigneePhone: extractedData.consigneePhone,
+                  consigneeEmail: extractedData.consigneeEmail,
                   
-                  // Cargo details
+                  // Notify party information
+                  notifyPartyName: extractedData.notifyPartyName,
+                  notifyPartyAddress: extractedData.notifyPartyAddress,
+                  notifyPartyCity: extractedData.notifyPartyCity,
+                  notifyPartyState: extractedData.notifyPartyState,
+                  notifyPartyZipCode: extractedData.notifyPartyZipCode,
+                  notifyPartyCountry: extractedData.notifyPartyCountry,
+                  notifyPartyContactPerson: extractedData.notifyPartyContactPerson,
+                  notifyPartyPhone: extractedData.notifyPartyPhone,
+                  notifyPartyEmail: extractedData.notifyPartyEmail,
+                  
+                  // Forwarding agent details
+                  forwardingAgentName: extractedData.forwardingAgentName,
+                  forwardingAgentAddress: extractedData.forwardingAgentAddress,
+                  forwardingAgentPhone: extractedData.forwardingAgentPhone,
+                  forwardingAgentEmail: extractedData.forwardingAgentEmail,
+                  
+                  // Comprehensive cargo details
                   cargoDescription: extractedData.cargoDescription,
-                  weight: extractedData.weight,
-                  packageCount: extractedData.packageCount,
                   commodity: extractedData.commodity,
-                  countryOfOrigin: extractedData.countryOfOrigin,
-                  htsCode: extractedData.htsCode,
-                  value: extractedData.value,
-                  currency: extractedData.currency,
+                  numberOfPackages: extractedData.numberOfPackages,
+                  kindOfPackages: extractedData.kindOfPackages,
+                  grossWeight: extractedData.grossWeight,
+                  netWeight: extractedData.netWeight,
+                  weight: extractedData.weight, // Backward compatibility
+                  weightUnit: extractedData.weightUnit,
+                  volume: extractedData.volume,
+                  volumeUnit: extractedData.volumeUnit,
+                  measurement: extractedData.measurement,
+                  marksAndNumbers: extractedData.marksAndNumbers,
                   
-                  // Dates
+                  // Hazardous materials information
+                  isHazardous: extractedData.isHazardous,
+                  hazardClass: extractedData.hazardClass,
+                  unNumber: extractedData.unNumber,
+                  properShippingName: extractedData.properShippingName,
+                  packingGroup: extractedData.packingGroup,
+                  emergencyContact: extractedData.emergencyContact,
+                  
+                  // Commercial and financial details
+                  bookingNumber: extractedData.bookingNumber,
+                  bookingConfirmationNumber: extractedData.bookingConfirmationNumber,
+                  freightCharges: extractedData.freightCharges,
+                  freightPaymentTerms: extractedData.freightPaymentTerms,
+                  freightPayableAt: extractedData.freightPayableAt,
+                  prepaidCollectDesignation: extractedData.prepaidCollectDesignation,
+                  destinationCharges: extractedData.destinationCharges,
+                  declaredValue: extractedData.declaredValue,
+                  totalValue: extractedData.totalValue,
+                  currency: extractedData.currency,
+                  freightCurrency: extractedData.freightCurrency,
+                  
+                  // Regulatory and trade information
+                  countryOfOrigin: extractedData.countryOfOrigin,
+                  countryOfManufacture: extractedData.countryOfManufacture,
+                  htsCode: extractedData.htsCode,
+                  scheduleBCode: extractedData.scheduleBCode,
+                  exportLicense: extractedData.exportLicense,
+                  importLicense: extractedData.importLicense,
+                  
+                  // Customs and broker information
+                  customsBroker: extractedData.customsBroker,
+                  customsBrokerLicense: extractedData.customsBrokerLicense,
+                  
+                  // Comprehensive date information
                   eta: extractedData.eta ? new Date(extractedData.eta) : null,
-                  dateIssued: extractedData.dateIssued,
+                  etd: extractedData.etd ? new Date(extractedData.etd) : null,
+                  ata: extractedData.ata ? new Date(extractedData.ata) : null,
+                  atd: extractedData.atd ? new Date(extractedData.atd) : null,
+                  dateIssued: extractedData.dateIssued ? new Date(extractedData.dateIssued) : null,
+                  dateOfShipment: extractedData.dateOfShipment ? new Date(extractedData.dateOfShipment) : null,
+                  onBoardDate: extractedData.onBoardDate ? new Date(extractedData.onBoardDate) : null,
                   
                   // Processing metadata
-                  extractedText: `AI-processed document: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nData fields extracted: ${Object.keys(extractedData).length}\nProcessed at: ${processingTime} EST`,
-                  processingNote: `AI successfully extracted ${Object.keys(extractedData).length} data fields`
+                  extractedText: `AI-processed Ocean Bill of Lading: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nComprehensive data fields extracted: ${Object.keys(extractedData).filter(key => extractedData[key] !== undefined && extractedData[key] !== null && extractedData[key] !== '').length}\nProcessed at: ${processingTime} EST`,
+                  processingNote: `Azure Document Intelligence extracted ${Object.keys(extractedData).filter(key => extractedData[key] !== undefined && extractedData[key] !== null && extractedData[key] !== '').length} Ocean Bill of Lading data fields`
                 };
               }
               
@@ -1321,29 +1403,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (createdShipment && arrivalNoticeData) {
           const updateData: any = {};
           
-          // Map extracted data to shipment fields (only if values exist and aren't placeholders)
+          // Map comprehensive Ocean Bill of Lading data to shipment fields (only if values exist and aren't placeholders)
+          
+          // Core shipping identifiers
           if (arrivalNoticeData.billOfLading && arrivalNoticeData.billOfLading !== 'Processing') {
             updateData.billOfLading = arrivalNoticeData.billOfLading;
           }
           if (arrivalNoticeData.vesselName) updateData.vessel = arrivalNoticeData.vesselName;
           if (arrivalNoticeData.voyage) updateData.voyage = arrivalNoticeData.voyage;
           if (arrivalNoticeData.containerNumber) updateData.containerNumber = arrivalNoticeData.containerNumber;
+          if (arrivalNoticeData.containerType) updateData.containerType = arrivalNoticeData.containerType;
+          if (arrivalNoticeData.sealNumbers) updateData.sealNumbers = arrivalNoticeData.sealNumbers;
           
-          // Update origin/destination with real extracted data, or keep "Processing" if no data found
+          // Location and port information
           if (arrivalNoticeData.origin && arrivalNoticeData.origin !== 'Processing') {
             updateData.origin = arrivalNoticeData.origin;
           }
           if (arrivalNoticeData.destination && arrivalNoticeData.destination !== 'Processing') {
             updateData.destination = arrivalNoticeData.destination;
           }
+          if (arrivalNoticeData.portOfLoading) updateData.portOfLoading = arrivalNoticeData.portOfLoading;
+          if (arrivalNoticeData.portOfDischarge) updateData.portOfDischarge = arrivalNoticeData.portOfDischarge;
+          if (arrivalNoticeData.placeOfReceipt) updateData.placeOfReceipt = arrivalNoticeData.placeOfReceipt;
+          if (arrivalNoticeData.placeOfDelivery) updateData.placeOfDelivery = arrivalNoticeData.placeOfDelivery;
           
-          // Additional shipping details
+          // Comprehensive shipper information
           if (arrivalNoticeData.shipperName) updateData.shipperName = arrivalNoticeData.shipperName;
+          if (arrivalNoticeData.shipperAddress) updateData.shipperAddress = arrivalNoticeData.shipperAddress;
+          if (arrivalNoticeData.shipperCity) updateData.shipperCity = arrivalNoticeData.shipperCity;
+          if (arrivalNoticeData.shipperState) updateData.shipperState = arrivalNoticeData.shipperState;
+          if (arrivalNoticeData.shipperZipCode) updateData.shipperZipCode = arrivalNoticeData.shipperZipCode;
+          if (arrivalNoticeData.shipperCountry) updateData.shipperCountry = arrivalNoticeData.shipperCountry;
+          if (arrivalNoticeData.shipperContactPerson) updateData.shipperContactPerson = arrivalNoticeData.shipperContactPerson;
+          if (arrivalNoticeData.shipperPhone) updateData.shipperPhone = arrivalNoticeData.shipperPhone;
+          if (arrivalNoticeData.shipperEmail) updateData.shipperEmail = arrivalNoticeData.shipperEmail;
+          
+          // Comprehensive consignee information
           if (arrivalNoticeData.consigneeName) updateData.consigneeName = arrivalNoticeData.consigneeName;
+          if (arrivalNoticeData.consigneeAddress) updateData.consigneeAddress = arrivalNoticeData.consigneeAddress;
+          if (arrivalNoticeData.consigneeCity) updateData.consigneeCity = arrivalNoticeData.consigneeCity;
+          if (arrivalNoticeData.consigneeState) updateData.consigneeState = arrivalNoticeData.consigneeState;
+          if (arrivalNoticeData.consigneeZipCode) updateData.consigneeZipCode = arrivalNoticeData.consigneeZipCode;
+          if (arrivalNoticeData.consigneeCountry) updateData.consigneeCountry = arrivalNoticeData.consigneeCountry;
+          if (arrivalNoticeData.consigneeContactPerson) updateData.consigneeContactPerson = arrivalNoticeData.consigneeContactPerson;
+          if (arrivalNoticeData.consigneePhone) updateData.consigneePhone = arrivalNoticeData.consigneePhone;
+          if (arrivalNoticeData.consigneeEmail) updateData.consigneeEmail = arrivalNoticeData.consigneeEmail;
+          
+          // Notify party information
+          if (arrivalNoticeData.notifyPartyName) updateData.notifyPartyName = arrivalNoticeData.notifyPartyName;
+          if (arrivalNoticeData.notifyPartyAddress) updateData.notifyPartyAddress = arrivalNoticeData.notifyPartyAddress;
+          if (arrivalNoticeData.notifyPartyCity) updateData.notifyPartyCity = arrivalNoticeData.notifyPartyCity;
+          if (arrivalNoticeData.notifyPartyState) updateData.notifyPartyState = arrivalNoticeData.notifyPartyState;
+          if (arrivalNoticeData.notifyPartyZipCode) updateData.notifyPartyZipCode = arrivalNoticeData.notifyPartyZipCode;
+          if (arrivalNoticeData.notifyPartyCountry) updateData.notifyPartyCountry = arrivalNoticeData.notifyPartyCountry;
+          if (arrivalNoticeData.notifyPartyContactPerson) updateData.notifyPartyContactPerson = arrivalNoticeData.notifyPartyContactPerson;
+          if (arrivalNoticeData.notifyPartyPhone) updateData.notifyPartyPhone = arrivalNoticeData.notifyPartyPhone;
+          if (arrivalNoticeData.notifyPartyEmail) updateData.notifyPartyEmail = arrivalNoticeData.notifyPartyEmail;
+          
+          // Forwarding agent information
+          if (arrivalNoticeData.forwardingAgentName) updateData.forwardingAgentName = arrivalNoticeData.forwardingAgentName;
+          if (arrivalNoticeData.forwardingAgentAddress) updateData.forwardingAgentAddress = arrivalNoticeData.forwardingAgentAddress;
+          if (arrivalNoticeData.forwardingAgentPhone) updateData.forwardingAgentPhone = arrivalNoticeData.forwardingAgentPhone;
+          if (arrivalNoticeData.forwardingAgentEmail) updateData.forwardingAgentEmail = arrivalNoticeData.forwardingAgentEmail;
+          
+          // Comprehensive cargo information
           if (arrivalNoticeData.cargoDescription) updateData.cargoDescription = arrivalNoticeData.cargoDescription;
+          if (arrivalNoticeData.commodity) updateData.commodity = arrivalNoticeData.commodity;
+          if (arrivalNoticeData.numberOfPackages) updateData.numberOfPackages = arrivalNoticeData.numberOfPackages;
+          if (arrivalNoticeData.kindOfPackages) updateData.kindOfPackages = arrivalNoticeData.kindOfPackages;
+          if (arrivalNoticeData.grossWeight) updateData.grossWeight = arrivalNoticeData.grossWeight;
+          if (arrivalNoticeData.netWeight) updateData.netWeight = arrivalNoticeData.netWeight;
+          if (arrivalNoticeData.weight) updateData.weight = arrivalNoticeData.weight; // Backward compatibility
+          if (arrivalNoticeData.weightUnit) updateData.weightUnit = arrivalNoticeData.weightUnit;
+          if (arrivalNoticeData.volume) updateData.volume = arrivalNoticeData.volume;
+          if (arrivalNoticeData.volumeUnit) updateData.volumeUnit = arrivalNoticeData.volumeUnit;
+          if (arrivalNoticeData.measurement) updateData.measurement = arrivalNoticeData.measurement;
+          if (arrivalNoticeData.marksAndNumbers) updateData.marksAndNumbers = arrivalNoticeData.marksAndNumbers;
+          
+          // Hazardous materials information
+          if (arrivalNoticeData.isHazardous !== undefined) updateData.isHazardous = arrivalNoticeData.isHazardous;
+          if (arrivalNoticeData.hazardClass) updateData.hazardClass = arrivalNoticeData.hazardClass;
+          if (arrivalNoticeData.unNumber) updateData.unNumber = arrivalNoticeData.unNumber;
+          if (arrivalNoticeData.properShippingName) updateData.properShippingName = arrivalNoticeData.properShippingName;
+          if (arrivalNoticeData.packingGroup) updateData.packingGroup = arrivalNoticeData.packingGroup;
+          if (arrivalNoticeData.emergencyContact) updateData.emergencyContact = arrivalNoticeData.emergencyContact;
+          
+          // Commercial and financial details
+          if (arrivalNoticeData.bookingNumber) updateData.bookingNumber = arrivalNoticeData.bookingNumber;
+          if (arrivalNoticeData.bookingConfirmationNumber) updateData.bookingConfirmationNumber = arrivalNoticeData.bookingConfirmationNumber;
+          if (arrivalNoticeData.freightCharges) updateData.freightCharges = arrivalNoticeData.freightCharges;
+          if (arrivalNoticeData.freightPaymentTerms) updateData.freightPaymentTerms = arrivalNoticeData.freightPaymentTerms;
+          if (arrivalNoticeData.freightPayableAt) updateData.freightPayableAt = arrivalNoticeData.freightPayableAt;
+          if (arrivalNoticeData.prepaidCollectDesignation) updateData.prepaidCollectDesignation = arrivalNoticeData.prepaidCollectDesignation;
+          if (arrivalNoticeData.destinationCharges) updateData.destinationCharges = arrivalNoticeData.destinationCharges;
+          if (arrivalNoticeData.declaredValue) updateData.declaredValue = arrivalNoticeData.declaredValue;
+          if (arrivalNoticeData.totalValue) updateData.totalValue = arrivalNoticeData.totalValue;
+          if (arrivalNoticeData.currency) updateData.currency = arrivalNoticeData.currency;
+          if (arrivalNoticeData.freightCurrency) updateData.freightCurrency = arrivalNoticeData.freightCurrency;
+          
+          // Regulatory and trade information
+          if (arrivalNoticeData.countryOfOrigin) updateData.countryOfOrigin = arrivalNoticeData.countryOfOrigin;
+          if (arrivalNoticeData.countryOfManufacture) updateData.countryOfManufacture = arrivalNoticeData.countryOfManufacture;
+          if (arrivalNoticeData.htsCode) updateData.htsCode = arrivalNoticeData.htsCode;
+          if (arrivalNoticeData.scheduleBCode) updateData.scheduleBCode = arrivalNoticeData.scheduleBCode;
+          if (arrivalNoticeData.exportLicense) updateData.exportLicense = arrivalNoticeData.exportLicense;
+          if (arrivalNoticeData.importLicense) updateData.importLicense = arrivalNoticeData.importLicense;
+          
+          // Customs and broker information
+          if (arrivalNoticeData.customsBroker) updateData.customsBroker = arrivalNoticeData.customsBroker;
+          if (arrivalNoticeData.customsBrokerLicense) updateData.customsBrokerLicense = arrivalNoticeData.customsBrokerLicense;
+          
+          // Comprehensive date information
           if (arrivalNoticeData.eta) updateData.eta = arrivalNoticeData.eta;
-          if (arrivalNoticeData.weight) updateData.weight = arrivalNoticeData.weight;
-          if (arrivalNoticeData.value) updateData.value = arrivalNoticeData.value;
+          if (arrivalNoticeData.etd) updateData.etd = arrivalNoticeData.etd;
+          if (arrivalNoticeData.ata) updateData.ata = arrivalNoticeData.ata;
+          if (arrivalNoticeData.atd) updateData.atd = arrivalNoticeData.atd;
+          if (arrivalNoticeData.dateIssued) updateData.issueDate = arrivalNoticeData.dateIssued;
+          if (arrivalNoticeData.dateOfShipment) updateData.dateOfShipment = arrivalNoticeData.dateOfShipment;
+          if (arrivalNoticeData.onBoardDate) updateData.onBoardDate = arrivalNoticeData.onBoardDate;
           
           // Always update the shipment, even if just with processing metadata
           if (Object.keys(updateData).length > 0) {
