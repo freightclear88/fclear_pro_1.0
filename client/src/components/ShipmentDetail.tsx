@@ -19,6 +19,9 @@ interface ShipmentDetailProps {
 
 export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDetailProps) {
   const { toast } = useToast();
+  
+  // Debug logging to see what data we receive
+  console.log('ShipmentDetail received shipment:', shipment);
 
   const { data: documents } = useQuery({
     queryKey: ["/api/shipments", shipment?.id, "documents"],
@@ -115,15 +118,15 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
                 </div>
               )}
 
-              {shipment.billOfLadingNumber && (
+              {(shipment.billOfLadingNumber || shipment.billOfLading) && (
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Bill of Lading:</span>
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium">{shipment.billOfLadingNumber}</span>
+                    <span className="font-medium">{shipment.billOfLadingNumber || shipment.billOfLading}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleCopyField("Bill of Lading", shipment.billOfLadingNumber!)}
+                      onClick={() => handleCopyField("Bill of Lading", shipment.billOfLadingNumber || shipment.billOfLading!)}
                       className="text-freight-orange hover:text-freight-dark"
                     >
                       <Copy className="w-3 h-3" />
@@ -132,15 +135,15 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
                 </div>
               )}
 
-              {shipment.vesselAndVoyage && (
+              {(shipment.vesselAndVoyage || shipment.vessel) && (
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Vessel & Voyage:</span>
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium">{shipment.vesselAndVoyage}</span>
+                    <span className="font-medium">{shipment.vesselAndVoyage || shipment.vessel}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleCopyField("Vessel & Voyage", shipment.vesselAndVoyage!)}
+                      onClick={() => handleCopyField("Vessel & Voyage", shipment.vesselAndVoyage || shipment.vessel!)}
                       className="text-freight-orange hover:text-freight-dark"
                     >
                       <Copy className="w-3 h-3" />
@@ -151,12 +154,12 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
 
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Port of Loading:</span>
-                <span className="font-medium">{shipment.portOfLoading}</span>
+                <span className="font-medium">{shipment.portOfLoading || shipment.origin || 'N/A'}</span>
               </div>
 
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Port of Discharge:</span>
-                <span className="font-medium">{shipment.portOfDischarge}</span>
+                <span className="font-medium">{shipment.portOfDischarge || shipment.destination || 'N/A'}</span>
               </div>
 
               {shipment.weight && (

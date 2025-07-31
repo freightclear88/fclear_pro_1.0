@@ -30,6 +30,7 @@ export default function Dashboard() {
   });
 
   const handleViewShipment = (shipment: Shipment) => {
+    console.log('Dashboard handleViewShipment called with:', shipment);
     setSelectedShipment(shipment);
     setIsDetailOpen(true);
   };
