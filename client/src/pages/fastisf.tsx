@@ -249,11 +249,13 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           billOfLading: 'billOfLading',
           portOfEntry: 'portOfEntry',
           estimatedArrivalDate: 'estimatedArrivalDate',
+          estimatedDepartureDate: 'estimatedDepartureDate',
           countryOfOrigin: 'countryOfOrigin',
           htsusNumber: 'htsusNumber',
           commodityDescription: 'commodityDescription',
           mblScacCode: 'mblScacCode',
           hblScacCode: 'hblScacCode',
+          amsNumber: 'amsNumber',
           consolidatorStufferInfo: 'consolidatorStufferInfo'
         };
 

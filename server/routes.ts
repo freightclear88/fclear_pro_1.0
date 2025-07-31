@@ -3892,31 +3892,85 @@ ${fullText}`;
               voyageNumber = vesselMatch[2]?.trim();
             }
             
-            // Extract basic party information
-            const shipperMatch = fullText.match(/SHIPPER[^:]*[:]*\s*([^\n]+)/i);
-            const sellerInfo = shipperMatch ? shipperMatch[1]?.trim() : "";
+            // Extract comprehensive party information from the document
+            let sellerInfo = "";
+            let buyerInfo = "";
+            let manufacturerInfo = "";
             
-            const consigneeMatch = fullText.match(/CONSIGNEE[^:]*[:]*\s*([^\n]+)/i);
-            const buyerInfo = consigneeMatch ? consigneeMatch[1]?.trim() : "";
+            // Extract SHIPPER information (seller)
+            const shipperMatch = fullText.match(/SHIPPER[^:]*[:]*\s*([^\n\r]+(?:\n[^\n\r]+)*)/i);
+            if (shipperMatch) {
+              sellerInfo = shipperMatch[1]?.trim();
+            }
             
-            // Extract LCH/consolidator info
-            const lchMatch = fullText.match(/LCH\s+Company\s+and\s+address\s*[:]*\s*([^\n]+)/i);
-            const manufacturerInfo = lchMatch ? lchMatch[1]?.trim() : "";
+            // Extract CONSIGNEE information (buyer)  
+            const consigneeMatch = fullText.match(/CONSIGNEE[^:]*[:]*\s*([^\n\r]+(?:\n[^\n\r]+)*)/i);
+            if (consigneeMatch) {
+              buyerInfo = consigneeMatch[1]?.trim();
+            }
             
-            // Extract basic shipping data
+            // Extract NOTIFY PARTY as additional buyer info if no consignee
+            if (!buyerInfo) {
+              const notifyMatch = fullText.match(/NOTIFY\s*PARTY[^:]*[:]*\s*([^\n\r]+(?:\n[^\n\r]+)*)/i);
+              if (notifyMatch) {
+                buyerInfo = notifyMatch[1]?.trim();
+              }
+            }
+            
+            // Extract LCH/consolidator info (manufacturer/consolidator)
+            const lchMatch = fullText.match(/LCH\s+Company\s+and\s+address\s*[:]*\s*([^\n\r]+(?:\n[^\n\r]+)*)/i);
+            if (lchMatch) {
+              manufacturerInfo = lchMatch[1]?.trim();
+            }
+            
+            // If no LCH info, try to extract general manufacturer info
+            if (!manufacturerInfo) {
+              const mfgMatch = fullText.match(/(?:MANUFACTURER|SUPPLIER)[^:]*[:]*\s*([^\n\r]+(?:\n[^\n\r]+)*)/i);
+              if (mfgMatch) {
+                manufacturerInfo = mfgMatch[1]?.trim();
+              }
+            }
+            
+            // Extract comprehensive shipping data
             const portMatch = fullText.match(/PORT\s*OF\s*(?:DISCHARGE|DESTINATION)[^:]*[:]*\s*([A-Z\s,]+)/i);
             const portOfEntry = portMatch ? portMatch[1]?.trim().split('\n')[0]?.trim() : null;
             
-            const commodityMatch = fullText.match(/(?:Cartons|COMMODITY)[^:]*[:]*\s*([^\n]+)/i);
+            const commodityMatch = fullText.match(/(?:Cartons|COMMODITY|CARGO)[^:]*[:]*\s*([^\n]+)/i);
             const commodityDescription = commodityMatch ? commodityMatch[1]?.trim() : null;
             
-            // Extract date
-            const etaMatch = fullText.match(/ETA:\s*(\d{4}\/\d{1,2}\/\d{1,2})/i);
+            // Extract SCAC codes
+            const hblScacMatch = fullText.match(/HB\/L\s*SCAC\s*CODE[^:]*[:]*\s*([A-Z]+)/i);
+            const hblScacCode = hblScacMatch ? hblScacMatch[1]?.trim() : null;
+            
+            const mblScacMatch = fullText.match(/MB\/L\s*SCAC\s*CODE[^:]*[:]*\s*([A-Z]+)/i);
+            const mblScacCode = mblScacMatch ? mblScacMatch[1]?.trim() : null;
+            
+            // Extract AMS number
+            const amsMatch = fullText.match(/(?:HB\/L\s*)?AMS\s*(?:NO|NUMBER)[^:]*[:]*\s*([A-Z0-9]+)/i);
+            const amsNumber = amsMatch ? amsMatch[1]?.trim() : null;
+            
+            // Extract dates with multiple patterns
             let estimatedArrivalDate = null;
+            let estimatedDepartureDate = null;
+            
+            const etaMatch = fullText.match(/ETA:\s*(\d{4}\/\d{1,2}\/\d{1,2})/i);
             if (etaMatch) {
               const [year, month, day] = etaMatch[1].split('/');
               estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
             }
+            
+            const etdMatch = fullText.match(/ETD:\s*(\d{4}\/\d{1,2}\/\d{1,2})/i);
+            if (etdMatch) {
+              const [year, month, day] = etdMatch[1].split('/');
+              estimatedDepartureDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            }
+            
+            // Extract weight and volume
+            const weightMatch = fullText.match(/Weight:\s*([0-9,]+\s*KGS?)/i);
+            const weight = weightMatch ? weightMatch[1]?.trim() : null;
+            
+            const volumeMatch = fullText.match(/Volume:\s*([0-9,\.\s]+CBM)/i);
+            const volume = volumeMatch ? volumeMatch[1]?.trim() : null;
             
             extractedData = {
               billOfLading,
@@ -3926,10 +3980,19 @@ ${fullText}`;
               portOfEntry,
               commodityDescription,
               estimatedArrivalDate,
+              estimatedDepartureDate,
               // Consolidated party information fields
               sellerInfo,
               buyerInfo,
               manufacturerInfo,
+              // SCAC codes
+              hblScacCode,
+              mblScacCode,
+              // AMS number
+              amsNumber,
+              // Additional shipping details
+              weight,
+              volume,
               countryOfOrigin: "China"
             };
             
