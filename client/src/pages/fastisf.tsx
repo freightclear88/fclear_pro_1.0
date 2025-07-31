@@ -244,13 +244,22 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Accept PDF, Excel, and other document types
-    const allowedTypes = ['application/pdf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    // Accept PDF, Excel, DOC, and image files
+    const allowedTypes = [
+      'application/pdf', 
+      'application/vnd.ms-excel', 
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/jpg',
+      'image/png'
+    ];
     
-    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|xls|xlsx|doc|docx)$/i)) {
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|xls|xlsx|doc|docx|jpg|jpeg|png)$/i)) {
       toast({
         title: "Invalid file type",
-        description: "Please upload PDF, Excel, or Word files",
+        description: "Please upload PDF, Excel, DOC, or image files (JPG, PNG)",
         variant: "destructive",
       });
       return;
@@ -415,7 +424,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
               Upload ISF Document (Optional)
             </CardTitle>
             <CardDescription>
-              Upload your own ISF info sheet in PDF or Excel XLS format and our system will automatically extract ISF data
+              Upload your ISF document (PDF, Excel, DOC, or image files) and our AI system will automatically extract ISF data
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -449,14 +458,14 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                       <p className="mb-2 text-sm text-gray-500">
                         <span className="font-semibold">Click to upload</span> ISF document
                       </p>
-                      <p className="text-xs text-gray-500">PDF, Excel, DOC, and image files</p>
+                      <p className="text-xs text-gray-500">PDF, Excel, DOC, JPG, PNG files supported</p>
                     </>
                   )}
                 </div>
                 <input 
                   type="file" 
                   className="hidden" 
-                  accept=".pdf,.xls,.xlsx,.doc,.docx,.jpg,.jpeg,.png,.gif"
+                  accept=".pdf,.xls,.xlsx,.doc,.docx,.jpg,.jpeg,.png"
                   onChange={handleFileUpload}
                   disabled={isScanning}
                 />

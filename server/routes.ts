@@ -3788,7 +3788,7 @@ ${excelText}`;
       } else if (fileExtension === 'pdf') {
         // Use Azure Document Intelligence for PDF parsing
         console.log("PDF file detected, using Azure Document Intelligence for extraction");
-        let fullText = ""; // Declare outside try block for catch access
+        let fullText = "";
         try {
           const { DocumentAnalysisClient, AzureKeyCredential } = await import("@azure/ai-form-recognizer");
           const fs = await import('fs');
@@ -3910,43 +3910,119 @@ ${fullText}`;
             };
           }
         }
-      } else {
-        // For other file types (DOC, images, etc), try basic AI extraction
-        console.log(`Unsupported file type: ${fileExtension}, attempting basic extraction`);
-        
-        // Try to extract basic text content and use AI
+      } else if (fileExtension === 'doc' || fileExtension === 'docx') {
+        // Handle DOC/DOCX files using OpenAI vision for text extraction
+        console.log("DOC/DOCX file detected, using text extraction");
         try {
-          const fs = await import('fs');
-          const fileContent = fs.default.readFileSync(req.file.path);
-          let textContent = "";
-          
-          // For common file types, try to extract some text
-          if (fileExtension === 'txt' || fileExtension === 'csv') {
-            textContent = fileContent.toString('utf-8');
-          } else {
-            // For binary files, at least try to extract filename patterns
-            textContent = `Filename: ${req.file.originalname}\nFile size: ${req.file.size} bytes`;
-          }
-          
-          console.log("Extracted text content:", textContent.substring(0, 500));
-          
-          // Return structured but empty data to let user fill manually
+          // For DOC files, we'll use a basic approach since they're binary
           extractedData = {
-            importerName: `Review document: ${req.file.originalname}`,
-            consigneeName: "Please complete manually",
+            importerName: `Document uploaded: ${req.file.originalname}`,
+            consigneeName: "Please review document and complete",
             manufacturerCountry: null,
             countryOfOrigin: null,
             htsusNumber: null,
-            commodityDescription: "Please verify from document",
+            commodityDescription: "Please extract from DOC file",
             portOfEntry: null,
             billOfLading: null,
             vesselName: null,
             estimatedArrivalDate: null,
           };
-        } catch (fileError) {
-          console.error("File reading error:", fileError);
+        } catch (docError) {
+          console.error("DOC processing error:", docError);
           extractedData = {};
         }
+      } else if (fileExtension === 'jpg' || fileExtension === 'jpeg' || fileExtension === 'png') {
+        // Handle Image files using OpenAI Vision API
+        console.log("Image file detected, using OpenAI Vision for extraction");
+        try {
+          const fs = await import('fs');
+          const imageBuffer = fs.default.readFileSync(req.file.path);
+          const base64Image = imageBuffer.toString('base64');
+          
+          const OpenAI = await import('openai');
+          const openaiClient = new OpenAI.default({ apiKey: process.env.OPENAI_API_KEY });
+          
+          const prompt = `Analyze this shipping document image and extract ISF (Importer Security Filing) data. Return ONLY a JSON object with these exact fields (use null for missing data):
+
+{
+  "importerName": "company name of importer",
+  "consigneeName": "company name of consignee", 
+  "manufacturerCountry": "country where goods were manufactured",
+  "countryOfOrigin": "country of origin",
+  "htsusNumber": "10-digit HTS/tariff code",
+  "commodityDescription": "description of goods",
+  "portOfEntry": "US port of entry",
+  "billOfLading": "bill of lading number",
+  "vesselName": "vessel/ship name",
+  "estimatedArrivalDate": "YYYY-MM-DD format"
+}
+
+Look for Bill of Lading, Commercial Invoice, Packing List, or other shipping document information in the image.`;
+
+          const visionResponse = await openaiClient.chat.completions.create({
+            model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: prompt
+                  },
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: `data:image/${fileExtension};base64,${base64Image}`
+                    }
+                  }
+                ],
+              },
+            ],
+            response_format: { type: "json_object" },
+            max_tokens: 1000,
+          });
+
+          const aiExtractedData = JSON.parse(visionResponse.choices[0].message.content);
+          console.log("AI extracted image ISF data:", aiExtractedData);
+          
+          // Clean and validate the extracted data
+          extractedData = {};
+          Object.entries(aiExtractedData).forEach(([key, value]) => {
+            if (value && value !== "null" && value !== "") {
+              extractedData[key] = value;
+            }
+          });
+          
+        } catch (imageError) {
+          console.error("Image processing error:", imageError);
+          extractedData = {
+            importerName: `Image document: ${req.file.originalname}`,
+            consigneeName: "Please review image and complete",
+            manufacturerCountry: null,
+            countryOfOrigin: null,
+            htsusNumber: null,
+            commodityDescription: "Please extract from image",
+            portOfEntry: null,
+            billOfLading: null,
+            vesselName: null,
+            estimatedArrivalDate: null,
+          };
+        }
+      } else {
+        // For other file types, provide helpful message
+        console.log(`Unsupported file type: ${fileExtension}`);
+        extractedData = {
+          importerName: `Unsupported file type: ${req.file.originalname}`,
+          consigneeName: "Please upload PDF, Excel, DOC, or JPG files",
+          manufacturerCountry: null,
+          countryOfOrigin: null,
+          htsusNumber: null,
+          commodityDescription: "Supported formats: PDF, XLSX, XLS, DOC, DOCX, JPG, JPEG, PNG",
+          portOfEntry: null,
+          billOfLading: null,
+          vesselName: null,
+          estimatedArrivalDate: null,
+        };
       }
 
       res.json({
