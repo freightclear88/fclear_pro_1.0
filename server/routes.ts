@@ -3592,23 +3592,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-          // Enhanced data extraction from Excel sheets
-          // Look for common ISF data patterns in Excel cells
+          // Enhanced data extraction from Excel sheets with AI assistance
           const flatData = jsonData.flat().filter(cell => cell && typeof cell === 'string');
           
-          // Extract common patterns
-          extractedData = {
-            importerName: findExcelData(flatData, ['importer', 'buyer', 'company']),
-            consigneeName: findExcelData(flatData, ['consignee', 'receiver', 'notify']),
-            manufacturerCountry: findExcelData(flatData, ['manufacturer', 'origin', 'country']),
-            countryOfOrigin: findExcelData(flatData, ['origin', 'country', 'made in']),
-            htsusNumber: findExcelData(flatData, ['hts', 'tariff', 'commodity code']),
-            commodityDescription: findExcelData(flatData, ['description', 'commodity', 'goods']),
-            portOfEntry: findExcelData(flatData, ['port', 'entry', 'destination']),
-            billOfLading: findExcelData(flatData, ['bl', 'bill of lading', 'bol']),
-            vesselName: findExcelData(flatData, ['vessel', 'ship', 'carrier']),
-            estimatedArrivalDate: findExcelData(flatData, ['eta', 'arrival', 'date']),
-          };
+          // Create a structured text representation of the Excel data
+          const excelText = jsonData.map((row, index) => 
+            `Row ${index + 1}: ${row.join(' | ')}`
+          ).join('\n');
+          
+          console.log("Excel data extracted:", excelText.substring(0, 1000) + "...");
+          
+          // Use OpenAI to intelligently extract ISF data from Excel content
+          try {
+            const openai = require('openai');
+            const openaiClient = new openai.OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+            
+            const prompt = `Extract ISF (Importer Security Filing) data from this Excel/spreadsheet content. Return ONLY a JSON object with these exact fields (use null for missing data):
+
+{
+  "importerName": "company name of importer",
+  "consigneeName": "company name of consignee", 
+  "manufacturerCountry": "country where goods were manufactured",
+  "countryOfOrigin": "country of origin",
+  "htsusNumber": "10-digit HTS/tariff code",
+  "commodityDescription": "description of goods",
+  "portOfEntry": "US port of entry",
+  "billOfLading": "bill of lading number",
+  "vesselName": "vessel/ship name",
+  "estimatedArrivalDate": "YYYY-MM-DD format"
+}
+
+Excel content:
+${excelText}`;
+
+            const aiResponse = await openaiClient.chat.completions.create({
+              model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+              messages: [{ role: "user", content: prompt }],
+              response_format: { type: "json_object" },
+              max_tokens: 1000,
+            });
+
+            const aiExtractedData = JSON.parse(aiResponse.choices[0].message.content);
+            console.log("AI extracted Excel ISF data:", aiExtractedData);
+            
+            // Clean and validate the extracted data
+            extractedData = {};
+            Object.entries(aiExtractedData).forEach(([key, value]) => {
+              if (value && value !== "null" && value !== "") {
+                extractedData[key] = value;
+              }
+            });
+            
+          } catch (aiError) {
+            console.error("AI Excel parsing error:", aiError);
+            // Fallback to basic pattern matching
+            extractedData = {
+              importerName: findExcelData(flatData, ['importer', 'buyer', 'company']),
+              consigneeName: findExcelData(flatData, ['consignee', 'receiver', 'notify']),
+              manufacturerCountry: findExcelData(flatData, ['manufacturer', 'origin', 'country']),
+              countryOfOrigin: findExcelData(flatData, ['origin', 'country', 'made in']),
+              htsusNumber: findExcelData(flatData, ['hts', 'tariff', 'commodity code']),
+              commodityDescription: findExcelData(flatData, ['description', 'commodity', 'goods']),
+              portOfEntry: findExcelData(flatData, ['port', 'entry', 'destination']),
+              billOfLading: findExcelData(flatData, ['bl', 'bill of lading', 'bol']),
+              vesselName: findExcelData(flatData, ['vessel', 'ship', 'carrier']),
+              estimatedArrivalDate: findExcelData(flatData, ['eta', 'arrival', 'date']),
+            };
+          }
 
           // Filter out null values
           extractedData = Object.fromEntries(
@@ -3620,20 +3670,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
           extractedData = getDefaultExtractedData();
         }
       } else if (fileExtension === 'pdf') {
-        // For PDF files, provide meaningful sample data since PDF parsing has issues
-        console.log("PDF file detected, providing sample ISF data for demonstration");
-        extractedData = {
-          importerName: "ABC Import Company",
-          consigneeName: "XYZ Warehouse LLC", 
-          manufacturerCountry: "China",
-          countryOfOrigin: "China",
-          htsusNumber: "8471300100", // 10-digit HTS number
-          commodityDescription: "Computer hardware components",
-          portOfEntry: "Los Angeles, CA",
-          billOfLading: "DEMO123456789",
-          vesselName: "CONTAINER VESSEL",
-          estimatedArrivalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        };
+        // Use Azure Document Intelligence for PDF parsing
+        console.log("PDF file detected, using Azure Document Intelligence for extraction");
+        try {
+          const { DocumentAnalysisClient, AzureKeyCredential } = require("@azure/ai-form-recognizer");
+          const fs = require('fs');
+          
+          const client = new DocumentAnalysisClient(
+            process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT!,
+            new AzureKeyCredential(process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY!)
+          );
+          
+          const documentBuffer = fs.readFileSync(req.file.path);
+          const poller = await client.beginAnalyzeDocument("prebuilt-document", documentBuffer);
+          const result = await poller.pollUntilDone();
+          
+          // Extract text content from the document
+          const fullText = result.content || "";
+          console.log("Extracted PDF text:", fullText.substring(0, 500) + "...");
+          
+          // Use OpenAI to extract structured ISF data from the document text
+          const openai = require('openai');
+          const openaiClient = new openai.OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          
+          const prompt = `Extract ISF (Importer Security Filing) data from this shipping document text. Return ONLY a JSON object with these exact fields (use null for missing data):
+
+{
+  "importerName": "company name of importer",
+  "consigneeName": "company name of consignee", 
+  "manufacturerCountry": "country where goods were manufactured",
+  "countryOfOrigin": "country of origin",
+  "htsusNumber": "10-digit HTS/tariff code",
+  "commodityDescription": "description of goods",
+  "portOfEntry": "US port of entry",
+  "billOfLading": "bill of lading number",
+  "vesselName": "vessel/ship name",
+  "estimatedArrivalDate": "YYYY-MM-DD format"
+}
+
+Document text:
+${fullText}`;
+
+          const aiResponse = await openaiClient.chat.completions.create({
+            model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+            messages: [{ role: "user", content: prompt }],
+            response_format: { type: "json_object" },
+            max_tokens: 1000,
+          });
+
+          const aiExtractedData = JSON.parse(aiResponse.choices[0].message.content);
+          console.log("AI extracted ISF data:", aiExtractedData);
+          
+          // Clean and validate the extracted data
+          extractedData = {};
+          Object.entries(aiExtractedData).forEach(([key, value]) => {
+            if (value && value !== "null" && value !== "") {
+              extractedData[key] = value;
+            }
+          });
+          
+        } catch (pdfError) {
+          console.error("PDF parsing error:", pdfError);
+          // Fallback to basic text extraction if Azure fails
+          extractedData = {
+            importerName: "Data extraction in progress",
+            consigneeName: "Please review and complete", 
+            manufacturerCountry: "TBD",
+            countryOfOrigin: "TBD",
+            htsusNumber: "0000000000",
+            commodityDescription: "Please verify commodity details",
+            portOfEntry: "TBD",
+            billOfLading: "TBD",
+            vesselName: "TBD",
+            estimatedArrivalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          };
+        }
       } else {
         // For other file types (DOC, images), use enhanced sample data
         extractedData = getDefaultExtractedData();
