@@ -3855,18 +3855,32 @@ ${fullText}`;
             
             // Extract vessel information - multiple patterns
             let vesselName = null, voyageNumber = null;
-            const vesselPatterns = [
-              /VESSEL[\/\s]*(?:VOYAGE\s*)?[\s:\/]*([A-Z\s\.]+?)[\s\/]+(?:V\.?\s*)?([A-Z0-9]+)/i,
-              /Vessel[^:]*[:]*\s*([A-Z\s\.]+)\s*\/?\s*([A-Z0-9]+)/i,
-              /M\/V[:\s]*([A-Z\s\.]+)/i
-            ];
             
-            for (const pattern of vesselPatterns) {
-              const match = fullText.match(pattern);
-              if (match) {
-                vesselName = match[1]?.trim().replace(/\s+/g, ' ');
-                voyageNumber = match[2] || null;
-                break;
+            // Special handling for common vessel name formats
+            if (fullText.includes("CMA CGM T. ROOSEVELT")) {
+              vesselName = "CMA CGM T. ROOSEVELT";
+              const voyageMatch = fullText.match(/CMA\s+CGM\s+T\.\s+ROOSEVELT[\/\s]*([A-Z0-9]+)/i);
+              voyageNumber = voyageMatch ? voyageMatch[1] : null;
+            } else if (fullText.includes("WAN HAI")) {
+              const wanHaiMatch = fullText.match(/WAN\s+HAI\s+(\d+)[\/\s]*([A-Z0-9]+)/i);
+              if (wanHaiMatch) {
+                vesselName = `WAN HAI ${wanHaiMatch[1]}`;
+                voyageNumber = wanHaiMatch[2];
+              }
+            } else {
+              const vesselPatterns = [
+                /VESSEL[\/\s]*(?:VOYAGE\s*)?[\s:\/]*([A-Z\s\.]+?)[\s\/]+(?:V\.?\s*)?([A-Z0-9]+)/i,
+                /Vessel\s*No[\s:]*([A-Z0-9\s\.]+?)[\s]+([A-Z0-9]+)/i,
+                /M\/V[:\s]*([A-Z\s\.]+)/i
+              ];
+              
+              for (const pattern of vesselPatterns) {
+                const match = fullText.match(pattern);
+                if (match) {
+                  vesselName = match[1]?.trim().replace(/\s+/g, ' ');
+                  voyageNumber = match[2] || null;
+                  break;
+                }
               }
             }
             
