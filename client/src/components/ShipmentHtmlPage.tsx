@@ -16,20 +16,19 @@ interface ShipmentHtmlPageProps {
 const FIELD_SECTIONS = {
   "Shipment Identification": [
     { key: "shipmentId", label: "Shipment ID", icon: Package },
-    { key: "billOfLading", label: "Bill of Lading", icon: FileText, hasTracking: true },
+    { key: "billOfLadingNumber", label: "Bill of Lading", icon: FileText, hasTracking: true },
     { key: "status", label: "Status", icon: Package },
     { key: "transportMode", label: "Transport Mode", icon: Truck },
   ],
   "Vessel & Transport Details": [
-    { key: "vessel", label: "Vessel Name", icon: Ship },
-    { key: "voyage", label: "Voyage Number", icon: Ship },
+    { key: "vesselAndVoyage", label: "Vessel & Voyage", icon: Ship },
     { key: "containerNumber", label: "Container Number", icon: Package, hasTracking: true },
+    { key: "weight", label: "Weight", icon: Package },
   ],
   "Origin & Destination": [
-    { key: "origin", label: "Origin", icon: MapPin },
-    { key: "originPort", label: "Origin Port", icon: MapPin },
-    { key: "destination", label: "Destination", icon: MapPin },
-    { key: "destinationPort", label: "Destination Port", icon: MapPin },
+    { key: "portOfLoading", label: "Port of Loading", icon: MapPin },
+    { key: "portOfDischarge", label: "Port of Discharge", icon: MapPin },
+    { key: "placeOfDelivery", label: "Place of Delivery", icon: MapPin },
   ],
   "Arrival Information": [
     { key: "eta", label: "Estimated Time of Arrival (ETA)", icon: Calendar },
@@ -38,7 +37,7 @@ const FIELD_SECTIONS = {
   "Party Information": [
     { key: "shipperName", label: "Shipper Name", icon: Package },
     { key: "consigneeName", label: "Consignee Name", icon: Package },
-    { key: "customsBroker", label: "Customs Broker", icon: FileText },
+    { key: "notifyPartyName", label: "Notify Party", icon: FileText },
   ],
   "Financial Information": [
     { key: "freightCharges", label: "Freight Charges", icon: Package },
@@ -98,7 +97,7 @@ export default function ShipmentHtmlPage({ shipment, isOpen, onClose }: Shipment
   const getTrackingUrl = (fieldKey: string, value: string) => {
     if (!value || value === "N/A") return null;
     
-    if (fieldKey === "billOfLading") {
+    if (fieldKey === "billOfLadingNumber") {
       return generateTrackingUrl(value);
     }
     if (fieldKey === "containerNumber") {
@@ -110,7 +109,7 @@ export default function ShipmentHtmlPage({ shipment, isOpen, onClose }: Shipment
   const getCarrierInfo = (fieldKey: string, value: string) => {
     if (!value || value === "N/A") return null;
     
-    if (fieldKey === "billOfLading") {
+    if (fieldKey === "billOfLadingNumber") {
       return detectCarrierFromBL(value);
     }
     return null;
@@ -144,7 +143,7 @@ export default function ShipmentHtmlPage({ shipment, isOpen, onClose }: Shipment
                 </div>
                 <div className="flex items-center space-x-2">
                   <MapPin className="w-5 h-5 text-freight-orange" />
-                  <span>{shipment?.originPort || "Origin TBD"} → {shipment?.destinationPort || "Destination TBD"}</span>
+                  <span>{shipment?.portOfLoading || "Origin TBD"} → {shipment?.portOfDischarge || "Destination TBD"}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Calendar className="w-5 h-5 text-freight-green" />
