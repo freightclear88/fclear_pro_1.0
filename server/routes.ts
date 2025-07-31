@@ -15,7 +15,10 @@ import { detectCarrierFromBL, generateTrackingUrl, generateContainerTrackingUrl 
 import nodemailer from "nodemailer";
 import { xmlIntegrator } from './xmlIntegration';
 import zendesk from 'node-zendesk';
-import { aiDocProcessor } from './aiDocumentProcessor';
+import { AzureDocumentProcessor } from './azureDocumentProcessor';
+
+// Initialize Azure Document Intelligence processor
+const azureDocProcessor = new AzureDocumentProcessor();
 // PDF parsing will be dynamically imported when needed
 
 // Zendesk API configuration
@@ -1204,31 +1207,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Processing PDF with AI: ${file.originalname} at ${file.path}`);
             
             try {
-              // Check if OpenAI API key is available
-              if (!process.env.OPENAI_API_KEY) {
-                console.log('OpenAI API key not found - using basic extraction');
+              // Check if Azure Document Intelligence is available
+              if (!process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT && !process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY) {
+                console.log('Azure Document Intelligence not configured - using fallback extraction');
                 arrivalNoticeData = {
                   documentType: documentCategory.replace('_', ' ').toUpperCase(),
                   fileName: file.originalname,
-                  extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nUploaded: ${new Date().toISOString()}\nNote: AI processing requires OpenAI API key\nProcessed at: ${processingTime} EST`,
-                  processingNote: 'AI processing unavailable - API key required'
+                  extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nUploaded: ${new Date().toISOString()}\nNote: Document Intelligence requires Azure configuration\nProcessed at: ${processingTime} EST`,
+                  processingNote: 'Document Intelligence unavailable - Azure setup required'
                 };
               } else {
-                // Use AI to extract structured data from the document
-                console.log('Starting AI document analysis...');
-                const extractedData = await aiDocProcessor.extractShipmentData(
+                // Use Azure Document Intelligence to extract structured data from the document
+                console.log('Starting Azure Document Intelligence analysis...');
+                const extractedData = await azureDocProcessor.extractShipmentData(
                   file.path, 
                   documentCategory.replace('_', ' ')
                 );
                 
-                console.log('AI extracted data:', extractedData);
+                console.log('Azure Document Intelligence extracted data:', extractedData);
                 
-                // Map AI extracted data to our format
+                // Map extracted data to our format
                 arrivalNoticeData = {
                   documentType: documentCategory.replace('_', ' ').toUpperCase(),
                   fileName: file.originalname,
                   
-                  // Core shipping data from AI
+                  // Core shipping data from Document Intelligence
                   billOfLading: extractedData.billOfLading,
                   vesselName: extractedData.vesselName,
                   voyage: extractedData.voyage,

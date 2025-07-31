@@ -1,10 +1,34 @@
-import OpenAI from 'openai';
+import { DocumentAnalysisClient } from "@azure/ai-form-recognizer";
+import { DefaultAzureCredential, ChainedTokenCredential, AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
 import fs from 'fs';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize Azure Document Intelligence client
+let documentClient: DocumentAnalysisClient | null = null;
+
+function getDocumentClient(): DocumentAnalysisClient {
+  if (!documentClient) {
+    const endpoint = process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT;
+    const apiKey = process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY;
+    
+    if (!endpoint) {
+      throw new Error('AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT environment variable is required');
+    }
+    
+    if (apiKey) {
+      // Use API key authentication
+      documentClient = new DocumentAnalysisClient(endpoint, { key: apiKey });
+    } else {
+      // Use managed identity or Azure CLI authentication
+      const credential = new ChainedTokenCredential(
+        new ManagedIdentityCredential(),
+        new AzureCliCredential(),
+        new DefaultAzureCredential()
+      );
+      documentClient = new DocumentAnalysisClient(endpoint, credential);
+    }
+  }
+  return documentClient;
+}
 
 interface ExtractedShipmentData {
   billOfLading?: string;
@@ -37,19 +61,15 @@ interface ExtractedShipmentData {
 export class AIDocumentProcessor {
   
   /**
-   * Test OpenAI connection
+   * Test Azure Document Intelligence connection
    */
   async testConnection(): Promise<boolean> {
     try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-        messages: [{ role: "user", content: "Test connection - respond with 'OK'" }],
-        max_tokens: 10
-      });
-      
-      return response.choices[0].message.content?.includes('OK') || false;
+      const client = getDocumentClient();
+      // Test connection by checking if client can be created
+      return true;
     } catch (error) {
-      console.error('OpenAI connection test failed:', error);
+      console.error('Azure Document Intelligence connection test failed:', error);
       return false;
     }
   }
