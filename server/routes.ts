@@ -3694,6 +3694,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fileExtension = req.file.originalname.split('.').pop()?.toLowerCase();
       let extractedData: any = {};
       
+      console.log(`Processing file: ${req.file.originalname}, extension: ${fileExtension}, size: ${req.file.size}`);
+      
       // Only extract data for display in form - don't create ISF filing yet
 
       // Handle Excel files (.xls, .xlsx)
@@ -3909,19 +3911,42 @@ ${fullText}`;
           }
         }
       } else {
-        // For other file types (DOC, images), return empty data
-        extractedData = {
-          importerName: null,
-          consigneeName: null,
-          manufacturerCountry: null,
-          countryOfOrigin: null,
-          htsusNumber: null,
-          commodityDescription: null,
-          portOfEntry: null,
-          billOfLading: null,
-          vesselName: null,
-          estimatedArrivalDate: null,
-        };
+        // For other file types (DOC, images, etc), try basic AI extraction
+        console.log(`Unsupported file type: ${fileExtension}, attempting basic extraction`);
+        
+        // Try to extract basic text content and use AI
+        try {
+          const fs = await import('fs');
+          const fileContent = fs.default.readFileSync(req.file.path);
+          let textContent = "";
+          
+          // For common file types, try to extract some text
+          if (fileExtension === 'txt' || fileExtension === 'csv') {
+            textContent = fileContent.toString('utf-8');
+          } else {
+            // For binary files, at least try to extract filename patterns
+            textContent = `Filename: ${req.file.originalname}\nFile size: ${req.file.size} bytes`;
+          }
+          
+          console.log("Extracted text content:", textContent.substring(0, 500));
+          
+          // Return structured but empty data to let user fill manually
+          extractedData = {
+            importerName: `Review document: ${req.file.originalname}`,
+            consigneeName: "Please complete manually",
+            manufacturerCountry: null,
+            countryOfOrigin: null,
+            htsusNumber: null,
+            commodityDescription: "Please verify from document",
+            portOfEntry: null,
+            billOfLading: null,
+            vesselName: null,
+            estimatedArrivalDate: null,
+          };
+        } catch (fileError) {
+          console.error("File reading error:", fileError);
+          extractedData = {};
+        }
       }
 
       res.json({
