@@ -3596,8 +3596,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Cannot modify submitted ISF filing" });
       }
 
+      // Convert date strings to Date objects for database compatibility
+      const updateData = { ...req.body };
+      if (updateData.estimatedArrivalDate && typeof updateData.estimatedArrivalDate === 'string') {
+        updateData.estimatedArrivalDate = new Date(updateData.estimatedArrivalDate);
+      }
+      if (updateData.invoiceDate && typeof updateData.invoiceDate === 'string') {
+        updateData.invoiceDate = new Date(updateData.invoiceDate);
+      }
+      if (updateData.invoiceValue && typeof updateData.invoiceValue === 'string') {
+        updateData.invoiceValue = parseFloat(updateData.invoiceValue);
+      }
+
       // Update the filing with new data
-      const updatedFiling = await storage.updateIsfFiling(parseInt(id), req.body);
+      const updatedFiling = await storage.updateIsfFiling(parseInt(id), updateData);
       
       res.json({
         success: true,
