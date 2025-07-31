@@ -433,10 +433,19 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         formData.append("isfDocument", uploadedFile);
       }
 
-      return await apiRequest("/api/isf/create", {
+      // Use fetch directly for FormData since apiRequest expects JSON
+      const response = await fetch("/api/isf/create", {
         method: "POST",
         body: formData,
+        credentials: "include",
       });
+
+      if (!response.ok) {
+        const text = (await response.text()) || response.statusText;
+        throw new Error(`${response.status}: ${text}`);
+      }
+
+      return await response.json();
     },
     onSuccess: (result) => {
       toast({
