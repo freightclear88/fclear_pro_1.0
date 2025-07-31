@@ -152,21 +152,21 @@ export default function IsfEdit() {
     if (isfFiling) {
       // Map ISF filing data to form fields
       const formData: Partial<IsfEditFormData> = {
-        sellerName: isfFiling.sellerName || "TBD",
-        sellerAddress: isfFiling.sellerAddress || "TBD",
-        sellerCity: isfFiling.sellerCity || "TBD",
+        sellerName: isfFiling.sellerName || "Enter seller company name",
+        sellerAddress: isfFiling.sellerAddress || "Enter seller address",
+        sellerCity: isfFiling.sellerCity || "Enter seller city",
         sellerState: isfFiling.sellerState || "",
         sellerCountry: isfFiling.sellerCountry || "TBD",
 
-        buyerName: isfFiling.buyerName || "TBD",
-        buyerAddress: isfFiling.buyerAddress || "TBD", 
-        buyerCity: isfFiling.buyerCity || "TBD",
+        buyerName: isfFiling.buyerName || "Enter buyer company name",
+        buyerAddress: isfFiling.buyerAddress || "Enter buyer address", 
+        buyerCity: isfFiling.buyerCity || "Enter buyer city",
         buyerState: isfFiling.buyerState || "",
         buyerZip: isfFiling.buyerZip || "",
         buyerCountry: isfFiling.buyerCountry || "US",
 
-        importerOfRecord: isfFiling.importerOfRecord || "TBD",
-        consigneeNumber: isfFiling.consigneeNumber || "TBD",
+        importerOfRecord: isfFiling.importerOfRecord || "Enter IRS/EIN number",
+        consigneeNumber: isfFiling.consigneeNumber || "Enter consignee IRS/EIN number",
 
         manufacturerName: isfFiling.manufacturerName || "TBD",
         manufacturerAddress: isfFiling.manufacturerAddress || "TBD",
