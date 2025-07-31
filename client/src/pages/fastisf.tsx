@@ -156,10 +156,85 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
   const form = useForm<IsfFormData>({
     resolver: zodResolver(isfFormSchema),
     defaultValues: {
+      // Company Information
+      importerName: "",
+      importerAddress: "",
+      importerCity: "",
+      importerState: "",
+      importerZip: "",
       importerCountry: "US",
+      importerOfRecord: "",
+      
+      consigneeName: "",
+      consigneeAddress: "",
+      consigneeCity: "",
+      consigneeState: "",
+      consigneeZip: "",
       consigneeCountry: "US",
+      consigneeNumber: "",
+      
+      // Shipping Information (will be populated from document scan)
+      vesselName: "",
+      voyageNumber: "",
+      containerNumbers: "",
+      billOfLading: "",
+      portOfEntry: "",
+      foreignPortOfLading: "",
+      estimatedDepartureDate: "",
+      estimatedArrivalDate: "",
+      
+      // Manufacturer/Supplier
+      manufacturerName: "",
+      manufacturerAddress: "",
+      manufacturerCity: "",
+      manufacturerState: "",
+      manufacturerCountry: "",
+      
+      // Seller/Buyer
+      sellerName: "",
+      sellerAddress: "",
+      sellerCity: "",
+      sellerState: "",
+      sellerCountry: "",
+      
+      buyerName: "",
+      buyerAddress: "",
+      buyerCity: "",
+      buyerState: "",
+      buyerZip: "",
+      buyerCountry: "",
+      
+      // Ship-to Party
+      shipToPartyName: "",
+      shipToPartyAddress: "",
+      shipToPartyCity: "",
+      shipToPartyState: "",
+      shipToPartyZip: "",
       shipToPartyCountry: "US",
+      
+      // Container/Consolidator
+      containerStuffingLocation: "",
+      containerStuffingCity: "",
+      containerStuffingState: "",
+      containerStuffingCountry: "",
+      
+      consolidatorName: "",
+      consolidatorAddress: "",
+      consolidatorCity: "",
+      consolidatorState: "",
+      consolidatorCountry: "",
+      
+      // Commodity Information
+      countryOfOrigin: "",
+      htsusNumber: "",
+      commodityDescription: "",
+      
+      // Commercial Information
       currency: "USD",
+      invoiceNumber: "",
+      invoiceDate: "",
+      invoiceValue: "",
+      terms: "",
     },
   });
 
@@ -202,16 +277,16 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       if (result.success && result.extractedData) {
         console.log("Extracted data received:", result.extractedData);
         
-        // Map extracted data to form fields
-        const fieldMapping: Record<string, keyof IsfFormData> = {
-          importerName: 'importerName',
-          consigneeName: 'consigneeName',  
+        // Map extracted data to form fields - ensure exact field name matching
+        const fieldMapping: Record<string, string> = {
           vesselName: 'vesselName',
-          voyageNumber: 'voyageNumber',
+          voyageNumber: 'voyageNumber', 
           containerNumbers: 'containerNumbers',
           billOfLading: 'billOfLading',
           portOfEntry: 'portOfEntry',
           estimatedArrivalDate: 'estimatedArrivalDate',
+          importerName: 'importerName',
+          consigneeName: 'consigneeName',
           manufacturerCountry: 'manufacturerCountry',
           countryOfOrigin: 'countryOfOrigin',
           htsusNumber: 'htsusNumber',
@@ -222,28 +297,40 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         Object.entries(result.extractedData).forEach(([extractedKey, value]) => {
           const formFieldKey = fieldMapping[extractedKey];
           
-          if (formFieldKey && value && value.toString().trim()) {
+          if (formFieldKey && value && value.toString().trim() && value.toString().trim() !== 'TBD') {
             try {
+              console.log(`Setting ${formFieldKey} to:`, value);
+              
               // Handle date fields specially
               if (formFieldKey === 'estimatedArrivalDate' && value) {
                 const dateValue = new Date(value.toString());
                 if (!isNaN(dateValue.getTime())) {
-                  form.setValue(formFieldKey, dateValue.toISOString().split('T')[0], { 
+                  const dateString = dateValue.toISOString().split('T')[0];
+                  form.setValue(formFieldKey as keyof IsfFormData, dateString, { 
                     shouldValidate: false, 
                     shouldDirty: true 
                   });
+                  console.log(`Set date field ${formFieldKey} to:`, dateString);
                 }
               } else {
-                form.setValue(formFieldKey, value.toString().trim(), { 
+                const stringValue = value.toString().trim();
+                form.setValue(formFieldKey as keyof IsfFormData, stringValue, { 
                   shouldValidate: false, 
                   shouldDirty: true 
                 });
+                console.log(`Set field ${formFieldKey} to:`, stringValue);
               }
             } catch (error) {
               console.error(`Failed to set ${formFieldKey}:`, error);
             }
           }
         });
+        
+        // Trigger form validation after all fields are set
+        setTimeout(() => {
+          form.trigger();
+          console.log("Form values after population:", form.getValues());
+        }, 100);
 
         toast({
           title: "Document Scanned Successfully",
