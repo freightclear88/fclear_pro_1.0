@@ -163,109 +163,191 @@ export class AzureDocumentProcessor {
   }
 
   /**
-   * Parse shipping data from extracted text using pattern matching
+   * Parse shipping data from extracted text using improved pattern matching
    */
   private parseShippingData(text: string, documentType: string): ExtractedShipmentData {
     const data: ExtractedShipmentData = {};
     
-    // Bill of Lading patterns
+    console.log('Parsing text snippet:', text.substring(0, 500));
+    
+    // Clean text and split into lines for better parsing
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    
+    // Bill of Lading patterns - more comprehensive
     const blPatterns = [
-      /B\/L\s*(?:No\.?|Number)\s*:?\s*([A-Z0-9-]+)/i,
-      /Bill\s+of\s+Lading\s*:?\s*([A-Z0-9-]+)/i,
-      /BL\s*#?\s*:?\s*([A-Z0-9-]+)/i
+      /B\/L\s*(?:No\.?|Number|#)\s*:?\s*([A-Z0-9-]+)/i,
+      /Bill\s+of\s+Lading\s*(?:No\.?|Number|#)?\s*:?\s*([A-Z0-9-]+)/i,
+      /BL\s*(?:No\.?|Number|#)?\s*:?\s*([A-Z0-9-]+)/i,
+      /BOOKING\s*(?:No\.?|Number|#)?\s*:?\s*([A-Z0-9-]+)/i,
+      /^([A-Z]{2,4}\d{8,12})$/i  // Pattern for standalone BL numbers
     ];
     
-    for (const pattern of blPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        data.billOfLading = match[1].trim();
-        break;
+    for (const line of lines) {
+      for (const pattern of blPatterns) {
+        const match = line.match(pattern);
+        if (match && match[1] && match[1] !== 'BOOKING') {
+          data.billOfLading = match[1].trim();
+          break;
+        }
       }
+      if (data.billOfLading) break;
     }
     
-    // Vessel name patterns
+    // Vessel name patterns - improved to handle variations
     const vesselPatterns = [
-      /Vessel\s*:?\s*([A-Z\s]+)(?:\n|$)/i,
-      /Ship\s*Name\s*:?\s*([A-Z\s]+)(?:\n|$)/i,
-      /M\/V\s+([A-Z\s]+)(?:\n|$)/i
+      /Vessel\s*(?:Name)?\s*:?\s*(.+?)(?:\s+VOY|\s+V\d|\n|$)/i,
+      /Ship\s*Name\s*:?\s*(.+?)(?:\s+VOY|\s+V\d|\n|$)/i,
+      /M\/V\s+(.+?)(?:\s+VOY|\s+V\d|\n|$)/i,
+      /^(.+?)\s+(?:VOY|VOYAGE)\s+/i,
+      /^(.+?)\s+EXPRESS$/i  // Handle "VUNG TAU EXPRESS" pattern
     ];
     
-    for (const pattern of vesselPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        data.vesselName = match[1].trim();
-        break;
+    for (const line of lines) {
+      for (const pattern of vesselPatterns) {
+        const match = line.match(pattern);
+        if (match && match[1] && match[1].length > 2) {
+          const vesselName = match[1].trim().replace(/\s+/g, ' ');
+          if (vesselName !== 'VOY' && !vesselName.includes('MARKS') && !vesselName.includes('DESCRIPTION')) {
+            data.vesselName = vesselName;
+            break;
+          }
+        }
       }
+      if (data.vesselName) break;
     }
     
     // Container number patterns
     const containerPatterns = [
-      /Container\s*(?:No\.?|Number)\s*:?\s*([A-Z]{4}\d{7})/i,
-      /CNTR\s*:?\s*([A-Z]{4}\d{7})/i
+      /Container\s*(?:No\.?|Number|#)\s*:?\s*([A-Z]{4}\d{7})/i,
+      /CNTR\s*(?:No\.?|#)?\s*:?\s*([A-Z]{4}\d{7})/i,
+      /^([A-Z]{4}\d{7})$/i  // Standalone container numbers
     ];
     
-    for (const pattern of containerPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        data.containerNumber = match[1].trim();
-        break;
+    for (const line of lines) {
+      for (const pattern of containerPatterns) {
+        const match = line.match(pattern);
+        if (match) {
+          data.containerNumber = match[1].trim();
+          break;
+        }
       }
+      if (data.containerNumber) break;
     }
     
-    // Origin/destination patterns
+    // Origin patterns - look for port names
     const originPatterns = [
-      /Port\s+of\s+Loading\s*:?\s*([A-Z\s,]+)(?:\n|$)/i,
-      /Origin\s*:?\s*([A-Z\s,]+)(?:\n|$)/i
+      /Port\s+of\s+Loading\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
+      /Origin\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
+      /From\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
+      /^(NINGBO|SHANGHAI|QINGDAO|TIANJIN|SHENZHEN|GUANGZHOU|XIAMEN)$/i  // Common Chinese ports
     ];
     
-    for (const pattern of originPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        data.origin = match[1].trim();
-        break;
+    for (const line of lines) {
+      for (const pattern of originPatterns) {
+        const match = line.match(pattern);
+        if (match && match[1] && match[1].length > 2) {
+          const origin = match[1].trim();
+          if (!origin.includes('DELIVERY') && !origin.includes('FREIGHT') && !origin.includes('MARKS')) {
+            data.origin = origin;
+            break;
+          }
+        }
       }
+      if (data.origin) break;
     }
     
+    // Destination patterns - look for delivery locations
     const destinationPatterns = [
-      /Port\s+of\s+Discharge\s*:?\s*([A-Z\s,]+)(?:\n|$)/i,
-      /Destination\s*:?\s*([A-Z\s,]+)(?:\n|$)/i
+      /Port\s+of\s+Discharge\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
+      /Destination\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
+      /Place\s+of\s+Delivery\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
+      /To\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
+      /TAMPA[,\s]*FL/i,  // Specific pattern for Tampa
+      /(LOS ANGELES|LONG BEACH|NEW YORK|CHARLESTON|SAVANNAH|MIAMI|HOUSTON),?\s*(CA|NY|SC|GA|FL|TX)/i
     ];
     
-    for (const pattern of destinationPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        data.destination = match[1].trim();
-        break;
+    for (const line of lines) {
+      for (const pattern of destinationPatterns) {
+        const match = line.match(pattern);
+        if (match && match[1] && match[1].length > 2) {
+          const destination = match[1].trim();
+          if (!destination.includes('FREIGHT') && !destination.includes('MARKS') && !destination.includes('DESCRIPTION')) {
+            data.destination = destination;
+            break;
+          }
+        }
       }
+      if (data.destination) break;
+    }
+    
+    // If we found TAMPA,FL pattern, use it as destination
+    if (text.includes('TAMPA,FL') || text.includes('TAMPA, FL')) {
+      data.destination = 'Tampa, FL';
     }
     
     // Company name patterns
     const shipperPatterns = [
-      /Shipper\s*:?\s*([A-Za-z\s&.,]+)(?:\n|Address)/i,
-      /Consignor\s*:?\s*([A-Za-z\s&.,]+)(?:\n|Address)/i
+      /Shipper\s*:?\s*([A-Za-z][A-Za-z\s&.,\-]+?)(?:\s*Address|\n|$)/i,
+      /Consignor\s*:?\s*([A-Za-z][A-Za-z\s&.,\-]+?)(?:\s*Address|\n|$)/i,
+      /Exporter\s*:?\s*([A-Za-z][A-Za-z\s&.,\-]+?)(?:\s*Address|\n|$)/i
     ];
     
-    for (const pattern of shipperPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        data.shipperName = match[1].trim();
-        break;
+    for (const line of lines) {
+      for (const pattern of shipperPatterns) {
+        const match = line.match(pattern);
+        if (match && match[1] && match[1].length > 3) {
+          const shipper = match[1].trim();
+          if (!shipper.includes('MARKS') && !shipper.includes('DESCRIPTION') && !shipper.includes('WEIGHT')) {
+            data.shipperName = shipper;
+            break;
+          }
+        }
       }
+      if (data.shipperName) break;
     }
     
     const consigneePatterns = [
-      /Consignee\s*:?\s*([A-Za-z\s&.,]+)(?:\n|Address)/i,
-      /Notify\s+Party\s*:?\s*([A-Za-z\s&.,]+)(?:\n|Address)/i
+      /Consignee\s*:?\s*([A-Za-z][A-Za-z\s&.,\-]+?)(?:\s*Address|\n|$)/i,
+      /Notify\s+Party\s*:?\s*([A-Za-z][A-Za-z\s&.,\-]+?)(?:\s*Address|\n|$)/i,
+      /Importer\s*:?\s*([A-Za-z][A-Za-z\s&.,\-]+?)(?:\s*Address|\n|$)/i
     ];
     
-    for (const pattern of consigneePatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        data.consigneeName = match[1].trim();
-        break;
+    for (const line of lines) {
+      for (const pattern of consigneePatterns) {
+        const match = line.match(pattern);
+        if (match && match[1] && match[1].length > 3) {
+          const consignee = match[1].trim();
+          if (!consignee.includes('MARKS') && !consignee.includes('DESCRIPTION') && !consignee.includes('WEIGHT')) {
+            data.consigneeName = consignee;
+            break;
+          }
+        }
       }
+      if (data.consigneeName) break;
     }
     
+    // Cargo description patterns
+    const cargoPatterns = [
+      /Description\s+of\s+(?:Packages\s+and\s+)?Goods\s*:?\s*(.+?)(?:\n|$)/i,
+      /Commodity\s*:?\s*(.+?)(?:\n|$)/i,
+      /Cargo\s*:?\s*(.+?)(?:\n|$)/i
+    ];
+    
+    for (const line of lines) {
+      for (const pattern of cargoPatterns) {
+        const match = line.match(pattern);
+        if (match && match[1] && match[1].length > 3) {
+          const cargo = match[1].trim();
+          if (!cargo.includes('MARKS') && !cargo.includes('WEIGHT') && cargo.length < 100) {
+            data.cargoDescription = cargo;
+            break;
+          }
+        }
+      }
+      if (data.cargoDescription) break;
+    }
+    
+    console.log('Parsed data:', data);
     return data;
   }
 
