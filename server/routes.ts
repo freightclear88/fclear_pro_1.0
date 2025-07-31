@@ -3859,11 +3859,16 @@ ${fullText}`;
             let manufacturerName = null, manufacturerAddress = null, manufacturerCity = null, mfgCountry = null;
             let shipToPartyName = null, shipToPartyAddress = null, shipToPartyCity = null;
 
-            // Enhanced company detection patterns
+            // Enhanced company detection patterns with buyer/seller/consolidator identification
             const companyPatterns = [
               /([A-Z][A-Z\s\.\-&]+ (?:CO\.|COMPANY|CORP|CORPORATION|LTD|LIMITED|INC|LLC)[A-Z\s\.\-]*)/gi,
               /SHIPPER[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i,
-              /EXPORTER[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i
+              /EXPORTER[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i,
+              /CONSIGNEE[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i,
+              /BUYER[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i,
+              /SELLER[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i,
+              /CONSOLIDATOR[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i,
+              /NOTIFY\s*PARTY[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i
             ];
 
             // Extract company information from document text
@@ -3878,20 +3883,48 @@ ${fullText}`;
               }
             }
 
+            // Extract specific roles from the document text
+            const shipperMatch = fullText.match(/SHIPPER[^:]*[:]*\s*([^\n]+)/i);
+            if (shipperMatch) {
+              sellerName = shipperMatch[1]?.trim();
+            }
+
+            const consigneeMatch = fullText.match(/CONSIGNEE[^:]*[:]*\s*([^\n]+)/i);
+            if (consigneeMatch) {
+              buyerName = consigneeMatch[1]?.trim();
+            }
+
+            const notifyMatch = fullText.match(/NOTIFY\s*PARTY[^:]*[:]*\s*([^\n]+)/i);
+            if (notifyMatch && !buyerName) {
+              buyerName = notifyMatch[1]?.trim();
+            }
+
             // Specific handling for China Coast Freight
             if (fullText.includes("China Coast Freight")) {
               manufacturerName = "China Coast Freight Co., Ltd.";
               manufacturerAddress = "Shanghai Branch Room. 905, Litong Plaza No. 1350 North Sichuan Road";
               manufacturerCity = "Shanghai";
               mfgCountry = "China";
+              
+              // If no seller is found, use China Coast as seller too
+              if (!sellerName) {
+                sellerName = "China Coast Freight Co., Ltd.";
+                sellerAddress = "Shanghai Branch Room. 905, Litong Plaza No. 1350 North Sichuan Road";
+                sellerCity = "Shanghai";
+                sellerCountry = "China";
+              }
             }
 
-            // Look for LCL/Container stuffing company info
-            const lclMatch = fullText.match(/LCH\s+Company[^:]*[:]*\s*([^,\n]+)[,\s]*([^,\n]+)/i);
-            if (lclMatch && !manufacturerName) {
-              manufacturerName = lclMatch[0].trim();
-              manufacturerAddress = lclMatch[1]?.trim();
-              manufacturerCity = lclMatch[2]?.trim();
+            // Look for LCL/Container stuffing company info (consolidator)
+            const lclMatch = fullText.match(/LCH\s+Company\s+and\s+address\s*[:]*\s*([^\n]+)/i);
+            if (lclMatch) {
+              const consolidatorInfo = lclMatch[1]?.trim();
+              if (consolidatorInfo && !manufacturerName) {
+                manufacturerName = consolidatorInfo.split(',')[0]?.trim();
+                manufacturerAddress = consolidatorInfo.substring(consolidatorInfo.indexOf(',') + 1).trim();
+                manufacturerCity = "Shanghai";
+                mfgCountry = "China";
+              }
             }
 
             // If we found companies but haven't assigned them, assign to appropriate fields
@@ -3901,6 +3934,9 @@ ${fullText}`;
               }
               if (extractedCompanies.length > 1 && !sellerName) {
                 sellerName = extractedCompanies[1];
+              }
+              if (extractedCompanies.length > 2 && !buyerName) {
+                buyerName = extractedCompanies[2];
               }
             }
 
