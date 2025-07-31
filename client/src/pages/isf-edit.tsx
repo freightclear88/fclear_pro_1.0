@@ -89,11 +89,10 @@ const isfEditSchema = z.object({
   consigneeZip: z.string().min(1, "Consignee ZIP is required"),
   consigneeCountry: z.string().default("US"),
 
-  // Optional consolidated/consolidator fields
-  consolidatorName: z.string().optional(),
-  consolidatorAddress: z.string().optional(),
-  consolidatorCity: z.string().optional(),
-  consolidatorCountry: z.string().optional(),
+  // Container Stuffing Location & Consolidator/Stuffer (Combined)
+  consolidatorStufferInfo: z.string().optional(),
+  mblScacCode: z.string().optional(),
+  hblScacCode: z.string().optional(),
 });
 
 type IsfEditFormData = z.infer<typeof isfEditSchema>;
@@ -184,9 +183,9 @@ export default function IsfEdit() {
         countryOfOrigin: isfFiling.countryOfOrigin || "TBD",
         htsusNumber: isfFiling.htsusNumber || "0000000000",
 
-        containerStuffingLocation: isfFiling.containerStuffingLocation || "TBD",
-        containerStuffingCity: isfFiling.containerStuffingCity || "TBD",
-        containerStuffingCountry: isfFiling.containerStuffingCountry || "TBD",
+        consolidatorStufferInfo: isfFiling.consolidatorStufferInfo || "TBD",
+        mblScacCode: isfFiling.mblScacCode || "",
+        hblScacCode: isfFiling.hblScacCode || "",
 
         bookingPartyName: isfFiling.bookingPartyName || "TBD",
         bookingPartyAddress: isfFiling.bookingPartyAddress || "TBD",
@@ -221,10 +220,8 @@ export default function IsfEdit() {
         consigneeZip: isfFiling.consigneeZip || "",
         consigneeCountry: isfFiling.consigneeCountry || "US",
 
-        consolidatorName: isfFiling.consolidatorName || "",
-        consolidatorAddress: isfFiling.consolidatorAddress || "",
-        consolidatorCity: isfFiling.consolidatorCity || "",
-        consolidatorCountry: isfFiling.consolidatorCountry || "",
+
+
       };
 
       // Reset form with ISF data

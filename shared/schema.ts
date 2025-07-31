@@ -416,16 +416,8 @@ export const isfFilings = pgTable("isf_filings", {
   htsusNumber: varchar("htsus_number").notNull(), // 6-digit minimum, 10-digit preferred
   commodityDescription: text("commodity_description").notNull(),
   
-  // 7. Container Stuffing Location
-  containerStuffingLocation: text("container_stuffing_location").notNull(),
-  containerStuffingCity: varchar("container_stuffing_city").notNull(),
-  containerStuffingCountry: varchar("container_stuffing_country").notNull(),
-  
-  // 8. Consolidator (Stuffer) Name and Address
-  consolidatorName: varchar("consolidator_name"),
-  consolidatorAddress: text("consolidator_address"),
-  consolidatorCity: varchar("consolidator_city"),
-  consolidatorCountry: varchar("consolidator_country"),
+  // 7. Container Stuffing Location & 8. Consolidator/Stuffer (Combined)
+  consolidatorStufferInfo: text("consolidator_stuffer_info").notNull(), // Multi-line text field for combined container stuffing location and consolidator/stuffer information
   
   // 9. Buyer Name and Address (if other than consignee)
   buyerName: varchar("buyer_name"),
@@ -455,6 +447,8 @@ export const isfFilings = pgTable("isf_filings", {
   
   // Shipment Details
   billOfLading: varchar("bill_of_lading"),
+  mblScacCode: varchar("mbl_scac_code"), // MBL SCAC Code
+  hblScacCode: varchar("hbl_scac_code"), // HBL SCAC Code
   containerNumbers: text("container_numbers"), // JSON array of container numbers
   vesselName: varchar("vessel_name"),
   voyageNumber: varchar("voyage_number"),

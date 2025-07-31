@@ -65,18 +65,8 @@ const isfFormSchema = z.object({
   // 8. Harmonized Tariff Schedule Number (10-digit for unified filing)
   htsusNumber: z.string().min(10, "HTS number must be 10 digits for unified filing").max(10, "HTS number must be exactly 10 digits"),
 
-  // 9. Container Stuffing Location (Can be filed later - flexible timing)
-  containerStuffingLocation: z.string().optional(),
-  containerStuffingCity: z.string().optional(),
-  containerStuffingState: z.string().optional(),
-  containerStuffingCountry: z.string().optional(),
-
-  // 10. Consolidator/Stuffer (Can be filed later - flexible timing)
-  consolidatorName: z.string().optional(),
-  consolidatorAddress: z.string().optional(),
-  consolidatorCity: z.string().optional(),
-  consolidatorState: z.string().optional(),
-  consolidatorCountry: z.string().optional(),
+  // 9. Container Stuffing Location & 10. Consolidator/Stuffer (Combined)
+  consolidatorStufferInfo: z.string().min(1, "Consolidator/Stuffer information is required"),
 
   // Additional Required Fields for Complete ISF
   
@@ -97,6 +87,8 @@ const isfFormSchema = z.object({
 
   // Container Information
   containerNumbers: z.string().optional(),
+  mblScacCode: z.string().optional(),
+  hblScacCode: z.string().optional(),
 
   // Commercial Information (Optional but commonly included)
   commodityDescription: z.string().optional(),
@@ -213,17 +205,12 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       shipToPartyZip: "",
       shipToPartyCountry: "US",
       
-      // Container/Consolidator
-      containerStuffingLocation: "",
-      containerStuffingCity: "",
-      containerStuffingState: "",
-      containerStuffingCountry: "",
+      // Container Stuffing Location & Consolidator/Stuffer (Combined)
+      consolidatorStufferInfo: "",
       
-      consolidatorName: "",
-      consolidatorAddress: "",
-      consolidatorCity: "",
-      consolidatorState: "",
-      consolidatorCountry: "",
+      // SCAC Code fields
+      mblScacCode: "",
+      hblScacCode: "",
       
       // Commodity Information
       countryOfOrigin: "",
@@ -300,7 +287,10 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           manufacturerCountry: 'manufacturerCountry',
           countryOfOrigin: 'countryOfOrigin',
           htsusNumber: 'htsusNumber',
-          commodityDescription: 'commodityDescription'
+          commodityDescription: 'commodityDescription',
+          mblScacCode: 'mblScacCode',
+          hblScacCode: 'hblScacCode',
+          consolidatorStufferInfo: 'consolidatorStufferInfo'
         };
 
         // Store extracted data and populate form
@@ -338,6 +328,24 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
             }
           }
         });
+
+        // Handle consolidated consolidator/stuffer info from individual fields if not provided directly
+        const data = result.extractedData;
+        if (!data.consolidatorStufferInfo) {
+          const combinedInfo = [];
+          if (data.containerStuffingLocation) combinedInfo.push(`Container Stuffing Location: ${data.containerStuffingLocation}`);
+          if (data.containerStuffingCity) combinedInfo.push(`City: ${data.containerStuffingCity}`);
+          if (data.containerStuffingCountry) combinedInfo.push(`Country: ${data.containerStuffingCountry}`);
+          if (data.consolidatorName) combinedInfo.push(`Consolidator: ${data.consolidatorName}`);
+          if (data.consolidatorAddress) combinedInfo.push(`Address: ${data.consolidatorAddress}`);
+          if (data.consolidatorCity) combinedInfo.push(`City: ${data.consolidatorCity}`);
+          if (data.consolidatorCountry) combinedInfo.push(`Country: ${data.consolidatorCountry}`);
+          
+          if (combinedInfo.length > 0) {
+            form.setValue("consolidatorStufferInfo", combinedInfo.join('\n'));
+            console.log('Set consolidatorStufferInfo to:', combinedInfo.join('\n'));
+          }
+        }
         
         // Force form re-render and clear validation errors
         setTimeout(() => {
@@ -968,146 +976,28 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
             </CardContent>
           </Card>
 
-          {/* 9. Container Stuffing Location */}
+          {/* 9. Container Stuffing Location & 10. Consolidator/Stuffer (Combined) */}
           <Card className="bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200">
             <CardHeader>
               <CardTitle className="text-gray-700 flex items-center">
                 <MapPin className="w-5 h-5 mr-2" />
-                9. Container Stuffing Location
+                9. Container Stuffing Location & Consolidator/Stuffer
               </CardTitle>
-              <CardDescription>Physical location where goods were stuffed into container (flexible timing)</CardDescription>
+              <CardDescription>Combined information about container stuffing location and consolidator/stuffer details</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent>
               <FormField
                 control={form.control}
-                name="containerStuffingLocation"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Stuffing Location *</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Name and address of stuffing location" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="containerStuffingCity"
+                name="consolidatorStufferInfo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>City *</FormLabel>
+                    <FormLabel>Container Stuffing Location & Consolidator/Stuffer Information *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Stuffing city" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="containerStuffingCountry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Country *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select country" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {COUNTRIES.map((country) => (
-                          <SelectItem key={country} value={country}>{country}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          {/* 10. Consolidator/Stuffer */}
-          <Card className="bg-gradient-to-r from-rose-50 to-pink-50 border-rose-200">
-            <CardHeader>
-              <CardTitle className="text-rose-700 flex items-center">
-                <Building2 className="w-5 h-5 mr-2" />
-                10. Consolidator/Stuffer
-              </CardTitle>
-              <CardDescription>Party who stuffed the container or arranged for stuffing (flexible timing)</CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="consolidatorName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Consolidator Name *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Consolidator company name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="consolidatorCountry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Country *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select country" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {COUNTRIES.map((country) => (
-                          <SelectItem key={country} value={country}>{country}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="consolidatorAddress"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Consolidator Address *</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Complete consolidator address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="consolidatorCity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>City *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="City" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="consolidatorState"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>State/Province</FormLabel>
-                    <FormControl>
-                      <Input placeholder="State or Province (if applicable)" {...field} />
+                      <Textarea 
+                        placeholder="Enter complete information about:&#10;- Container stuffing location (name, address, city, country)&#10;- Consolidator/stuffer company details (name, address, contact)" 
+                        className="min-h-[120px]"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1147,6 +1037,32 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                     <FormLabel>Container Numbers *</FormLabel>
                     <FormControl>
                       <Input placeholder="Container numbers (comma-separated)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="mblScacCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>MBL SCAC Code</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Master Bill of Lading SCAC Code" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="hblScacCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>HBL SCAC Code</FormLabel>
+                    <FormControl>
+                      <Input placeholder="House Bill of Lading SCAC Code" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

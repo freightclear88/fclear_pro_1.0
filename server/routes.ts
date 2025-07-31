@@ -4114,16 +4114,8 @@ Look for Bill of Lading, Commercial Invoice, Packing List, or other shipping doc
         htsusNumber: formData.htsusNumber,
         commodityDescription: formData.commodityDescription,
 
-        // Container Information
-        containerStuffingLocation: formData.containerStuffingLocation,
-        containerStuffingCity: formData.containerStuffingCity,
-        containerStuffingCountry: formData.containerStuffingCountry,
-
-        // Optional fields
-        consolidatorName: formData.consolidatorName,
-        consolidatorAddress: formData.consolidatorAddress,
-        consolidatorCity: formData.consolidatorCity,
-        consolidatorCountry: formData.consolidatorCountry,
+        // Container Stuffing Location & Consolidator/Stuffer (Combined)
+        consolidatorStufferInfo: formData.consolidatorStufferInfo || "TBD",
 
         buyerName: formData.buyerName,
         buyerAddress: formData.buyerAddress,
@@ -4149,6 +4141,8 @@ Look for Bill of Lading, Commercial Invoice, Packing List, or other shipping doc
 
         // Shipment Details
         billOfLading: formData.billOfLading,
+        mblScacCode: formData.mblScacCode,
+        hblScacCode: formData.hblScacCode,
         containerNumbers: formData.containerNumbers,
         vesselName: formData.vesselName,
         voyageNumber: formData.voyageNumber,
