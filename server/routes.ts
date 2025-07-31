@@ -3771,6 +3771,7 @@ ${excelText}`;
       } else if (fileExtension === 'pdf') {
         // Use Azure Document Intelligence for PDF parsing
         console.log("PDF file detected, using Azure Document Intelligence for extraction");
+        let fullText = ""; // Declare outside try block for catch access
         try {
           const { DocumentAnalysisClient, AzureKeyCredential } = await import("@azure/ai-form-recognizer");
           const fs = await import('fs');
@@ -3785,7 +3786,7 @@ ${excelText}`;
           const result = await poller.pollUntilDone();
           
           // Extract text content from the document
-          const fullText = result.content || "";
+          fullText = result.content || "";
           console.log("Extracted PDF text:", fullText.substring(0, 500) + "...");
           
           // Use OpenAI to extract structured ISF data from the document text
