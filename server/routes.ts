@@ -1241,16 +1241,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   fileName: file.originalname,
                   
                   // Core shipping data from Document Intelligence
-                  billOfLading: extractedData.billOfLading,
-                  vesselName: extractedData.vesselName,
-                  voyage: extractedData.voyage,
+                  billOfLadingNumber: extractedData.billOfLadingNumber,
+                  vesselAndVoyage: extractedData.vesselAndVoyage,
                   containerNumber: extractedData.containerNumber,
                   containerType: extractedData.containerType,
                   sealNumbers: extractedData.sealNumbers,
                   
                   // Location information
-                  origin: extractedData.origin || extractedData.portOfLoading,
-                  destination: extractedData.destination || extractedData.portOfDischarge,
                   portOfLoading: extractedData.portOfLoading,
                   portOfDischarge: extractedData.portOfDischarge,
                   placeOfReceipt: extractedData.placeOfReceipt,
@@ -1391,9 +1388,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             processedAt: currentTime.toISOString(),
             // Add tracking metadata
             trackingInfo: {
-              blTrackingUrl: arrivalNoticeData.billOfLading ? generateTrackingUrl(arrivalNoticeData.billOfLading) : null,
+              blTrackingUrl: arrivalNoticeData.billOfLadingNumber ? generateTrackingUrl(arrivalNoticeData.billOfLadingNumber) : null,
               containerTrackingUrl: arrivalNoticeData.containerNumber ? generateContainerTrackingUrl(arrivalNoticeData.containerNumber) : null,
-              detectedCarrier: arrivalNoticeData.billOfLading ? detectCarrierFromBL(arrivalNoticeData.billOfLading) : null
+              detectedCarrier: arrivalNoticeData.billOfLadingNumber ? detectCarrierFromBL(arrivalNoticeData.billOfLadingNumber) : null
             }
           },
           status: 'completed'
@@ -1406,22 +1403,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Map comprehensive Ocean Bill of Lading data to shipment fields (only if values exist and aren't placeholders)
           
           // Core shipping identifiers
-          if (arrivalNoticeData.billOfLading && arrivalNoticeData.billOfLading !== 'Processing') {
-            updateData.billOfLading = arrivalNoticeData.billOfLading;
+          if (arrivalNoticeData.billOfLadingNumber && arrivalNoticeData.billOfLadingNumber !== 'Processing') {
+            updateData.billOfLadingNumber = arrivalNoticeData.billOfLadingNumber;
           }
-          if (arrivalNoticeData.vesselName) updateData.vessel = arrivalNoticeData.vesselName;
-          if (arrivalNoticeData.voyage) updateData.voyage = arrivalNoticeData.voyage;
+          if (arrivalNoticeData.vesselAndVoyage) updateData.vesselAndVoyage = arrivalNoticeData.vesselAndVoyage;
           if (arrivalNoticeData.containerNumber) updateData.containerNumber = arrivalNoticeData.containerNumber;
           if (arrivalNoticeData.containerType) updateData.containerType = arrivalNoticeData.containerType;
           if (arrivalNoticeData.sealNumbers) updateData.sealNumbers = arrivalNoticeData.sealNumbers;
           
           // Location and port information
-          if (arrivalNoticeData.origin && arrivalNoticeData.origin !== 'Processing') {
-            updateData.origin = arrivalNoticeData.origin;
-          }
-          if (arrivalNoticeData.destination && arrivalNoticeData.destination !== 'Processing') {
-            updateData.destination = arrivalNoticeData.destination;
-          }
           if (arrivalNoticeData.portOfLoading) updateData.portOfLoading = arrivalNoticeData.portOfLoading;
           if (arrivalNoticeData.portOfDischarge) updateData.portOfDischarge = arrivalNoticeData.portOfDischarge;
           if (arrivalNoticeData.placeOfReceipt) updateData.placeOfReceipt = arrivalNoticeData.placeOfReceipt;

@@ -241,15 +241,6 @@ export class DatabaseStorage implements IStorage {
     return shipment;
   }
 
-  async updateShipment(id: number, data: Partial<Shipment>): Promise<Shipment> {
-    const [updatedShipment] = await db
-      .update(shipments)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(shipments.id, id))
-      .returning();
-    return updatedShipment;
-  }
-
   async createShipment(shipmentData: InsertShipment): Promise<Shipment> {
     const [shipment] = await db
       .insert(shipments)

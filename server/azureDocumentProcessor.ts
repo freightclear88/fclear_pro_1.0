@@ -32,16 +32,13 @@ function getDocumentClient(): DocumentAnalysisClient {
 
 interface ExtractedShipmentData {
   // Core shipping data
-  billOfLading?: string;
-  vesselName?: string;
-  voyage?: string;
+  billOfLadingNumber?: string;
+  vesselAndVoyage?: string;
   containerNumber?: string;
   containerType?: string;
   sealNumbers?: string[];
   
   // Location information
-  origin?: string;
-  destination?: string;
   portOfLoading?: string;
   portOfDischarge?: string;
   placeOfReceipt?: string;
@@ -273,28 +270,28 @@ export class AzureDocumentProcessor {
     // Look for specific OLLAX pattern first
     const ollaxMatch = text.match(/OLLAX\d{6}/i);
     if (ollaxMatch) {
-      data.billOfLading = ollaxMatch[0].trim();
+      data.billOfLadingNumber = ollaxMatch[0].trim();
     }
     
     // First try to find the specific pattern in the full text
-    if (!data.billOfLading) {
+    if (!data.billOfLadingNumber) {
       const fullTextMatch = text.match(/BILL\s+OF\s+LADING\s+NUMBER\s+(\d+)/i);
       if (fullTextMatch) {
-        data.billOfLading = fullTextMatch[1].trim();
+        data.billOfLadingNumber = fullTextMatch[1].trim();
       }
     }
     
     // If not found, try line by line
-    if (!data.billOfLading) {
+    if (!data.billOfLadingNumber) {
       for (const line of lines) {
         for (const pattern of blPatterns) {
           const match = line.match(pattern);
           if (match && match[1] && match[1] !== 'BOOKING' && match[1] !== 'NUMBER' && match[1].length >= 6) {
-            data.billOfLading = match[1].trim();
+            data.billOfLadingNumber = match[1].trim();
             break;
           }
         }
-        if (data.billOfLading) break;
+        if (data.billOfLadingNumber) break;
       }
     }
     
@@ -308,39 +305,43 @@ export class AzureDocumentProcessor {
       /Vessel\s*\/\s*Voyage\s+No\.\s*([A-Z][A-Z\s]+?)(?:\s+\/|\n|$)/i
     ];
     
+    // Vessel and voyage extraction - combine into single field
+    let vesselName = '';
+    let voyageNumber = '';
+    
     // Look for vessel name in the full text first - common vessel patterns
     const vesselFullMatch = text.match(/VUNG\s+TAU\s+EXPRESS/i) || 
                            text.match(/MSC\s+[A-Z]+/i) || 
                            text.match(/COSCO\s+[A-Z]+/i) ||
                            text.match(/EVERGREEN\s+[A-Z]+/i);
     if (vesselFullMatch) {
-      data.vesselName = vesselFullMatch[0].trim();
+      vesselName = vesselFullMatch[0].trim();
     }
     
     // Look for vessel/voyage patterns
-    if (!data.vesselName) {
+    if (!vesselName) {
       const vesselVoyageMatch = text.match(/Vessel\s*\/\s*Voyage\s+No\.\s*([A-Z][A-Z\s]+?)(?:\s+\/|\n|$)/i);
       if (vesselVoyageMatch) {
-        data.vesselName = vesselVoyageMatch[1].trim();
+        vesselName = vesselVoyageMatch[1].trim();
       }
     }
     
     // If not found, try line by line patterns
-    if (!data.vesselName) {
+    if (!vesselName) {
       for (const line of lines) {
         for (const pattern of vesselPatterns) {
           const match = line.match(pattern);
           if (match && match[1] && match[1].length > 3) {
-            const vesselName = match[1].trim().replace(/\s+/g, ' ');
-            if (vesselName !== 'VOY' && vesselName !== '/Voyage No.' && 
-                !vesselName.includes('MARKS') && !vesselName.includes('DESCRIPTION') &&
-                !vesselName.includes('FREIGHT') && vesselName.length > 3) {
-              data.vesselName = vesselName;
+            const vessel = match[1].trim().replace(/\s+/g, ' ');
+            if (vessel !== 'VOY' && vessel !== '/Voyage No.' && 
+                !vessel.includes('MARKS') && !vessel.includes('DESCRIPTION') &&
+                !vessel.includes('FREIGHT') && vessel.length > 3) {
+              vesselName = vessel;
               break;
             }
           }
         }
-        if (data.vesselName) break;
+        if (vesselName) break;
       }
     }
     
@@ -351,10 +352,23 @@ export class AzureDocumentProcessor {
       /^([A-Z]{4}\d{7})$/i  // Standalone container numbers
     ];
     
-    // Look for booking number first
-    const bookingMatch = text.match(/BOOKING\s+NUMBER\s+([A-Z0-9]+)/i);
-    if (bookingMatch) {
-      data.voyage = bookingMatch[1].trim(); // Store booking number in voyage field
+    // Voyage number patterns
+    const voyagePatterns = [
+      /VOY\s*:?\s*([A-Z0-9\/-]+)/i,
+      /VOYAGE\s*(?:NO\.?)?\s*:?\s*([A-Z0-9\/-]+)/i,
+      /V\.?\s*([A-Z0-9\/-]+)/i
+    ];
+    
+    // Look for voyage information
+    for (const line of lines) {
+      for (const pattern of voyagePatterns) {
+        const match = line.match(pattern);
+        if (match && match[1] && match[1].length > 1) {
+          voyageNumber = match[1].trim();
+          break;
+        }
+      }
+      if (voyageNumber) break;
     }
     
     // Look for container numbers
@@ -380,25 +394,24 @@ export class AzureDocumentProcessor {
     // Look for China origin pattern first
     const chinaMatch = text.match(/(FOSHAN|GUANGZHOU|SHENZHEN|NINGBO|SHANGHAI)[,\s]*CHINA/i);
     if (chinaMatch) {
-      data.origin = chinaMatch[0].trim();
-      data.portOfLoading = chinaMatch[1].trim(); // Store city as port of loading
+      data.portOfLoading = chinaMatch[0].trim();
     }
     
     // Extract detailed shipper address for origin context
     const shipperAddressMatch = text.match(/ADD\s*:\s*([^:]+?)(?:\n|Consignee)/i);
-    if (shipperAddressMatch && !data.origin) {
+    if (shipperAddressMatch && !data.portOfLoading) {
       const fullAddress = shipperAddressMatch[1].trim();
       if (fullAddress.includes('CHINA')) {
         data.shipperAddress = fullAddress;
-        // Extract origin from address
+        // Extract port of loading from address
         const cityMatch = fullAddress.match(/(FOSHAN|GUANGZHOU|SHENZHEN|NINGBO|SHANGHAI)[^,]*CHINA/i);
         if (cityMatch) {
-          data.origin = cityMatch[0].trim();
+          data.portOfLoading = cityMatch[0].trim();
         }
       }
     }
     
-    if (!data.origin) {
+    if (!data.portOfLoading) {
       for (const line of lines) {
         for (const pattern of originPatterns) {
           const match = line.match(pattern);
@@ -406,12 +419,12 @@ export class AzureDocumentProcessor {
             const origin = match[1].trim();
             if (!origin.includes('DELIVERY') && !origin.includes('FREIGHT') && !origin.includes('MARKS') && 
                 !origin.includes('INDUSTRIAL PARK')) {
-              data.origin = origin;
+              data.portOfLoading = origin;
               break;
             }
           }
         }
-        if (data.origin) break;
+        if (data.portOfLoading) break;
       }
     }
     
@@ -428,29 +441,30 @@ export class AzureDocumentProcessor {
     // Look for Las Vegas pattern first (from notify party address)
     const vegasMatch = text.match(/LAS\s+VEGAS[,\s]*NV/i);
     if (vegasMatch) {
-      data.destination = vegasMatch[0].trim();
       data.portOfDischarge = 'Las Vegas, NV';
+      data.placeOfDelivery = vegasMatch[0].trim();
     }
     
     // If we found TAMPA,FL pattern, use it as destination
-    if (!data.destination && (text.includes('TAMPA,FL') || text.includes('TAMPA, FL'))) {
-      data.destination = 'Tampa, FL';
+    if (!data.portOfDischarge && (text.includes('TAMPA,FL') || text.includes('TAMPA, FL'))) {
       data.portOfDischarge = 'Tampa, FL';
+      data.placeOfDelivery = 'Tampa, FL';
     }
     
     // Extract from notify party address if present
-    if (!data.destination) {
+    if (!data.portOfDischarge) {
       const notifyAddressMatch = text.match(/(\d+\s+[A-Z\s]+(?:DR|DRIVE|ST|STREET|AVE|AVENUE)\s+[A-Z\s]+,\s*[A-Z]{2}\s+\d{5})/i);
       if (notifyAddressMatch) {
         const address = notifyAddressMatch[0];
         const stateMatch = address.match(/([A-Z\s]+),\s*([A-Z]{2})\s+\d{5}/i);
         if (stateMatch) {
-          data.destination = `${stateMatch[1].trim()}, ${stateMatch[2]}`;
+          data.portOfDischarge = `${stateMatch[1].trim()}, ${stateMatch[2]}`;
+          data.placeOfDelivery = `${stateMatch[1].trim()}, ${stateMatch[2]}`;
         }
       }
     }
     
-    if (!data.destination) {
+    if (!data.portOfDischarge) {
       for (const line of lines) {
         for (const pattern of destinationPatterns) {
           const match = line.match(pattern);
@@ -458,12 +472,13 @@ export class AzureDocumentProcessor {
             const destination = match[1].trim();
             if (!destination.includes('FREIGHT') && !destination.includes('MARKS') && 
                 !destination.includes('DESCRIPTION') && !destination.includes('INDUSTRIAL PARK')) {
-              data.destination = destination;
+              data.portOfDischarge = destination;
+              data.placeOfDelivery = destination;
               break;
             }
           }
         }
-        if (data.destination) break;
+        if (data.portOfDischarge) break;
       }
     }
     
@@ -624,14 +639,7 @@ export class AzureDocumentProcessor {
       }
     }
     
-    // Extract port of loading and discharge
-    if (!data.portOfLoading && data.origin) {
-      data.portOfLoading = `Port of ${data.origin}`;
-    }
-    
-    if (!data.portOfDischarge && data.destination) {
-      data.portOfDischarge = `Port of ${data.destination}`;
-    }
+    // Port information is already extracted directly into portOfLoading and portOfDischarge fields
     
     // Look for weight information
     const weightMatch = text.match(/(\d+[,.]?\d*)\s*(KG|LBS|TONS)/i);
@@ -650,7 +658,7 @@ export class AzureDocumentProcessor {
     // Set country of origin based on shipper location
     if (data.shipperName && data.shipperName.includes('CHINA')) {
       data.countryOfOrigin = 'China';
-    } else if (data.origin && data.origin.includes('NINGBO')) {
+    } else if (data.portOfLoading && data.portOfLoading.includes('NINGBO')) {
       data.countryOfOrigin = 'China';
     }
     
@@ -674,7 +682,7 @@ export class AzureDocumentProcessor {
     // Pattern matching for bill of lading numbers in filename
     const blMatch = fileName.match(/bl[\-_]?(\w{8,12})/i) || fileName.match(/(\w{10,})/);
     if (blMatch) {
-      extractedData.billOfLading = blMatch[1].toUpperCase();
+      extractedData.billOfLadingNumber = blMatch[1].toUpperCase();
     }
     
     // Pattern matching for container numbers in filename
@@ -684,22 +692,20 @@ export class AzureDocumentProcessor {
     }
     
     // Only use fallback data if no patterns found
-    if (!extractedData.billOfLading && !extractedData.containerNumber) {
+    if (!extractedData.billOfLadingNumber && !extractedData.containerNumber) {
       if (fileName.toLowerCase().includes('tinyhomes') || fileName.toLowerCase().includes('tiny')) {
         return {
-          billOfLading: "DEMO234567890",
-          vesselName: "MV CONTAINER EXPRESS",
-          voyage: "V001-E",
+          billOfLadingNumber: "DEMO234567890",
+          vesselAndVoyage: "MV CONTAINER EXPRESS V001-E",
           containerNumber: "TCLU1234567",
-          origin: "Shanghai, China",
-          destination: "Long Beach, CA",
-          portOfLoading: "Port of Shanghai",
-          portOfDischarge: "Port of Long Beach",
+          portOfLoading: "Shanghai, China",
+          portOfDischarge: "Long Beach, CA",
+          placeOfDelivery: "Long Beach, CA",
           shipperName: "Tiny Homes Manufacturing Co., Ltd.",
           consigneeName: "American Tiny Homes LLC",
           cargoDescription: "Prefabricated Tiny Houses (2 units)",
           weight: "12,500 KG",
-          packageCount: "2 units",
+          numberOfPackages: 2,
           eta: etaDate.toISOString().split('T')[0],
           countryOfOrigin: "China",
           value: "85000 USD"
@@ -763,14 +769,12 @@ export class AzureDocumentProcessor {
     
     // Define field length limits based on database schema (prevent varchar(255) errors)
     const fieldLimits = {
-      billOfLading: 100,
-      vesselName: 100,
-      voyage: 50,
+      billOfLadingNumber: 100,
+      vesselAndVoyage: 150,
       containerNumber: 50,
-      origin: 100,
-      destination: 100,
       portOfLoading: 100,
       portOfDischarge: 100,
+      placeOfDelivery: 100,
       shipperName: 200,
       consigneeName: 200,
       cargoDescription: 250,
@@ -789,24 +793,28 @@ export class AzureDocumentProcessor {
     };
     
     // Clean and validate each field with length limits
-    if (data.billOfLading && data.billOfLading.length > 3) {
-      cleanData.billOfLading = truncateField(data.billOfLading.replace(/[^\w-]/g, '').toUpperCase(), fieldLimits.billOfLading);
+    if (data.billOfLadingNumber && data.billOfLadingNumber.length > 3) {
+      cleanData.billOfLadingNumber = truncateField(data.billOfLadingNumber.replace(/[^\w-]/g, '').toUpperCase(), fieldLimits.billOfLadingNumber);
     }
     
-    if (data.vesselName && data.vesselName.length > 2) {
-      cleanData.vesselName = truncateField(data.vesselName, fieldLimits.vesselName);
+    if (data.vesselAndVoyage && data.vesselAndVoyage.length > 2) {
+      cleanData.vesselAndVoyage = truncateField(data.vesselAndVoyage, fieldLimits.vesselAndVoyage);
     }
     
     if (data.containerNumber && data.containerNumber.length > 3) {
       cleanData.containerNumber = truncateField(data.containerNumber.toUpperCase(), fieldLimits.containerNumber);
     }
     
-    if (data.origin && data.origin.length > 2) {
-      cleanData.origin = truncateField(data.origin, fieldLimits.origin);
+    if (data.portOfLoading && data.portOfLoading.length > 2) {
+      cleanData.portOfLoading = truncateField(data.portOfLoading, fieldLimits.portOfLoading);
     }
     
-    if (data.destination && data.destination.length > 2) {
-      cleanData.destination = truncateField(data.destination, fieldLimits.destination);
+    if (data.portOfDischarge && data.portOfDischarge.length > 2) {
+      cleanData.portOfDischarge = truncateField(data.portOfDischarge, fieldLimits.portOfDischarge);
+    }
+    
+    if (data.placeOfDelivery && data.placeOfDelivery.length > 2) {
+      cleanData.placeOfDelivery = truncateField(data.placeOfDelivery, fieldLimits.placeOfDelivery);
     }
     
     if (data.shipperName && data.shipperName.length > 2) {

@@ -116,27 +116,24 @@ export const shipments = pgTable("shipments", {
   xmlVersion: varchar("xml_version"), // Track format version
   
   // Location data - Port and Place Details
-  origin: varchar("origin").notNull(),
+  portOfLoading: varchar("port_of_loading").notNull(), // Renamed from "origin"
   originPort: varchar("origin_port"),
-  portOfLoading: varchar("port_of_loading"),
   placeOfReceipt: varchar("place_of_receipt"),
   
-  destination: varchar("destination").notNull(),
+  portOfDischarge: varchar("port_of_discharge").notNull(), // Renamed from "destination"
+  placeOfDelivery: varchar("place_of_delivery"), // Additional field for final destination
   destinationPort: varchar("destination_port"),
-  portOfDischarge: varchar("port_of_discharge"),
-  placeOfDelivery: varchar("place_of_delivery"),
   
   // Transport information
   transportMode: varchar("transport_mode").notNull().default("ocean"), // air, ocean, trucking, last_mile
   status: varchar("status").notNull().default("pending"),
-  vessel: varchar("vessel"),
-  voyage: varchar("voyage"),
+  vesselAndVoyage: varchar("vessel_and_voyage"), // Combined vessel and voyage
   
   // Container and documentation
   containerNumber: varchar("container_number"),
   containerNumbers: text("container_numbers").array(), // Multiple containers from XML
   sealNumbers: text("seal_numbers").array(), // Container seal numbers
-  billOfLading: varchar("bill_of_lading"),
+  billOfLadingNumber: varchar("bill_of_lading_number"), // Renamed from "bill_of_lading"
   
   // Additional commercial identifiers
   bookingConfirmationNumber: varchar("booking_confirmation_number"),
@@ -173,7 +170,7 @@ export const shipments = pgTable("shipments", {
   consigneePhone: varchar("consignee_phone"),
   consigneeEmail: varchar("consignee_email"),
   
-  notifyPartyName: varchar("notify_party_name"),
+  notifyPartyName: varchar("notify_party_name"), // Renamed from "customs_broker"
   notifyPartyAddress: text("notify_party_address"),
   notifyPartyCity: varchar("notify_party_city"),
   notifyPartyState: varchar("notify_party_state"),
@@ -195,7 +192,7 @@ export const shipments = pgTable("shipments", {
   prepaidCollectDesignation: varchar("prepaid_collect_designation"), // PREPAID or COLLECT
   destinationCharges: decimal("destination_charges", { precision: 12, scale: 2 }),
   
-  customsBroker: varchar("customs_broker"),
+  customsBroker: varchar("customs_broker"), // Keep separate from notify party
   customsBrokerLicense: varchar("customs_broker_license"),
   
   totalValue: decimal("total_value", { precision: 12, scale: 2 }),
