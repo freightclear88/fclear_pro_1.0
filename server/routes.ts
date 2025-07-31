@@ -4408,19 +4408,10 @@ Look for Bill of Lading, Commercial Invoice, Packing List, or other shipping doc
         consigneeCountry: formData.consigneeCountry || 'US',
 
         // Manufacturer Information
-        manufacturerName: formData.manufacturerName,
-        manufacturerAddress: formData.manufacturerAddress,
-        manufacturerCity: formData.manufacturerCity,
-        manufacturerState: formData.manufacturerState,
-        manufacturerCountry: formData.manufacturerCountry,
+        manufacturerInformation: formData.manufacturerInformation,
 
         // Ship To Party Information
-        shipToPartyName: formData.shipToPartyName,
-        shipToPartyAddress: formData.shipToPartyAddress,
-        shipToPartyCity: formData.shipToPartyCity,
-        shipToPartyState: formData.shipToPartyState,
-        shipToPartyZip: formData.shipToPartyZip,
-        shipToPartyCountry: formData.shipToPartyCountry || 'US',
+        shipToPartyInformation: formData.shipToPartyInformation,
 
         // Commodity Information
         countryOfOrigin: formData.countryOfOrigin,
@@ -4430,18 +4421,8 @@ Look for Bill of Lading, Commercial Invoice, Packing List, or other shipping doc
         // Container Stuffing Location & Consolidator/Stuffer (Combined)
         consolidatorStufferInfo: formData.consolidatorStufferInfo || "TBD",
 
-        buyerName: formData.buyerName,
-        buyerAddress: formData.buyerAddress,
-        buyerCity: formData.buyerCity,
-        buyerState: formData.buyerState,
-        buyerZip: formData.buyerZip,
-        buyerCountry: formData.buyerCountry,
-
-        sellerName: formData.sellerName,
-        sellerAddress: formData.sellerAddress,
-        sellerCity: formData.sellerCity,
-        sellerState: formData.sellerState,
-        sellerCountry: formData.sellerCountry,
+        buyerInformation: formData.buyerInformation,
+        sellerInformation: formData.sellerInformation,
 
         // Booking Party Information
         bookingPartyName: formData.bookingPartyName,

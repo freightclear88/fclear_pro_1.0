@@ -24,19 +24,10 @@ const isfFormSchema = z.object({
   // ISF 10 Required Data Elements (from Importer)
   
   // 1. Seller (Entity that sold the goods to the buyer)
-  sellerName: z.string().min(1, "Seller name is required"),
-  sellerAddress: z.string().min(1, "Seller address is required"),
-  sellerCity: z.string().min(1, "Seller city is required"),
-  sellerState: z.string().optional(),
-  sellerCountry: z.string().min(1, "Seller country is required"),
+  sellerInformation: z.string().min(1, "Seller information is required"),
 
   // 2. Buyer (Entity to whom the goods are sold) 
-  buyerName: z.string().min(1, "Buyer name is required"),
-  buyerAddress: z.string().min(1, "Buyer address is required"),
-  buyerCity: z.string().min(1, "Buyer city is required"),
-  buyerState: z.string().optional(),
-  buyerZip: z.string().optional(),
-  buyerCountry: z.string().min(1, "Buyer country is required"),
+  buyerInformation: z.string().min(1, "Buyer information is required"),
 
   // 3. Importer of Record Number (IRS/EIN/SSN/CBP number)
   importerOfRecord: z.string().min(1, "Importer of Record Number is required"),
@@ -45,19 +36,10 @@ const isfFormSchema = z.object({
   consigneeNumber: z.string().min(1, "Consignee Number is required"),
 
   // 5. Manufacturer/Supplier (Last entity that manufactured/assembled the goods)
-  manufacturerName: z.string().min(1, "Manufacturer name is required"),
-  manufacturerAddress: z.string().min(1, "Manufacturer address is required"),
-  manufacturerCity: z.string().min(1, "Manufacturer city is required"),
-  manufacturerState: z.string().optional(),
-  manufacturerCountry: z.string().min(1, "Manufacturer country is required"),
+  manufacturerInformation: z.string().min(1, "Manufacturer/Supplier information is required"),
 
   // 6. Ship-to Party (First party to receive goods after customs release)
-  shipToPartyName: z.string().min(1, "Ship-to party name is required"),
-  shipToPartyAddress: z.string().min(1, "Ship-to party address is required"),
-  shipToPartyCity: z.string().min(1, "Ship-to party city is required"),
-  shipToPartyState: z.string().min(1, "Ship-to party state is required"),
-  shipToPartyZip: z.string().min(1, "Ship-to party ZIP is required"),
-  shipToPartyCountry: z.string().default("US"),
+  shipToPartyInformation: z.string().min(1, "Ship-to party information is required"),
 
   // 7. Country of Origin (Where goods were manufactured/produced/grown)
   countryOfOrigin: z.string().min(1, "Country of origin is required"),
@@ -513,76 +495,19 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
               </CardTitle>
               <CardDescription>Last known entity that sold the goods to the buyer</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent>
               <FormField
                 control={form.control}
-                name="sellerName"
+                name="sellerInformation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Seller Name *</FormLabel>
+                    <FormLabel>Seller Information *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Selling company name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="sellerCountry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Seller Country *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select country" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {COUNTRIES.map((country) => (
-                          <SelectItem key={country} value={country}>{country}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="sellerAddress"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Seller Address *</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Complete seller address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="sellerCity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>City *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="City" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="sellerState"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>State/Province</FormLabel>
-                    <FormControl>
-                      <Input placeholder="State or Province (if applicable)" {...field} />
+                      <Textarea 
+                        placeholder="Company Name&#10;Street Address&#10;City, State&#10;Country"
+                        className="min-h-24"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -600,90 +525,19 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
               </CardTitle>
               <CardDescription>Entity to whom the goods are sold</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent>
               <FormField
                 control={form.control}
-                name="buyerName"
+                name="buyerInformation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Buyer Name *</FormLabel>
+                    <FormLabel>Buyer Information *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Buying company name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="buyerCountry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Buyer Country *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || "United States"}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select country" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="United States">United States</SelectItem>
-                        {COUNTRIES.map((country) => (
-                          <SelectItem key={country} value={country}>{country}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="buyerAddress"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Buyer Address *</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Complete buyer address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="buyerCity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>City *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="City" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="buyerState"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>State/Province</FormLabel>
-                    <FormControl>
-                      <Input placeholder="State or Province" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="buyerZip"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ZIP/Postal Code</FormLabel>
-                    <FormControl>
-                      <Input placeholder="ZIP or Postal Code" {...field} />
+                      <Textarea 
+                        placeholder="Company Name&#10;Street Address&#10;City, State ZIP&#10;Country"
+                        className="min-h-24"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -753,76 +607,19 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
               </CardTitle>
               <CardDescription>Last entity that manufactured, assembled, produced, or grew the goods</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent>
               <FormField
                 control={form.control}
-                name="manufacturerName"
+                name="manufacturerInformation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Manufacturer Name *</FormLabel>
+                    <FormLabel>Manufacturer/Supplier Information *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Manufacturing company name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="manufacturerCountry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Manufacturer Country *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select country" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {COUNTRIES.map((country) => (
-                          <SelectItem key={country} value={country}>{country}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="manufacturerAddress"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Manufacturer Address *</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Complete manufacturer address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="manufacturerCity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>City *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="City" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="manufacturerState"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>State/Province</FormLabel>
-                    <FormControl>
-                      <Input placeholder="State or Province (if applicable)" {...field} />
+                      <Textarea 
+                        placeholder="Company Name&#10;Street Address&#10;City, State&#10;Country"
+                        className="min-h-24"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -840,89 +637,19 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
               </CardTitle>
               <CardDescription>First party to physically receive goods after customs release</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent>
               <FormField
                 control={form.control}
-                name="shipToPartyName"
+                name="shipToPartyInformation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ship-to Party Name *</FormLabel>
+                    <FormLabel>Ship-to Party Information *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Final delivery party name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="shipToPartyCountry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Country *</FormLabel>
-                    <FormControl>
-                      <Input value="US" disabled />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="shipToPartyAddress"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Ship-to Address *</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Final delivery address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="shipToPartyCity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>City *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="City" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="shipToPartyState"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>State *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select state" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {US_STATES.map((state) => (
-                          <SelectItem key={state} value={state}>{state}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="shipToPartyZip"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ZIP Code *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="ZIP Code" {...field} />
+                      <Textarea 
+                        placeholder="Company Name&#10;Street Address&#10;City, State ZIP&#10;USA"
+                        className="min-h-24"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

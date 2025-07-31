@@ -18,34 +18,14 @@ import { Link } from "wouter";
 // ISF Form Schema (same as fastisf.tsx but with optional fields for editing)
 const isfEditSchema = z.object({
   // Required elements but can be TBD during editing
-  sellerName: z.string().min(1, "Seller name is required"),
-  sellerAddress: z.string().min(1, "Seller address is required"),
-  sellerCity: z.string().min(1, "Seller city is required"),
-  sellerState: z.string().optional(),
-  sellerCountry: z.string().min(1, "Seller country is required"),
-
-  buyerName: z.string().min(1, "Buyer name is required"),
-  buyerAddress: z.string().min(1, "Buyer address is required"),
-  buyerCity: z.string().min(1, "Buyer city is required"),
-  buyerState: z.string().optional(),
-  buyerZip: z.string().optional(),
-  buyerCountry: z.string().min(1, "Buyer country is required"),
+  sellerInformation: z.string().min(1, "Seller information is required"),
+  buyerInformation: z.string().min(1, "Buyer information is required"),
 
   importerOfRecord: z.string().min(1, "Importer of Record Number is required"),
   consigneeNumber: z.string().min(1, "Consignee Number is required"),
 
-  manufacturerName: z.string().min(1, "Manufacturer name is required"),
-  manufacturerAddress: z.string().min(1, "Manufacturer address is required"),
-  manufacturerCity: z.string().min(1, "Manufacturer city is required"),
-  manufacturerState: z.string().optional(),
-  manufacturerCountry: z.string().min(1, "Manufacturer country is required"),
-
-  shipToPartyName: z.string().min(1, "Ship-to party name is required"),
-  shipToPartyAddress: z.string().min(1, "Ship-to party address is required"),
-  shipToPartyCity: z.string().min(1, "Ship-to party city is required"),
-  shipToPartyState: z.string().min(1, "Ship-to party state is required"),
-  shipToPartyZip: z.string().min(1, "Ship-to party ZIP is required"),
-  shipToPartyCountry: z.string().default("US"),
+  manufacturerInformation: z.string().min(1, "Manufacturer/Supplier information is required"),
+  shipToPartyInformation: z.string().min(1, "Ship-to party information is required"),
 
   countryOfOrigin: z.string().min(1, "Country of origin is required"),
   htsusNumber: z.string().min(10, "HTS number must be 10 digits").max(10, "HTS number must be exactly 10 digits"),
@@ -151,34 +131,12 @@ export default function IsfEdit() {
     if (isfFiling) {
       // Map ISF filing data to form fields
       const formData: Partial<IsfEditFormData> = {
-        sellerName: isfFiling.sellerName || "Enter seller company name",
-        sellerAddress: isfFiling.sellerAddress || "Enter seller address",
-        sellerCity: isfFiling.sellerCity || "Enter seller city",
-        sellerState: isfFiling.sellerState || "",
-        sellerCountry: isfFiling.sellerCountry || "TBD",
-
-        buyerName: isfFiling.buyerName || "Enter buyer company name",
-        buyerAddress: isfFiling.buyerAddress || "Enter buyer address", 
-        buyerCity: isfFiling.buyerCity || "Enter buyer city",
-        buyerState: isfFiling.buyerState || "",
-        buyerZip: isfFiling.buyerZip || "",
-        buyerCountry: isfFiling.buyerCountry || "US",
-
+        sellerInformation: isfFiling.sellerInformation || "Enter seller company name\nStreet Address\nCity, State\nCountry",
+        buyerInformation: isfFiling.buyerInformation || "Enter buyer company name\nStreet Address\nCity, State ZIP\nCountry",
         importerOfRecord: isfFiling.importerOfRecord || "Enter IRS/EIN number",
         consigneeNumber: isfFiling.consigneeNumber || "Enter consignee IRS/EIN number",
-
-        manufacturerName: isfFiling.manufacturerName || "TBD",
-        manufacturerAddress: isfFiling.manufacturerAddress || "TBD",
-        manufacturerCity: isfFiling.manufacturerCity || "TBD",
-        manufacturerState: isfFiling.manufacturerState || "",
-        manufacturerCountry: isfFiling.manufacturerCountry || "TBD",
-
-        shipToPartyName: isfFiling.shipToPartyName || "TBD",
-        shipToPartyAddress: isfFiling.shipToPartyAddress || "TBD",
-        shipToPartyCity: isfFiling.shipToPartyCity || "TBD",
-        shipToPartyState: isfFiling.shipToPartyState || "",
-        shipToPartyZip: isfFiling.shipToPartyZip || "",
-        shipToPartyCountry: isfFiling.shipToPartyCountry || "US",
+        manufacturerInformation: isfFiling.manufacturerInformation || "Enter manufacturer/supplier name\nStreet Address\nCity, State\nCountry",
+        shipToPartyInformation: isfFiling.shipToPartyInformation || "Enter ship-to party name\nStreet Address\nCity, State ZIP\nUSA",
 
         countryOfOrigin: isfFiling.countryOfOrigin || "TBD",
         htsusNumber: isfFiling.htsusNumber || "0000000000",
@@ -365,76 +323,109 @@ export default function IsfEdit() {
                 </CardTitle>
                 <CardDescription>Last known entity that sold the goods to the buyer</CardDescription>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardContent>
                 <FormField
                   control={form.control}
-                  name="sellerName"
+                  name="sellerInformation"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Seller Name *</FormLabel>
+                      <FormLabel>Seller Information *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Selling company name" {...field} />
+                        <Textarea 
+                          placeholder="Company Name&#10;Street Address&#10;City, State&#10;Country"
+                          className="min-h-24"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+
+            {/* 2. Buyer Information */}
+            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+              <CardHeader>
+                <CardTitle className="text-blue-700 flex items-center">
+                  <Building2 className="w-5 h-5 mr-2" />
+                  2. Buyer Information
+                </CardTitle>
+                <CardDescription>Entity to whom the goods are sold</CardDescription>
+              </CardHeader>
+              <CardContent>
                 <FormField
                   control={form.control}
-                  name="sellerCountry"
+                  name="buyerInformation"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Seller Country *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select country" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {COUNTRIES.map(country => (
-                            <SelectItem key={country} value={country}>{country}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="sellerAddress"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Seller Address *</FormLabel>
+                      <FormLabel>Buyer Information *</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Complete address" {...field} />
+                        <Textarea 
+                          placeholder="Company Name&#10;Street Address&#10;City, State ZIP&#10;Country"
+                          className="min-h-24"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+
+            {/* 3. Manufacturer/Supplier Information */}
+            <Card className="bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200">
+              <CardHeader>
+                <CardTitle className="text-orange-700 flex items-center">
+                  <Building2 className="w-5 h-5 mr-2" />
+                  3. Manufacturer/Supplier Information
+                </CardTitle>
+                <CardDescription>Last entity that manufactured, assembled, produced, or grew the goods</CardDescription>
+              </CardHeader>
+              <CardContent>
                 <FormField
                   control={form.control}
-                  name="sellerCity"
+                  name="manufacturerInformation"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>City *</FormLabel>
+                      <FormLabel>Manufacturer/Supplier Information *</FormLabel>
                       <FormControl>
-                        <Input placeholder="City" {...field} />
+                        <Textarea 
+                          placeholder="Company Name&#10;Street Address&#10;City, State&#10;Country"
+                          className="min-h-24"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+
+            {/* 4. Ship-to Party Information */}
+            <Card className="bg-gradient-to-r from-teal-50 to-cyan-50 border-teal-200">
+              <CardHeader>
+                <CardTitle className="text-teal-700 flex items-center">
+                  <Building2 className="w-5 h-5 mr-2" />
+                  4. Ship-to Party Information
+                </CardTitle>
+                <CardDescription>First party to physically receive goods after customs release</CardDescription>
+              </CardHeader>
+              <CardContent>
                 <FormField
                   control={form.control}
-                  name="sellerState"
+                  name="shipToPartyInformation"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>State/Province</FormLabel>
+                      <FormLabel>Ship-to Party Information *</FormLabel>
                       <FormControl>
-                        <Input placeholder="State or Province" {...field} />
+                        <Textarea 
+                          placeholder="Company Name&#10;Street Address&#10;City, State ZIP&#10;USA"
+                          className="min-h-24"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

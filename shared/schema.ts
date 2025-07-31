@@ -394,20 +394,11 @@ export const isfFilings = pgTable("isf_filings", {
   consigneeZip: varchar("consignee_zip").notNull(),
   consigneeCountry: varchar("consignee_country").notNull().default("US"),
   
-  // 3. Manufacturer (or Supplier) Name and Address
-  manufacturerName: varchar("manufacturer_name").notNull(),
-  manufacturerAddress: text("manufacturer_address").notNull(),
-  manufacturerCity: varchar("manufacturer_city").notNull(),
-  manufacturerState: varchar("manufacturer_state"),
-  manufacturerCountry: varchar("manufacturer_country").notNull(),
+  // 3. Manufacturer (or Supplier) Information
+  manufacturerInformation: text("manufacturer_information").notNull(),
   
-  // 4. Ship to Party Name and Address
-  shipToPartyName: varchar("ship_to_party_name").notNull(),
-  shipToPartyAddress: text("ship_to_party_address").notNull(),
-  shipToPartyCity: varchar("ship_to_party_city").notNull(),
-  shipToPartyState: varchar("ship_to_party_state").notNull(),
-  shipToPartyZip: varchar("ship_to_party_zip").notNull(),
-  shipToPartyCountry: varchar("ship_to_party_country").notNull().default("US"),
+  // 4. Ship to Party Information
+  shipToPartyInformation: text("ship_to_party_information").notNull(),
   
   // 5. Country of Origin
   countryOfOrigin: varchar("country_of_origin").notNull(),
@@ -422,20 +413,11 @@ export const isfFilings = pgTable("isf_filings", {
   // 8. Consolidator
   consolidatorStufferInfo: text("consolidator_stuffer_info").notNull(), // Multi-line text field for consolidator information
   
-  // 9. Buyer Name and Address (if other than consignee)
-  buyerName: varchar("buyer_name"),
-  buyerAddress: text("buyer_address"),
-  buyerCity: varchar("buyer_city"),
-  buyerState: varchar("buyer_state"),
-  buyerZip: varchar("buyer_zip"),
-  buyerCountry: varchar("buyer_country"),
+  // 9. Buyer Information (if other than consignee)
+  buyerInformation: text("buyer_information"),
   
-  // 10. Seller Name and Address (if other than manufacturer)
-  sellerName: varchar("seller_name"),
-  sellerAddress: text("seller_address"),
-  sellerCity: varchar("seller_city"),
-  sellerState: varchar("seller_state"),
-  sellerCountry: varchar("seller_country"),
+  // 10. Seller Information (if other than manufacturer)
+  sellerInformation: text("seller_information"),
   
   // +2 Additional Data Elements
   
