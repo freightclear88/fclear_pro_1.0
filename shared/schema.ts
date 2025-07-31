@@ -452,6 +452,7 @@ export const isfFilings = pgTable("isf_filings", {
   billOfLading: varchar("bill_of_lading"),
   mblScacCode: varchar("mbl_scac_code"), // MBL SCAC Code
   hblScacCode: varchar("hbl_scac_code"), // HBL SCAC Code
+  amsNumber: varchar("ams_number"), // Automated Manifest System number
   containerNumbers: text("container_numbers"), // JSON array of container numbers
   vesselName: varchar("vessel_name"),
   voyageNumber: varchar("voyage_number"),

@@ -92,6 +92,7 @@ const isfEditSchema = z.object({
   consolidatorStufferInfo: z.string().optional(),
   mblScacCode: z.string().optional(),
   hblScacCode: z.string().optional(),
+  amsNumber: z.string().optional(),
 });
 
 type IsfEditFormData = z.infer<typeof isfEditSchema>;
@@ -186,6 +187,7 @@ export default function IsfEdit() {
         consolidatorStufferInfo: isfFiling.consolidatorStufferInfo || "TBD",
         mblScacCode: isfFiling.mblScacCode || "",
         hblScacCode: isfFiling.hblScacCode || "",
+        amsNumber: isfFiling.amsNumber || "",
 
         bookingPartyName: isfFiling.bookingPartyName || "TBD",
         bookingPartyAddress: isfFiling.bookingPartyAddress || "TBD",

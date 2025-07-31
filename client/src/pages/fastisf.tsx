@@ -90,6 +90,9 @@ const isfFormSchema = z.object({
   containerNumbers: z.string().optional(),
   mblScacCode: z.string().optional(),
   hblScacCode: z.string().optional(),
+  
+  // AMS Number
+  amsNumber: z.string().optional(),
 
   // Commercial Information (Optional but commonly included)
   commodityDescription: z.string().optional(),
@@ -213,6 +216,9 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       // SCAC Code fields
       mblScacCode: "",
       hblScacCode: "",
+      
+      // AMS Number
+      amsNumber: "",
       
       // Commodity Information
       countryOfOrigin: "",
@@ -1166,31 +1172,13 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
               />
               <FormField
                 control={form.control}
-                name="foreignPortOfLading"
+                name="amsNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Foreign Port of Lading *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select foreign port" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Los Angeles">Los Angeles, CA</SelectItem>
-                        <SelectItem value="Long Beach">Long Beach, CA</SelectItem>
-                        <SelectItem value="New York">New York, NY</SelectItem>
-                        <SelectItem value="Newark">Newark, NJ</SelectItem>
-                        <SelectItem value="Savannah">Savannah, GA</SelectItem>
-                        <SelectItem value="Charleston">Charleston, SC</SelectItem>
-                        <SelectItem value="Houston">Houston, TX</SelectItem>
-                        <SelectItem value="Seattle">Seattle, WA</SelectItem>
-                        <SelectItem value="Oakland">Oakland, CA</SelectItem>
-                        <SelectItem value="Miami">Miami, FL</SelectItem>
-                        <SelectItem value="NBUC">NBUC (Ningbo, China)</SelectItem>
-                        <SelectItem value="Other">Other Port</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>AMS No.</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Automated Manifest System number" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
