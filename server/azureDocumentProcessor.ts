@@ -297,32 +297,35 @@ export class AzureDocumentProcessor {
     
     // Enhanced vessel name patterns 
     const vesselPatterns = [
-      /Vessel\s*(?:Name)?\s*:?\s*([A-Z][A-Z\s]+?)(?:\s+VOY|\s+V\d|\n|Voyage|$)/i,
+      /Vessel\s*\/\s*Voyage\s+No\.\s*\n*([A-Z][A-Z\s]+?)\s*\/\s*([A-Z0-9]+)/i,  // "Vessel/Voyage No." format
+      /Vessel\s*(?:Name)?\s*:?\s*([A-Z][A-Z\s]+?)(?:\s+VOY|\s+V\d|\n|Voyage|\/|$)/i,
       /Ship\s*Name\s*:?\s*([A-Z][A-Z\s]+?)(?:\s+VOY|\s+V\d|\n|$)/i,
       /M\/V\s+([A-Z][A-Z\s]+?)(?:\s+VOY|\s+V\d|\n|$)/i,
       /^([A-Z][A-Z\s]+?)\s+(?:VOY|VOYAGE)\s+/i,
       /^([A-Z][A-Z\s]+?)\s+EXPRESS$/i,  // Handle "VUNG TAU EXPRESS" pattern
-      /Vessel\s*\/\s*Voyage\s+No\.\s*([A-Z][A-Z\s]+?)(?:\s+\/|\n|$)/i
+      /(ONE\s+MARVEL|MSC\s+\w+|COSCO\s+\w+|EVERGREEN\s+\w+)/i  // Specific vessel name patterns
     ];
     
     // Vessel and voyage extraction - combine into single field
     let vesselName = '';
     let voyageNumber = '';
     
-    // Look for vessel name in the full text first - common vessel patterns
-    const vesselFullMatch = text.match(/VUNG\s+TAU\s+EXPRESS/i) || 
-                           text.match(/MSC\s+[A-Z]+/i) || 
-                           text.match(/COSCO\s+[A-Z]+/i) ||
-                           text.match(/EVERGREEN\s+[A-Z]+/i);
-    if (vesselFullMatch) {
-      vesselName = vesselFullMatch[0].trim();
+    // Look for vessel/voyage combined pattern first (like "ONE MARVEL / 060E")
+    const vesselVoyageCombined = text.match(/Vessel\s*\/\s*Voyage\s+No\.\s*\n*([A-Z][A-Z\s]+?)\s*\/\s*([A-Z0-9]+)/i);
+    if (vesselVoyageCombined) {
+      vesselName = vesselVoyageCombined[1].trim();
+      voyageNumber = vesselVoyageCombined[2].trim();
     }
     
-    // Look for vessel/voyage patterns
+    // Look for vessel name in the full text - common vessel patterns
     if (!vesselName) {
-      const vesselVoyageMatch = text.match(/Vessel\s*\/\s*Voyage\s+No\.\s*([A-Z][A-Z\s]+?)(?:\s+\/|\n|$)/i);
-      if (vesselVoyageMatch) {
-        vesselName = vesselVoyageMatch[1].trim();
+      const vesselFullMatch = text.match(/ONE\s+MARVEL/i) ||
+                             text.match(/VUNG\s+TAU\s+EXPRESS/i) || 
+                             text.match(/MSC\s+[A-Z]+/i) || 
+                             text.match(/COSCO\s+[A-Z]+/i) ||
+                             text.match(/EVERGREEN\s+[A-Z]+/i);
+      if (vesselFullMatch) {
+        vesselName = vesselFullMatch[0].trim();
       }
     }
     
@@ -352,23 +355,26 @@ export class AzureDocumentProcessor {
       /^([A-Z]{4}\d{7})$/i  // Standalone container numbers
     ];
     
-    // Voyage number patterns
-    const voyagePatterns = [
-      /VOY\s*:?\s*([A-Z0-9\/-]+)/i,
-      /VOYAGE\s*(?:NO\.?)?\s*:?\s*([A-Z0-9\/-]+)/i,
-      /V\.?\s*([A-Z0-9\/-]+)/i
-    ];
-    
-    // Look for voyage information
-    for (const line of lines) {
-      for (const pattern of voyagePatterns) {
-        const match = line.match(pattern);
-        if (match && match[1] && match[1].length > 1) {
-          voyageNumber = match[1].trim();
-          break;
+    // Voyage number patterns (only if not already found)
+    if (!voyageNumber) {
+      const voyagePatterns = [
+        /VOY\s*:?\s*([A-Z0-9\/-]+)/i,
+        /VOYAGE\s*(?:NO\.?)?\s*:?\s*([A-Z0-9\/-]+)/i,
+        /V\.?\s*([A-Z0-9\/-]+)/i,
+        /\/\s*([A-Z0-9]+)(?:\s|\n|$)/i  // Pattern for "/060E" format
+      ];
+      
+      // Look for voyage information
+      for (const line of lines) {
+        for (const pattern of voyagePatterns) {
+          const match = line.match(pattern);
+          if (match && match[1] && match[1].length > 1) {
+            voyageNumber = match[1].trim();
+            break;
+          }
         }
+        if (voyageNumber) break;
       }
-      if (voyageNumber) break;
     }
     
     // Look for container numbers
@@ -385,16 +391,26 @@ export class AzureDocumentProcessor {
     
     // Enhanced origin patterns - look for actual port/location names
     const originPatterns = [
+      /Port\s+of\s+loading\s*\n*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
       /Port\s+of\s+Loading\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
+      /Place\s+of\s+receipt\s*\n*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
       /Origin\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
       /From\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
-      /(NINGBO|SHANGHAI|QINGDAO|TIANJIN|SHENZHEN|GUANGZHOU|XIAMEN|FOSHAN)[,\s]*CHINA/i  // Common Chinese ports with CHINA
+      /(HONG KONG|NINGBO|SHANGHAI|QINGDAO|TIANJIN|SHENZHEN|GUANGZHOU|XIAMEN|FOSHAN)[,\s]*(?:CHINA)?/i  // Common ports
     ];
     
-    // Look for China origin pattern first
-    const chinaMatch = text.match(/(FOSHAN|GUANGZHOU|SHENZHEN|NINGBO|SHANGHAI)[,\s]*CHINA/i);
-    if (chinaMatch) {
-      data.portOfLoading = chinaMatch[0].trim();
+    // Look for specific port patterns first
+    const hongKongMatch = text.match(/HONG\s+KONG/i);
+    if (hongKongMatch) {
+      data.portOfLoading = 'HONG KONG';
+    }
+    
+    // Look for China origin pattern if Hong Kong not found
+    if (!data.portOfLoading) {
+      const chinaMatch = text.match(/(FOSHAN|GUANGZHOU|SHENZHEN|NINGBO|SHANGHAI)[,\s]*CHINA/i);
+      if (chinaMatch) {
+        data.portOfLoading = chinaMatch[0].trim();
+      }
     }
     
     // Extract detailed shipper address for origin context
@@ -430,17 +446,26 @@ export class AzureDocumentProcessor {
     
     // Enhanced destination patterns - look for actual US ports/locations
     const destinationPatterns = [
+      /Port\s+of\s+discharge\s*\n*([A-Z][A-Z\s,\/]+?)(?:\n|$)/i,
       /Port\s+of\s+Discharge\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
-      /Destination\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
+      /Place\s+of\s+delivery\s*\n*([A-Z][A-Z\s,\/]+?)(?:\n|$)/i,
       /Place\s+of\s+Delivery\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
+      /Destination\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
       /To\s*:?\s*([A-Z][A-Z\s,]+?)(?:\n|$)/i,
-      /(LOS ANGELES|LONG BEACH|NEW YORK|CHARLESTON|SAVANNAH|MIAMI|HOUSTON|TAMPA|LAS VEGAS)[,\s]*(CA|NY|SC|GA|FL|TX|NV)/i,
-      /LAS\s+VEGAS[,\s]*NV/i  // Specific pattern for Las Vegas
+      /(HONOLULU|LOS ANGELES|LONG BEACH|NEW YORK|CHARLESTON|SAVANNAH|MIAMI|HOUSTON|TAMPA|LAS VEGAS)[,\s\/]*(HI|CA|NY|SC|GA|FL|TX|NV)/i,
+      /HONOLULU\s*\/?\s*HI/i  // Specific pattern for Honolulu
     ];
     
-    // Look for Las Vegas pattern first (from notify party address)
+    // Look for Honolulu pattern first
+    const honoluluMatch = text.match(/HONOLULU\s*\/?\s*HI/i);
+    if (honoluluMatch) {
+      data.portOfDischarge = 'HONOLULU';
+      data.placeOfDelivery = 'HONOLULU / HI';
+    }
+    
+    // Look for Las Vegas pattern
     const vegasMatch = text.match(/LAS\s+VEGAS[,\s]*NV/i);
-    if (vegasMatch) {
+    if (!data.portOfDischarge && vegasMatch) {
       data.portOfDischarge = 'Las Vegas, NV';
       data.placeOfDelivery = vegasMatch[0].trim();
     }
