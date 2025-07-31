@@ -3643,8 +3643,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const document = await storage.createDocument({
         userId,
         shipmentId: null, // ISF documents are not linked to shipments
-        filename: req.file.filename,
+        fileName: req.file.filename,
         originalName: req.file.originalname,
+        fileType: req.file.mimetype || 'application/pdf',
         fileSize: req.file.size,
         category: "isf_filing",
         subCategory: "isf_document_scan",
