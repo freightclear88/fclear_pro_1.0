@@ -68,6 +68,8 @@ export default function Dashboard() {
               </Button>
             }
             onShipmentCreated={(shipment) => {
+              queryClient.invalidateQueries({ queryKey: ["/api/shipments"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
               setTimeout(() => {
                 window.location.reload();
               }, 1000);

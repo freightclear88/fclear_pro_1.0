@@ -54,10 +54,13 @@ export default function ShipmentTable({ shipments, onViewShipment }: ShipmentTab
       const shipmentData = `
 Shipment ID: ${shipment?.shipmentId || "N/A"}
 Container: ${shipment?.containerNumber || "N/A"}
-Bill of Lading: ${shipment?.billOfLading || "N/A"}
-Vessel: ${shipment?.vessel || "N/A"}
-Origin: ${shipment?.origin || "N/A"}
-Destination: ${shipment?.destination || "N/A"}
+Bill of Lading: ${shipment?.billOfLadingNumber || "N/A"}
+Vessel: ${shipment?.vesselAndVoyage || "N/A"}
+Origin: ${shipment?.portOfLoading || "N/A"}
+Destination: ${shipment?.portOfDischarge || "N/A"}
+Shipper: ${shipment?.shipperName || "N/A"}
+Consignee: ${shipment?.consigneeName || "N/A"}
+Weight: ${shipment?.weight || "N/A"}
       `.trim();
 
       await navigator.clipboard.writeText(shipmentData);
@@ -304,13 +307,13 @@ Destination: ${shipment?.destination || "N/A"}
                         {shipment?.containerNumber || "No Container"}
                       </div>
                       <div className="text-xs text-gray-500 flex items-center space-x-1">
-                        <span>BL: {shipment?.billOfLading || "N/A"}</span>
-                        {shipment?.billOfLading && (
+                        <span>BL: {shipment?.billOfLadingNumber || "N/A"}</span>
+                        {shipment?.billOfLadingNumber && (
                           <Button
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const trackingUrl = generateTrackingUrl(shipment?.billOfLading!);
+                              const trackingUrl = generateTrackingUrl(shipment?.billOfLadingNumber!);
                               if (trackingUrl) {
                                 window.open(trackingUrl, '_blank');
                               }
@@ -325,13 +328,13 @@ Destination: ${shipment?.destination || "N/A"}
 
                     {/* Route */}
                     <div>
-                      <div className="text-sm font-medium">{shipment?.origin || 'Unknown'}</div>
-                      <div className="text-xs text-gray-500">→ {shipment?.destination || 'Unknown'}</div>
+                      <div className="text-sm font-medium">{shipment?.portOfLoading || 'Unknown'}</div>
+                      <div className="text-xs text-gray-500">→ {shipment?.portOfDischarge || 'Unknown'}</div>
                     </div>
 
                     {/* Vessel */}
                     <div>
-                      <div className="text-sm">{shipment?.vessel || "TBD"}</div>
+                      <div className="text-sm">{shipment?.vesselAndVoyage || "TBD"}</div>
                       <div className="text-xs text-gray-500">
                         {shipment?.originPort && `From: ${shipment.originPort}`}
                       </div>
