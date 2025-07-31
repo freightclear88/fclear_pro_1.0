@@ -3699,11 +3699,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Handle Excel files (.xls, .xlsx)
       if (fileExtension === 'xlsx' || fileExtension === 'xls') {
         try {
-          const XLSX = require('xlsx');
-          const workbook = XLSX.readFile(req.file.path);
+          const XLSX = await import('xlsx');
+          const workbook = XLSX.default.readFile(req.file.path);
           const sheetName = workbook.SheetNames[0]; // Use first sheet
           const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          const jsonData = XLSX.default.utils.sheet_to_json(worksheet, { header: 1 });
 
           // Enhanced data extraction from Excel sheets with AI assistance
           const flatData = jsonData.flat().filter(cell => cell && typeof cell === 'string');
@@ -3780,7 +3780,8 @@ ${excelText}`;
 
         } catch (excelError) {
           console.error("Excel parsing error:", excelError);
-          extractedData = getDefaultExtractedData();
+          // Return empty data when extraction fails
+          extractedData = {};
         }
       } else if (fileExtension === 'pdf') {
         // Use Azure Document Intelligence for PDF parsing
@@ -3908,8 +3909,19 @@ ${fullText}`;
           }
         }
       } else {
-        // For other file types (DOC, images), use enhanced sample data
-        extractedData = getDefaultExtractedData();
+        // For other file types (DOC, images), return empty data
+        extractedData = {
+          importerName: null,
+          consigneeName: null,
+          manufacturerCountry: null,
+          countryOfOrigin: null,
+          htsusNumber: null,
+          commodityDescription: null,
+          portOfEntry: null,
+          billOfLading: null,
+          vesselName: null,
+          estimatedArrivalDate: null,
+        };
       }
 
       res.json({
@@ -4458,21 +4470,7 @@ function extractValueFromText(text: string): string {
   return extracted.trim();
 }
 
-// Default extracted data for demonstration when no real data found
-function getDefaultExtractedData() {
-  return {
-    importerName: "Sample Importer Inc.",
-    consigneeName: "Sample Consignee LLC",
-    manufacturerCountry: "China",
-    countryOfOrigin: "China",
-    htsusNumber: "8471.30.0100",
-    commodityDescription: "Portable digital automatic data processing machines",
-    portOfEntry: "Los Angeles, CA",
-    billOfLading: "ABC123456789",
-    vesselName: "EVERGREEN EVER",
-    estimatedArrivalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-  };
-}
+// Helper function removed - no more sample data fallbacks
 
 // Helper function to generate ISF XML data
 function generateIsfXml(formData: any, isfNumber: string): string {
