@@ -50,9 +50,7 @@ const isfEditSchema = z.object({
   countryOfOrigin: z.string().min(1, "Country of origin is required"),
   htsusNumber: z.string().min(10, "HTS number must be 10 digits").max(10, "HTS number must be exactly 10 digits"),
 
-  containerStuffingLocation: z.string().min(1, "Container stuffing location is required"),
-  containerStuffingCity: z.string().min(1, "Container stuffing city is required"),
-  containerStuffingCountry: z.string().min(1, "Container stuffing country is required"),
+
 
   bookingPartyName: z.string().min(1, "Booking party name is required"),
   bookingPartyAddress: z.string().min(1, "Booking party address is required"),
@@ -89,7 +87,8 @@ const isfEditSchema = z.object({
   consigneeZip: z.string().min(1, "Consignee ZIP is required"),
   consigneeCountry: z.string().default("US"),
 
-  // Container Stuffing Location & Consolidator/Stuffer (Combined)
+  // Container Stuffing Location & Consolidator/Stuffer (Separate)
+  containerStuffingLocation: z.string().optional(),
   consolidatorStufferInfo: z.string().optional(),
   mblScacCode: z.string().optional(),
   hblScacCode: z.string().optional(),
@@ -183,6 +182,7 @@ export default function IsfEdit() {
         countryOfOrigin: isfFiling.countryOfOrigin || "TBD",
         htsusNumber: isfFiling.htsusNumber || "0000000000",
 
+        containerStuffingLocation: isfFiling.containerStuffingLocation || "TBD",
         consolidatorStufferInfo: isfFiling.consolidatorStufferInfo || "TBD",
         mblScacCode: isfFiling.mblScacCode || "",
         hblScacCode: isfFiling.hblScacCode || "",

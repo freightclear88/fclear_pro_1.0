@@ -416,8 +416,11 @@ export const isfFilings = pgTable("isf_filings", {
   htsusNumber: varchar("htsus_number").notNull(), // 6-digit minimum, 10-digit preferred
   commodityDescription: text("commodity_description").notNull(),
   
-  // 7. Container Stuffing Location & 8. Consolidator/Stuffer (Combined)
-  consolidatorStufferInfo: text("consolidator_stuffer_info").notNull(), // Multi-line text field for combined container stuffing location and consolidator/stuffer information
+  // 7. Container Stuffing Location
+  containerStuffingLocation: text("container_stuffing_location").notNull(), // Multi-line text field for container stuffing location information
+  
+  // 8. Consolidator/Stuffer
+  consolidatorStufferInfo: text("consolidator_stuffer_info").notNull(), // Multi-line text field for consolidator/stuffer information
   
   // 9. Buyer Name and Address (if other than consignee)
   buyerName: varchar("buyer_name"),

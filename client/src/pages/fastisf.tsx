@@ -65,8 +65,9 @@ const isfFormSchema = z.object({
   // 8. Harmonized Tariff Schedule Number (10-digit for unified filing)
   htsusNumber: z.string().min(10, "HTS number must be 10 digits for unified filing").max(10, "HTS number must be exactly 10 digits"),
 
-  // 9. Container Stuffing Location & 10. Consolidator/Stuffer (Combined)
-  consolidatorStufferInfo: z.string().min(1, "Consolidator/Stuffer information is required"),
+  // 9. Container Stuffing Location & 10. Consolidator/Stuffer (Separate)
+  containerStuffingLocation: z.string().min(1, "Container stuffing location is required"),
+  consolidatorStufferInfo: z.string().min(1, "Consolidator/stuffer information is required"),
 
   // Additional Required Fields for Complete ISF
   
@@ -205,7 +206,8 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       shipToPartyZip: "",
       shipToPartyCountry: "US",
       
-      // Container Stuffing Location & Consolidator/Stuffer (Combined)
+      // Container Stuffing Location & Consolidator/Stuffer (Separate)
+      containerStuffingLocation: "",
       consolidatorStufferInfo: "",
       
       // SCAC Code fields
@@ -329,21 +331,33 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           }
         });
 
-        // Handle consolidated consolidator/stuffer info from individual fields if not provided directly
+        // Handle separate container stuffing location and consolidator/stuffer info from extracted data
         const data = result.extractedData;
-        if (!data.consolidatorStufferInfo) {
-          const combinedInfo = [];
-          if (data.containerStuffingLocation) combinedInfo.push(`Container Stuffing Location: ${data.containerStuffingLocation}`);
-          if (data.containerStuffingCity) combinedInfo.push(`City: ${data.containerStuffingCity}`);
-          if (data.containerStuffingCountry) combinedInfo.push(`Country: ${data.containerStuffingCountry}`);
-          if (data.consolidatorName) combinedInfo.push(`Consolidator: ${data.consolidatorName}`);
-          if (data.consolidatorAddress) combinedInfo.push(`Address: ${data.consolidatorAddress}`);
-          if (data.consolidatorCity) combinedInfo.push(`City: ${data.consolidatorCity}`);
-          if (data.consolidatorCountry) combinedInfo.push(`Country: ${data.consolidatorCountry}`);
+        
+        // Build container stuffing location info
+        if (!data.containerStuffingLocation && (data.containerStuffingCity || data.containerStuffingCountry)) {
+          const locationInfo = [];
+          if (data.containerStuffingLocation) locationInfo.push(data.containerStuffingLocation);
+          if (data.containerStuffingCity) locationInfo.push(`City: ${data.containerStuffingCity}`);
+          if (data.containerStuffingCountry) locationInfo.push(`Country: ${data.containerStuffingCountry}`);
           
-          if (combinedInfo.length > 0) {
-            form.setValue("consolidatorStufferInfo", combinedInfo.join('\n'));
-            console.log('Set consolidatorStufferInfo to:', combinedInfo.join('\n'));
+          if (locationInfo.length > 0) {
+            form.setValue("containerStuffingLocation", locationInfo.join('\n'));
+            console.log('Set containerStuffingLocation to:', locationInfo.join('\n'));
+          }
+        }
+        
+        // Build consolidator/stuffer info
+        if (!data.consolidatorStufferInfo && (data.consolidatorName || data.consolidatorAddress)) {
+          const consolidatorInfo = [];
+          if (data.consolidatorName) consolidatorInfo.push(`Company: ${data.consolidatorName}`);
+          if (data.consolidatorAddress) consolidatorInfo.push(`Address: ${data.consolidatorAddress}`);
+          if (data.consolidatorCity) consolidatorInfo.push(`City: ${data.consolidatorCity}`);
+          if (data.consolidatorCountry) consolidatorInfo.push(`Country: ${data.consolidatorCountry}`);
+          
+          if (consolidatorInfo.length > 0) {
+            form.setValue("consolidatorStufferInfo", consolidatorInfo.join('\n'));
+            console.log('Set consolidatorStufferInfo to:', consolidatorInfo.join('\n'));
           }
         }
         
@@ -976,14 +990,44 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
             </CardContent>
           </Card>
 
-          {/* 9. Container Stuffing Location & 10. Consolidator/Stuffer (Combined) */}
+          {/* 9. Container Stuffing Location */}
           <Card className="bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200">
             <CardHeader>
               <CardTitle className="text-gray-700 flex items-center">
                 <MapPin className="w-5 h-5 mr-2" />
-                9. Container Stuffing Location & Consolidator/Stuffer
+                9. Container Stuffing Location
               </CardTitle>
-              <CardDescription>Combined information about container stuffing location and consolidator/stuffer details</CardDescription>
+              <CardDescription>Location where the container was stuffed/loaded</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="containerStuffingLocation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Container Stuffing Location Information *</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter container stuffing location details:&#10;- Company name&#10;- Full address&#10;- City, State/Province&#10;- Country" 
+                        className="min-h-[120px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 10. Consolidator/Stuffer */}
+          <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
+            <CardHeader>
+              <CardTitle className="text-purple-700 flex items-center">
+                <Building2 className="w-5 h-5 mr-2" />
+                10. Consolidator/Stuffer
+              </CardTitle>
+              <CardDescription>Entity that consolidated or stuffed the container</CardDescription>
             </CardHeader>
             <CardContent>
               <FormField
@@ -991,10 +1035,10 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                 name="consolidatorStufferInfo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Container Stuffing Location & Consolidator/Stuffer Information *</FormLabel>
+                    <FormLabel>Consolidator/Stuffer Information *</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Enter complete information about:&#10;- Container stuffing location (name, address, city, country)&#10;- Consolidator/stuffer company details (name, address, contact)" 
+                        placeholder="Enter consolidator/stuffer details:&#10;- Company name&#10;- Full address&#10;- City, State/Province&#10;- Country&#10;- Contact information (optional)" 
                         className="min-h-[120px]"
                         {...field} 
                       />
