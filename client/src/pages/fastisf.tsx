@@ -1067,7 +1067,7 @@ function IsfFilingsList() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {filings.length === 0 ? (
+        {(filings as IsfFiling[] || []).length === 0 ? (
           <div className="text-center py-8">
             <Ship className="w-12 h-12 mx-auto mb-4 text-gray-300" />
             <p className="text-gray-500 mb-2">No ISF filings yet</p>

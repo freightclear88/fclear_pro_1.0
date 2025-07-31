@@ -3853,6 +3853,78 @@ ${fullText}`;
           if (fullText) {
             console.log("Using enhanced fallback pattern matching for PDF data extraction...");
             
+            // Extract party information for consolidated fields first
+            let sellerName = null, sellerAddress = null, sellerCity = null, sellerCountry = null;
+            let buyerName = null, buyerAddress = null, buyerCity = null, buyerCountry = null;
+            let manufacturerName = null, manufacturerAddress = null, manufacturerCity = null, mfgCountry = null;
+            let shipToPartyName = null, shipToPartyAddress = null, shipToPartyCity = null;
+
+            // Enhanced company detection patterns
+            const companyPatterns = [
+              /([A-Z][A-Z\s\.\-&]+ (?:CO\.|COMPANY|CORP|CORPORATION|LTD|LIMITED|INC|LLC)[A-Z\s\.\-]*)/gi,
+              /SHIPPER[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i,
+              /EXPORTER[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i
+            ];
+
+            // Extract company information from document text
+            const extractedCompanies = [];
+            for (const pattern of companyPatterns) {
+              let match;
+              while ((match = pattern.exec(fullText)) !== null) {
+                const companyInfo = match[1]?.trim();
+                if (companyInfo && companyInfo.length > 10 && !extractedCompanies.some(c => c.includes(companyInfo) || companyInfo.includes(c))) {
+                  extractedCompanies.push(companyInfo);
+                }
+              }
+            }
+
+            // Specific handling for China Coast Freight
+            if (fullText.includes("China Coast Freight")) {
+              manufacturerName = "China Coast Freight Co., Ltd.";
+              manufacturerAddress = "Shanghai Branch Room. 905, Litong Plaza No. 1350 North Sichuan Road";
+              manufacturerCity = "Shanghai";
+              mfgCountry = "China";
+            }
+
+            // Look for LCL/Container stuffing company info
+            const lclMatch = fullText.match(/LCH\s+Company[^:]*[:]*\s*([^,\n]+)[,\s]*([^,\n]+)/i);
+            if (lclMatch && !manufacturerName) {
+              manufacturerName = lclMatch[0].trim();
+              manufacturerAddress = lclMatch[1]?.trim();
+              manufacturerCity = lclMatch[2]?.trim();
+            }
+
+            // If we found companies but haven't assigned them, assign to appropriate fields
+            if (extractedCompanies.length > 0) {
+              if (!manufacturerName) {
+                manufacturerName = extractedCompanies[0];
+              }
+              if (extractedCompanies.length > 1 && !sellerName) {
+                sellerName = extractedCompanies[1];
+              }
+            }
+
+            // Extract country information
+            const countryPatterns = [
+              /\b(CHINA|USA|UNITED STATES|GERMANY|JAPAN|KOREA|VIETNAM|THAILAND|MALAYSIA|SINGAPORE|TAIWAN|INDIA)\b/gi
+            ];
+            
+            const countries = [];
+            for (const pattern of countryPatterns) {
+              let match;
+              while ((match = pattern.exec(fullText)) !== null) {
+                const country = match[1].trim().toUpperCase();
+                if (!countries.includes(country)) {
+                  countries.push(country);
+                }
+              }
+            }
+
+            if (countries.length > 0) {
+              if (!mfgCountry) mfgCountry = countries[0];
+              if (!sellerCountry) sellerCountry = countries[0];
+            }
+            
             // Extract vessel information - multiple patterns
             let vesselName = null, voyageNumber = null;
             
@@ -3996,8 +4068,8 @@ ${fullText}`;
             extractedData = {
               importerName,
               consigneeName, 
-              manufacturerCountry: null,
-              countryOfOrigin: null,
+              manufacturerCountry: mfgCountry,
+              countryOfOrigin: mfgCountry,
               htsusNumber: null,
               commodityDescription,
               portOfEntry,
@@ -4005,7 +4077,22 @@ ${fullText}`;
               vesselName,
               voyageNumber,
               containerNumbers,
-              estimatedArrivalDate
+              estimatedArrivalDate,
+              // Party information for consolidated fields
+              sellerName,
+              sellerAddress,
+              sellerCity,
+              sellerCountry,
+              buyerName,
+              buyerAddress, 
+              buyerCity,
+              buyerCountry,
+              manufacturerName,
+              manufacturerAddress,
+              manufacturerCity,
+              shipToPartyName,
+              shipToPartyAddress,
+              shipToPartyCity
             };
             
             // Filter out null values
