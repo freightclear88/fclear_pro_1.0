@@ -4358,7 +4358,7 @@ Look for Bill of Lading, Commercial Invoice, Packing List, or other shipping doc
         const document = await storage.createDocument({
           userId,
           shipmentId: null, // Will be linked later if needed
-          filename: req.file.filename,
+          fileName: req.file.originalname, // Use originalname for display
           originalName: req.file.originalname,
           fileSize: req.file.size,
           category: "isf_filing",
