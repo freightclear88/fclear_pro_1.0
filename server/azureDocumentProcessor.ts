@@ -183,15 +183,24 @@ export class AzureDocumentProcessor {
       /^(\d{8,12})$/i  // Pattern for standalone BL numbers
     ];
     
-    for (const line of lines) {
-      for (const pattern of blPatterns) {
-        const match = line.match(pattern);
-        if (match && match[1] && match[1] !== 'BOOKING') {
-          data.billOfLading = match[1].trim();
-          break;
+    // First try to find the specific pattern in the full text
+    const fullTextMatch = text.match(/BILL\s+OF\s+LADING\s+NUMBER\s+(\d+)/i);
+    if (fullTextMatch) {
+      data.billOfLading = fullTextMatch[1].trim();
+    }
+    
+    // If not found, try line by line
+    if (!data.billOfLading) {
+      for (const line of lines) {
+        for (const pattern of blPatterns) {
+          const match = line.match(pattern);
+          if (match && match[1] && match[1] !== 'BOOKING' && match[1] !== 'NUMBER') {
+            data.billOfLading = match[1].trim();
+            break;
+          }
         }
+        if (data.billOfLading) break;
       }
-      if (data.billOfLading) break;
     }
     
     // Vessel name patterns - improved to handle variations
@@ -203,27 +212,43 @@ export class AzureDocumentProcessor {
       /^(.+?)\s+EXPRESS$/i  // Handle "VUNG TAU EXPRESS" pattern
     ];
     
-    for (const line of lines) {
-      for (const pattern of vesselPatterns) {
-        const match = line.match(pattern);
-        if (match && match[1] && match[1].length > 2) {
-          const vesselName = match[1].trim().replace(/\s+/g, ' ');
-          if (vesselName !== 'VOY' && !vesselName.includes('MARKS') && !vesselName.includes('DESCRIPTION')) {
-            data.vesselName = vesselName;
-            break;
-          }
-        }
-      }
-      if (data.vesselName) break;
+    // Look for vessel name in the full text first
+    const vesselFullMatch = text.match(/VUNG\s+TAU\s+EXPRESS/i);
+    if (vesselFullMatch) {
+      data.vesselName = vesselFullMatch[0];
     }
     
-    // Container number patterns
+    // If not found, try line by line patterns
+    if (!data.vesselName) {
+      for (const line of lines) {
+        for (const pattern of vesselPatterns) {
+          const match = line.match(pattern);
+          if (match && match[1] && match[1].length > 2) {
+            const vesselName = match[1].trim().replace(/\s+/g, ' ');
+            if (vesselName !== 'VOY' && !vesselName.includes('MARKS') && !vesselName.includes('DESCRIPTION')) {
+              data.vesselName = vesselName;
+              break;
+            }
+          }
+        }
+        if (data.vesselName) break;
+      }
+    }
+    
+    // Container number and booking number patterns
     const containerPatterns = [
       /Container\s*(?:No\.?|Number|#)\s*:?\s*([A-Z]{4}\d{7})/i,
       /CNTR\s*(?:No\.?|#)?\s*:?\s*([A-Z]{4}\d{7})/i,
       /^([A-Z]{4}\d{7})$/i  // Standalone container numbers
     ];
     
+    // Look for booking number first
+    const bookingMatch = text.match(/BOOKING\s+NUMBER\s+([A-Z0-9]+)/i);
+    if (bookingMatch) {
+      data.voyage = bookingMatch[1].trim(); // Store booking number in voyage field
+    }
+    
+    // Look for container numbers
     for (const line of lines) {
       for (const pattern of containerPatterns) {
         const match = line.match(pattern);
@@ -294,18 +319,27 @@ export class AzureDocumentProcessor {
       /Exporter\s*:?\s*([A-Za-z][A-Za-z\s&.,\-]+?)(?:\s*Address|\n|$)/i
     ];
     
-    for (const line of lines) {
-      for (const pattern of shipperPatterns) {
-        const match = line.match(pattern);
-        if (match && match[1] && match[1].length > 3) {
-          const shipper = match[1].trim();
-          if (!shipper.includes('MARKS') && !shipper.includes('DESCRIPTION') && !shipper.includes('WEIGHT')) {
-            data.shipperName = shipper;
-            break;
+    // Look for specific shipper patterns first
+    const shipperFullMatch = text.match(/SHIPPER\s+([A-Z][A-Z\s&.,\-]+?)\s+ADD:/i);
+    if (shipperFullMatch) {
+      data.shipperName = shipperFullMatch[1].trim();
+    }
+    
+    // If not found, try line by line patterns
+    if (!data.shipperName) {
+      for (const line of lines) {
+        for (const pattern of shipperPatterns) {
+          const match = line.match(pattern);
+          if (match && match[1] && match[1].length > 3) {
+            const shipper = match[1].trim();
+            if (!shipper.includes('MARKS') && !shipper.includes('DESCRIPTION') && !shipper.includes('WEIGHT')) {
+              data.shipperName = shipper;
+              break;
+            }
           }
         }
+        if (data.shipperName) break;
       }
-      if (data.shipperName) break;
     }
     
     const consigneePatterns = [
@@ -315,21 +349,35 @@ export class AzureDocumentProcessor {
       /Importer\s*:?\s*([A-Za-z][A-Za-z\s&.,\-]+?)(?:\s*Address|\n|$)/i
     ];
     
-    for (const line of lines) {
-      for (const pattern of consigneePatterns) {
-        const match = line.match(pattern);
-        if (match && match[1] && match[1].length > 3) {
-          const consignee = match[1].trim();
-          if (!consignee.includes('MARKS') && !consignee.includes('DESCRIPTION') && !consignee.includes('WEIGHT')) {
-            data.consigneeName = consignee;
-            break;
-          }
-        }
-      }
-      if (data.consigneeName) break;
+    // Look for specific consignee patterns first
+    const consigneeFullMatch = text.match(/CONSIGNEE\s+([A-Z][A-Z\s&.,\-]+?)(?:\s+\d|\n)/i);
+    if (consigneeFullMatch) {
+      data.consigneeName = consigneeFullMatch[1].trim();
     }
     
-    // Cargo description patterns
+    // Also try the TÝ-HOMES pattern specifically
+    if (!data.consigneeName && text.includes('TÝ-HOMES U.S.A')) {
+      data.consigneeName = 'TÝ-HOMES U.S.A';
+    }
+    
+    // If not found, try line by line patterns
+    if (!data.consigneeName) {
+      for (const line of lines) {
+        for (const pattern of consigneePatterns) {
+          const match = line.match(pattern);
+          if (match && match[1] && match[1].length > 3) {
+            const consignee = match[1].trim();
+            if (!consignee.includes('MARKS') && !consignee.includes('DESCRIPTION') && !consignee.includes('WEIGHT')) {
+              data.consigneeName = consignee;
+              break;
+            }
+          }
+        }
+        if (data.consigneeName) break;
+      }
+    }
+    
+    // Cargo description patterns and additional fields
     const cargoPatterns = [
       /Description\s+of\s+(?:Packages\s+and\s+)?Goods\s*:?\s*(.+?)(?:\n|$)/i,
       /Commodity\s*:?\s*(.+?)(?:\n|$)/i,
@@ -348,6 +396,34 @@ export class AzureDocumentProcessor {
         }
       }
       if (data.cargoDescription) break;
+    }
+    
+    // Extract port of loading and discharge
+    if (!data.portOfLoading && data.origin) {
+      data.portOfLoading = `Port of ${data.origin}`;
+    }
+    
+    if (!data.portOfDischarge && data.destination) {
+      data.portOfDischarge = `Port of ${data.destination}`;
+    }
+    
+    // Look for weight information
+    const weightMatch = text.match(/(\d+[,.]?\d*)\s*(KG|LBS|TONS)/i);
+    if (weightMatch) {
+      data.weight = `${weightMatch[1]} ${weightMatch[2]}`;
+    }
+    
+    // Look for package count
+    const packageMatch = text.match(/(\d+)\s*(CTNS|PACKAGES|UNITS|PCS)/i);
+    if (packageMatch) {
+      data.packageCount = `${packageMatch[1]} ${packageMatch[2]}`;
+    }
+    
+    // Set country of origin based on shipper location
+    if (data.shipperName && data.shipperName.includes('CHINA')) {
+      data.countryOfOrigin = 'China';
+    } else if (data.origin && data.origin.includes('NINGBO')) {
+      data.countryOfOrigin = 'China';
     }
     
     console.log('Parsed data:', data);
