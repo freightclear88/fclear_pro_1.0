@@ -65,9 +65,9 @@ const isfFormSchema = z.object({
   // 8. Harmonized Tariff Schedule Number (10-digit for unified filing)
   htsusNumber: z.string().min(10, "HTS number must be 10 digits for unified filing").max(10, "HTS number must be exactly 10 digits"),
 
-  // 9. Container Stuffing Location & 10. Consolidator/Stuffer (Separate)
+  // 9. Container Stuffing Location & 10. Consolidator (Separate)
   containerStuffingLocation: z.string().min(1, "Container stuffing location is required"),
-  consolidatorStufferInfo: z.string().min(1, "Consolidator/stuffer information is required"),
+  consolidatorStufferInfo: z.string().min(1, "Consolidator information is required"),
 
   // Additional Required Fields for Complete ISF
   
@@ -209,7 +209,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       shipToPartyZip: "",
       shipToPartyCountry: "US",
       
-      // Container Stuffing Location & Consolidator/Stuffer (Separate)
+      // Container Stuffing Location & Consolidator (Separate)
       containerStuffingLocation: "",
       consolidatorStufferInfo: "",
       
@@ -353,7 +353,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           }
         }
         
-        // Build consolidator/stuffer info
+        // Build consolidator info
         if (!data.consolidatorStufferInfo && (data.consolidatorName || data.consolidatorAddress)) {
           const consolidatorInfo = [];
           if (data.consolidatorName) consolidatorInfo.push(`Company: ${data.consolidatorName}`);
@@ -1026,14 +1026,14 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
             </CardContent>
           </Card>
 
-          {/* 10. Consolidator/Stuffer */}
+          {/* 10. Consolidator */}
           <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
             <CardHeader>
               <CardTitle className="text-purple-700 flex items-center">
                 <Building2 className="w-5 h-5 mr-2" />
-                10. Consolidator/Stuffer
+                10. Consolidator
               </CardTitle>
-              <CardDescription>Entity that consolidated or stuffed the container</CardDescription>
+              <CardDescription>Entity that consolidated the container</CardDescription>
             </CardHeader>
             <CardContent>
               <FormField
@@ -1041,10 +1041,10 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                 name="consolidatorStufferInfo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Consolidator/Stuffer Information *</FormLabel>
+                    <FormLabel>Consolidator Information *</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Enter consolidator/stuffer details:&#10;- Company name&#10;- Full address&#10;- City, State/Province&#10;- Country&#10;- Contact information (optional)" 
+                        placeholder="Enter consolidator details:&#10;- Company name&#10;- Full address&#10;- City, State/Province&#10;- Country&#10;- Contact information (optional)" 
                         className="min-h-[120px]"
                         {...field} 
                       />

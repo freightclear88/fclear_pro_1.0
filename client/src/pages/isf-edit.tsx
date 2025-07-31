@@ -87,7 +87,7 @@ const isfEditSchema = z.object({
   consigneeZip: z.string().min(1, "Consignee ZIP is required"),
   consigneeCountry: z.string().default("US"),
 
-  // Container Stuffing Location & Consolidator/Stuffer (Separate)
+  // Container Stuffing Location & Consolidator (Separate)
   containerStuffingLocation: z.string().optional(),
   consolidatorStufferInfo: z.string().optional(),
   mblScacCode: z.string().optional(),

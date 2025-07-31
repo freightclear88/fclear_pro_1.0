@@ -419,8 +419,8 @@ export const isfFilings = pgTable("isf_filings", {
   // 7. Container Stuffing Location
   containerStuffingLocation: text("container_stuffing_location").notNull(), // Multi-line text field for container stuffing location information
   
-  // 8. Consolidator/Stuffer
-  consolidatorStufferInfo: text("consolidator_stuffer_info").notNull(), // Multi-line text field for consolidator/stuffer information
+  // 8. Consolidator
+  consolidatorStufferInfo: text("consolidator_stuffer_info").notNull(), // Multi-line text field for consolidator information
   
   // 9. Buyer Name and Address (if other than consignee)
   buyerName: varchar("buyer_name"),
