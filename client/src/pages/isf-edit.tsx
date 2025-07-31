@@ -129,7 +129,10 @@ export default function IsfEdit() {
   // Fetch ISF filing data
   const { data: isfFiling, isLoading } = useQuery({
     queryKey: ["/api/isf/filings", isfId],
-    queryFn: () => apiRequest(`/api/isf/filings/${isfId}`),
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/isf/filings/${isfId}`);
+      return response.json();
+    },
     enabled: !!isfId,
   });
 
@@ -232,13 +235,8 @@ export default function IsfEdit() {
   // Save/Update ISF filing
   const updateMutation = useMutation({
     mutationFn: async (data: IsfEditFormData) => {
-      return await apiRequest(`/api/isf/filings/${isfId}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await apiRequest("PUT", `/api/isf/filings/${isfId}`, data);
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -259,9 +257,8 @@ export default function IsfEdit() {
   // Submit ISF for processing
   const submitMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest(`/api/isf/filings/${isfId}/submit`, {
-        method: "POST",
-      });
+      const response = await apiRequest("POST", `/api/isf/filings/${isfId}/submit`);
+      return response.json();
     },
     onSuccess: () => {
       toast({

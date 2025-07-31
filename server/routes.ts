@@ -3703,8 +3703,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Use OpenAI to intelligently extract ISF data from Excel content
           try {
-            const openai = require('openai');
-            const openaiClient = new openai.OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+            const OpenAI = await import('openai');
+            const openaiClient = new OpenAI.default({ apiKey: process.env.OPENAI_API_KEY });
             
             const prompt = `Extract ISF (Importer Security Filing) data from this Excel/spreadsheet content. Return ONLY a JSON object with these exact fields (use null for missing data):
 
@@ -3772,15 +3772,15 @@ ${excelText}`;
         // Use Azure Document Intelligence for PDF parsing
         console.log("PDF file detected, using Azure Document Intelligence for extraction");
         try {
-          const { DocumentAnalysisClient, AzureKeyCredential } = require("@azure/ai-form-recognizer");
-          const fs = require('fs');
+          const { DocumentAnalysisClient, AzureKeyCredential } = await import("@azure/ai-form-recognizer");
+          const fs = await import('fs');
           
           const client = new DocumentAnalysisClient(
             process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT!,
             new AzureKeyCredential(process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY!)
           );
           
-          const documentBuffer = fs.readFileSync(req.file.path);
+          const documentBuffer = fs.default.readFileSync(req.file.path);
           const poller = await client.beginAnalyzeDocument("prebuilt-document", documentBuffer);
           const result = await poller.pollUntilDone();
           
@@ -3789,8 +3789,8 @@ ${excelText}`;
           console.log("Extracted PDF text:", fullText.substring(0, 500) + "...");
           
           // Use OpenAI to extract structured ISF data from the document text
-          const openai = require('openai');
-          const openaiClient = new openai.OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          const OpenAI = await import('openai');
+          const openaiClient = new OpenAI.default({ apiKey: process.env.OPENAI_API_KEY });
           
           const prompt = `Extract ISF (Importer Security Filing) data from this shipping document text. Return ONLY a JSON object with these exact fields (use null for missing data):
 
