@@ -410,13 +410,13 @@ export class AzureDocumentProcessor {
     // Look for weight information
     const weightMatch = text.match(/(\d+[,.]?\d*)\s*(KG|LBS|TONS)/i);
     if (weightMatch) {
-      data.weight = `${weightMatch[1]} ${weightMatch[2]}`;
+      data.weight = weightMatch[1]; // Store only the numeric value
     }
     
     // Look for package count
     const packageMatch = text.match(/(\d+)\s*(CTNS|PACKAGES|UNITS|PCS)/i);
     if (packageMatch) {
-      data.packageCount = `${packageMatch[1]} ${packageMatch[2]}`;
+      data.packageCount = packageMatch[1]; // Store only the numeric value
     }
     
     // Set country of origin based on shipper location
@@ -594,7 +594,19 @@ export class AzureDocumentProcessor {
     }
     
     if (data.weight && data.weight.length > 0) {
-      cleanData.weight = truncateField(data.weight, fieldLimits.weight);
+      // Extract only numeric value from weight (remove units and format properly)
+      const weightMatch = data.weight.match(/(\d+(?:[.,]\d+)?)/);
+      if (weightMatch) {
+        const numericWeight = weightMatch[1].replace(',', '');
+        // Convert to reasonable weight (if too large, likely needs unit conversion)
+        const weight = parseFloat(numericWeight);
+        if (weight > 1000000) {
+          // Likely in grams, convert to kg
+          cleanData.weight = Math.round(weight / 1000).toString();
+        } else {
+          cleanData.weight = numericWeight;
+        }
+      }
     }
     
     if (data.eta && data.eta.length > 0) {
