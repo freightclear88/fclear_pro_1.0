@@ -3719,19 +3719,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sellerState: null,
         sellerCountry: null,
 
-        bookingPartyName: null,
-        bookingPartyAddress: null,
-        bookingPartyCity: null,
-        bookingPartyCountry: null,
+        bookingPartyName: 'TBD',
+        bookingPartyAddress: 'TBD',
+        bookingPartyCity: 'TBD',
+        bookingPartyCountry: 'TBD',
 
-        foreignPortOfUnlading: null,
+        foreignPortOfUnlading: 'TBD',
 
         billOfLading: extractedData.billOfLading || null,
         containerNumbers: null,
         vesselName: extractedData.vesselName || null,
         voyageNumber: null,
         estimatedArrivalDate: extractedData.estimatedArrivalDate ? new Date(extractedData.estimatedArrivalDate) : null,
-        portOfEntry: extractedData.portOfEntry || null,
+        portOfEntry: extractedData.portOfEntry || 'TBD',
 
         invoiceNumber: null,
         invoiceDate: null,
