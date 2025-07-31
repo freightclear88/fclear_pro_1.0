@@ -152,6 +152,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
   const { toast } = useToast();
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [extractedData, setExtractedData] = useState<any>(null);
 
   const form = useForm<IsfFormData>({
     resolver: zodResolver(isfFormSchema),
@@ -293,6 +294,9 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           commodityDescription: 'commodityDescription'
         };
 
+        // Store extracted data and populate form
+        setExtractedData(result.extractedData);
+        
         // Populate form with extracted data
         Object.entries(result.extractedData).forEach(([extractedKey, value]) => {
           const formFieldKey = fieldMapping[extractedKey];
@@ -326,11 +330,14 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           }
         });
         
-        // Trigger form validation after all fields are set
+        // Force form re-render and validation
         setTimeout(() => {
-          form.trigger();
           console.log("Form values after population:", form.getValues());
-        }, 100);
+          form.trigger();
+          
+          // Force re-render
+          setIsScanning(false);
+        }, 200);
 
         toast({
           title: "Document Scanned Successfully",
@@ -425,6 +432,16 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                       <CheckCircle className="w-8 h-8 mb-2 text-green-500" />
                       <p className="text-sm text-gray-700 font-medium">{uploadedFile.name}</p>
                       <p className="text-xs text-gray-500">Document uploaded successfully</p>
+                      {extractedData && (
+                        <div className="mt-2 p-2 bg-green-100 border border-green-300 rounded text-xs">
+                          <p className="text-green-700 font-medium">✓ Data extracted and populated in form</p>
+                          <p className="text-green-600">
+                            Vessel: {extractedData.vesselName} | 
+                            Voyage: {extractedData.voyageNumber} |
+                            Container: {extractedData.containerNumbers}
+                          </p>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <>
@@ -1170,11 +1187,24 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                 name="portOfEntry"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>US Port of Entry *</FormLabel>
+                    <FormLabel>Port of Entry *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Port of entry (e.g., Long Beach, NBUC)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="foreignPortOfLading"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Foreign Port of Lading *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select US port" />
+                          <SelectValue placeholder="Select foreign port" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -1188,6 +1218,8 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                         <SelectItem value="Seattle">Seattle, WA</SelectItem>
                         <SelectItem value="Oakland">Oakland, CA</SelectItem>
                         <SelectItem value="Miami">Miami, FL</SelectItem>
+                        <SelectItem value="NBUC">NBUC (Ningbo, China)</SelectItem>
+                        <SelectItem value="Other">Other Port</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
