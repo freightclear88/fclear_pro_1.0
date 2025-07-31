@@ -66,40 +66,40 @@ const isfFormSchema = z.object({
   htsusNumber: z.string().min(10, "HTS number must be 10 digits for unified filing").max(10, "HTS number must be exactly 10 digits"),
 
   // 9. Container Stuffing Location (Can be filed later - flexible timing)
-  containerStuffingLocation: z.string().min(1, "Container stuffing location is required"),
-  containerStuffingCity: z.string().min(1, "Container stuffing city is required"),
+  containerStuffingLocation: z.string().optional(),
+  containerStuffingCity: z.string().optional(),
   containerStuffingState: z.string().optional(),
-  containerStuffingCountry: z.string().min(1, "Container stuffing country is required"),
+  containerStuffingCountry: z.string().optional(),
 
   // 10. Consolidator/Stuffer (Can be filed later - flexible timing)
-  consolidatorName: z.string().min(1, "Consolidator/Stuffer name is required"),
-  consolidatorAddress: z.string().min(1, "Consolidator address is required"),
-  consolidatorCity: z.string().min(1, "Consolidator city is required"),
+  consolidatorName: z.string().optional(),
+  consolidatorAddress: z.string().optional(),
+  consolidatorCity: z.string().optional(),
   consolidatorState: z.string().optional(),
-  consolidatorCountry: z.string().min(1, "Consolidator country is required"),
+  consolidatorCountry: z.string().optional(),
 
   // Additional Required Fields for Complete ISF
   
   // Bill of Lading (Links ISF to manifest data)
-  billOfLading: z.string().min(1, "Bill of Lading number is required"),
+  billOfLading: z.string().optional(),
   
   // Vessel Information
-  vesselName: z.string().min(1, "Vessel name is required"),
-  voyageNumber: z.string().min(1, "Voyage number is required"),
+  vesselName: z.string().optional(),
+  voyageNumber: z.string().optional(),
   
   // Port Information
-  foreignPortOfLading: z.string().min(1, "Foreign port of lading is required"),
-  portOfEntry: z.string().min(1, "US port of entry is required"),
+  foreignPortOfLading: z.string().optional(),
+  portOfEntry: z.string().optional(),
   
   // Dates
-  estimatedDepartureDate: z.string().min(1, "Estimated departure date is required"),
-  estimatedArrivalDate: z.string().min(1, "Estimated arrival date is required"),
+  estimatedDepartureDate: z.string().optional(),
+  estimatedArrivalDate: z.string().optional(),
 
   // Container Information
-  containerNumbers: z.string().min(1, "Container numbers are required"),
+  containerNumbers: z.string().optional(),
 
   // Commercial Information (Optional but commonly included)
-  commodityDescription: z.string().min(1, "Commodity description is required"),
+  commodityDescription: z.string().optional(),
   invoiceNumber: z.string().optional(),
   invoiceDate: z.string().optional(),
   invoiceValue: z.string().optional(),
@@ -107,18 +107,18 @@ const isfFormSchema = z.object({
   terms: z.string().optional(), // FOB, CIF, etc.
   
   // Additional party information for completeness
-  importerName: z.string().min(1, "Importer name is required"),
-  importerAddress: z.string().min(1, "Importer address is required"),
-  importerCity: z.string().min(1, "Importer city is required"),
-  importerState: z.string().min(1, "Importer state is required"),
-  importerZip: z.string().min(1, "Importer ZIP is required"),
+  importerName: z.string().optional(),
+  importerAddress: z.string().optional(),
+  importerCity: z.string().optional(),
+  importerState: z.string().optional(),
+  importerZip: z.string().optional(),
   importerCountry: z.string().default("US"),
 
-  consigneeName: z.string().min(1, "Consignee name is required"),
-  consigneeAddress: z.string().min(1, "Consignee address is required"),
-  consigneeCity: z.string().min(1, "Consignee city is required"),
-  consigneeState: z.string().min(1, "Consignee state is required"),
-  consigneeZip: z.string().min(1, "Consignee ZIP is required"),
+  consigneeName: z.string().optional(),
+  consigneeAddress: z.string().optional(),
+  consigneeCity: z.string().optional(),
+  consigneeState: z.string().optional(),
+  consigneeZip: z.string().optional(),
   consigneeCountry: z.string().default("US"),
 });
 
@@ -330,10 +330,10 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           }
         });
         
-        // Force form re-render and validation
+        // Force form re-render and clear validation errors
         setTimeout(() => {
           console.log("Form values after population:", form.getValues());
-          form.trigger();
+          form.clearErrors(); // Clear validation errors to allow manual entry
           
           // Force re-render
           setIsScanning(false);
