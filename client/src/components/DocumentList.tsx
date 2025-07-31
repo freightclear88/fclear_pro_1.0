@@ -20,7 +20,7 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
   const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
   const { toast } = useToast();
 
-  const { data: documents = [], isLoading } = useQuery({
+  const { data: documents = [], isLoading } = useQuery<Document[]>({
     queryKey: shipmentId ? ['/api/shipments', shipmentId, 'documents'] : ['/api/documents'],
     enabled: true,
   });
@@ -37,27 +37,27 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
     setIsPdfViewerOpen(true);
   };
 
-  const handleDownload = async (document: Document) => {
+  const handleDownload = async (doc: Document) => {
     try {
-      const response = await fetch(`/api/documents/${document.id}/download`);
+      const response = await fetch(`/api/documents/${doc.id}/download`);
       if (!response.ok) {
         throw new Error('Download failed');
       }
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = window.document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = document.originalName || document.fileName;
-      document.body.appendChild(a);
+      a.download = doc.originalName || doc.fileName;
+      window.document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      window.document.body.removeChild(a);
       
       toast({
         title: "Download Complete",
-        description: `Downloaded ${document.originalName || document.fileName}`,
+        description: `Downloaded ${doc.originalName || doc.fileName}`,
       });
     } catch (error) {
       toast({
@@ -69,6 +69,7 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
   };
 
   const getCategoryBadgeColor = (category: string) => {
+    if (!category) return 'bg-gray-100 text-gray-800';
     switch (category) {
       case 'bill_of_lading':
         return 'bg-blue-100 text-blue-800';
@@ -92,6 +93,7 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
   };
 
   const formatCategoryName = (category: string) => {
+    if (!category) return 'Unknown';
     return category.split('_').map(word => 
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
@@ -130,9 +132,9 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {documents.map((document: Document) => (
+            {documents.map((doc: Document) => (
               <div
-                key={document.id}
+                key={doc.id}
                 className="border rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center justify-between p-4">
@@ -140,37 +142,37 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
                     <FileText className="w-8 h-8 text-freight-blue" />
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
-                        <h4 className="font-medium text-gray-900">{document.originalName || document.fileName}</h4>
-                        <Badge className={getCategoryBadgeColor(document.category)}>
-                          {formatCategoryName(document.category)}
+                        <h4 className="font-medium text-gray-900">{doc.originalName || doc.fileName}</h4>
+                        <Badge className={getCategoryBadgeColor(doc.category)}>
+                          {formatCategoryName(doc.category)}
                         </Badge>
-                        {document.subCategory && (
+                        {doc.subCategory && (
                           <Badge variant="outline" className={
-                            document.subCategory === 'last_mile' 
+                            doc.subCategory === 'last_mile' 
                               ? "bg-green-50 text-green-700 border-green-200 flex items-center gap-1"
                               : "bg-orange-50 text-orange-700 border-orange-200"
                           }>
-                            {document.subCategory === 'last_mile' && (
+                            {doc.subCategory === 'last_mile' && (
                               <Truck className="w-3 h-3" />
                             )}
-                            {formatCategoryName(document.subCategory)}
+                            {formatCategoryName(doc.subCategory)}
                           </Badge>
                         )}
                       </div>
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
                         <span className="flex items-center">
                           <Calendar className="w-3 h-3 mr-1" />
-                          {new Date(document.uploadedAt).toLocaleDateString()}
+                          {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : 'N/A'}
                         </span>
                         <span className="flex items-center">
                           <Hash className="w-3 h-3 mr-1" />
-                          {document.fileSize ? `${Math.round(document.fileSize / 1024)} KB` : 'Size unknown'}
+                          {doc.fileSize ? `${Math.round(doc.fileSize / 1024)} KB` : 'Size unknown'}
                         </span>
-                        {document.processingStatus && (
+                        {doc.status && (
                           <span className={`px-2 py-1 rounded text-xs ${
-                            document.processingStatus === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            doc.status === 'processed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {document.processingStatus}
+                            {doc.status}
                           </span>
                         )}
                       </div>
@@ -178,16 +180,16 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
                   </div>
                   <div className="flex items-center space-x-2">
                     {/* In-app PDF/Image/Text viewing button */}
-                    {(document.fileType === 'application/pdf' || 
-                      document.fileType?.startsWith('image/') ||
-                      document.fileType === 'text/plain') && (
+                    {(doc.fileType === 'application/pdf' || 
+                      doc.fileType?.startsWith('image/') ||
+                      doc.fileType === 'text/plain') && (
                       <Button
                         size="sm"
-                        onClick={() => handleViewPdf(document)}
+                        onClick={() => handleViewPdf(doc)}
                         className="btn-outline-secondary"
                       >
                         <Eye className="w-4 h-4 mr-2" />
-                        View {document.fileType === 'application/pdf' ? 'PDF' : 'File'}
+                        View {doc.fileType === 'application/pdf' ? 'PDF' : 'File'}
                       </Button>
                     )}
                     
@@ -195,7 +197,7 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
                     <Button
                       size="sm"
                       onClick={() => {
-                        setSelectedDocument(document);
+                        setSelectedDocument(doc);
                         setIsDetailOpen(true);
                       }}
                       className="btn-outline-accent"
@@ -206,7 +208,7 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
                     
                     <Button
                       size="sm"
-                      onClick={() => handleDownload(document)}
+                      onClick={() => handleDownload(doc)}
                       className="btn-outline-primary"
                     >
                       <Download className="w-4 h-4 mr-2" />
@@ -214,28 +216,6 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
                     </Button>
                   </div>
                 </div>
-                
-                {(document.extractedData || document.ocrText) && (
-                  <div className="px-4 pb-4 border-t bg-gray-50">
-                    <h5 className="text-sm font-medium text-gray-700 mb-2 mt-2">Extracted Data:</h5>
-                    {document.extractedData && typeof document.extractedData === 'object' ? (
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        {Object.entries(document.extractedData).map(([key, value]) => (
-                          <div key={key} className="flex justify-between">
-                            <span className="font-medium text-gray-600">
-                              {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
-                            </span>
-                            <span className="text-gray-800 truncate ml-2">{String(value) || 'N/A'}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : document.ocrText ? (
-                      <div className="bg-white p-2 rounded border text-sm font-mono text-gray-600 max-h-20 overflow-y-auto">
-                        {document.ocrText}
-                      </div>
-                    ) : null}
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -265,44 +245,21 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-600">Upload Date:</span>
-                  <p className="text-sm text-gray-900">{new Date(selectedDocument.uploadedAt).toLocaleString()}</p>
+                  <p className="text-sm text-gray-900">{selectedDocument.createdAt ? new Date(selectedDocument.createdAt).toLocaleString() : 'N/A'}</p>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-600">Processing Status:</span>
-                  <p className="text-sm text-gray-900">{selectedDocument.processingStatus || 'Pending'}</p>
+                  <span className="text-sm font-medium text-gray-600">Status:</span>
+                  <p className="text-sm text-gray-900">{selectedDocument.status || 'Pending'}</p>
                 </div>
               </div>
 
-              {selectedDocument.extractedData && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Extracted Data</h3>
-                  <div className="bg-white border rounded-lg p-4">
-                    {typeof selectedDocument.extractedData === 'object' ? (
-                      <div className="space-y-2">
-                        {Object.entries(selectedDocument.extractedData).map(([key, value]) => (
-                          <div key={key} className="flex justify-between items-center py-1 border-b border-gray-100 last:border-b-0">
-                            <span className="font-medium text-gray-600">
-                              {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
-                            </span>
-                            <span className="text-gray-900">{String(value) || 'N/A'}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <pre className="whitespace-pre-wrap text-sm font-mono">{selectedDocument.extractedData}</pre>
-                    )}
-                  </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Document Information</h3>
+                <div className="bg-white border rounded-lg p-4 text-sm text-gray-600">
+                  This document has been processed and its data has been extracted into the associated shipment.
+                  View the shipment details to see the extracted information.
                 </div>
-              )}
-
-              {selectedDocument.ocrText && !selectedDocument.extractedData && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">OCR Text</h3>
-                  <div className="bg-white border rounded-lg p-4">
-                    <pre className="whitespace-pre-wrap text-sm font-mono">{selectedDocument.ocrText}</pre>
-                  </div>
-                </div>
-              )}
+              </div>
 
               <div className="flex justify-end space-x-2 pt-4">
                 <Button
