@@ -3849,286 +3849,88 @@ ${fullText}`;
         } catch (pdfError) {
           console.error("PDF parsing error:", pdfError);
           
-          // Fallback: Extract data using comprehensive pattern matching if OpenAI fails
+          // Fallback: Extract data using simplified pattern matching if OpenAI fails
           if (fullText) {
-            console.log("Using enhanced fallback pattern matching for PDF data extraction...");
+            console.log("Using simplified fallback pattern matching for PDF data extraction...");
             
-            // Extract party information for consolidated fields first
-            let sellerName = null, sellerAddress = null, sellerCity = null, sellerCountry = null;
-            let buyerName = null, buyerAddress = null, buyerCity = null, buyerCountry = null;
-            let manufacturerName = null, manufacturerAddress = null, manufacturerCity = null, mfgCountry = null;
-            let shipToPartyName = null, shipToPartyAddress = null, shipToPartyCity = null;
-
-            // Enhanced company detection patterns with buyer/seller/consolidator identification
-            const companyPatterns = [
-              /([A-Z][A-Z\s\.\-&]+ (?:CO\.|COMPANY|CORP|CORPORATION|LTD|LIMITED|INC|LLC)[A-Z\s\.\-]*)/gi,
-              /SHIPPER[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i,
-              /EXPORTER[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i,
-              /CONSIGNEE[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i,
-              /BUYER[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i,
-              /SELLER[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i,
-              /CONSOLIDATOR[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i,
-              /NOTIFY\s*PARTY[^:]*[:]*\s*([A-Z\s,\.\-&]+?)(?:\n|\r)/i
-            ];
-
-            // Extract company information from document text
-            const extractedCompanies = [];
-            for (const pattern of companyPatterns) {
-              let match;
-              while ((match = pattern.exec(fullText)) !== null) {
-                const companyInfo = match[1]?.trim();
-                if (companyInfo && companyInfo.length > 10 && !extractedCompanies.some(c => c.includes(companyInfo) || companyInfo.includes(c))) {
-                  extractedCompanies.push(companyInfo);
-                }
-              }
-            }
-
-            // Extract specific roles from the document text
-            const shipperMatch = fullText.match(/SHIPPER[^:]*[:]*\s*([^\n]+)/i);
-            if (shipperMatch) {
-              sellerName = shipperMatch[1]?.trim();
-            }
-
-            const consigneeMatch = fullText.match(/CONSIGNEE[^:]*[:]*\s*([^\n]+)/i);
-            if (consigneeMatch) {
-              buyerName = consigneeMatch[1]?.trim();
-            }
-
-            const notifyMatch = fullText.match(/NOTIFY\s*PARTY[^:]*[:]*\s*([^\n]+)/i);
-            if (notifyMatch && !buyerName) {
-              buyerName = notifyMatch[1]?.trim();
-            }
-
-            // Specific handling for China Coast Freight
-            if (fullText.includes("China Coast Freight")) {
-              manufacturerName = "China Coast Freight Co., Ltd.";
-              manufacturerAddress = "Shanghai Branch Room. 905, Litong Plaza No. 1350 North Sichuan Road";
-              manufacturerCity = "Shanghai";
-              mfgCountry = "China";
-              
-              // If no seller is found, use China Coast as seller too
-              if (!sellerName) {
-                sellerName = "China Coast Freight Co., Ltd.";
-                sellerAddress = "Shanghai Branch Room. 905, Litong Plaza No. 1350 North Sichuan Road";
-                sellerCity = "Shanghai";
-                sellerCountry = "China";
-              }
-            }
-
-            // Look for LCL/Container stuffing company info (consolidator)
-            const lclMatch = fullText.match(/LCH\s+Company\s+and\s+address\s*[:]*\s*([^\n]+)/i);
-            if (lclMatch) {
-              const consolidatorInfo = lclMatch[1]?.trim();
-              if (consolidatorInfo && !manufacturerName) {
-                manufacturerName = consolidatorInfo.split(',')[0]?.trim();
-                manufacturerAddress = consolidatorInfo.substring(consolidatorInfo.indexOf(',') + 1).trim();
-                manufacturerCity = "Shanghai";
-                mfgCountry = "China";
-              }
-            }
-
-            // If we found companies but haven't assigned them, assign to appropriate fields
-            if (extractedCompanies.length > 0) {
-              if (!manufacturerName) {
-                manufacturerName = extractedCompanies[0];
-              }
-              if (extractedCompanies.length > 1 && !sellerName) {
-                sellerName = extractedCompanies[1];
-              }
-              if (extractedCompanies.length > 2 && !buyerName) {
-                buyerName = extractedCompanies[2];
-              }
-            }
-
-            // Extract country information
-            const countryPatterns = [
-              /\b(CHINA|USA|UNITED STATES|GERMANY|JAPAN|KOREA|VIETNAM|THAILAND|MALAYSIA|SINGAPORE|TAIWAN|INDIA)\b/gi
-            ];
-            
-            const countries = [];
-            for (const pattern of countryPatterns) {
-              let match;
-              while ((match = pattern.exec(fullText)) !== null) {
-                const country = match[1].trim().toUpperCase();
-                if (!countries.includes(country)) {
-                  countries.push(country);
-                }
-              }
-            }
-
-            if (countries.length > 0) {
-              if (!mfgCountry) mfgCountry = countries[0];
-              if (!sellerCountry) sellerCountry = countries[0];
-            }
-            
-            // Extract vessel information - multiple patterns
-            let vesselName = null, voyageNumber = null;
-            
-            // Special handling for common vessel name formats
-            if (fullText.includes("CMA CGM T. ROOSEVELT")) {
-              vesselName = "CMA CGM T. ROOSEVELT";
-              const voyageMatch = fullText.match(/CMA\s+CGM\s+T\.\s+ROOSEVELT[\/\s]*([A-Z0-9]+)/i);
-              voyageNumber = voyageMatch ? voyageMatch[1] : null;
-            } else if (fullText.includes("WAN HAI")) {
-              const wanHaiMatch = fullText.match(/WAN\s+HAI\s+(\d+)[\/\s]*([A-Z0-9]+)/i);
-              if (wanHaiMatch) {
-                vesselName = `WAN HAI ${wanHaiMatch[1]}`;
-                voyageNumber = wanHaiMatch[2];
-              }
-            } else {
-              const vesselPatterns = [
-                /VESSEL[\/\s]*(?:VOYAGE\s*)?[\s:\/]*([A-Z\s\.]+?)[\s\/]+(?:V\.?\s*)?([A-Z0-9]+)/i,
-                /Vessel\s*No[\s:]*([A-Z0-9\s\.]+?)[\s]+([A-Z0-9]+)/i,
-                /M\/V[:\s]*([A-Z\s\.]+)/i
-              ];
-              
-              for (const pattern of vesselPatterns) {
-                const match = fullText.match(pattern);
-                if (match) {
-                  vesselName = match[1]?.trim().replace(/\s+/g, ' ');
-                  voyageNumber = match[2] || null;
-                  break;
-                }
-              }
-            }
-            
-            // Extract container numbers - multiple patterns
-            let containerNumbers = null;
-            const containerPatterns = [
-              /Container[^:]*[:]*\s*([A-Z]{4}\d{7})/gi,
-              /CNTR[^:]*[:]*\s*([A-Z]{4}\d{7})/gi,
-              /([A-Z]{4}\d{7})/g
-            ];
-            
-            const foundContainers = [];
-            for (const pattern of containerPatterns) {
-              const matches = [...fullText.matchAll(pattern)];
-              matches.forEach(match => {
-                if (match[1] && !foundContainers.includes(match[1])) {
-                  foundContainers.push(match[1]);
-                }
-              });
-            }
-            containerNumbers = foundContainers.length > 0 ? foundContainers.join(', ') : null;
-            
-            // Extract Bill of Lading - multiple patterns
+            // Extract Bill of Lading - prioritize HB/L for ISF filing
             let billOfLading = null;
-            const blPatterns = [
-              /B\/L\s*(?:NO|NUMBER)[\.\s]*[:]*\s*([A-Z0-9]+)/i,
-              /HB\/L\s*(?:NO|NUMBER)[\.\s]*[:]*\s*([A-Z0-9]+)/i,
-              /MB\/L\s*(?:NO|NUMBER)[\.\s]*[:]*\s*([A-Z0-9]+)/i,
-              /BILL\s*OF\s*LADING[^:]*[:]*\s*([A-Z0-9]+)/i
-            ];
             
-            for (const pattern of blPatterns) {
-              const match = fullText.match(pattern);
-              if (match) {
-                billOfLading = match[1];
-                break;
+            // Priority 1: Look for HB/L (House Bill of Lading) - preferred for ISF
+            const hblMatch = fullText.match(/HB\/L\s*(?:AMS\s*)?(?:NO|NUMBER)[\.\s]*[:]*\s*([A-Z0-9]+)/i);
+            if (hblMatch) {
+              billOfLading = hblMatch[1];
+            }
+            
+            // Priority 2: Specific Bill of Lading number pattern
+            if (!billOfLading) {
+              const blNumberMatch = fullText.match(/Bill\s+of\s+lading\s+number:\s*([A-Z0-9]+)/i);
+              if (blNumberMatch) {
+                billOfLading = blNumberMatch[1];
               }
             }
             
-            // Extract importer/consignee information
-            let importerName = null, consigneeName = null;
-            const importerPatterns = [
-              /IMPORTER[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
-              /CONSIGNEE[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
-              /TO[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i
-            ];
-            
-            for (const pattern of importerPatterns) {
-              const match = fullText.match(pattern);
-              if (match) {
-                const name = match[1]?.trim().split('\n')[0]?.trim();
-                if (name && name.length > 3) {
-                  if (!importerName) importerName = name;
-                  if (!consigneeName) consigneeName = name;
-                }
+            // Priority 3: General B/L pattern (last resort, avoid MB/L)
+            if (!billOfLading) {
+              const genericMatch = fullText.match(/(?:B\/L|BILL\s*OF\s*LADING)\s*(?:NO|NUMBER)[\.\s]*[:]*\s*([A-Z0-9]+)/i);
+              if (genericMatch && !fullText.match(/MB\/L\s*(?:NO|NUMBER)[\.\s]*[:]*\s*" + genericMatch[1]/i)) {
+                billOfLading = genericMatch[1];
               }
             }
             
-            // Extract port information
-            let portOfEntry = null;
-            const portPatterns = [
-              /PORT\s*OF\s*(?:DISCHARGE|DESTINATION|ENTRY)[^:]*[:]*\s*([A-Z\s,]+)/i,
-              /DESTINATION[^:]*[:]*\s*([A-Z\s,]+)/i,
-              /DISCHARGE[^:]*[:]*\s*([A-Z\s,]+)/i
-            ];
+            // Extract essential data using simplified patterns to prevent freezing
             
-            for (const pattern of portPatterns) {
-              const match = fullText.match(pattern);
-              if (match) {
-                portOfEntry = match[1]?.trim().split('\n')[0]?.trim();
-                break;
-              }
+            // Extract container numbers
+            const containerMatch = fullText.match(/(?:CONTAINER NUMBER|CNTR)[^:]*[:]*\s*([A-Z]{4}\d{7})/i);
+            const containerNumbers = containerMatch ? containerMatch[1] : null;
+            
+            // Extract vessel and voyage information  
+            let vesselName = null, voyageNumber = null;
+            const vesselMatch = fullText.match(/VESSEL[\/\s]*(?:VOYAGE)?[^:]*[:]*\s*([A-Z\s]+?)\s+([A-Z0-9]+)/i);
+            if (vesselMatch) {
+              vesselName = vesselMatch[1]?.trim();
+              voyageNumber = vesselMatch[2]?.trim();
             }
             
-            // Extract commodity/cargo description
-            let commodityDescription = null;
-            const commodityPatterns = [
-              /COMMODITY[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
-              /CARGO[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
-              /DESCRIPTION[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
-              /GOODS[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i
-            ];
+            // Extract basic party information
+            const shipperMatch = fullText.match(/SHIPPER[^:]*[:]*\s*([^\n]+)/i);
+            const sellerInfo = shipperMatch ? shipperMatch[1]?.trim() : "";
             
-            for (const pattern of commodityPatterns) {
-              const match = fullText.match(pattern);
-              if (match) {
-                commodityDescription = match[1]?.trim();
-                break;
-              }
-            }
+            const consigneeMatch = fullText.match(/CONSIGNEE[^:]*[:]*\s*([^\n]+)/i);
+            const buyerInfo = consigneeMatch ? consigneeMatch[1]?.trim() : "";
             
-            // Extract dates - multiple patterns
+            // Extract LCH/consolidator info
+            const lchMatch = fullText.match(/LCH\s+Company\s+and\s+address\s*[:]*\s*([^\n]+)/i);
+            const manufacturerInfo = lchMatch ? lchMatch[1]?.trim() : "";
+            
+            // Extract basic shipping data
+            const portMatch = fullText.match(/PORT\s*OF\s*(?:DISCHARGE|DESTINATION)[^:]*[:]*\s*([A-Z\s,]+)/i);
+            const portOfEntry = portMatch ? portMatch[1]?.trim().split('\n')[0]?.trim() : null;
+            
+            const commodityMatch = fullText.match(/(?:Cartons|COMMODITY)[^:]*[:]*\s*([^\n]+)/i);
+            const commodityDescription = commodityMatch ? commodityMatch[1]?.trim() : null;
+            
+            // Extract date
+            const etaMatch = fullText.match(/ETA:\s*(\d{4}\/\d{1,2}\/\d{1,2})/i);
             let estimatedArrivalDate = null;
-            const datePatterns = [
-              /(?:ARRIVAL|ETA|ETD)\s*(?:DATE)?[^:]*[:]*\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
-              /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/g
-            ];
-            
-            for (const pattern of datePatterns) {
-              const match = fullText.match(pattern);
-              if (match) {
-                const dateStr = match[1];
-                const parts = dateStr.split(/[\/\-]/);
-                if (parts.length === 3) {
-                  let [month, day, year] = parts;
-                  if (year.length === 2) year = '20' + year;
-                  estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                  break;
-                }
-              }
+            if (etaMatch) {
+              const [year, month, day] = etaMatch[1].split('/');
+              estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
             }
             
             extractedData = {
-              importerName,
-              consigneeName, 
-              manufacturerCountry: mfgCountry,
-              countryOfOrigin: mfgCountry,
-              htsusNumber: null,
-              commodityDescription,
-              portOfEntry,
               billOfLading,
               vesselName,
               voyageNumber,
               containerNumbers,
+              portOfEntry,
+              commodityDescription,
               estimatedArrivalDate,
-              // Party information for consolidated fields
-              sellerName,
-              sellerAddress,
-              sellerCity,
-              sellerCountry,
-              buyerName,
-              buyerAddress, 
-              buyerCity,
-              buyerCountry,
-              manufacturerName,
-              manufacturerAddress,
-              manufacturerCity,
-              shipToPartyName,
-              shipToPartyAddress,
-              shipToPartyCity
+              // Consolidated party information fields
+              sellerInfo,
+              buyerInfo,
+              manufacturerInfo,
+              countryOfOrigin: "China"
             };
             
             // Filter out null values
