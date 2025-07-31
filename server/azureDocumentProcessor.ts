@@ -175,11 +175,12 @@ export class AzureDocumentProcessor {
     
     // Bill of Lading patterns - more comprehensive
     const blPatterns = [
+      /BILL\s+OF\s+LADING\s+NUMBER\s+(\d+)/i,
       /B\/L\s*(?:No\.?|Number|#)\s*:?\s*([A-Z0-9-]+)/i,
       /Bill\s+of\s+Lading\s*(?:No\.?|Number|#)?\s*:?\s*([A-Z0-9-]+)/i,
       /BL\s*(?:No\.?|Number|#)?\s*:?\s*([A-Z0-9-]+)/i,
       /BOOKING\s*(?:No\.?|Number|#)?\s*:?\s*([A-Z0-9-]+)/i,
-      /^([A-Z]{2,4}\d{8,12})$/i  // Pattern for standalone BL numbers
+      /^(\d{8,12})$/i  // Pattern for standalone BL numbers
     ];
     
     for (const line of lines) {
@@ -287,6 +288,7 @@ export class AzureDocumentProcessor {
     
     // Company name patterns
     const shipperPatterns = [
+      /SHIPPER\s+([A-Z][A-Z\s&.,\-]+?)\s+ADD:/i,
       /Shipper\s*:?\s*([A-Za-z][A-Za-z\s&.,\-]+?)(?:\s*Address|\n|$)/i,
       /Consignor\s*:?\s*([A-Za-z][A-Za-z\s&.,\-]+?)(?:\s*Address|\n|$)/i,
       /Exporter\s*:?\s*([A-Za-z][A-Za-z\s&.,\-]+?)(?:\s*Address|\n|$)/i
@@ -307,6 +309,7 @@ export class AzureDocumentProcessor {
     }
     
     const consigneePatterns = [
+      /CONSIGNEE\s+([A-Z][A-Z\s&.,\-]+?)(?:\s+\d|\n|$)/i,
       /Consignee\s*:?\s*([A-Za-z][A-Za-z\s&.,\-]+?)(?:\s*Address|\n|$)/i,
       /Notify\s+Party\s*:?\s*([A-Za-z][A-Za-z\s&.,\-]+?)(?:\s*Address|\n|$)/i,
       /Importer\s*:?\s*([A-Za-z][A-Za-z\s&.,\-]+?)(?:\s*Address|\n|$)/i
@@ -449,52 +452,80 @@ export class AzureDocumentProcessor {
   }
 
   /**
-   * Validate and clean extracted data
+   * Validate and clean extracted data, ensuring fields don't exceed database limits
    */
   private validateAndCleanData(data: ExtractedShipmentData): ExtractedShipmentData {
     const cleanData: ExtractedShipmentData = {};
     
-    // Clean and validate each field
+    // Define field length limits based on database schema (prevent varchar(255) errors)
+    const fieldLimits = {
+      billOfLading: 100,
+      vesselName: 100,
+      voyage: 50,
+      containerNumber: 50,
+      origin: 100,
+      destination: 100,
+      portOfLoading: 100,
+      portOfDischarge: 100,
+      shipperName: 200,
+      consigneeName: 200,
+      cargoDescription: 250,
+      weight: 50,
+      packageCount: 50,
+      countryOfOrigin: 100,
+      value: 50
+    };
+    
+    // Helper function to truncate text safely
+    const truncateField = (text: string, limit: number): string => {
+      if (!text) return text;
+      const cleaned = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+      if (cleaned.length <= limit) return cleaned;
+      return cleaned.substring(0, limit - 3) + '...';
+    };
+    
+    // Clean and validate each field with length limits
     if (data.billOfLading && data.billOfLading.length > 3) {
-      cleanData.billOfLading = data.billOfLading.replace(/[^\w-]/g, '').toUpperCase();
+      cleanData.billOfLading = truncateField(data.billOfLading.replace(/[^\w-]/g, '').toUpperCase(), fieldLimits.billOfLading);
     }
     
     if (data.vesselName && data.vesselName.length > 2) {
-      cleanData.vesselName = data.vesselName.replace(/[^\w\s-]/g, '').trim();
+      cleanData.vesselName = truncateField(data.vesselName, fieldLimits.vesselName);
     }
     
-    if (data.containerNumber && /^[A-Z]{4}\d{7}/.test(data.containerNumber)) {
-      cleanData.containerNumber = data.containerNumber.toUpperCase();
+    if (data.containerNumber && data.containerNumber.length > 3) {
+      cleanData.containerNumber = truncateField(data.containerNumber.toUpperCase(), fieldLimits.containerNumber);
     }
     
     if (data.origin && data.origin.length > 2) {
-      cleanData.origin = data.origin.trim();
+      cleanData.origin = truncateField(data.origin, fieldLimits.origin);
     }
     
     if (data.destination && data.destination.length > 2) {
-      cleanData.destination = data.destination.trim();
+      cleanData.destination = truncateField(data.destination, fieldLimits.destination);
     }
     
     if (data.shipperName && data.shipperName.length > 2) {
-      cleanData.shipperName = data.shipperName.trim();
+      cleanData.shipperName = truncateField(data.shipperName, fieldLimits.shipperName);
     }
     
     if (data.consigneeName && data.consigneeName.length > 2) {
-      cleanData.consigneeName = data.consigneeName.trim();
+      cleanData.consigneeName = truncateField(data.consigneeName, fieldLimits.consigneeName);
     }
     
     if (data.cargoDescription && data.cargoDescription.length > 2) {
-      cleanData.cargoDescription = data.cargoDescription.trim();
+      cleanData.cargoDescription = truncateField(data.cargoDescription, fieldLimits.cargoDescription);
     }
     
     if (data.weight && data.weight.length > 0) {
-      cleanData.weight = data.weight.trim();
+      cleanData.weight = truncateField(data.weight, fieldLimits.weight);
     }
     
     if (data.eta && data.eta.length > 0) {
-      cleanData.eta = data.eta.trim();
+      cleanData.eta = truncateField(data.eta, 50);
     }
     
+    console.log('Cleaned and validated data:', cleanData);
     return cleanData;
   }
 }
