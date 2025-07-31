@@ -1254,42 +1254,6 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
               />
             </CardContent>
           </Card>
-
-
-
-
-
-
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="terms"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Terms of Sale</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select terms" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="FOB">FOB - Free on Board</SelectItem>
-                        <SelectItem value="CIF">CIF - Cost, Insurance & Freight</SelectItem>
-                        <SelectItem value="CFR">CFR - Cost and Freight</SelectItem>
-                        <SelectItem value="EXW">EXW - Ex Works</SelectItem>
-                        <SelectItem value="FCA">FCA - Free Carrier</SelectItem>
-                        <SelectItem value="DDP">DDP - Delivered Duty Paid</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
           
           {/* Submit Button */}
           <div className="flex justify-end pt-6">
