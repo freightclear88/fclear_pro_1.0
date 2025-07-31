@@ -3849,45 +3849,143 @@ ${fullText}`;
         } catch (pdfError) {
           console.error("PDF parsing error:", pdfError);
           
-          // Fallback: Extract data using pattern matching if OpenAI fails
+          // Fallback: Extract data using comprehensive pattern matching if OpenAI fails
           if (fullText) {
-            console.log("Using fallback pattern matching for PDF data extraction...");
+            console.log("Using enhanced fallback pattern matching for PDF data extraction...");
             
-            // Extract vessel information
-            const vesselMatch = fullText.match(/Vessel[\/\s]*(?:voyage\s*)?[\s:]*([A-Z\s]+)\s+V?\.?(\w+)/i);
+            // Extract vessel information - multiple patterns
             let vesselName = null, voyageNumber = null;
-            if (vesselMatch) {
-              vesselName = vesselMatch[1].trim();
-              voyageNumber = vesselMatch[2];
+            const vesselPatterns = [
+              /VESSEL[\/\s]*(?:VOYAGE\s*)?[\s:\/]*([A-Z\s\.]+?)[\s\/]+(?:V\.?\s*)?([A-Z0-9]+)/i,
+              /Vessel[^:]*[:]*\s*([A-Z\s\.]+)\s*\/?\s*([A-Z0-9]+)/i,
+              /M\/V[:\s]*([A-Z\s\.]+)/i
+            ];
+            
+            for (const pattern of vesselPatterns) {
+              const match = fullText.match(pattern);
+              if (match) {
+                vesselName = match[1]?.trim().replace(/\s+/g, ' ');
+                voyageNumber = match[2] || null;
+                break;
+              }
             }
             
-            // Extract container number
-            const containerMatch = fullText.match(/Container[^:]*[:]*\s*([A-Z]{4}\d{7})/i);
-            const containerNumbers = containerMatch ? containerMatch[1] : null;
+            // Extract container numbers - multiple patterns
+            let containerNumbers = null;
+            const containerPatterns = [
+              /Container[^:]*[:]*\s*([A-Z]{4}\d{7})/gi,
+              /CNTR[^:]*[:]*\s*([A-Z]{4}\d{7})/gi,
+              /([A-Z]{4}\d{7})/g
+            ];
             
-            // Extract Bill of Lading
-            const blMatch = fullText.match(/(?:HB\/L|MB\/L|BL)\s*NO[\.\s]*[:]*\s*([A-Z0-9]+)/i);
-            const billOfLading = blMatch ? blMatch[1] : null;
+            const foundContainers = [];
+            for (const pattern of containerPatterns) {
+              const matches = [...fullText.matchAll(pattern)];
+              matches.forEach(match => {
+                if (match[1] && !foundContainers.includes(match[1])) {
+                  foundContainers.push(match[1]);
+                }
+              });
+            }
+            containerNumbers = foundContainers.length > 0 ? foundContainers.join(', ') : null;
             
-            // Extract destination port
-            const portMatch = fullText.match(/(?:Destinat|Destination)[^:]*[:]*\s*([A-Z\s,]+)/i);
-            const portOfEntry = portMatch ? portMatch[1].trim() : "TBD";
+            // Extract Bill of Lading - multiple patterns
+            let billOfLading = null;
+            const blPatterns = [
+              /B\/L\s*(?:NO|NUMBER)[\.\s]*[:]*\s*([A-Z0-9]+)/i,
+              /HB\/L\s*(?:NO|NUMBER)[\.\s]*[:]*\s*([A-Z0-9]+)/i,
+              /MB\/L\s*(?:NO|NUMBER)[\.\s]*[:]*\s*([A-Z0-9]+)/i,
+              /BILL\s*OF\s*LADING[^:]*[:]*\s*([A-Z0-9]+)/i
+            ];
             
-            // Extract arrival date
-            const dateMatch = fullText.match(/Arrival\s+date[^:]*[:]*\s*(\d{1,2}\/\d{1,2}\/\d{4})/i);
+            for (const pattern of blPatterns) {
+              const match = fullText.match(pattern);
+              if (match) {
+                billOfLading = match[1];
+                break;
+              }
+            }
+            
+            // Extract importer/consignee information
+            let importerName = null, consigneeName = null;
+            const importerPatterns = [
+              /IMPORTER[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
+              /CONSIGNEE[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
+              /TO[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i
+            ];
+            
+            for (const pattern of importerPatterns) {
+              const match = fullText.match(pattern);
+              if (match) {
+                const name = match[1]?.trim().split('\n')[0]?.trim();
+                if (name && name.length > 3) {
+                  if (!importerName) importerName = name;
+                  if (!consigneeName) consigneeName = name;
+                }
+              }
+            }
+            
+            // Extract port information
+            let portOfEntry = null;
+            const portPatterns = [
+              /PORT\s*OF\s*(?:DISCHARGE|DESTINATION|ENTRY)[^:]*[:]*\s*([A-Z\s,]+)/i,
+              /DESTINATION[^:]*[:]*\s*([A-Z\s,]+)/i,
+              /DISCHARGE[^:]*[:]*\s*([A-Z\s,]+)/i
+            ];
+            
+            for (const pattern of portPatterns) {
+              const match = fullText.match(pattern);
+              if (match) {
+                portOfEntry = match[1]?.trim().split('\n')[0]?.trim();
+                break;
+              }
+            }
+            
+            // Extract commodity/cargo description
+            let commodityDescription = null;
+            const commodityPatterns = [
+              /COMMODITY[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
+              /CARGO[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
+              /DESCRIPTION[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
+              /GOODS[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i
+            ];
+            
+            for (const pattern of commodityPatterns) {
+              const match = fullText.match(pattern);
+              if (match) {
+                commodityDescription = match[1]?.trim();
+                break;
+              }
+            }
+            
+            // Extract dates - multiple patterns
             let estimatedArrivalDate = null;
-            if (dateMatch) {
-              const [month, day, year] = dateMatch[1].split('/');
-              estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            const datePatterns = [
+              /(?:ARRIVAL|ETA|ETD)\s*(?:DATE)?[^:]*[:]*\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+              /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/g
+            ];
+            
+            for (const pattern of datePatterns) {
+              const match = fullText.match(pattern);
+              if (match) {
+                const dateStr = match[1];
+                const parts = dateStr.split(/[\/\-]/);
+                if (parts.length === 3) {
+                  let [month, day, year] = parts;
+                  if (year.length === 2) year = '20' + year;
+                  estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                  break;
+                }
+              }
             }
             
             extractedData = {
-              importerName: 'TBD',
-              consigneeName: 'TBD', 
-              manufacturerCountry: 'TBD',
-              countryOfOrigin: 'TBD',
-              htsusNumber: 'TBD',
-              commodityDescription: 'TBD',
+              importerName,
+              consigneeName, 
+              manufacturerCountry: null,
+              countryOfOrigin: null,
+              htsusNumber: null,
+              commodityDescription,
               portOfEntry,
               billOfLading,
               vesselName,
@@ -3895,6 +3993,11 @@ ${fullText}`;
               containerNumbers,
               estimatedArrivalDate
             };
+            
+            // Filter out null values
+            extractedData = Object.fromEntries(
+              Object.entries(extractedData).filter(([_, value]) => value !== null && value !== "")
+            );
           } else {
             extractedData = {
               importerName: "Data extraction in progress",
@@ -3974,45 +4077,143 @@ ${fullText}`;
         } catch (docError) {
           console.error("DOC/DOCX processing error:", docError);
           
-          // Fallback: Attempt basic text extraction if AI processing fails
+          // Fallback: Enhanced pattern matching for DOC/DOCX data extraction if AI processing fails
           if (fullText) {
-            console.log("Using fallback pattern matching for DOC/DOCX data extraction...");
+            console.log("Using enhanced fallback pattern matching for DOC/DOCX data extraction...");
             
-            // Extract vessel information
-            const vesselMatch = fullText.match(/Vessel[\/\s]*(?:voyage\s*)?[\s:]*([A-Z\s]+)\s+V?\.?(\w+)/i);
+            // Extract vessel information - multiple patterns
             let vesselName = null, voyageNumber = null;
-            if (vesselMatch) {
-              vesselName = vesselMatch[1].trim();
-              voyageNumber = vesselMatch[2];
+            const vesselPatterns = [
+              /VESSEL[\/\s]*(?:VOYAGE\s*)?[\s:\/]*([A-Z\s\.]+?)[\s\/]+(?:V\.?\s*)?([A-Z0-9]+)/i,
+              /Vessel[^:]*[:]*\s*([A-Z\s\.]+)\s*\/?\s*([A-Z0-9]+)/i,
+              /M\/V[:\s]*([A-Z\s\.]+)/i
+            ];
+            
+            for (const pattern of vesselPatterns) {
+              const match = fullText.match(pattern);
+              if (match) {
+                vesselName = match[1]?.trim().replace(/\s+/g, ' ');
+                voyageNumber = match[2] || null;
+                break;
+              }
             }
             
-            // Extract container number
-            const containerMatch = fullText.match(/Container[^:]*[:]*\s*([A-Z]{4}\d{7})/i);
-            const containerNumbers = containerMatch ? containerMatch[1] : null;
+            // Extract container numbers - multiple patterns
+            let containerNumbers = null;
+            const containerPatterns = [
+              /Container[^:]*[:]*\s*([A-Z]{4}\d{7})/gi,
+              /CNTR[^:]*[:]*\s*([A-Z]{4}\d{7})/gi,
+              /([A-Z]{4}\d{7})/g
+            ];
             
-            // Extract Bill of Lading
-            const blMatch = fullText.match(/(?:HB\/L|MB\/L|BL)\s*NO[\.\s]*[:]*\s*([A-Z0-9]+)/i);
-            const billOfLading = blMatch ? blMatch[1] : null;
+            const foundContainers = [];
+            for (const pattern of containerPatterns) {
+              const matches = [...fullText.matchAll(pattern)];
+              matches.forEach(match => {
+                if (match[1] && !foundContainers.includes(match[1])) {
+                  foundContainers.push(match[1]);
+                }
+              });
+            }
+            containerNumbers = foundContainers.length > 0 ? foundContainers.join(', ') : null;
             
-            // Extract destination port
-            const portMatch = fullText.match(/(?:Destinat|Destination)[^:]*[:]*\s*([A-Z\s,]+)/i);
-            const portOfEntry = portMatch ? portMatch[1].trim() : null;
+            // Extract Bill of Lading - multiple patterns
+            let billOfLading = null;
+            const blPatterns = [
+              /B\/L\s*(?:NO|NUMBER)[\.\s]*[:]*\s*([A-Z0-9]+)/i,
+              /HB\/L\s*(?:NO|NUMBER)[\.\s]*[:]*\s*([A-Z0-9]+)/i,
+              /MB\/L\s*(?:NO|NUMBER)[\.\s]*[:]*\s*([A-Z0-9]+)/i,
+              /BILL\s*OF\s*LADING[^:]*[:]*\s*([A-Z0-9]+)/i
+            ];
             
-            // Extract arrival date
-            const dateMatch = fullText.match(/Arrival\s+date[^:]*[:]*\s*(\d{1,2}\/\d{1,2}\/\d{4})/i);
+            for (const pattern of blPatterns) {
+              const match = fullText.match(pattern);
+              if (match) {
+                billOfLading = match[1];
+                break;
+              }
+            }
+            
+            // Extract importer/consignee information
+            let importerName = null, consigneeName = null;
+            const importerPatterns = [
+              /IMPORTER[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
+              /CONSIGNEE[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
+              /TO[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i
+            ];
+            
+            for (const pattern of importerPatterns) {
+              const match = fullText.match(pattern);
+              if (match) {
+                const name = match[1]?.trim().split('\n')[0]?.trim();
+                if (name && name.length > 3) {
+                  if (!importerName) importerName = name;
+                  if (!consigneeName) consigneeName = name;
+                }
+              }
+            }
+            
+            // Extract port information
+            let portOfEntry = null;
+            const portPatterns = [
+              /PORT\s*OF\s*(?:DISCHARGE|DESTINATION|ENTRY)[^:]*[:]*\s*([A-Z\s,]+)/i,
+              /DESTINATION[^:]*[:]*\s*([A-Z\s,]+)/i,
+              /DISCHARGE[^:]*[:]*\s*([A-Z\s,]+)/i
+            ];
+            
+            for (const pattern of portPatterns) {
+              const match = fullText.match(pattern);
+              if (match) {
+                portOfEntry = match[1]?.trim().split('\n')[0]?.trim();
+                break;
+              }
+            }
+            
+            // Extract commodity/cargo description
+            let commodityDescription = null;
+            const commodityPatterns = [
+              /COMMODITY[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
+              /CARGO[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
+              /DESCRIPTION[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i,
+              /GOODS[^:]*[:]*\s*([A-Z\s,\.]+?)(?:\n|$)/i
+            ];
+            
+            for (const pattern of commodityPatterns) {
+              const match = fullText.match(pattern);
+              if (match) {
+                commodityDescription = match[1]?.trim();
+                break;
+              }
+            }
+            
+            // Extract dates - multiple patterns
             let estimatedArrivalDate = null;
-            if (dateMatch) {
-              const [month, day, year] = dateMatch[1].split('/');
-              estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            const datePatterns = [
+              /(?:ARRIVAL|ETA|ETD)\s*(?:DATE)?[^:]*[:]*\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+              /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/g
+            ];
+            
+            for (const pattern of datePatterns) {
+              const match = fullText.match(pattern);
+              if (match) {
+                const dateStr = match[1];
+                const parts = dateStr.split(/[\/\-]/);
+                if (parts.length === 3) {
+                  let [month, day, year] = parts;
+                  if (year.length === 2) year = '20' + year;
+                  estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                  break;
+                }
+              }
             }
             
             extractedData = {
-              importerName: null,
-              consigneeName: null, 
+              importerName,
+              consigneeName, 
               manufacturerCountry: null,
               countryOfOrigin: null,
               htsusNumber: null,
-              commodityDescription: null,
+              commodityDescription,
               portOfEntry,
               billOfLading,
               vesselName,
@@ -4023,7 +4224,7 @@ ${fullText}`;
             
             // Filter out null values
             extractedData = Object.fromEntries(
-              Object.entries(extractedData).filter(([_, value]) => value !== null)
+              Object.entries(extractedData).filter(([_, value]) => value !== null && value !== "")
             );
           } else {
             extractedData = {};
