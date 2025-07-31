@@ -1158,8 +1158,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdShipment = await storage.createShipment({
           userId,
           shipmentId: generatedShipmentId,
-          origin: 'Processing',
-          destination: 'Processing',
+          portOfLoading: 'Processing',
+          portOfDischarge: 'Processing',
           transportMode,
           status: 'pending',
         });

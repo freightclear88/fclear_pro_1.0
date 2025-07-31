@@ -655,6 +655,15 @@ export class AzureDocumentProcessor {
       }
     }
     
+    // Combine vessel and voyage data into vesselAndVoyage field
+    if (vesselName && voyageNumber) {
+      data.vesselAndVoyage = `${vesselName} ${voyageNumber}`;
+    } else if (vesselName) {
+      data.vesselAndVoyage = vesselName;
+    } else if (voyageNumber) {
+      data.vesselAndVoyage = `Voyage ${voyageNumber}`;
+    }
+    
     // Set country of origin based on shipper location
     if (data.shipperName && data.shipperName.includes('CHINA')) {
       data.countryOfOrigin = 'China';
