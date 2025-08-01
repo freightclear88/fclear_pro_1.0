@@ -72,10 +72,14 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
     
     if (data && typeof data === 'object') {
       // Check if this looks like Azure nested structure
-      if (data.shipper || data.consignee || data.bill_of_lading_no || data.vessel_voyage) {
+      if (data.shipper || data.consignee || data.bill_of_lading_no || data.vessel_voyage || 
+          data.particulars_furnished_by_shipper || data.contact_for_release || 
+          Object.keys(data).some(key => typeof data[key] === 'object' && data[key] !== null)) {
         console.log(`Processing Azure nested data with ${Object.keys(data).length} top-level fields`);
+        console.log('Azure data keys:', Object.keys(data));
         extractedFields = flattenAzureData(data);
         console.log(`Flattened to ${Object.keys(extractedFields).length} mapped fields:`, Object.keys(extractedFields));
+        console.log('Mapped field values:', extractedFields);
       } else if (Object.keys(data).length === 0) {
         // Empty Azure response - skip this document entirely
         console.log(`Skipping empty Azure data from ${fileName}`);
@@ -196,7 +200,9 @@ function mapAzureFieldToShipment(prefix: string, field: string): string | null {
   
   // Create full field path for nested objects
   const fullPath = prefix ? `${prefix}.${field}` : field;
-  return mappings[fullPath] || mappings[field] || null;
+  const result = mappings[fullPath] || mappings[field] || null;
+  console.log(`Field mapping: "${fullPath}" -> "${result}"`);
+  return result;
 }
 
 // Zendesk API configuration
