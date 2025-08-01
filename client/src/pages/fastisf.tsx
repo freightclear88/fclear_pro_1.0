@@ -128,9 +128,10 @@ const US_PORTS = [
 
 function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
   const { toast } = useToast();
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [extractedData, setExtractedData] = useState<any>(null);
+  const [processedDocuments, setProcessedDocuments] = useState<any[]>([]);
 
   const form = useForm<IsfFormData>({
     resolver: zodResolver(isfFormSchema),
@@ -193,10 +194,10 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
     },
   });
 
-  // File upload handler for PDF scanning
+  // Multi-file upload handler for comprehensive ISF data extraction
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
 
     // Accept PDF, Excel, DOC, and image files
     const allowedTypes = [
@@ -210,36 +211,55 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       'image/png'
     ];
     
-    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|xls|xlsx|doc|docx|jpg|jpeg|png)$/i)) {
+    // Validate all files
+    const invalidFiles = files.filter(file => 
+      !allowedTypes.includes(file.type) && 
+      !file.name.match(/\.(pdf|xls|xlsx|doc|docx|jpg|jpeg|png)$/i)
+    );
+    
+    if (invalidFiles.length > 0) {
       toast({
         title: "Invalid file type",
-        description: "Please upload PDF, Excel, DOC, or image files (JPG, PNG)",
+        description: `Please upload only PDF, Excel, DOC, or image files. Invalid: ${invalidFiles.map(f => f.name).join(', ')}`,
         variant: "destructive",
       });
       return;
     }
 
-    setUploadedFile(file);
+    if (files.length > 10) {
+      toast({
+        title: "Too Many Files",
+        description: "Please upload a maximum of 10 documents at once.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadedFiles(files);
     setIsScanning(true);
+    setProcessedDocuments([]);
 
     try {
       const formData = new FormData();
-      formData.append("isfDocument", file);
+      files.forEach(file => {
+        formData.append("isfDocuments", file);
+      });
 
-      const response = await fetch("/api/isf/scan-document", {
+      const response = await fetch("/api/isf/scan-documents", {
         method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error("Failed to scan document");
+        throw new Error("Failed to process documents");
       }
 
       const result = await response.json();
       
-      // Handle the response with extracted data
+      // Handle the multi-document response with consolidated extracted data
       if (result.success && result.extractedData) {
-        console.log("Extracted data received:", result.extractedData);
+        console.log("Consolidated data received:", result.extractedData);
+        setProcessedDocuments(result.processedDocuments || []);
         
         // Map extracted data to form fields - comprehensive mapping for all OpenAI extracted fields
         const fieldMapping: Record<string, string> = {
@@ -258,9 +278,16 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           amsNumber: 'amsNumber',
           containerStuffingLocation: 'containerStuffingLocation',
           consolidatorStufferInfo: 'consolidatorStufferInfo',
-          // Additional comprehensive fields from OpenAI extraction
+          // Enhanced party information fields
           importerName: 'importerName',
+          importerAddress: 'importerAddress',
           consigneeName: 'consigneeName',
+          consigneeAddress: 'consigneeAddress',
+          manufacturerInformation: 'manufacturerInformation',
+          sellerInformation: 'sellerInformation',
+          buyerInformation: 'buyerInformation',
+          shipToPartyInformation: 'shipToPartyInformation',
+          // Additional comprehensive fields from OpenAI extraction
           foreignPortOfLading: 'foreignPortOfLading',
           bookingNumber: 'bookingReference',
           containerType: 'containerType',
@@ -456,8 +483,8 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         }, 200);
 
         toast({
-          title: "Document Scanned Successfully",
-          description: `Extracted shipping data from ${file.name}. Review and complete the remaining fields before submitting.`,
+          title: "Documents Processed Successfully",
+          description: `Processed ${files.length} document(s) and extracted ${result.consolidatedFields} ISF fields. Review and complete any missing information.`,
         });
         
         return;
@@ -490,10 +517,10 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         if (value) formData.append(key, value);
       });
 
-      // Add uploaded file if present
-      if (uploadedFile) {
-        formData.append("isfDocument", uploadedFile);
-      }
+      // Add uploaded files if present
+      uploadedFiles.forEach(file => {
+        formData.append("isfDocuments", file);
+      });
 
       // Use fetch directly for FormData since apiRequest expects JSON
       const response = await fetch("/api/isf/create", {
@@ -532,15 +559,15 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {/* Document Upload Section */}
+        {/* Multi-Document Upload Section */}
         <Card className="border-2 border-dashed border-gray-200 bg-gradient-to-br from-teal-50 to-cyan-50">
           <CardHeader>
             <CardTitle className="flex items-center text-teal-700">
               <FileUp className="w-5 h-5 mr-2" />
-              Upload ISF Document (Optional)
+              Upload ISF Documents (Optional)
             </CardTitle>
             <CardDescription>
-              Upload your ISF document (PDF, Excel, DOC, or image files) and our AI system will automatically extract ISF data
+              Upload multiple shipping documents (Bill of Lading, Commercial Invoice, Packing List, etc.) for comprehensive ISF data extraction
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -550,20 +577,20 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                   {isScanning ? (
                     <>
                       <Clock className="w-8 h-8 mb-2 text-teal-500 animate-pulse" />
-                      <p className="text-sm text-teal-600">Scanning document...</p>
+                      <p className="text-sm text-teal-600">Processing documents...</p>
                     </>
-                  ) : uploadedFile ? (
+                  ) : uploadedFiles.length > 0 ? (
                     <>
                       <CheckCircle className="w-8 h-8 mb-2 text-green-500" />
-                      <p className="text-sm text-gray-700 font-medium">{uploadedFile.name}</p>
-                      <p className="text-xs text-gray-500">Document uploaded successfully</p>
+                      <p className="text-sm text-gray-700 font-medium">{uploadedFiles.length} document(s) uploaded</p>
+                      <p className="text-xs text-gray-500">Documents processed successfully</p>
                       {extractedData && (
                         <div className="mt-2 p-2 bg-green-100 border border-green-300 rounded text-xs">
-                          <p className="text-green-700 font-medium">✓ Data extracted and populated in form</p>
+                          <p className="text-green-700 font-medium">✓ Data consolidated from multiple documents</p>
                           <p className="text-green-600">
-                            Vessel: {extractedData.vesselName} | 
-                            Voyage: {extractedData.voyageNumber} |
-                            Container: {extractedData.containerNumbers}
+                            {extractedData.vesselName && `Vessel: ${extractedData.vesselName}`}
+                            {extractedData.voyageNumber && ` | Voyage: ${extractedData.voyageNumber}`}
+                            {extractedData.containerNumbers && ` | Container: ${extractedData.containerNumbers}`}
                           </p>
                         </div>
                       )}
@@ -572,7 +599,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                     <>
                       <Upload className="w-8 h-8 mb-2 text-gray-400" />
                       <p className="mb-2 text-sm text-gray-500">
-                        <span className="font-semibold">Click to upload</span> ISF document
+                        <span className="font-semibold">Click to upload</span> ISF documents (up to 10)
                       </p>
                       <p className="text-xs text-gray-500">PDF, Excel, DOC, JPG, PNG files supported</p>
                     </>
@@ -584,9 +611,34 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                   accept=".pdf,.xls,.xlsx,.doc,.docx,.jpg,.jpeg,.png"
                   onChange={handleFileUpload}
                   disabled={isScanning}
+                  multiple
                 />
               </label>
             </div>
+            
+            {/* Document Processing Summary */}
+            {processedDocuments.length > 0 && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Document Processing Summary:</h4>
+                <div className="space-y-1">
+                  {processedDocuments.map((doc, index) => (
+                    <div key={index} className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600">{doc.fileName}</span>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant={doc.error ? "destructive" : "secondary"} className="text-xs">
+                          {doc.error ? "Error" : `${doc.extractedFields} fields`}
+                        </Badge>
+                        {doc.error ? (
+                          <AlertCircle className="w-3 h-3 text-red-500" />
+                        ) : (
+                          <CheckCircle className="w-3 h-3 text-green-500" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

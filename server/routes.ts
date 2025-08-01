@@ -4518,6 +4518,163 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Multi-document ISF scan route (similar to shipment document upload)
+  app.post('/api/isf/scan-documents', requireSubscription, upload.array('isfDocuments', 10), async (req: any, res) => {
+    try {
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        return res.status(400).json({ error: "No documents uploaded" });
+      }
+
+      const userId = getUserId(req);
+      console.log(`Processing ${files.length} ISF documents for comprehensive data extraction`);
+      
+      const allExtractedData: any[] = [];
+      const processedDocuments: any[] = [];
+
+      // Process each document
+      for (const file of files) {
+        console.log(`Processing ISF document: ${file.originalname}`);
+        
+        const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
+        let extractedData: any = {};
+        
+        try {
+          // Use our enhanced AI document processor for comprehensive extraction
+          const extractedShipmentData = await aiDocProcessor.extractShipmentData(
+            file.path, 
+            `ISF Document - ${file.originalname}`
+          );
+          
+          console.log(`Extracted data from ${file.originalname}:`, extractedShipmentData);
+          
+          // Map to ISF fields using the same enhanced mapping
+          const aiExtractedData = {
+            // Core importer information - Enhanced field mapping
+            importerName: extractedShipmentData.importerName || extractedShipmentData.consigneeName || extractedShipmentData.importer_name || null,
+            importerAddress: extractedShipmentData.importerAddress || extractedShipmentData.consigneeAddress || null,
+            consigneeName: extractedShipmentData.consigneeName || extractedShipmentData.consignee_name || null,
+            consigneeAddress: extractedShipmentData.consigneeAddress || extractedShipmentData.consignee_address || null,
+            
+            // Manufacturer and party information - Enhanced mappings
+            manufacturerCountry: extractedShipmentData.manufacturerCountry || extractedShipmentData.countryOfOrigin || extractedShipmentData.country_of_origin || null,
+            countryOfOrigin: extractedShipmentData.countryOfOrigin || extractedShipmentData.country_of_origin || null,
+            manufacturerInformation: extractedShipmentData.manufacturerName && extractedShipmentData.manufacturerAddress ? 
+              `${extractedShipmentData.manufacturerName}\n${extractedShipmentData.manufacturerAddress}` : 
+              extractedShipmentData.manufacturerName || extractedShipmentData.manufacturer_name || null,
+            sellerInformation: extractedShipmentData.sellerName && extractedShipmentData.sellerAddress ? 
+              `${extractedShipmentData.sellerName}\n${extractedShipmentData.sellerAddress}` : 
+              extractedShipmentData.sellerName || extractedShipmentData.seller_name || null,
+            buyerInformation: extractedShipmentData.buyerName && extractedShipmentData.buyerAddress ? 
+              `${extractedShipmentData.buyerName}\n${extractedShipmentData.buyerAddress}` : 
+              extractedShipmentData.buyerName || extractedShipmentData.buyer_name || null,
+            shipToPartyInformation: extractedShipmentData.shipToPartyName && extractedShipmentData.shipToPartyAddress ? 
+              `${extractedShipmentData.shipToPartyName}\n${extractedShipmentData.shipToPartyAddress}` : 
+              extractedShipmentData.shipToPartyName || extractedShipmentData.ship_to_party_name || null,
+            
+            // Cargo and classification - Enhanced mapping
+            htsusNumber: extractedShipmentData.htsCode || extractedShipmentData.hts_code || null,
+            commodityDescription: extractedShipmentData.cargoDescription || extractedShipmentData.commodity_description || extractedShipmentData.cargo_description || null,
+            
+            // Port and location information - Enhanced mapping
+            portOfEntry: extractedShipmentData.portOfEntry || extractedShipmentData.portOfDischarge || extractedShipmentData.first_port_usa || extractedShipmentData.port_of_discharge || null,
+            foreignPortOfLading: extractedShipmentData.foreignPortOfLading || extractedShipmentData.portOfLoading || extractedShipmentData.port_of_loading || null,
+            
+            // Vessel and voyage details - Enhanced mapping
+            billOfLading: extractedShipmentData.billOfLadingNumber || extractedShipmentData.bill_of_lading_number || extractedShipmentData.billOfLading || null,
+            vesselName: extractedShipmentData.vesselName || extractedShipmentData.vesselAndVoyage?.split('/')[0]?.trim() || extractedShipmentData.vessel_name || null,
+            voyageNumber: extractedShipmentData.voyageNumber || extractedShipmentData.vesselAndVoyage?.split('/')[1]?.trim() || extractedShipmentData.voyage_number || null,
+            containerNumbers: extractedShipmentData.containerNumber || extractedShipmentData.container_number || null,
+            containerType: extractedShipmentData.containerType || extractedShipmentData.container_type || null,
+            
+            // Dates - Enhanced mapping
+            estimatedArrivalDate: extractedShipmentData.eta || extractedShipmentData.estimated_arrival || null,
+            estimatedDepartureDate: extractedShipmentData.etd || extractedShipmentData.estimated_departure || null,
+            
+            // Additional comprehensive party information
+            shipperName: extractedShipmentData.shipperName || extractedShipmentData.shipper_name || null,
+            shipperAddress: extractedShipmentData.shipperAddress || extractedShipmentData.shipper_address || null,
+            notifyPartyName: extractedShipmentData.notifyPartyName || extractedShipmentData.notify_party_name || null,
+            
+            // Locations
+            portOfLoading: extractedShipmentData.portOfLoading || extractedShipmentData.port_of_loading || null,
+            placeOfReceipt: extractedShipmentData.placeOfReceipt || extractedShipmentData.place_of_receipt || null,
+            placeOfDelivery: extractedShipmentData.placeOfDelivery || extractedShipmentData.place_of_delivery || null,
+            
+            // Package and weight information
+            packageType: extractedShipmentData.packageType || extractedShipmentData.package_type || null,
+            numberOfPackages: extractedShipmentData.numberOfPackages || extractedShipmentData.number_of_packages || extractedShipmentData.quantity || null,
+            grossWeight: extractedShipmentData.grossWeight || extractedShipmentData.weight || null,
+            
+            // Seals and container details
+            sealNumbers: extractedShipmentData.sealNumbers?.join(', ') || extractedShipmentData.seal_number || null,
+            bookingNumber: extractedShipmentData.bookingNumber || extractedShipmentData.booking_number || null,
+            dateIssued: extractedShipmentData.dateIssued || extractedShipmentData.date || null,
+            onBoardDate: extractedShipmentData.onBoardDate || extractedShipmentData.on_board_date || null,
+            
+            // SCAC codes and regulatory information - Enhanced mapping
+            mblScacCode: extractedShipmentData.mblScacCode || extractedShipmentData.scacCode || extractedShipmentData.scac || extractedShipmentData.scac_code || null,
+            hblScacCode: extractedShipmentData.hblScacCode || extractedShipmentData.hbl_scac_code || null,
+            amsNumber: extractedShipmentData.amsNumber || extractedShipmentData.ams_filling_no || extractedShipmentData.ams_number || null,
+            consolidatorStufferInfo: extractedShipmentData.consolidatorStufferInfo || extractedShipmentData.consolidator_name_and_address || null,
+            containerStuffingLocation: extractedShipmentData.containerStuffingLocation || extractedShipmentData.container_stuffing_location || null
+          };
+          
+          // Clean and validate the extracted data
+          extractedData = {};
+          Object.entries(aiExtractedData).forEach(([key, value]) => {
+            if (value && value !== "null" && value !== "") {
+              extractedData[key] = value;
+            }
+          });
+          
+          allExtractedData.push({
+            documentType: fileExtension || 'unknown',
+            fileName: file.originalname,
+            data: extractedData
+          });
+          
+          processedDocuments.push({
+            fileName: file.originalname,
+            fileType: fileExtension,
+            extractedFields: Object.keys(extractedData).length
+          });
+          
+        } catch (error) {
+          console.error(`Error processing ${file.originalname}:`, error);
+          processedDocuments.push({
+            fileName: file.originalname,
+            fileType: fileExtension,
+            error: error.message,
+            extractedFields: 0
+          });
+        }
+      }
+      
+      // Consolidate data from all documents using same logic as shipment processing
+      console.log(`Consolidating ISF data from ${allExtractedData.length} documents`);
+      const consolidatedData = consolidateMultiDocumentData(allExtractedData);
+      
+      res.json({
+        success: true,
+        extractedData: consolidatedData,
+        processedDocuments,
+        totalDocuments: files.length,
+        consolidatedFields: Object.keys(consolidatedData).length,
+        message: `Successfully processed ${files.length} documents and consolidated ISF data. Review the extracted information and complete remaining fields before submitting.`
+      });
+      
+    } catch (error) {
+      console.error("Error processing ISF documents:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to process ISF documents",
+        message: "Document processing encountered an error. Please try again or contact support."
+      });
+    }
+  });
+
+  // Keep original single document route for backward compatibility
   app.post('/api/isf/scan-document', requireSubscription, upload.single('isfDocument'), async (req: any, res) => {
     try {
       if (!req.file) {
