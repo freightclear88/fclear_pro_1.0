@@ -8,6 +8,7 @@ import DocumentUpload from "@/components/DocumentUpload";
 import ShipmentTable from "@/components/ShipmentTable";
 import ShipmentDetail from "@/components/ShipmentDetail";
 import CreateShipmentDialog from "@/components/CreateShipmentDialog";
+import NotificationDropdown from "@/components/NotificationDropdown";
 
 import { Ship, FileText, CheckCircle, Plus, Bell, FileUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -59,12 +60,7 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex justify-end">
-          <Button className="btn-ghost relative w-full sm:w-auto">
-            <Bell className="w-5 h-5" />
-            <Badge className="absolute -top-1 -right-1 bg-neon-green text-white text-xs w-5 h-5 flex items-center justify-center p-0">
-              3
-            </Badge>
-          </Button>
+          <NotificationDropdown />
         </div>
       </div>
 

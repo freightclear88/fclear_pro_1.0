@@ -11,6 +11,7 @@ import {
   userInvitations,
   isfFilings,
   agentAssignments,
+  notifications,
   type User,
   type UpsertUser,
   type Shipment,
@@ -35,6 +36,8 @@ import {
   type InsertIsfFiling,
   type AgentAssignment,
   type InsertAgentAssignment,
+  type Notification,
+  type InsertNotification,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -131,6 +134,16 @@ export interface IStorage {
   getAgentForUser(userId: string): Promise<User | undefined>;
   getAllAgentAssignments(): Promise<AgentAssignment[]>;
   updateAssignedAgent(userId: string, newAgentId: string | null, assignedBy: string): Promise<User>;
+
+  // Notification operations
+  getNotificationsByUserId(userId: string): Promise<Notification[]>;
+  getUnreadNotificationsByUserId(userId: string): Promise<Notification[]>;
+  getNotificationById(id: number): Promise<Notification | undefined>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  markNotificationAsRead(id: number): Promise<Notification>;
+  markAllNotificationsAsRead(userId: string): Promise<void>;
+  deleteNotification(id: number): Promise<void>;
+  getNotificationCount(userId: string): Promise<{ total: number; unread: number; }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -809,6 +822,95 @@ export class DatabaseStorage implements IStorage {
       throw new Error('User not found');
     }
     return updatedUser;
+  }
+
+  // Notification operations
+  async getNotificationsByUserId(userId: string): Promise<Notification[]> {
+    return await db
+      .select()
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isArchived, false)
+      ))
+      .orderBy(desc(notifications.createdAt));
+  }
+
+  async getUnreadNotificationsByUserId(userId: string): Promise<Notification[]> {
+    return await db
+      .select()
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false),
+        eq(notifications.isArchived, false)
+      ))
+      .orderBy(desc(notifications.createdAt));
+  }
+
+  async getNotificationById(id: number): Promise<Notification | undefined> {
+    const [notification] = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.id, id));
+    return notification;
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [newNotification] = await db
+      .insert(notifications)
+      .values(notification)
+      .returning();
+    return newNotification;
+  }
+
+  async markNotificationAsRead(id: number): Promise<Notification> {
+    const [notification] = await db
+      .update(notifications)
+      .set({ isRead: true, readAt: new Date() })
+      .where(eq(notifications.id, id))
+      .returning();
+    return notification;
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ isRead: true, readAt: new Date() })
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false)
+      ));
+  }
+
+  async deleteNotification(id: number): Promise<void> {
+    await db
+      .delete(notifications)
+      .where(eq(notifications.id, id));
+  }
+
+  async getNotificationCount(userId: string): Promise<{ total: number; unread: number; }> {
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isArchived, false)
+      ));
+
+    const [unreadResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false),
+        eq(notifications.isArchived, false)
+      ));
+
+    return {
+      total: totalResult?.count || 0,
+      unread: unreadResult?.count || 0
+    };
   }
 }
 

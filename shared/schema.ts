@@ -365,6 +365,27 @@ export const userInvitations = pgTable("user_invitations", {
   acceptedAt: timestamp("accepted_at"),
 });
 
+// Notifications table for in-app alerts and updates
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: varchar("title").notNull(),
+  message: text("message").notNull(),
+  type: varchar("type").notNull(), // shipment_update, document_processed, payment_due, subscription_expired, system_alert
+  category: varchar("category").notNull().default("general"), // shipment, document, payment, subscription, system
+  priority: varchar("priority").notNull().default("normal"), // low, normal, high, urgent
+  relatedEntityType: varchar("related_entity_type"), // shipment, document, payment, subscription
+  relatedEntityId: varchar("related_entity_id"), // ID of related entity
+  actionUrl: varchar("action_url"), // Optional URL for action button
+  actionText: varchar("action_text"), // Text for action button
+  isRead: boolean("is_read").default(false),
+  isArchived: boolean("is_archived").default(false),
+  expiresAt: timestamp("expires_at"), // Optional expiration for time-sensitive notifications
+  metadata: jsonb("metadata"), // Additional data for complex notifications
+  createdAt: timestamp("created_at").defaultNow(),
+  readAt: timestamp("read_at"),
+});
+
 // ISF 10+2 Filing table - all mandatory fields for customs import filing
 export const isfFilings = pgTable("isf_filings", {
   id: serial("id").primaryKey(),
@@ -907,5 +928,17 @@ export const xmlScheduledJobsRelations = relations(xmlScheduledJobs, ({ one }) =
   source: one(xmlSources, {
     fields: [xmlScheduledJobs.sourceId],
     references: [xmlSources.id],
+  }),
+}));
+
+// Types for Notifications
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
+
+// Relations for notifications
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
   }),
 }));
