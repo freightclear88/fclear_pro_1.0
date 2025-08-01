@@ -204,206 +204,190 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {shipmentId ? `Add Documents to Shipment` : "Upload Documents & Create Shipment"}
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle className="text-lg">
+            {shipmentId ? `Add Documents` : "Upload Documents & Create Shipment"}
           </DialogTitle>
           {!shipmentId && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-2">
-              <div className="flex items-start space-x-3">
-                <FileUp className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-blue-900">Multi-Document Processing</h4>
-                  <p className="text-sm text-blue-700 mt-1">
-                    Upload multiple documents (Bill of Lading, Commercial Invoice, Packing List, etc.) 
-                    and our AI will automatically extract and populate all relevant shipment data from each document.
-                  </p>
-                </div>
+            <div className="bg-blue-50 border border-blue-200 rounded p-3">
+              <div className="flex items-center space-x-2">
+                <FileUp className="w-4 h-4 text-blue-600" />
+                <p className="text-xs text-blue-700">
+                  Upload multiple documents - AI will extract and populate shipment data automatically
+                </p>
               </div>
             </div>
           )}
         </DialogHeader>
         
-        <div className="space-y-6">
-
+        <div className="flex-1 overflow-hidden flex flex-col space-y-4">
           {/* File Upload Area */}
-          <div className="space-y-4">
-            <Label>Upload Files (up to 10 documents)</Label>
-            <Card>
-              <CardContent className="p-6">
-                <div
-                  {...getRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                    isDragActive 
-                      ? 'border-freight-orange bg-freight-orange/10' 
-                      : 'border-gray-300 hover:border-freight-orange hover:bg-freight-orange/5'
-                  }`}
-                >
-                  <input {...getInputProps()} />
-                  <FileUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <div className="space-y-2">
-                    <p className="text-lg font-medium text-gray-700">
-                      {isDragActive ? "Drop files here..." : "Drag & drop files here"}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      or click to select files
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      Supports PDF, DOC, DOCX, and image files • Upload multiple documents for comprehensive data extraction
-                    </p>
-                  </div>
-                </div>
+          <div className="flex-shrink-0">
+            <Label className="text-sm">Upload Files (up to 10 documents)</Label>
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors mt-2 ${
+                isDragActive 
+                  ? 'border-freight-orange bg-freight-orange/10' 
+                  : 'border-gray-300 hover:border-freight-orange hover:bg-freight-orange/5'
+              }`}
+            >
+              <input {...getInputProps()} />
+              <FileUp className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-700">
+                  {isDragActive ? "Drop files here..." : "Drag & drop files here"}
+                </p>
+                <p className="text-xs text-gray-500">
+                  or click to select • Supports PDF, DOC, DOCX, images
+                </p>
+              </div>
+            </div>
+          </div>
                 
-                {uploadedFiles.length > 0 && (
-                  <div className="mt-6">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                      <h4 className="font-semibold text-blue-900 mb-2">
-                        Files Selected ({uploadedFiles.length})
-                      </h4>
-                      <div className="space-y-1">
-                        {uploadedFiles.map((file, index) => (
-                          <div key={index} className="flex items-start space-x-3 p-2 bg-white rounded border">
-                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold mt-1">
-                              {index + 1}
-                            </span>
-                            <div className="flex-1">
-                              <p className="text-blue-900 font-semibold text-base break-all">{file.name || 'Unknown file'}</p>
-                              <p className="text-blue-600 text-sm">
-                                Size: {file.size ? (file.size / 1024 / 1024).toFixed(1) : 'Unknown'} MB
-                              </p>
+          {uploadedFiles.length > 0 && (
+            <div className="flex-1 overflow-auto">
+              <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-4 flex-shrink-0">
+                <h4 className="font-medium text-blue-900 text-sm mb-2">
+                  Files Selected ({uploadedFiles.length})
+                </h4>
+                <div className="grid grid-cols-1 gap-2">
+                  {uploadedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center space-x-2 p-2 bg-white rounded border text-xs">
+                      <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold">
+                        {index + 1}
+                      </span>
+                      <span className="text-blue-900 font-medium flex-1 truncate">{file.name || 'Unknown file'}</span>
+                      <span className="text-blue-600">
+                        {file.size ? (file.size / 1024 / 1024).toFixed(1) : '?'} MB
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <h4 className="font-medium text-gray-700 text-sm mb-3 flex-shrink-0">
+                Select Document Type for Each File
+              </h4>
+              <div className="space-y-3">
+                {uploadedFiles.map((file, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-3 bg-white">
+                    <div className="flex items-start space-x-3">
+                      <div className="bg-freight-blue text-white px-2 py-1 rounded-full text-xs font-bold">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="bg-freight-blue/10 border border-freight-blue/30 p-2 rounded flex-1 mr-2">
+                            <p className="text-xs font-medium text-freight-blue mb-1">File:</p>
+                            <p className="text-sm font-bold text-freight-blue break-all leading-tight">{file.name || 'Unknown file'}</p>
+                            <p className="text-xs text-freight-blue/70">
+                              {file.size ? (file.size / 1024 / 1024).toFixed(1) : '?'} MB
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFile(index)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                          >
+                            ×
+                          </Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium text-gray-700">Document Type *</Label>
+                            <Select 
+                              value={file.documentType || ""} 
+                              onValueChange={(value) => updateFileType(index, value)}
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue placeholder="Select type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {DOCUMENT_CATEGORIES.map((category) => {
+                                  const Icon = category.icon;
+                                  return (
+                                    <SelectItem key={category.value} value={category.value}>
+                                      <div className="flex items-center space-x-2">
+                                        <Icon className="w-3 h-3" />
+                                        <span className="text-xs">{category.label}</span>
+                                      </div>
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          {file.documentType === "delivery_order" && (
+                            <div className="space-y-1">
+                              <Label className="text-xs font-medium text-gray-700">Sub-Category</Label>
+                              <Select 
+                                value={file.subCategory || ""} 
+                                onValueChange={(value) => updateFileSubCategory(index, value)}
+                              >
+                                <SelectTrigger className="h-8">
+                                  <SelectValue placeholder="Optional" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {SUB_CATEGORIES.map((subCategory) => (
+                                    <SelectItem key={subCategory.value} value={subCategory.value}>
+                                      <span className="text-xs">{subCategory.label}</span>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {file.documentType && DOCUMENT_CATEGORIES.find(cat => cat.value === file.documentType)?.creates && !shipmentId && (
+                          <div className="bg-blue-50 border border-blue-200 rounded p-2">
+                            <div className="flex items-center space-x-1 text-blue-700">
+                              {DOCUMENT_CATEGORIES.find(cat => cat.value === file.documentType)?.creates === "air" ? (
+                                <Plane className="w-3 h-3" />
+                              ) : DOCUMENT_CATEGORIES.find(cat => cat.value === file.documentType)?.creates === "ocean" ? (
+                                <Ship className="w-3 h-3" />
+                              ) : (
+                                <Truck className="w-3 h-3" />
+                              )}
+                              <span className="text-xs">
+                                Creates {DOCUMENT_CATEGORIES.find(cat => cat.value === file.documentType)?.creates} shipment
+                              </span>
                             </div>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
-                    
-                    <h4 className="font-medium text-gray-700 mb-4">
-                      Select Document Type for Each File
-                    </h4>
-                    <div className="space-y-4">
-                      {uploadedFiles.map((file, index) => (
-                        <div key={index} className="border-2 border-gray-300 rounded-lg p-4 bg-white shadow-sm">
-                          <div className="flex items-start space-x-3">
-                            <div className="bg-freight-blue text-white px-3 py-1 rounded-full text-sm font-bold mt-1">
-                              {index + 1}
-                            </div>
-                            <div className="flex-1 space-y-3">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1"></div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeFile(index)}
-                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  ×
-                                </Button>
-                              </div>
-                              
-                              <div className="bg-freight-blue/10 border-2 border-freight-blue/30 p-4 rounded-lg mb-4">
-                                <p className="text-sm font-medium text-freight-blue mb-2">Original File Name:</p>
-                                <p className="text-xl font-bold text-freight-blue break-all leading-tight">{file.name || 'Unknown file'}</p>
-                                <p className="text-sm text-freight-blue/70 mt-1">
-                                  Size: {file.size ? (file.size / 1024 / 1024).toFixed(1) : 'Unknown'} MB
-                                </p>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                  <Label className="text-sm font-medium text-gray-700">Document Type *</Label>
-                                  <Select 
-                                    value={file.documentType || ""} 
-                                    onValueChange={(value) => updateFileType(index, value)}
-                                  >
-                                    <SelectTrigger className="h-9">
-                                      <SelectValue placeholder="Select type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {DOCUMENT_CATEGORIES.map((category) => {
-                                        const Icon = category.icon;
-                                        return (
-                                          <SelectItem key={category.value} value={category.value}>
-                                            <div className="flex items-center space-x-2">
-                                              <Icon className="w-4 h-4" />
-                                              <span className="text-sm">{category.label}</span>
-                                            </div>
-                                          </SelectItem>
-                                        );
-                                      })}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                
-                                {file.documentType === "delivery_order" && (
-                                  <div className="space-y-1">
-                                    <Label className="text-sm font-medium text-gray-700">Sub-Category</Label>
-                                    <Select 
-                                      value={file.subCategory || ""} 
-                                      onValueChange={(value) => updateFileSubCategory(index, value)}
-                                    >
-                                      <SelectTrigger className="h-9">
-                                        <SelectValue placeholder="Optional" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {SUB_CATEGORIES.map((subCategory) => (
-                                          <SelectItem key={subCategory.value} value={subCategory.value}>
-                                            <span className="text-sm">{subCategory.label}</span>
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {file.documentType && DOCUMENT_CATEGORIES.find(cat => cat.value === file.documentType)?.creates && !shipmentId && (
-                                <div className="bg-blue-50 border border-blue-200 rounded p-2">
-                                  <div className="flex items-center space-x-1 text-blue-700">
-                                    {DOCUMENT_CATEGORIES.find(cat => cat.value === file.documentType)?.creates === "air" ? (
-                                      <Plane className="w-3 h-3" />
-                                    ) : DOCUMENT_CATEGORIES.find(cat => cat.value === file.documentType)?.creates === "ocean" ? (
-                                      <Ship className="w-3 h-3" />
-                                    ) : (
-                                      <Truck className="w-3 h-3" />
-                                    )}
-                                    <span className="text-xs">
-                                      Creates {DOCUMENT_CATEGORIES.find(cat => cat.value === file.documentType)?.creates} shipment
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-4">
-            <Button
-              type="button"
-              className="btn-outline-primary"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleUpload}
-              disabled={uploadMutation.isPending || uploadedFiles.length === 0 || uploadedFiles.some(f => !f.documentType)}
-              className="btn-primary"
-            >
-              {uploadMutation.isPending ? 
-                `Uploading ${uploadedFiles.length} document${uploadedFiles.length > 1 ? 's' : ''}...` : 
-                `Upload ${uploadedFiles.length} Document${uploadedFiles.length > 1 ? 's' : ''}`
-              }
-            </Button>
-          </div>
+        {/* Action Buttons */}
+        <div className="flex justify-end space-x-3 pt-4 border-t flex-shrink-0">
+          <Button
+            type="button"
+            className="btn-outline-primary"
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleUpload}
+            disabled={uploadMutation.isPending || uploadedFiles.length === 0 || uploadedFiles.some(f => !f.documentType)}
+            className="btn-primary"
+          >
+            {uploadMutation.isPending ? 
+              `Uploading ${uploadedFiles.length} document${uploadedFiles.length > 1 ? 's' : ''}...` : 
+              `Upload ${uploadedFiles.length} Document${uploadedFiles.length > 1 ? 's' : ''}`
+            }
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
