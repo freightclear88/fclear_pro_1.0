@@ -9,6 +9,7 @@ import { Copy, Download, X, FileUp } from "lucide-react";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
 import { XmlCompatibilityPanel } from "@/components/XmlCompatibilityPanel";
+import ShippingRouteMap from "@/components/ShippingRouteMap";
 import type { Shipment, Document } from "@shared/schema";
 
 interface ShipmentDetailProps {
@@ -77,6 +78,9 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Interactive Shipping Route Visualization */}
+          <ShippingRouteMap shipment={shipment} />
+          
           {/* XML Compatibility Panel */}
           <XmlCompatibilityPanel shipment={shipment} />
           
