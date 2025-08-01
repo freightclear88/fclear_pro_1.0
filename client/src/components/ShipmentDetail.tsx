@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Copy, Download, X, FileUp } from "lucide-react";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
-import { XmlCompatibilityPanel } from "@/components/XmlCompatibilityPanel";
+
 
 import type { Shipment, Document } from "@shared/schema";
 
@@ -57,7 +57,7 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     
     return (
-      <Badge variant={config.variant} className={config.className || ""}>
+      <Badge variant={config.variant} className={config.className}>
         {config.label}
       </Badge>
     );
@@ -78,10 +78,6 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
         </DialogHeader>
 
         <div className="space-y-6">
-
-          {/* XML Compatibility Panel */}
-          <XmlCompatibilityPanel shipment={shipment} />
-          
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader className="pb-4">
@@ -120,15 +116,15 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
                 </div>
               )}
 
-              {(shipment.billOfLadingNumber || shipment.billOfLading) && (
+              {shipment.billOfLadingNumber && (
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Bill of Lading Number:</span>
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium">{shipment.billOfLadingNumber || shipment.billOfLading}</span>
+                    <span className="font-medium">{shipment.billOfLadingNumber}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleCopyField("Bill of Lading", shipment.billOfLadingNumber || shipment.billOfLading!)}
+                      onClick={() => handleCopyField("Bill of Lading", shipment.billOfLadingNumber!)}
                       className="text-freight-orange hover:text-freight-dark"
                     >
                       <Copy className="w-3 h-3" />
@@ -137,15 +133,15 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
                 </div>
               )}
 
-              {(shipment.vesselAndVoyage || shipment.vessel) && (
+              {shipment.vesselAndVoyage && (
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Vessel & Voyage:</span>
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium">{shipment.vesselAndVoyage || shipment.vessel}</span>
+                    <span className="font-medium">{shipment.vesselAndVoyage}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleCopyField("Vessel & Voyage", shipment.vesselAndVoyage || shipment.vessel!)}
+                      onClick={() => handleCopyField("Vessel & Voyage", shipment.vesselAndVoyage!)}
                       className="text-freight-orange hover:text-freight-dark"
                     >
                       <Copy className="w-3 h-3" />
@@ -156,12 +152,12 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
 
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Port of Loading:</span>
-                <span className="font-medium">{shipment.portOfLoading || shipment.origin || 'N/A'}</span>
+                <span className="font-medium">{shipment.portOfLoading || 'N/A'}</span>
               </div>
 
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Port of Discharge:</span>
-                <span className="font-medium">{shipment.portOfDischarge || shipment.destination || 'N/A'}</span>
+                <span className="font-medium">{shipment.portOfDischarge || 'N/A'}</span>
               </div>
 
               {shipment.weight && (

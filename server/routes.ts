@@ -71,12 +71,19 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
     let extractedFields: any = {};
     
     if (data && typeof data === 'object') {
-      // Check if this looks like Azure nested structure
-      if (data.shipper || data.consignee || data.bill_of_lading_no || data.vessel_voyage || 
-          data.particulars_furnished_by_shipper || data.contact_for_release || 
-          Object.keys(data).some(key => typeof data[key] === 'object' && data[key] !== null)) {
+      // Check if this looks like Azure nested structure (prioritize Azure detection)
+      const hasNestedObjects = Object.keys(data).some(key => 
+        typeof data[key] === 'object' && data[key] !== null && !Array.isArray(data[key])
+      );
+      const hasAzureFields = data.shipper || data.consignee || data.bill_of_lading_no || 
+                            data.vessel_voyage || data.particulars_furnished_by_shipper || 
+                            data.contact_for_release || data.place_and_date_of_issue;
+      
+      if (hasAzureFields || hasNestedObjects) {
         console.log(`Processing Azure nested data with ${Object.keys(data).length} top-level fields`);
         console.log('Azure data keys:', Object.keys(data));
+        console.log('Has nested objects:', hasNestedObjects);
+        console.log('Has Azure fields:', hasAzureFields);
         extractedFields = flattenAzureData(data);
         console.log(`Flattened to ${Object.keys(extractedFields).length} mapped fields:`, Object.keys(extractedFields));
         console.log('Mapped field values:', extractedFields);
