@@ -120,7 +120,7 @@ export class AIDocumentProcessor {
         } else {
           console.log('Azure extraction yielded minimal data, trying OpenAI enhancement...');
         }
-      } catch (azureError) {
+      } catch (azureError: any) {
         console.log('Azure processing failed, falling back to OpenAI:', azureError.message);
       }
 
@@ -235,9 +235,44 @@ export class AIDocumentProcessor {
       
       return extractedText.trim();
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('PDF text extraction failed:', error);
       throw new Error(`PDF text extraction failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Extract comprehensive data using OpenAI
+   */
+  private async extractComprehensiveData(fullText: string): Promise<ExtractedShipmentData> {
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: `Extract comprehensive shipping data from Ocean Bill of Lading and related documents. Return JSON with all found values.`
+          },
+          {
+            role: "user",
+            content: `Extract all shipping data from this document:\n\n${fullText.substring(0, 4000)}`
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1,
+        max_tokens: 1500
+      });
+
+      const result = completion.choices[0].message.content;
+      if (!result) {
+        throw new Error('No response from OpenAI analysis');
+      }
+
+      return JSON.parse(result) as ExtractedShipmentData;
+      
+    } catch (error: any) {
+      console.error('OpenAI comprehensive extraction failed:', error);
+      return {};
     }
   }
 
@@ -366,14 +401,15 @@ export class AIDocumentProcessor {
         });
         
         const result = await convert(1); // Convert first page
-        if (result && result.base64) {
-          return result.base64;
+        if (result && result.path) {
+          const imageBuffer = fs.readFileSync(result.path);
+          return imageBuffer.toString('base64');
         }
         
         throw new Error('Failed to convert PDF to image');
-      } catch (convertError) {
+      } catch (convertError: any) {
         console.error('Both PDF processing methods failed:', { directError, convertError });
-        throw new Error(`PDF processing failed: ${directError.message}`);
+        throw new Error(`PDF processing failed: ${(directError as any).message}`);
       }
     }
   }
@@ -423,7 +459,7 @@ export class AIDocumentProcessor {
       // Enhance with OpenAI if we have good text content
       if (fullText.length > 100) {
         console.log('Enhancing Azure data with OpenAI analysis...');
-        const openaiData = await this.extractDataWithOpenAI(fullText, 'bill_of_lading');
+        const openaiData = await this.extractComprehensiveData(fullText);
         
         // Merge Azure and OpenAI results, preferring Azure for structured data
         return this.mergeExtractionResults(extractedData, openaiData);
