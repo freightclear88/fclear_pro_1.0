@@ -15,6 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link } from "wouter";
 import { FileText, Upload, CreditCard, Ship, Plane, Truck, Calendar, MapPin, Building2, DollarSign, CheckCircle, Clock, AlertCircle, FileUp } from "lucide-react";
+import IsfDocumentUpload from "@/components/IsfDocumentUpload";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { IsfFiling } from "@shared/schema";
@@ -194,46 +195,9 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
     },
   });
 
-  // Multi-file upload handler for comprehensive ISF data extraction
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
+  // ISF document processing handler for the new upload component
+  const handleIsfDocumentProcessing = async (files: File[]) => {
     if (!files.length) return;
-
-    // Accept PDF, Excel, DOC, and image files
-    const allowedTypes = [
-      'application/pdf', 
-      'application/vnd.ms-excel', 
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/msword', 
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'image/jpeg',
-      'image/jpg',
-      'image/png'
-    ];
-    
-    // Validate all files
-    const invalidFiles = files.filter(file => 
-      !allowedTypes.includes(file.type) && 
-      !file.name.match(/\.(pdf|xls|xlsx|doc|docx|jpg|jpeg|png)$/i)
-    );
-    
-    if (invalidFiles.length > 0) {
-      toast({
-        title: "Invalid file type",
-        description: `Please upload only PDF, Excel, DOC, or image files. Invalid: ${invalidFiles.map(f => f.name).join(', ')}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (files.length > 10) {
-      toast({
-        title: "Too Many Files",
-        description: "Please upload a maximum of 10 documents at once.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     setUploadedFiles(files);
     setIsScanning(true);
@@ -564,88 +528,12 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {/* Multi-Document Upload Section */}
-        <Card className="border-2 border-dashed border-gray-200 bg-gradient-to-br from-teal-50 to-cyan-50">
-          <CardHeader>
-            <CardTitle className="flex items-center text-teal-700">
-              <FileUp className="w-5 h-5 mr-2" />
-              Upload ISF Documents (Optional)
-            </CardTitle>
-            <CardDescription>
-              Upload multiple shipping documents (Bill of Lading, Commercial Invoice, Packing List, etc.) for comprehensive ISF data extraction
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-center w-full">
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-teal-300 border-dashed rounded-lg cursor-pointer bg-teal-50 hover:bg-teal-100">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  {isScanning ? (
-                    <>
-                      <Clock className="w-8 h-8 mb-2 text-teal-500 animate-pulse" />
-                      <p className="text-sm text-teal-600">Processing documents...</p>
-                    </>
-                  ) : uploadedFiles.length > 0 ? (
-                    <>
-                      <CheckCircle className="w-8 h-8 mb-2 text-green-500" />
-                      <p className="text-sm text-gray-700 font-medium">{uploadedFiles.length} document(s) uploaded</p>
-                      <p className="text-xs text-gray-500">Documents processed successfully</p>
-                      {extractedData && (
-                        <div className="mt-2 p-2 bg-green-100 border border-green-300 rounded text-xs">
-                          <p className="text-green-700 font-medium">✓ Data consolidated from multiple documents</p>
-                          <p className="text-green-600">
-                            {extractedData.vesselName && `Vessel: ${extractedData.vesselName}`}
-                            {extractedData.voyageNumber && ` | Voyage: ${extractedData.voyageNumber}`}
-                            {extractedData.containerNumbers && ` | Container: ${extractedData.containerNumbers}`}
-                          </p>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-8 h-8 mb-2 text-gray-400" />
-                      <p className="mb-2 text-sm text-gray-500">
-                        <span className="font-semibold">Click to upload</span> ISF documents (up to 10)
-                      </p>
-                      <p className="text-xs text-gray-500">PDF, Excel, DOC, JPG, PNG files supported</p>
-                    </>
-                  )}
-                </div>
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  accept=".pdf,.xls,.xlsx,.doc,.docx,.jpg,.jpeg,.png"
-                  onChange={handleFileUpload}
-                  disabled={isScanning}
-                  multiple
-                />
-              </label>
-            </div>
-            
-            {/* Document Processing Summary */}
-            {processedDocuments.length > 0 && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Document Processing Summary:</h4>
-                <div className="space-y-1">
-                  {processedDocuments.map((doc, index) => (
-                    <div key={index} className="flex items-center justify-between text-xs">
-                      <span className="text-gray-600">{doc.fileName}</span>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant={doc.error ? "destructive" : "secondary"} className="text-xs">
-                          {doc.error ? "Error" : `${doc.extractedFields} fields`}
-                        </Badge>
-                        {doc.error ? (
-                          <AlertCircle className="w-3 h-3 text-red-500" />
-                        ) : (
-                          <CheckCircle className="w-3 h-3 text-green-500" />
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* ISF Document Upload Section */}
+        <IsfDocumentUpload 
+          onFilesChange={handleIsfDocumentProcessing}
+          isScanning={isScanning}
+          processedDocuments={processedDocuments}
+        />
 
         {/* ISF 10+2 Required Data Elements */}
         <div className="grid gap-6">
