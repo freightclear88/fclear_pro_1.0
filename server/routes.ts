@@ -4540,21 +4540,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let extractedData: any = {};
         
         try {
-          // Use our enhanced AI document processor for comprehensive extraction
-          const extractedShipmentData = await aiDocProcessor.extractShipmentData(
-            file.path, 
-            `ISF Document - ${file.originalname}`
-          );
-          
-          console.log(`Extracted data from ${file.originalname}:`, extractedShipmentData);
-          
-          // Map to ISF fields using the same enhanced mapping
-          const aiExtractedData = {
-            // Core importer information - Enhanced field mapping
-            importerName: extractedShipmentData.importerName || extractedShipmentData.consigneeName || extractedShipmentData.importer_name || null,
-            importerAddress: extractedShipmentData.importerAddress || extractedShipmentData.consigneeAddress || null,
-            consigneeName: extractedShipmentData.consigneeName || extractedShipmentData.consignee_name || null,
-            consigneeAddress: extractedShipmentData.consigneeAddress || extractedShipmentData.consignee_address || null,
+          // Handle Excel files with XLSX library first
+          if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+            console.log(`Processing Excel file: ${file.originalname}`);
+            
+            try {
+              const XLSX = await import('xlsx');
+              const workbook = XLSX.default.readFile(file.path);
+              const sheetName = workbook.SheetNames[0]; // Use first sheet
+              const worksheet = workbook.Sheets[sheetName];
+              const jsonData = XLSX.default.utils.sheet_to_json(worksheet, { header: 1 });
+
+              // Enhanced data extraction from Excel sheets
+              const flatData = jsonData.flat().filter(cell => cell && typeof cell === 'string');
+              
+              // Create a structured text representation of the Excel data
+              const excelText = jsonData.map((row, index) => 
+                `Row ${index + 1}: ${row.join(' | ')}`
+              ).join('\n');
+              
+              console.log(`Excel data extracted from ${file.originalname}:`, excelText.substring(0, 500) + "...");
+              
+              // Use OpenAI to intelligently extract ISF data from Excel content
+              const OpenAI = await import('openai');
+              const openaiClient = new OpenAI.default({ apiKey: process.env.OPENAI_API_KEY });
+              
+              const prompt = `Extract ISF (Importer Security Filing) data from this Excel/spreadsheet content. Return ONLY a JSON object with these exact fields (use null for missing data):
+
+{
+  "importerName": "company name of importer",
+  "consigneeName": "company name of consignee", 
+  "manufacturerCountry": "country where goods were manufactured",
+  "countryOfOrigin": "country of origin",
+  "htsusNumber": "10-digit HTS/tariff code",
+  "commodityDescription": "description of goods",
+  "portOfEntry": "US port of entry",
+  "billOfLading": "bill of lading number",
+  "vesselName": "vessel/ship name",
+  "estimatedArrivalDate": "YYYY-MM-DD format",
+  "containerNumbers": "container number(s)",
+  "voyageNumber": "voyage number",
+  "sellerInformation": "seller/shipper details",
+  "buyerInformation": "buyer/consignee details"
+}
+
+Excel data:
+${excelText}`;
+
+              const aiResponse = await openaiClient.chat.completions.create({
+                model: "gpt-4o",
+                messages: [{ role: "user", content: prompt }],
+                max_tokens: 1000,
+              });
+
+              const aiExtractedData = JSON.parse(aiResponse.choices[0].message.content);
+              console.log(`AI extracted Excel ISF data from ${file.originalname}:`, aiExtractedData);
+              
+              // Clean and validate the extracted data
+              extractedData = {};
+              Object.entries(aiExtractedData).forEach(([key, value]) => {
+                if (value && value !== "null" && value !== "") {
+                  extractedData[key] = value;
+                }
+              });
+              
+            } catch (excelError) {
+              console.error(`Excel processing error for ${file.originalname}:`, excelError);
+              extractedData = { error: `Excel processing failed: ${excelError.message}` };
+            }
+            
+          } else {
+            // Use AI document processor for non-Excel files
+            const extractedShipmentData = await aiDocProcessor.extractShipmentData(
+              file.path, 
+              `ISF Document - ${file.originalname}`
+            );
+            
+            console.log(`Extracted data from ${file.originalname}:`, extractedShipmentData);
+            
+            // Map to ISF fields using the same enhanced mapping
+            const aiExtractedData = {
+              // Core importer information - Enhanced field mapping
+              importerName: extractedShipmentData.importerName || extractedShipmentData.consigneeName || extractedShipmentData.importer_name || null,
+              importerAddress: extractedShipmentData.importerAddress || extractedShipmentData.consigneeAddress || null,
+              consigneeName: extractedShipmentData.consigneeName || extractedShipmentData.consignee_name || null,
+              consigneeAddress: extractedShipmentData.consigneeAddress || extractedShipmentData.consignee_address || null,
             
             // Manufacturer and party information - Enhanced mappings
             manufacturerCountry: extractedShipmentData.manufacturerCountry || extractedShipmentData.countryOfOrigin || extractedShipmentData.country_of_origin || null,
@@ -4639,6 +4709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             fileType: fileExtension,
             extractedFields: Object.keys(extractedData).length
           });
+          }
           
         } catch (error) {
           console.error(`Error processing ${file.originalname}:`, error);

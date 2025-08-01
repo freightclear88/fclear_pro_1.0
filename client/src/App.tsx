@@ -187,7 +187,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                   {user?.firstName || ""} {user?.lastName || ""}
                 </p>
                 <p className="text-xs text-teal truncate">
-                  {user?.company || "Freight Professional"}
+                  {user?.companyName || "Freight Professional"}
                 </p>
               </div>
             </div>
