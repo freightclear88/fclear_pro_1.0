@@ -19,6 +19,10 @@ import { AIDocumentProcessor } from './aiDocumentProcessor';
 import { xmlShipmentProcessor } from './xmlShipmentProcessor';
 import { xmlExporter } from './xmlExporter';
 import { simpleXmlScheduler } from './simpleXmlScheduler';
+import { xmlSources, xmlScheduledJobs } from '@shared/schema';
+import { db } from './db';
+import { eq, and } from 'drizzle-orm';
+import * as cron from 'node-cron';
 
 // Initialize OpenAI Document Processor
 const aiDocProcessor = new AIDocumentProcessor();
@@ -2107,14 +2111,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   customsBroker: extractedData.customsBroker,
                   customsBrokerLicense: extractedData.customsBrokerLicense,
                   
-                  // Comprehensive date information
-                  eta: extractedData.eta ? new Date(extractedData.eta) : null,
-                  etd: extractedData.etd ? new Date(extractedData.etd) : null,
-                  ata: extractedData.ata ? new Date(extractedData.ata) : null,
-                  atd: extractedData.atd ? new Date(extractedData.atd) : null,
-                  dateIssued: extractedData.dateIssued ? new Date(extractedData.dateIssued) : null,
-                  dateOfShipment: extractedData.dateOfShipment ? new Date(extractedData.dateOfShipment) : null,
-                  onBoardDate: extractedData.onBoardDate ? new Date(extractedData.onBoardDate) : null,
+                  // Comprehensive date information (parse safely)
+                  eta: extractedData.eta && !isNaN(Date.parse(extractedData.eta)) ? new Date(extractedData.eta) : null,
+                  etd: extractedData.etd && !isNaN(Date.parse(extractedData.etd)) ? new Date(extractedData.etd) : null,
+                  ata: extractedData.ata && !isNaN(Date.parse(extractedData.ata)) ? new Date(extractedData.ata) : null,
+                  atd: extractedData.atd && !isNaN(Date.parse(extractedData.atd)) ? new Date(extractedData.atd) : null,
+                  dateIssued: extractedData.dateIssued && !isNaN(Date.parse(extractedData.dateIssued)) ? new Date(extractedData.dateIssued) : null,
+                  dateOfShipment: extractedData.dateOfShipment && !isNaN(Date.parse(extractedData.dateOfShipment)) ? new Date(extractedData.dateOfShipment) : null,
+                  onBoardDate: extractedData.onBoardDate && !isNaN(Date.parse(extractedData.onBoardDate)) ? new Date(extractedData.onBoardDate) : null,
                   
                   // Processing metadata
                   extractedText: `AI-processed Ocean Bill of Lading: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nComprehensive data fields extracted: ${Object.keys(extractedData).filter(key => extractedData[key] !== undefined && extractedData[key] !== null && extractedData[key] !== '').length}\nProcessed at: ${processingTime} EST`,
