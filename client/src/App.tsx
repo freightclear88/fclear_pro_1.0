@@ -23,6 +23,7 @@ import Payments from "@/pages/payments";
 import Chat from "@/pages/chat";
 import FastIsf from "@/pages/fastisf";
 import IsfEdit from "@/pages/isf-edit";
+import IsfDetail from "@/pages/isf-detail";
 import XmlManagement from "@/pages/XmlManagement";
 
 import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle, FileText, Menu, X, Upload, Settings } from "lucide-react";
@@ -245,6 +246,7 @@ function Router() {
         <Route path="/xml-management" component={XmlManagement} />
         <Route path="/fastisf" component={FastIsf} />
         <Route path="/isf/edit/:id" component={IsfEdit} />
+        <Route path="/isf/detail/:id" component={IsfDetail} />
         <Route path="/chat" component={Chat} />
         <Route path="/subscription" component={Subscription} />
         <Route path="/payments" component={Payments} />

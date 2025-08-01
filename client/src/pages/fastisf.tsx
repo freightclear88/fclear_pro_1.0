@@ -539,7 +539,12 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
     onSuccess: (result) => {
       toast({
         title: "ISF Filing Created",
-        description: `ISF ${result.isfNumber} created successfully. Proceed to payment.`,
+        description: `ISF ${result.isfNumber} created successfully. You can now view the filing details or proceed to payment.`,
+        action: (
+          <Link href={`/isf/detail/${result.id}`}>
+            <Button variant="outline" size="sm">View Details</Button>
+          </Link>
+        ),
       });
       onSuccess();
     },
@@ -1220,6 +1225,11 @@ function IsfFilingsList() {
                   <TableCell>${filing.paymentAmount || "35.00"}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
+                      <Link href={`/isf/detail/${filing.id}`}>
+                        <Button variant="outline" size="sm">
+                          View Details
+                        </Button>
+                      </Link>
                       {filing.status === "draft" && (
                         <Link href={`/isf/edit/${filing.id}`}>
                           <Button variant="outline" size="sm">
