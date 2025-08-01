@@ -15,7 +15,7 @@ Key Features Requested:
 - Comprehensive ISF document data extraction using Azure Document Intelligence (January 2025)
 
 ## System Architecture
-The application follows a modern full-stack architecture with clear separation between frontend and backend components.
+The application follows a modern full-stack architecture with clear separation between frontend and backend components, featuring enhanced multi-document processing capabilities for comprehensive shipment creation.
 
 **Frontend:**
 -   **Framework**: React with TypeScript
@@ -36,7 +36,7 @@ The application follows a modern full-stack architecture with clear separation b
 -   **API Structure**: RESTful endpoints
 -   **Payment Gateway**: Authorize.Net integration for subscription billing
 -   **Access Control**: Subscription middleware enforcing usage limits
--   **Document Processing**: Hybrid AI-powered OCR using Azure Document Intelligence as primary processor with OpenAI GPT-4o enhancement for comprehensive data extraction (supporting PDF, Excel, Word documents) with automatic ISF filing creation and intelligent field mapping
+-   **Document Processing**: Enhanced multi-document processing system supporting simultaneous upload of up to 10 documents with intelligent data consolidation. Uses hybrid AI-powered OCR with Azure Document Intelligence as primary processor and OpenAI GPT-4o enhancement for comprehensive data extraction (supporting PDF, Excel, Word documents) with automatic ISF filing creation and intelligent field mapping. Features priority-based data consolidation from multiple documents to create complete shipments.
 -   **Reporting**: CSV export for shipments
 -   **XML Integration**: Server-side XML processing engine for UN/EDIFACT COPRAR, COPARN, generic shipments, and container status formats.
 
@@ -53,6 +53,7 @@ The application follows a modern full-stack architecture with clear separation b
 
 **Key Features & Technical Implementations:**
 -   **Authentication**: Replit Auth via OpenID Connect.
+-   **Enhanced Multi-Document Processing**: Simultaneous upload of up to 10 documents with AI-powered data extraction and intelligent consolidation. Priority-based field mapping ensures the most accurate data from the most reliable document types (Bill of Lading > Commercial Invoice > Packing List, etc.) for complete shipment creation.
 -   **Document Management**: Upload, storage, OCR processing, data extraction (B/L, AWB, ISF), and linking to shipments.
 -   **Shipment Management**: Creation, tracking, and detailed data storage including auto-extracted data.
 -   **Subscription Management**: Tiered plans (Free, Starter, Pro) with usage limits, trial periods, and secure payment processing via Authorize.Net and Accept.js. Includes a 3.5% credit card service fee.

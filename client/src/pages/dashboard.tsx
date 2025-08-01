@@ -21,11 +21,15 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<{
+    activeShipments: number;
+    pendingDocuments: number;
+    processedThisMonth: number;
+  }>({
     queryKey: ["/api/dashboard/stats"],
   });
 
-  const { data: shipments = [] } = useQuery({
+  const { data: shipments = [] } = useQuery<Shipment[]>({
     queryKey: ["/api/shipments"],
   });
 
@@ -63,9 +67,9 @@ export default function Dashboard() {
           } />
           <DocumentUpload 
             trigger={
-              <Button className="btn-outline-primary w-full sm:w-auto">
+              <Button className="btn-primary w-full sm:w-auto">
                 <FileUp className="w-4 h-4 mr-2" />
-                Upload Documents
+                Multi-Document Upload
               </Button>
             }
             onShipmentCreated={(shipment) => {
@@ -85,6 +89,49 @@ export default function Dashboard() {
           </Button>
         </div>
       </div>
+
+      {/* Multi-Document Processing Feature Highlight */}
+      <Card className="gradient-primary border-0 mb-6 lg:mb-8">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-white mb-3 flex items-center">
+                <FileUp className="w-6 h-6 mr-3" />
+                Comprehensive Multi-Document Processing
+              </h3>
+              <p className="text-blue-100 mb-4 text-sm lg:text-base">
+                Upload multiple shipping documents simultaneously (Bill of Lading, Commercial Invoice, 
+                Packing List, etc.) and our AI will automatically extract and consolidate all relevant 
+                data to create complete shipments with comprehensive information from all documents.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Badge className="bg-white/20 text-white border-white/30">Bill of Lading</Badge>
+                <Badge className="bg-white/20 text-white border-white/30">Commercial Invoice</Badge>
+                <Badge className="bg-white/20 text-white border-white/30">Packing List</Badge>
+                <Badge className="bg-white/20 text-white border-white/30">Arrival Notice</Badge>
+                <Badge className="bg-white/20 text-white border-white/30">+ More</Badge>
+              </div>
+            </div>
+            <div className="hidden lg:block">
+              <DocumentUpload 
+                trigger={
+                  <Button className="bg-white text-freight-blue hover:bg-gray-100">
+                    <FileUp className="w-4 h-4 mr-2" />
+                    Try Multi-Document Upload
+                  </Button>
+                }
+                onShipmentCreated={(shipment) => {
+                  queryClient.invalidateQueries({ queryKey: ["/api/shipments"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 1000);
+                }} 
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
@@ -162,7 +209,7 @@ export default function Dashboard() {
           <CardContent className="p-4 lg:p-6">
             {recentShipments.length > 0 ? (
               <div className="space-y-4">
-                {recentShipments.map((shipment) => (
+                {recentShipments.map((shipment: Shipment) => (
                   <div key={shipment.id} className="flex items-start space-x-3">
                     <div className="bg-freight-green/10 p-2 rounded-full">
                       <CheckCircle className="w-4 h-4 text-freight-green" />
@@ -185,6 +232,47 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* How Multi-Document Processing Works */}
+      <Card className="mb-6 lg:mb-8 border-gray-200">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-freight-dark flex items-center">
+            <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+            How Multi-Document Processing Works
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                <FileUp className="w-8 h-8 text-blue-600" />
+              </div>
+              <h4 className="font-semibold text-freight-dark mb-2">1. Upload Multiple Documents</h4>
+              <p className="text-sm text-gray-600">
+                Select up to 10 documents including Bill of Lading, Commercial Invoice, Packing List, and more
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                <FileText className="w-8 h-8 text-green-600" />
+              </div>
+              <h4 className="font-semibold text-freight-dark mb-2">2. AI Data Extraction</h4>
+              <p className="text-sm text-gray-600">
+                Azure Document Intelligence and OpenAI extract and map all relevant shipping data
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="bg-purple-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                <Ship className="w-8 h-8 text-purple-600" />
+              </div>
+              <h4 className="font-semibold text-freight-dark mb-2">3. Consolidated Shipment</h4>
+              <p className="text-sm text-gray-600">
+                All data is intelligently consolidated to create a complete shipment with comprehensive details
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Active Shipments */}
       <Card>
         <CardHeader>
@@ -199,7 +287,7 @@ export default function Dashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          <ShipmentTable shipments={shipments} onViewShipment={handleViewShipment} />
+          <ShipmentTable shipments={shipments as Shipment[]} onViewShipment={handleViewShipment} />
         </CardContent>
       </Card>
 

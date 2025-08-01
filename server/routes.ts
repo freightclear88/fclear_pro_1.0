@@ -21,6 +21,54 @@ import { AIDocumentProcessor } from './aiDocumentProcessor';
 const aiDocProcessor = new AIDocumentProcessor();
 // PDF parsing will be dynamically imported when needed
 
+// Multi-document data consolidation function
+function consolidateMultiDocumentData(allExtractedData: any[]): any {
+  const consolidated: any = {};
+  const sourceTracker: any = {}; // Track which document each field came from
+  
+  // Priority hierarchy for document types (higher priority documents override lower ones)
+  const documentTypePriority = {
+    'bill_of_lading': 10,
+    'arrival_notice': 9,
+    'commercial_invoice': 8,
+    'packing_list': 7,
+    'isf_data_sheet': 6,
+    'airway_bill': 10, // Same priority as B/L for air shipments
+    'delivery_order': 5,
+    'other': 1
+  };
+  
+  // Process each document's extracted data
+  for (const docData of allExtractedData) {
+    const { documentType, fileName, data } = docData;
+    const priority = documentTypePriority[documentType] || 1;
+    
+    // Iterate through all extracted fields
+    for (const [field, value] of Object.entries(data)) {
+      if (value && value !== '' && value !== 'Processing' && value !== null && value !== undefined) {
+        // Only update if we don't have this field or if current document has higher priority
+        const currentPriority = sourceTracker[field]?.priority || 0;
+        
+        if (!consolidated[field] || priority > currentPriority) {
+          consolidated[field] = value;
+          sourceTracker[field] = {
+            source: fileName,
+            documentType,
+            priority
+          };
+        }
+      }
+    }
+  }
+  
+  console.log(`Consolidated ${Object.keys(consolidated).length} fields from ${allExtractedData.length} documents`);
+  console.log('Field sources:', Object.fromEntries(
+    Object.entries(sourceTracker).map(([field, info]: [string, any]) => [field, `${info.documentType}:${info.source}`])
+  ));
+  
+  return consolidated;
+}
+
 // Zendesk API configuration
 let zendeskClient: any = null;
 
@@ -1173,8 +1221,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Upload all documents
+      // Upload all documents and collect extracted data for consolidation
       const uploadedDocuments = [];
+      const allExtractedData = []; // Collect data from all documents for consolidation
+      
       for (const file of files) {
         // Ensure category is always valid
         const documentCategory = category && category.trim() ? category.trim() : 'other';
@@ -1520,12 +1570,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         uploadedDocuments.push({...document, extractedData: arrivalNoticeData});
+        
+        // Store extracted data for consolidation
+        if (arrivalNoticeData && Object.keys(arrivalNoticeData).length > 0) {
+          allExtractedData.push({
+            documentType: documentCategory,
+            fileName: file.originalname,
+            data: arrivalNoticeData
+          });
+        }
+      }
+
+      // After processing all documents, perform data consolidation for shipment creation
+      if (createdShipment && allExtractedData.length > 0) {
+        console.log(`Consolidating data from ${allExtractedData.length} documents for shipment ${createdShipment.shipmentId}`);
+        
+        // Consolidate data from all documents to get the most complete picture
+        const consolidatedData = consolidateMultiDocumentData(allExtractedData);
+        
+        // Update shipment with consolidated data
+        if (Object.keys(consolidatedData).length > 0) {
+          await storage.updateShipment(createdShipment.id, consolidatedData);
+          console.log(`Updated shipment ${createdShipment.shipmentId} with consolidated data from ${allExtractedData.length} documents`);
+        }
       }
 
       res.json({ 
-        message: "Documents uploaded successfully", 
+        message: `${uploadedDocuments.length} document(s) uploaded successfully${createdShipment ? ` and new shipment ${createdShipment.shipmentId} created with consolidated data` : ''}`, 
         documents: uploadedDocuments,
-        shipment: createdShipment
+        shipment: createdShipment,
+        processedDocuments: allExtractedData.length,
+        consolidatedFields: createdShipment && allExtractedData.length > 0 ? 
+          Object.keys(consolidateMultiDocumentData(allExtractedData)).length : 0
       });
     } catch (error) {
       console.error("Error uploading documents:", error);

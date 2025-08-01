@@ -167,8 +167,22 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {shipmentId ? `Add Documents to Shipment` : "Upload Documents"}
+            {shipmentId ? `Add Documents to Shipment` : "Upload Documents & Create Shipment"}
           </DialogTitle>
+          {!shipmentId && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-2">
+              <div className="flex items-start space-x-3">
+                <FileUp className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-blue-900">Multi-Document Processing</h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Upload multiple documents (Bill of Lading, Commercial Invoice, Packing List, etc.) 
+                    and our AI will automatically extract and populate all relevant shipment data from each document.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogHeader>
         
         <div className="space-y-6">
@@ -265,7 +279,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
                       or click to select files
                     </p>
                     <p className="text-xs text-gray-400">
-                      Supports PDF, DOC, DOCX, and image files
+                      Supports PDF, DOC, DOCX, and image files • Upload multiple documents for comprehensive data extraction
                     </p>
                   </div>
                 </div>
@@ -306,7 +320,10 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
               disabled={uploadMutation.isPending || uploadedFiles.length === 0 || !selectedCategory}
               className="btn-primary"
             >
-              {uploadMutation.isPending ? "Uploading..." : "Upload Documents"}
+{uploadMutation.isPending ? 
+                `Uploading ${uploadedFiles.length} document${uploadedFiles.length > 1 ? 's' : ''}...` : 
+                `Upload ${uploadedFiles.length} Document${uploadedFiles.length > 1 ? 's' : ''}`
+              }
             </Button>
           </div>
         </div>
