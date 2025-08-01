@@ -76,13 +76,26 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
         console.log(`Processing Azure nested data with ${Object.keys(data).length} top-level fields`);
         extractedFields = flattenAzureData(data);
         console.log(`Flattened to ${Object.keys(extractedFields).length} mapped fields:`, Object.keys(extractedFields));
+      } else if (Object.keys(data).length === 0) {
+        // Empty Azure response - skip this document entirely
+        console.log(`Skipping empty Azure data from ${fileName}`);
+        continue;
       } else {
-        // Regular flat structure
-        console.log(`Processing flat data structure with ${Object.keys(data).length} fields`);
-        for (const [field, value] of Object.entries(data)) {
-          if (value && value !== '' && value !== 'Processing' && value !== null && value !== undefined) {
-            extractedFields[field] = value;
+        // Check if this is a proper shipment data structure with meaningful fields
+        const meaningfulFields = ['billOfLadingNumber', 'vesselAndVoyage', 'containerNumber', 
+                                 'shipperName', 'consigneeName', 'portOfLoading', 'portOfDischarge'];
+        const hasValidData = meaningfulFields.some(field => data[field] && data[field] !== null);
+        
+        if (hasValidData) {
+          console.log(`Processing structured shipment data with ${Object.keys(data).length} fields`);
+          for (const [field, value] of Object.entries(data)) {
+            if (value && value !== '' && value !== 'Processing' && value !== null && value !== undefined) {
+              extractedFields[field] = value;
+            }
           }
+        } else {
+          console.log(`Skipping document ${fileName} - contains no meaningful shipment data`);
+          continue;
         }
       }
     }
