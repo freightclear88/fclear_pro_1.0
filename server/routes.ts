@@ -1179,7 +1179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/documents/upload', upload.array('documents', 10), requireSubscription, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const { shipmentId, category, subCategory } = req.body;
+      const { shipmentId, documentTypes, subCategories } = req.body;
       
       if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
@@ -1188,15 +1188,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const files = req.files as Express.Multer.File[];
       let createdShipment = null;
 
-      // Check if this document type should create a new shipment
-      const shouldCreateShipment = !shipmentId && ['bill_of_lading', 'arrival_notice', 'airway_bill', 'isf_data_sheet', 'delivery_order'].includes(category);
+      // Parse document types and sub-categories (arrays from form data)
+      const documentTypesArray = Array.isArray(documentTypes) ? documentTypes : [documentTypes];
+      const subCategoriesArray = Array.isArray(subCategories) ? subCategories : [subCategories];
+
+      // Check if any document type should create a new shipment
+      const shouldCreateShipment = !shipmentId && documentTypesArray.some(docType => 
+        ['bill_of_lading', 'arrival_notice', 'airway_bill', 'isf_data_sheet', 'delivery_order'].includes(docType)
+      );
       
       if (shouldCreateShipment) {
-        // Determine transport mode based on document type
+        // Determine transport mode based on first shipment-creating document type
+        const shipmentCreatingType = documentTypesArray.find(docType => 
+          ['bill_of_lading', 'arrival_notice', 'airway_bill', 'isf_data_sheet', 'delivery_order'].includes(docType)
+        );
+        
         let transportMode = 'ocean'; // default
-        if (category === 'airway_bill') {
+        if (shipmentCreatingType === 'airway_bill') {
           transportMode = 'air';
-        } else if (category === 'delivery_order') {
+        } else if (shipmentCreatingType === 'delivery_order') {
           transportMode = 'last_mile';
         }
         
@@ -1225,12 +1235,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const uploadedDocuments = [];
       const allExtractedData = []; // Collect data from all documents for consolidation
       
-      for (const file of files) {
-        // Ensure category is always valid
-        const documentCategory = category && category.trim() ? category.trim() : 'other';
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        // Get document type for this specific file
+        const documentCategory = documentTypesArray[i] && documentTypesArray[i].trim() ? documentTypesArray[i].trim() : 'other';
         
         // Auto-assign subcategory for delivery orders
-        let finalSubCategory = subCategory;
+        let finalSubCategory = subCategoriesArray[i] || '';
         if (documentCategory === 'delivery_order' && !finalSubCategory) {
           finalSubCategory = 'last_mile';
         }

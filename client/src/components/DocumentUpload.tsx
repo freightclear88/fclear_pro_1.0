@@ -37,16 +37,26 @@ const SUB_CATEGORIES = [
   { value: "final_delivery", label: "Final Delivery" },
 ];
 
+interface FileWithType extends File {
+  documentType?: string;
+  subCategory?: string;
+}
+
 export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated }: DocumentUploadProps) {
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>("");
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<FileWithType[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    setUploadedFiles(acceptedFiles);
+    const filesWithType: FileWithType[] = acceptedFiles.map(file => ({
+      ...file,
+      documentType: "", // Will be set by user
+      subCategory: ""
+    }));
+    setUploadedFiles(filesWithType);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -61,16 +71,18 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
   });
 
   const uploadMutation = useMutation({
-    mutationFn: async ({ files, category, subCategory }: { files: File[], category: string, subCategory?: string }) => {
+    mutationFn: async ({ files }: { files: FileWithType[] }) => {
       const formData = new FormData();
-      files.forEach((file) => {
-        formData.append('documents', file);
-      });
-      formData.append('category', category);
       
-      if (subCategory) {
-        formData.append('subCategory', subCategory);
-      }
+      files.forEach((file, index) => {
+        formData.append('documents', file);
+        formData.append(`documentTypes`, file.documentType || 'other');
+        if (file.subCategory) {
+          formData.append(`subCategories`, file.subCategory);
+        } else {
+          formData.append(`subCategories`, '');
+        }
+      });
       
       if (shipmentId) {
         formData.append('shipmentId', shipmentId.toString());
@@ -120,6 +132,22 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
     },
   });
 
+  const updateFileType = (fileIndex: number, documentType: string) => {
+    setUploadedFiles(prev => prev.map((file, index) => 
+      index === fileIndex ? { ...file, documentType } : file
+    ));
+  };
+
+  const updateFileSubCategory = (fileIndex: number, subCategory: string) => {
+    setUploadedFiles(prev => prev.map((file, index) => 
+      index === fileIndex ? { ...file, subCategory } : file
+    ));
+  };
+
+  const removeFile = (fileIndex: number) => {
+    setUploadedFiles(prev => prev.filter((_, index) => index !== fileIndex));
+  };
+
   const handleUpload = () => {
     if (uploadedFiles.length === 0) {
       toast({
@@ -130,26 +158,26 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
       return;
     }
 
-    if (!selectedCategory) {
+    // Check if all files have document types assigned
+    const filesWithoutType = uploadedFiles.filter(file => !file.documentType);
+    if (filesWithoutType.length > 0) {
       toast({
-        title: "Category Required",
-        description: "Please select a document category",
+        title: "Document Types Required",
+        description: "Please select a document type for all uploaded files",
         variant: "destructive",
       });
       return;
     }
 
-    // Auto-assign "last_mile" subcategory for delivery orders
-    let finalSubCategory = selectedSubCategory;
-    if (selectedCategory === "delivery_order" && !finalSubCategory) {
-      finalSubCategory = "last_mile";
-    }
-    
-    uploadMutation.mutate({ 
-      files: uploadedFiles, 
-      category: selectedCategory,
-      subCategory: finalSubCategory || undefined
+    // Auto-assign "last_mile" subcategory for delivery orders if not set
+    const filesWithSubCategories = uploadedFiles.map(file => {
+      if (file.documentType === "delivery_order" && !file.subCategory) {
+        return { ...file, subCategory: "last_mile" };
+      }
+      return file;
     });
+
+    uploadMutation.mutate({ files: filesWithSubCategories });
   };
 
   const selectedCategoryData = DOCUMENT_CATEGORIES.find(cat => cat.value === selectedCategory);
@@ -186,79 +214,10 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
         </DialogHeader>
         
         <div className="space-y-6">
-          {/* Document Category Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="category">Document Category *</Label>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select document type" />
-              </SelectTrigger>
-              <SelectContent>
-                {DOCUMENT_CATEGORIES.map((category) => {
-                  const Icon = category.icon;
-                  return (
-                    <SelectItem key={category.value} value={category.value}>
-                      <div className="flex items-center space-x-2">
-                        <Icon className="w-4 h-4" />
-                        <span>{category.label}</span>
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-            
-            {selectedCategoryData && selectedCategoryData.creates && !shipmentId && (
-              <div className="bg-freight-blue/10 border border-freight-blue/20 rounded-lg p-3 mt-2">
-                <div className="flex items-center space-x-2 text-freight-blue">
-                  {selectedCategoryData.creates === "air" ? (
-                    <Plane className="w-4 h-4" />
-                  ) : selectedCategoryData.creates === "ocean" ? (
-                    <Ship className="w-4 h-4" />
-                  ) : (
-                    <Truck className="w-4 h-4" />
-                  )}
-                  <span className="text-sm font-medium">
-                    This will create a new {selectedCategoryData.creates} shipment
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Sub-Category Selection - Show for delivery_order */}
-          {selectedCategory === "delivery_order" && (
-            <div className="space-y-2">
-              <Label htmlFor="subCategory">Sub-Category</Label>
-              <Select value={selectedSubCategory} onValueChange={setSelectedSubCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select sub-category (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUB_CATEGORIES.map((subCategory) => (
-                    <SelectItem key={subCategory.value} value={subCategory.value}>
-                      {subCategory.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              {selectedSubCategory === "last_mile" && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
-                  <div className="flex items-center space-x-2 text-green-700">
-                    <Truck className="w-4 h-4" />
-                    <span className="text-sm font-medium">
-                      This delivery order will be categorized for last mile delivery tracking
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* File Upload Area */}
-          <div className="space-y-2">
-            <Label>Upload Files</Label>
+          <div className="space-y-4">
+            <Label>Upload Files (up to 10 documents)</Label>
             <Card>
               <CardContent className="p-6">
                 <div
@@ -285,18 +244,99 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
                 </div>
                 
                 {uploadedFiles.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="font-medium text-gray-700 mb-2">
-                      Selected Files ({uploadedFiles.length})
+                  <div className="mt-6">
+                    <h4 className="font-medium text-gray-700 mb-4">
+                      Select Document Type for Each File ({uploadedFiles.length})
                     </h4>
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       {uploadedFiles.map((file, index) => (
-                        <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
-                          <FileText className="w-4 h-4 text-freight-blue" />
-                          <span className="text-sm text-gray-700 flex-1">{file.name}</span>
-                          <span className="text-xs text-gray-500">
-                            {(file.size / 1024 / 1024).toFixed(1)} MB
-                          </span>
+                        <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white">
+                          <div className="flex items-start space-x-3">
+                            <FileText className="w-5 h-5 text-freight-blue mt-1" />
+                            <div className="flex-1 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {(file.size / 1024 / 1024).toFixed(1)} MB
+                                  </p>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeFile(index)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  ×
+                                </Button>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs font-medium text-gray-600">Document Type *</Label>
+                                  <Select 
+                                    value={file.documentType || ""} 
+                                    onValueChange={(value) => updateFileType(index, value)}
+                                  >
+                                    <SelectTrigger className="h-9">
+                                      <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {DOCUMENT_CATEGORIES.map((category) => {
+                                        const Icon = category.icon;
+                                        return (
+                                          <SelectItem key={category.value} value={category.value}>
+                                            <div className="flex items-center space-x-2">
+                                              <Icon className="w-3 h-3" />
+                                              <span className="text-xs">{category.label}</span>
+                                            </div>
+                                          </SelectItem>
+                                        );
+                                      })}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                
+                                {file.documentType === "delivery_order" && (
+                                  <div className="space-y-1">
+                                    <Label className="text-xs font-medium text-gray-600">Sub-Category</Label>
+                                    <Select 
+                                      value={file.subCategory || ""} 
+                                      onValueChange={(value) => updateFileSubCategory(index, value)}
+                                    >
+                                      <SelectTrigger className="h-9">
+                                        <SelectValue placeholder="Optional" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {SUB_CATEGORIES.map((subCategory) => (
+                                          <SelectItem key={subCategory.value} value={subCategory.value}>
+                                            <span className="text-xs">{subCategory.label}</span>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {file.documentType && DOCUMENT_CATEGORIES.find(cat => cat.value === file.documentType)?.creates && !shipmentId && (
+                                <div className="bg-blue-50 border border-blue-200 rounded p-2">
+                                  <div className="flex items-center space-x-1 text-blue-700">
+                                    {DOCUMENT_CATEGORIES.find(cat => cat.value === file.documentType)?.creates === "air" ? (
+                                      <Plane className="w-3 h-3" />
+                                    ) : DOCUMENT_CATEGORIES.find(cat => cat.value === file.documentType)?.creates === "ocean" ? (
+                                      <Ship className="w-3 h-3" />
+                                    ) : (
+                                      <Truck className="w-3 h-3" />
+                                    )}
+                                    <span className="text-xs">
+                                      Creates {DOCUMENT_CATEGORIES.find(cat => cat.value === file.documentType)?.creates} shipment
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -317,10 +357,10 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
             </Button>
             <Button
               onClick={handleUpload}
-              disabled={uploadMutation.isPending || uploadedFiles.length === 0 || !selectedCategory}
+              disabled={uploadMutation.isPending || uploadedFiles.length === 0 || uploadedFiles.some(f => !f.documentType)}
               className="btn-primary"
             >
-{uploadMutation.isPending ? 
+              {uploadMutation.isPending ? 
                 `Uploading ${uploadedFiles.length} document${uploadedFiles.length > 1 ? 's' : ''}...` : 
                 `Upload ${uploadedFiles.length} Document${uploadedFiles.length > 1 ? 's' : ''}`
               }
