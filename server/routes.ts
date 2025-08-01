@@ -4560,6 +4560,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ).join('\n');
               
               console.log(`Excel data extracted from ${file.originalname}:`, excelText.substring(0, 500) + "...");
+              console.log(`Total Excel cells found: ${flatData.length}`);
+              console.log(`First 10 Excel cells:`, flatData.slice(0, 10));
               
               // Use OpenAI to intelligently extract comprehensive ISF data from Excel content
               const OpenAI = await import('openai');
@@ -4643,11 +4645,18 @@ ${excelText}`;
               console.log(`Cleaned Excel extractedData from ${file.originalname}:`, extractedData);
               console.log(`Number of fields extracted from Excel: ${Object.keys(extractedData).length}`);
               
+              // If AI extraction yielded no results, force fallback extraction
+              if (Object.keys(extractedData).length === 0) {
+                console.log(`AI extraction failed for ${file.originalname}, forcing fallback processing...`);
+                throw new Error("AI extraction returned no data, forcing fallback");
+              }
+              
             } catch (excelError) {
               console.error(`Excel processing error for ${file.originalname}:`, excelError);
               
               // Enhanced fallback pattern matching for Excel ISF data
               console.log(`Using enhanced fallback pattern matching for Excel ISF data from ${file.originalname}...`);
+              console.log(`Sample of Excel data for pattern matching:`, flatData.slice(0, 20));
               
               try {
                 const findExcelData = (data: any[], patterns: string[]): string | null => {
@@ -4655,6 +4664,7 @@ ${excelText}`;
                     const str = String(item).toLowerCase();
                     for (const pattern of patterns) {
                       if (str.includes(pattern.toLowerCase())) {
+                        console.log(`Pattern match found: "${pattern}" in "${item}"`);
                         return String(item);
                       }
                     }
@@ -4662,23 +4672,52 @@ ${excelText}`;
                   return null;
                 };
                 
-                // Extract key ISF fields using pattern matching
-                extractedData = {
-                  billOfLading: findExcelData(flatData, ['m/bl', 'mbl', 'bill of lading', 'bl number']),
-                  vesselName: findExcelData(flatData, ['vessel', 'ship name']),
-                  voyageNumber: findExcelData(flatData, ['voyage', 'voy']),
-                  containerNumbers: findExcelData(flatData, ['container', 'cntr', 'cont']),
-                  portOfEntry: findExcelData(flatData, ['port of discharge', 'pod', 'destination port', 'us port']),
-                  foreignPortOfLading: findExcelData(flatData, ['port of loading', 'pol', 'origin port']),
-                  consigneeName: findExcelData(flatData, ['consignee', 'receiver', 'buyer']),
-                  shipperName: findExcelData(flatData, ['shipper', 'sender', 'seller']),
-                  commodityDescription: findExcelData(flatData, ['description', 'commodity', 'goods', 'cargo']),
-                  htsusNumber: findExcelData(flatData, ['hts', 'tariff', 'classification']),
-                  manufacturerCountry: findExcelData(flatData, ['country of origin', 'origin country', 'manufacture country']),
-                  numberOfPackages: findExcelData(flatData, ['packages', 'quantity', 'qty']),
-                  grossWeight: findExcelData(flatData, ['weight', 'gross weight', 'kg', 'lbs']),
-                  volume: findExcelData(flatData, ['volume', 'cbm', 'measurement'])
+                // Look for adjacent data in Excel (next cell after label)
+                const findAdjacentData = (data: any[], patterns: string[]): string | null => {
+                  for (let i = 0; i < data.length - 1; i++) {
+                    const str = String(data[i]).toLowerCase();
+                    for (const pattern of patterns) {
+                      if (str.includes(pattern.toLowerCase())) {
+                        const nextValue = data[i + 1];
+                        if (nextValue && String(nextValue).trim() && String(nextValue) !== str) {
+                          console.log(`Adjacent data found for "${pattern}": "${nextValue}"`);
+                          return String(nextValue);
+                        }
+                      }
+                    }
+                  }
+                  return null;
                 };
+                
+                // Extract key ISF fields using both direct pattern matching and adjacent data
+                extractedData = {
+                  billOfLading: findAdjacentData(flatData, ['bill of lading', 'b/l', 'bl#', 'bl number', 'm/bl', 'mbl', 'master bill']) || 
+                               findExcelData(flatData, ['COSU', 'COSCO', 'OOLU', 'OOCU', 'MSKU', 'TCLU']),
+                  vesselName: findAdjacentData(flatData, ['vessel', 'ship name', 'vessel name', 'ship']) ||
+                             findExcelData(flatData, ['COSCO', 'EXCELLENCE', 'FORTUNE', 'BOSTON', 'SHANGHAI']),
+                  voyageNumber: findAdjacentData(flatData, ['voyage', 'voy', 'voyage number', 'voyage no']),
+                  containerNumbers: findAdjacentData(flatData, ['container', 'cntr', 'cont', 'container number', 'container#']) ||
+                                   findExcelData(flatData, ['OOLU', 'OOCU', 'GESU', 'TEMU', 'MSKU', 'TCLU']),
+                  portOfEntry: findAdjacentData(flatData, ['port of discharge', 'pod', 'destination port', 'us port', 'discharge port', 'port of destination']) ||
+                              findExcelData(flatData, ['NEW YORK', 'BALTIMORE', 'LOS ANGELES', 'LONG BEACH', 'CHARLESTON', 'SAVANNAH']),
+                  foreignPortOfLading: findAdjacentData(flatData, ['port of loading', 'pol', 'origin port', 'loading port', 'port of origin']) ||
+                                      findExcelData(flatData, ['BUSAN', 'SHANGHAI', 'QINGDAO', 'NINGBO', 'TIANJIN', 'XIAMEN']),
+                  consigneeName: findAdjacentData(flatData, ['consignee', 'receiver', 'buyer', 'importer', 'notify party']),
+                  consigneeAddress: findAdjacentData(flatData, ['consignee address', 'receiver address', 'buyer address', 'importer address']),
+                  shipperName: findAdjacentData(flatData, ['shipper', 'sender', 'seller', 'exporter', 'supplier']),
+                  shipperAddress: findAdjacentData(flatData, ['shipper address', 'sender address', 'seller address', 'exporter address']),
+                  commodityDescription: findAdjacentData(flatData, ['description', 'commodity', 'goods', 'cargo', 'product', 'merchandise']),
+                  htsusNumber: findAdjacentData(flatData, ['hts', 'tariff', 'classification', 'hts code', 'hs code']) ||
+                              findExcelData(flatData, ['8487', '8481', '8482', '8479', '9401', '6302']),
+                  manufacturerCountry: findAdjacentData(flatData, ['country of origin', 'origin country', 'manufacture country', 'made in', 'origin']),
+                  numberOfPackages: findAdjacentData(flatData, ['packages', 'quantity', 'qty', 'pieces', 'pkgs', 'no. of packages']),
+                  grossWeight: findAdjacentData(flatData, ['weight', 'gross weight', 'kg', 'lbs', 'gross', 'total weight']),
+                  volume: findAdjacentData(flatData, ['volume', 'cbm', 'measurement', 'cubic', 'cubic meters']),
+                  estimatedArrivalDate: findAdjacentData(flatData, ['eta', 'estimated arrival', 'arrival date', 'expected arrival']),
+                  estimatedDepartureDate: findAdjacentData(flatData, ['etd', 'estimated departure', 'departure date', 'sailing date'])
+                };
+                
+                console.log(`Fallback extraction results before cleaning:`, extractedData);
                 
                 // Clean the extracted data
                 const cleanedData: any = {};
