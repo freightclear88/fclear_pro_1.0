@@ -218,13 +218,13 @@ CONTAINER:
                 
                 {/* Transport mode indicator */}
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <div className="bg-white border-2 border-freight-blue rounded-full p-2 shadow-md">
+                  <div className="bg-white border-2 border-freight-blue rounded-full p-4 shadow-lg">
                     {shipment.transportMode === 'air' ? (
-                      <div className="text-xs font-bold text-freight-blue">✈️</div>
+                      <div className="text-3xl font-bold text-freight-blue">✈️</div>
                     ) : shipment.transportMode === 'ocean' ? (
-                      <div className="text-xs font-bold text-freight-blue">🚢</div>
+                      <div className="text-3xl font-bold text-freight-blue">🚢</div>
                     ) : (
-                      <div className="text-xs font-bold text-freight-blue">🚛</div>
+                      <div className="text-3xl font-bold text-freight-blue">🚛</div>
                     )}
                   </div>
                 </div>
