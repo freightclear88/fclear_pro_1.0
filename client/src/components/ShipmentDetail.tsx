@@ -22,8 +22,7 @@ interface ShipmentDetailProps {
 export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDetailProps) {
   const { toast } = useToast();
   
-  // Debug logging to see what data we receive
-  console.log('ShipmentDetail received shipment:', shipment);
+
 
   const { data: documents } = useQuery({
     queryKey: [`/api/shipments/${shipment?.id}/documents`],
