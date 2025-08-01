@@ -16,6 +16,7 @@ import nodemailer from "nodemailer";
 import { xmlIntegrator } from './xmlIntegration';
 import zendesk from 'node-zendesk';
 import { AIDocumentProcessor } from './aiDocumentProcessor';
+import { xmlShipmentProcessor } from './xmlShipmentProcessor';
 
 // Initialize OpenAI Document Processor
 const aiDocProcessor = new AIDocumentProcessor();
@@ -892,18 +893,20 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /pdf|jpg|jpeg|png|doc|docx|xls|xlsx/;
+    const allowedTypes = /pdf|jpg|jpeg|png|doc|docx|xls|xlsx|xml/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype) ||
                     file.mimetype === 'application/vnd.ms-excel' ||
                     file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
                     file.mimetype === 'application/msword' ||
-                    file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                    file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                    file.mimetype === 'application/xml' ||
+                    file.mimetype === 'text/xml';
     
     if (mimetype && extname) {
       return cb(null, true);
     } else {
-      cb(new Error("Only PDF, JPG, JPEG, PNG, DOC, DOCX, XLS, and XLSX files are allowed"));
+      cb(new Error("Only PDF, JPG, JPEG, PNG, DOC, DOCX, XLS, XLSX, and XML files are allowed"));
     }
   },
 });
@@ -1191,6 +1194,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching documents:", error);
       res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
+  // XML shipment processing route
+  app.post('/api/shipments/xml/process', requireSubscription, upload.single('xmlFile'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No XML file uploaded" });
+      }
+
+      const userId = getUserId(req);
+      
+      // Read the uploaded XML file
+      const xmlContent = fs.readFileSync(req.file.path, 'utf8');
+      
+      // Process the XML and create hierarchical shipment data
+      const shipmentId = await xmlShipmentProcessor.processXmlShipment(xmlContent, userId);
+      
+      // Clean up uploaded file
+      fs.unlinkSync(req.file.path);
+      
+      // Get the complete processed shipment data
+      const completeShipment = await xmlShipmentProcessor.getXmlShipmentById(shipmentId);
+      
+      res.status(201).json({
+        message: "XML shipment processed successfully",
+        shipmentId,
+        shipment: completeShipment
+      });
+      
+    } catch (error: any) {
+      console.error("Error processing XML shipment:", error);
+      
+      // Clean up uploaded file if it exists
+      if (req.file?.path && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      
+      res.status(500).json({ 
+        message: "Failed to process XML shipment", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Get XML shipments for a user
+  app.get('/api/shipments/xml', requireSubscription, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const xmlShipments = await xmlShipmentProcessor.getXmlShipmentsByUser(userId);
+      res.json(xmlShipments);
+    } catch (error) {
+      console.error("Error fetching XML shipments:", error);
+      res.status(500).json({ message: "Failed to fetch XML shipments" });
+    }
+  });
+
+  // Get specific XML shipment with all related data
+  app.get('/api/shipments/xml/:id', requireSubscription, async (req: any, res) => {
+    try {
+      const shipmentId = parseInt(req.params.id);
+      const userId = getUserId(req);
+      
+      const completeShipment = await xmlShipmentProcessor.getXmlShipmentById(shipmentId);
+      
+      // Verify user owns this shipment
+      if (completeShipment.shipment.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      res.json(completeShipment);
+    } catch (error) {
+      console.error("Error fetching XML shipment:", error);
+      res.status(500).json({ message: "Failed to fetch XML shipment" });
     }
   });
 

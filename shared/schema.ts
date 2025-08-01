@@ -572,3 +572,291 @@ export const insertAgentAssignmentSchema = createInsertSchema(agentAssignments).
   createdAt: true,
   updatedAt: true,
 });
+
+// Enhanced XML-based shipment tables for comprehensive data structure
+// Based on the IES-Shipment XML schema provided
+
+// Enhanced shipments table for XML compatibility
+export const xmlShipments = pgTable("xml_shipments", {
+  id: serial("id").primaryKey(),
+  shipmentId: varchar("shipment_id").notNull().unique(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // XML Transaction details
+  transactionId: varchar("transaction_id").notNull().unique(),
+  transactionDateTime: timestamp("transaction_date_time").notNull(),
+  transactionSetPurpose: varchar("transaction_set_purpose").default("Add"), // Add, Update, Delete
+  shipmentType: varchar("shipment_type").default("Master"), // Master, House
+  documentDate: timestamp("document_date"),
+  fileNumber: varchar("file_number"),
+  
+  // Bill of Lading information
+  masterBillNumber: varchar("master_bill_number"),
+  houseBillNumber: varchar("house_bill_number"),
+  subHouseBillNumber: varchar("sub_house_bill_number"),
+  itNumber: varchar("it_number"), // Internal Transfer number
+  bookingNumber: varchar("booking_number"),
+  originReference: varchar("origin_reference"),
+  
+  // Operational details
+  division: varchar("division"),
+  paymentMethod: varchar("payment_method"), // Collect, Prepaid
+  transportationMethod: varchar("transportation_method"), // Air, Ocean, Ground
+  typeOfMove: varchar("type_of_move"),
+  
+  // Vessel and timing information
+  vesselName: varchar("vessel_name"),
+  voyageFlightNumber: varchar("voyage_flight_number"),
+  departureDateTime: timestamp("departure_date_time"),
+  arrivalDateTime: timestamp("arrival_date_time"),
+  importDate: timestamp("import_date"),
+  firmsCode: varchar("firms_code"), // FIRMS code for port authority
+  
+  // General cargo information
+  marksNumbers: text("marks_numbers"), // Package markings and numbers
+  
+  // Status and processing
+  status: varchar("status").notNull().default("pending"),
+  processingStatus: varchar("processing_status").default("received"), // received, processed, completed, error
+  
+  // Raw XML storage
+  xmlData: jsonb("xml_data"), // Store complete original XML
+  xmlVersion: varchar("xml_version").default("1.0"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Shipment parties table for multiple party types
+export const shipmentParties = pgTable("shipment_parties", {
+  id: serial("id").primaryKey(),
+  shipmentId: integer("shipment_id").notNull().references(() => xmlShipments.id, { onDelete: "cascade" }),
+  
+  // Party identification
+  partyType: varchar("party_type").notNull(), // Account, Shipper, Consignee, NotifyParty, Broker, etc.
+  partyCode: varchar("party_code"),
+  
+  // Party details
+  name: varchar("name").notNull(),
+  address1: varchar("address1"),
+  address2: varchar("address2"),
+  cityName: varchar("city_name"),
+  stateOrProvinceCode: varchar("state_or_province_code"),
+  postalCode: varchar("postal_code"),
+  countryCode: varchar("country_code"),
+  
+  // Identification information
+  idCode: varchar("id_code"), // Tax ID, DUNS number, etc.
+  idCodeQualifier: varchar("id_code_qualifier"), // EIN, DUNS, etc.
+  
+  // Contact information
+  contactPerson: varchar("contact_person"),
+  phone: varchar("phone"),
+  email: varchar("email"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Shipment locations table for various location types
+export const shipmentLocations = pgTable("shipment_locations", {
+  id: serial("id").primaryKey(),
+  shipmentId: integer("shipment_id").notNull().references(() => xmlShipments.id, { onDelete: "cascade" }),
+  
+  // Location identification
+  locationType: varchar("location_type").notNull(), // PlaceOfReceipt, PortOfLoading, PortOfDischarge, PlaceOfDelivery, etc.
+  locationIdQualifier: varchar("location_id_qualifier"), // UN/LOCODE, Port Code, etc.
+  locationId: varchar("location_id"),
+  locationName: varchar("location_name"),
+  
+  // Geographic details
+  stateOrProvinceCode: varchar("state_or_province_code"),
+  countryCode: varchar("country_code"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Container information table
+export const shipmentContainers = pgTable("shipment_containers", {
+  id: serial("id").primaryKey(),
+  shipmentId: integer("shipment_id").notNull().references(() => xmlShipments.id, { onDelete: "cascade" }),
+  
+  // Container identification
+  equipmentInitial: varchar("equipment_initial"), // Container prefix (4 letters)
+  equipmentNumber: varchar("equipment_number"), // Container number
+  fullContainerNumber: varchar("full_container_number"), // Combined container number
+  
+  // Seal information
+  sealNumber1: varchar("seal_number1"),
+  sealNumber2: varchar("seal_number2"),
+  sealNumber3: varchar("seal_number3"),
+  
+  // Container specifications
+  equipmentTypeCode: varchar("equipment_type_code"), // ISO container type code (e.g., 22B0)
+  containerSize: varchar("container_size"), // 20', 40', 45'
+  containerType: varchar("container_type"), // GP, HC, RF, etc.
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Container contents table for cargo details
+export const containerContents = pgTable("container_contents", {
+  id: serial("id").primaryKey(),
+  containerId: integer("container_id").references(() => shipmentContainers.id, { onDelete: "cascade" }),
+  shipmentId: integer("shipment_id").notNull().references(() => xmlShipments.id, { onDelete: "cascade" }),
+  
+  // Quantity and packaging
+  quantityShipped: decimal("quantity_shipped", { precision: 15, scale: 6 }),
+  unitOfMeasure: varchar("unit_of_measure"), // PCS, CTN, PLT, etc.
+  description: text("description"), // Cargo description
+  
+  // Weight information
+  grossWeight: decimal("gross_weight", { precision: 12, scale: 3 }),
+  netWeight: decimal("net_weight", { precision: 12, scale: 3 }),
+  weightUnit: varchar("weight_unit").default("KG"),
+  volumeWeight: decimal("volume_weight", { precision: 15, scale: 6 }),
+  
+  // Volume information
+  volume: decimal("volume", { precision: 12, scale: 3 }),
+  volumeUnit: varchar("volume_unit").default("CBM"),
+  
+  // Trade classification
+  scheduleBNumber: varchar("schedule_b_number"), // Export classification
+  htsNumber: varchar("hts_number"), // Import classification
+  
+  // Commercial value
+  value: decimal("value", { precision: 12, scale: 2 }),
+  currency: varchar("currency").default("USD"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Shipment charges table for freight and other charges
+export const shipmentCharges = pgTable("shipment_charges", {
+  id: serial("id").primaryKey(),
+  shipmentId: integer("shipment_id").notNull().references(() => xmlShipments.id, { onDelete: "cascade" }),
+  
+  // Charge identification
+  chargeType: varchar("charge_type").notNull(), // Expense, Revenue, Freight, etc.
+  chargeStatus: varchar("charge_status"), // Estimated, Actual, etc.
+  chargeCode: varchar("charge_code"), // Internal charge code
+  description: varchar("description"), // Charge description
+  
+  // Charge calculation
+  basis: varchar("basis"), // Per container, per shipment, per weight, etc.
+  quantityInvoiced: decimal("quantity_invoiced", { precision: 15, scale: 6 }),
+  chargeUnit: varchar("charge_unit"), // Container, KG, CBM, etc.
+  rate: decimal("rate", { precision: 15, scale: 6 }),
+  
+  // Charge amount
+  chargeAmount: decimal("charge_amount", { precision: 12, scale: 2 }),
+  currency: varchar("currency").default("USD"),
+  paymentMethod: varchar("payment_method"), // Collect, Prepaid
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Type definitions for XML tables
+export type InsertXmlShipment = typeof xmlShipments.$inferInsert;
+export type XmlShipment = typeof xmlShipments.$inferSelect;
+
+export type InsertShipmentParty = typeof shipmentParties.$inferInsert;
+export type ShipmentParty = typeof shipmentParties.$inferSelect;
+
+export type InsertShipmentLocation = typeof shipmentLocations.$inferInsert;
+export type ShipmentLocation = typeof shipmentLocations.$inferSelect;
+
+export type InsertShipmentContainer = typeof shipmentContainers.$inferInsert;
+export type ShipmentContainer = typeof shipmentContainers.$inferSelect;
+
+export type InsertContainerContent = typeof containerContents.$inferInsert;
+export type ContainerContent = typeof containerContents.$inferSelect;
+
+export type InsertShipmentCharge = typeof shipmentCharges.$inferInsert;
+export type ShipmentCharge = typeof shipmentCharges.$inferSelect;
+
+// Insert schemas for XML tables
+export const insertXmlShipmentSchema = createInsertSchema(xmlShipments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertShipmentPartySchema = createInsertSchema(shipmentParties).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertShipmentLocationSchema = createInsertSchema(shipmentLocations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertShipmentContainerSchema = createInsertSchema(shipmentContainers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertContainerContentSchema = createInsertSchema(containerContents).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertShipmentChargeSchema = createInsertSchema(shipmentCharges).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Relations for XML tables to enable proper querying
+import { relations } from "drizzle-orm";
+
+export const xmlShipmentsRelations = relations(xmlShipments, ({ one, many }) => ({
+  user: one(users, {
+    fields: [xmlShipments.userId],
+    references: [users.id],
+  }),
+  parties: many(shipmentParties),
+  locations: many(shipmentLocations),
+  containers: many(shipmentContainers),
+  contents: many(containerContents),
+  charges: many(shipmentCharges),
+}));
+
+export const shipmentPartiesRelations = relations(shipmentParties, ({ one }) => ({
+  shipment: one(xmlShipments, {
+    fields: [shipmentParties.shipmentId],
+    references: [xmlShipments.id],
+  }),
+}));
+
+export const shipmentLocationsRelations = relations(shipmentLocations, ({ one }) => ({
+  shipment: one(xmlShipments, {
+    fields: [shipmentLocations.shipmentId],
+    references: [xmlShipments.id],
+  }),
+}));
+
+export const shipmentContainersRelations = relations(shipmentContainers, ({ one, many }) => ({
+  shipment: one(xmlShipments, {
+    fields: [shipmentContainers.shipmentId],
+    references: [xmlShipments.id],
+  }),
+  contents: many(containerContents),
+}));
+
+export const containerContentsRelations = relations(containerContents, ({ one }) => ({
+  container: one(shipmentContainers, {
+    fields: [containerContents.containerId],
+    references: [shipmentContainers.id],
+  }),
+  shipment: one(xmlShipments, {
+    fields: [containerContents.shipmentId],
+    references: [xmlShipments.id],
+  }),
+}));
+
+export const shipmentChargesRelations = relations(shipmentCharges, ({ one }) => ({
+  shipment: one(xmlShipments, {
+    fields: [shipmentCharges.shipmentId],
+    references: [xmlShipments.id],
+  }),
+}));

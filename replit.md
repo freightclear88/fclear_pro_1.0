@@ -17,7 +17,7 @@ Key Features Requested:
 - Enhanced multi-document processing with improved Azure Document Intelligence integration and fallback logic
 
 ## System Architecture
-The application follows a modern full-stack architecture with clear separation between frontend and backend components, featuring enhanced multi-document processing capabilities for comprehensive shipment creation.
+The application follows a modern full-stack architecture with clear separation between frontend and backend components, featuring enhanced multi-document processing capabilities for comprehensive shipment creation and comprehensive XML-based shipment data management.
 
 **Frontend:**
 -   **Framework**: React with TypeScript
