@@ -77,13 +77,17 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
       );
       const hasAzureFields = data.shipper || data.consignee || data.bill_of_lading_no || 
                             data.vessel_voyage || data.particulars_furnished_by_shipper || 
-                            data.contact_for_release || data.place_and_date_of_issue;
+                            data.contact_for_release || data.place_and_date_of_issue || data.notify_party;
       
-      if (hasAzureFields || hasNestedObjects) {
+      // Force Azure detection if we have 50+ fields from document extraction (indicates complex Azure response)
+      const hasComplexExtraction = Object.keys(data).length > 50;
+      
+      if (hasAzureFields || hasNestedObjects || hasComplexExtraction) {
         console.log(`Processing Azure nested data with ${Object.keys(data).length} top-level fields`);
         console.log('Azure data keys:', Object.keys(data));
         console.log('Has nested objects:', hasNestedObjects);
         console.log('Has Azure fields:', hasAzureFields);
+        console.log('Has complex extraction:', hasComplexExtraction);
         extractedFields = flattenAzureData(data);
         console.log(`Flattened to ${Object.keys(extractedFields).length} mapped fields:`, Object.keys(extractedFields));
         console.log('Mapped field values:', extractedFields);
