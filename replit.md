@@ -12,6 +12,7 @@ Key Features Requested:
 - HTML data pages with copy functionality
 - CSV export for shipments (monthly/yearly filters)
 - Professional Freightclear branding alignment
+- Comprehensive ISF document data extraction using Azure Document Intelligence (January 2025)
 
 ## System Architecture
 The application follows a modern full-stack architecture with clear separation between frontend and backend components.
@@ -35,7 +36,7 @@ The application follows a modern full-stack architecture with clear separation b
 -   **API Structure**: RESTful endpoints
 -   **Payment Gateway**: Authorize.Net integration for subscription billing
 -   **Access Control**: Subscription middleware enforcing usage limits
--   **Document Processing**: AI-powered OCR using OpenAI GPT-4o and Azure Document Intelligence for data extraction (supporting PDF, Excel, Word documents) with automatic ISF filing creation and intelligent field mapping
+-   **Document Processing**: Hybrid AI-powered OCR using Azure Document Intelligence as primary processor with OpenAI GPT-4o enhancement for comprehensive data extraction (supporting PDF, Excel, Word documents) with automatic ISF filing creation and intelligent field mapping
 -   **Reporting**: CSV export for shipments
 -   **XML Integration**: Server-side XML processing engine for UN/EDIFACT COPRAR, COPARN, generic shipments, and container status formats.
 
@@ -60,7 +61,7 @@ The application follows a modern full-stack architecture with clear separation b
 -   **IRS Proof Upload**: User profile integration with admin verification.
 -   **Invoice Management**: Admin/agent upload of invoices, user-specific invoice display, and "Pay Now" functionality.
 -   **Last Mile Integration**: Dedicated document categories and sub-categories, with automatic shipment creation from delivery orders.
--   **Fast ISF Filing**: Comprehensive 10+2 form with AI-powered document scanning, automatic ISF filing creation from uploaded documents, ISF editing workflow, and Stripe payment integration ($35.00 filing fee).
+-   **Fast ISF Filing**: Comprehensive 10+2 form with hybrid AI-powered document scanning (Azure + OpenAI), automatic ISF filing creation from uploaded documents with comprehensive field population (vessel, container, port, dates, SCAC codes, etc.), ISF editing workflow, and Stripe payment integration ($35.00 filing fee).
 -   **XML Integration**: Support for external shipment database updates using XML (UN/EDIFACT, SMDG) with bidirectional data mapping.
 -   **Chat/Support System**: Integrated customer support via Zendesk API for ticket management.
 -   **Pagination**: Implemented for large data sets (e.g., shipments table) for improved performance.
