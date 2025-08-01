@@ -120,7 +120,7 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
 
               {(shipment.billOfLadingNumber || shipment.billOfLading) && (
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Bill of Lading:</span>
+                  <span className="text-gray-600">Bill of Lading Number:</span>
                   <div className="flex items-center space-x-2">
                     <span className="font-medium">{shipment.billOfLadingNumber || shipment.billOfLading}</span>
                     <Button
