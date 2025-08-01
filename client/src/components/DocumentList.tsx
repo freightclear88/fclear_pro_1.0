@@ -193,19 +193,6 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
                       </Button>
                     )}
                     
-                    {/* Data viewing button */}
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setSelectedDocument(doc);
-                        setIsDetailOpen(true);
-                      }}
-                      className="btn-outline-accent"
-                    >
-                      <FileText className="w-4 h-4 mr-2" />
-                      View Data
-                    </Button>
-                    
                     <Button
                       size="sm"
                       onClick={() => handleDownload(doc)}
