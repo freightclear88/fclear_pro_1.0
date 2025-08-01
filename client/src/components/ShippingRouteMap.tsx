@@ -70,6 +70,49 @@ const MAJOR_PORTS: Record<string, [number, number]> = {
   'UNKNOWN': [0, 0]
 };
 
+// Helper functions
+function findPortCoordinates(portName: string): [number, number] {
+  const cleanPortName = portName.toUpperCase().trim();
+  
+  // Try exact match first
+  if (MAJOR_PORTS[cleanPortName]) {
+    return MAJOR_PORTS[cleanPortName];
+  }
+  
+  // Try partial matches
+  for (const [knownPort, coordinates] of Object.entries(MAJOR_PORTS)) {
+    if (cleanPortName.includes(knownPort) || knownPort.includes(cleanPortName)) {
+      return coordinates;
+    }
+  }
+  
+  // Return default coordinates
+  return MAJOR_PORTS.UNKNOWN;
+}
+
+function extractPortCode(portName: string): string {
+  // Extract port code from port name
+  const match = portName.match(/\b([A-Z]{3,5})\b/);
+  return match ? match[1] : portName.substring(0, 3).toUpperCase();
+}
+
+function generateIntermediatePoints(
+  start: [number, number],
+  end: [number, number],
+  numPoints: number
+): [number, number][] {
+  const points: [number, number][] = [];
+  
+  for (let i = 1; i <= numPoints; i++) {
+    const t = i / (numPoints + 1);
+    const lng = start[0] + (end[0] - start[0]) * t;
+    const lat = start[1] + (end[1] - start[1]) * t;
+    points.push([lng, lat]);
+  }
+  
+  return points;
+}
+
 const ShippingRouteMap: React.FC<ShippingRouteMapProps> = ({ shipment, className = '' }) => {
   const [selectedRoute, setSelectedRoute] = useState<'current' | 'historical'>('current');
 
@@ -214,8 +257,13 @@ const ShippingRouteMap: React.FC<ShippingRouteMapProps> = ({ shipment, className
           </div>
 
           {/* Visual Route Map */}
-          <div className="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 min-h-[400px]">
-            <SVGRouteVisualization 
+          <div className="relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-6 min-h-[500px] border border-slate-200">
+            <div className="absolute top-2 right-2 z-10">
+              <Badge variant="outline" className="bg-white/90 backdrop-blur-sm">
+                Interactive Map
+              </Badge>
+            </div>
+            <WorldMapVisualization 
               ports={ports}
               routePoints={routePoints}
               progress={estimatedProgress}
@@ -326,8 +374,8 @@ const ShippingRouteMap: React.FC<ShippingRouteMapProps> = ({ shipment, className
   );
 };
 
-// SVG Route Visualization Component
-interface SVGRouteVisualizationProps {
+// World Map Visualization Component
+interface WorldMapVisualizationProps {
   ports: Port[];
   routePoints: RoutePoint[];
   progress: number;
@@ -338,7 +386,7 @@ interface SVGRouteVisualizationProps {
   };
 }
 
-const SVGRouteVisualization: React.FC<SVGRouteVisualizationProps> = ({
+const WorldMapVisualization: React.FC<WorldMapVisualizationProps> = ({
   ports,
   routePoints,
   progress,
@@ -358,8 +406,8 @@ const SVGRouteVisualization: React.FC<SVGRouteVisualizationProps> = ({
       <div className="flex items-center justify-center h-full text-gray-500">
         <div className="text-center">
           <MapPin className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p>Route visualization not available</p>
-          <p className="text-sm">Port coordinates needed</p>
+          <p>Route visualization loading...</p>
+          <p className="text-sm">Processing port coordinates</p>
         </div>
       </div>
     );
@@ -373,7 +421,7 @@ const SVGRouteVisualization: React.FC<SVGRouteVisualizationProps> = ({
   // Add padding to bounds
   const lngRange = maxLng - minLng || 10;
   const latRange = maxLat - minLat || 10;
-  const boundsPadding = 0.1;
+  const boundsPadding = 0.2;
 
   const bounds = {
     minLng: minLng - lngRange * boundsPadding,
@@ -428,13 +476,30 @@ const SVGRouteVisualization: React.FC<SVGRouteVisualizationProps> = ({
 
   return (
     <svg width={width} height={height} className="w-full h-full">
-      {/* Background grid */}
+      {/* Background with ocean theme */}
       <defs>
-        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e5e7eb" strokeWidth="1" opacity="0.3"/>
+        <linearGradient id="oceanGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#dbeafe" />
+          <stop offset="100%" stopColor="#bfdbfe" />
+        </linearGradient>
+        <pattern id="waves" x="0" y="0" width="40" height="20" patternUnits="userSpaceOnUse">
+          <path d="M0,10 Q10,5 20,10 T40,10" fill="none" stroke="#93c5fd" strokeWidth="0.5" opacity="0.3"/>
         </pattern>
       </defs>
-      <rect width="100%" height="100%" fill="url(#grid)" />
+      
+      {/* Ocean background */}
+      <rect width="100%" height="100%" fill="url(#oceanGradient)" />
+      <rect width="100%" height="100%" fill="url(#waves)" />
+      
+      {/* Continental outlines (simplified) */}
+      <g opacity="0.3">
+        {/* North America */}
+        <ellipse cx={width * 0.2} cy={height * 0.3} rx="80" ry="60" fill="#065f46" fillOpacity="0.2" stroke="#047857" strokeWidth="1"/>
+        {/* Asia */}
+        <ellipse cx={width * 0.8} cy={height * 0.25} rx="100" ry="80" fill="#065f46" fillOpacity="0.2" stroke="#047857" strokeWidth="1"/>
+        {/* Europe */}
+        <ellipse cx={width * 0.65} cy={height * 0.2} rx="40" ry="30" fill="#065f46" fillOpacity="0.2" stroke="#047857" strokeWidth="1"/>
+      </g>
       
       {/* Route line */}
       {svgRoutePoints.length > 1 && (
@@ -468,16 +533,16 @@ const SVGRouteVisualization: React.FC<SVGRouteVisualizationProps> = ({
           <circle
             cx={port.svgCoordinates[0]}
             cy={port.svgCoordinates[1]}
-            r="8"
+            r="10"
             fill={port.type === 'loading' ? '#2563eb' : '#dc2626'}
             stroke="white"
-            strokeWidth="2"
+            strokeWidth="3"
           />
           <text
             x={port.svgCoordinates[0]}
-            y={port.svgCoordinates[1] - 15}
+            y={port.svgCoordinates[1] - 20}
             textAnchor="middle"
-            className="text-xs font-medium fill-gray-700"
+            className="text-sm font-medium fill-gray-700"
           >
             {port.name}
           </text>
@@ -490,79 +555,38 @@ const SVGRouteVisualization: React.FC<SVGRouteVisualizationProps> = ({
           <circle
             cx={vesselPosition[0]}
             cy={vesselPosition[1]}
-            r="6"
+            r="8"
             fill="#f97316"
             stroke="white"
             strokeWidth="2"
           >
-            <animate attributeName="r" values="6;8;6" dur="2s" repeatCount="indefinite" />
+            <animate attributeName="r" values="8;12;8" dur="2s" repeatCount="indefinite" />
           </circle>
           <text
             x={vesselPosition[0]}
-            y={vesselPosition[1] - 15}
+            y={vesselPosition[1] - 18}
             textAnchor="middle"
             className="text-xs font-medium fill-orange-600"
           >
-            🚢 Vessel
+            🚢 {Math.round(progress)}%
           </text>
         </g>
       )}
       
       {/* Legend */}
-      <g transform={`translate(${padding}, ${height - 60})`}>
-        <rect x="-10" y="-10" width="160" height="50" fill="white" fillOpacity="0.9" rx="5" />
-        <circle cx="0" cy="0" r="4" fill="#2563eb" />
-        <text x="10" y="4" className="text-xs fill-gray-700">Loading Port</text>
-        <circle cx="0" cy="15" r="4" fill="#dc2626" />
-        <text x="10" y="19" className="text-xs fill-gray-700">Discharge Port</text>
-        <circle cx="0" cy="30" r="4" fill="#f97316" />
-        <text x="10" y="34" className="text-xs fill-gray-700">Vessel Position</text>
+      <g transform={`translate(${padding}, ${height - 80})`}>
+        <rect x="-10" y="-10" width="180" height="70" fill="white" fillOpacity="0.9" rx="5" stroke="#e5e7eb"/>
+        <circle cx="0" cy="0" r="6" fill="#2563eb" />
+        <text x="15" y="4" className="text-xs fill-gray-700">Loading Port</text>
+        <circle cx="0" cy="20" r="6" fill="#dc2626" />
+        <text x="15" y="24" className="text-xs fill-gray-700">Discharge Port</text>
+        <circle cx="0" cy="40" r="6" fill="#f97316" />
+        <text x="15" y="44" className="text-xs fill-gray-700">Vessel Position</text>
+        <line x1="0" y1="55" x2="20" y2="55" stroke="#2563eb" strokeWidth="3"/>
+        <text x="25" y="59" className="text-xs fill-gray-700">Route</text>
       </g>
     </svg>
   );
 };
-
-// Helper functions
-function findPortCoordinates(portName: string): [number, number] {
-  const cleanPortName = portName.toUpperCase().trim();
-  
-  // Try exact match first
-  if (MAJOR_PORTS[cleanPortName]) {
-    return MAJOR_PORTS[cleanPortName];
-  }
-  
-  // Try partial matches
-  for (const [knownPort, coordinates] of Object.entries(MAJOR_PORTS)) {
-    if (cleanPortName.includes(knownPort) || knownPort.includes(cleanPortName)) {
-      return coordinates;
-    }
-  }
-  
-  // Return default coordinates
-  return MAJOR_PORTS.UNKNOWN;
-}
-
-function extractPortCode(portName: string): string {
-  // Extract port code from port name
-  const match = portName.match(/\b([A-Z]{3,5})\b/);
-  return match ? match[1] : portName.substring(0, 3).toUpperCase();
-}
-
-function generateIntermediatePoints(
-  start: [number, number],
-  end: [number, number],
-  numPoints: number
-): [number, number][] {
-  const points: [number, number][] = [];
-  
-  for (let i = 1; i <= numPoints; i++) {
-    const t = i / (numPoints + 1);
-    const lng = start[0] + (end[0] - start[0]) * t;
-    const lat = start[1] + (end[1] - start[1]) * t;
-    points.push([lng, lat]);
-  }
-  
-  return points;
-}
 
 export default ShippingRouteMap;
