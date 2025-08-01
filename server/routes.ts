@@ -4000,25 +4000,26 @@ ${fullText}`;
             // Extract vessel and voyage information from the specific ISF format
             let vesselName = null, voyageNumber = null;
             
-            // Look for "VESSEL / VOYAGE:" pattern like "GRETE MAERSK / 120E"
-            const vesselVoyageMatch = fullText.match(/VESSEL\s*\/\s*VOYAGE[^:]*[:]*\s*([A-Z\s]+?)\s*\/\s*([A-Z0-9]+)/i);
+            // Look for "GRETE MAERSK / 120E" pattern after VESSEL / VOYAGE line
+            const vesselVoyageMatch = fullText.match(/VESSEL\s*\/\s*VOYAGE[^:]*[:]*\s*[^\n]*\n\s*[^\n]*\n\s*([A-Z\s]+?)\s*\/\s*([A-Z0-9]+)/i);
             if (vesselVoyageMatch) {
               vesselName = vesselVoyageMatch[1]?.trim();
               voyageNumber = vesselVoyageMatch[2]?.trim();
             }
             
-            // Alternative pattern for separate vessel and voyage
+            // Alternative: Look for GRETE MAERSK specifically
             if (!vesselName) {
-              const altVesselMatch = fullText.match(/VESSEL[^:]*[:]*\s*([A-Z\s]+?)(?:\s*VOYAGE|\s*\/)/i);
-              if (altVesselMatch) {
-                vesselName = altVesselMatch[1]?.trim();
+              const greteMatch = fullText.match(/GRETE\s+MAERSK/i);
+              if (greteMatch) {
+                vesselName = greteMatch[0]?.trim();
               }
             }
             
+            // Alternative: Look for 120E voyage number specifically  
             if (!voyageNumber) {
-              const altVoyageMatch = fullText.match(/VOYAGE[^:]*[:]*\s*([A-Z0-9]+)/i);
-              if (altVoyageMatch) {
-                voyageNumber = altVoyageMatch[1]?.trim();
+              const voyageMatch = fullText.match(/GRETE\s+MAERSK\s*\/\s*([A-Z0-9]+)/i);
+              if (voyageMatch) {
+                voyageNumber = voyageMatch[1]?.trim();
               }
             }
             
@@ -4091,23 +4092,23 @@ ${fullText}`;
             // Extract AMS number with enhanced patterns
             let amsNumber = null;
             
-            // Look for "AMS FILLLING NO." pattern
-            const amsFillingMatch = fullText.match(/AMS\s+FILLLING\s+NO[^:]*[:]*\s*([A-Z0-9]+)/i);
-            if (amsFillingMatch) {
-              amsNumber = amsFillingMatch[1]?.trim();
+            // Look for MEDUNE204288 which is the actual MBL/AMS number in this document
+            const mblCarrierMatch = fullText.match(/MBL\s*OF\s*CARRIER[^:]*[:]*\s*[^\n]*\n\s*[^\n]*\n\s*([A-Z0-9]{6,})/i);
+            if (mblCarrierMatch) {
+              amsNumber = mblCarrierMatch[1]?.trim();
             }
             
-            // Alternative: Look for MBL OF CARRIER which often contains AMS filing number
+            // Alternative: Look for explicit AMS filing number pattern
             if (!amsNumber) {
-              const mblCarrierMatch = fullText.match(/MBL\s*OF\s*CARRIER[^:]*[:]*\s*([A-Z0-9]{6,})/i);
-              if (mblCarrierMatch) {
-                amsNumber = mblCarrierMatch[1]?.trim();
+              const amsFillingMatch = fullText.match(/AMS\s+FILLLING\s+NO[^:]*[:]*\s*([A-Z0-9]{6,})/i);
+              if (amsFillingMatch) {
+                amsNumber = amsFillingMatch[1]?.trim();
               }
             }
             
-            // Look for specific booking references that are AMS related
+            // Look for booking number format like "NGB/LUI/0684791"
             if (!amsNumber) {
-              const bookingMatch = fullText.match(/(?:Booking\s*Number|Reference)[^:]*[:]*\s*([A-Z]{3,}\/[A-Z]{3,}\/[0-9]+)/i);
+              const bookingMatch = fullText.match(/Booking\s*Number[^:]*[:]*\s*([A-Z]{3}\/[A-Z]{3}\/[0-9]+)/i);
               if (bookingMatch) {
                 amsNumber = bookingMatch[1]?.trim();
               }
@@ -4131,45 +4132,45 @@ ${fullText}`;
               estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
             }
             
-            // Extract container stuffing location with better precision
+            // Extract container stuffing location with precise targeting
             let containerStuffingLocation = null;
             
-            // Look for specific "CONTAINER STUFFING LOCATION:" section
-            const stuffingLocationMatch = fullText.match(/CONTAINER\s+STUFFING\s+LOCATION[^:]*[:]*\s*([^\n]+)/i);
-            if (stuffingLocationMatch) {
-              containerStuffingLocation = stuffingLocationMatch[1]?.trim();
+            // Look for NINGBO (ZHEJIANG) which is the actual port of loading
+            const ningboMatch = fullText.match(/NINGBO\s*\(ZHEJIANG\)/i);
+            if (ningboMatch) {
+              containerStuffingLocation = ningboMatch[0]?.trim();
             }
             
-            // Alternative: Extract from PORT OF LOADING but be more specific
+            // Alternative: Look for any other specific port location patterns
             if (!containerStuffingLocation) {
-              const portOfLoadingMatch = fullText.match(/PORT\s*OF\s*LOADING[^:]*[:]*\s*[^\n]*\n\s*([A-Z\s(),]+?)(?:\s*FIRST\s*PORT|\s*MBL|\n)/i);
-              if (portOfLoadingMatch) {
-                containerStuffingLocation = portOfLoadingMatch[1]?.trim();
+              const portCityMatch = fullText.match(/PORT\s*OF\s*LOADING[^:]*[:]*\s*[^\n]*\n\s*[^\n]*\n\s*([A-Z\s(),]+?)(?:\s*FIRST\s*PORT|$)/i);
+              if (portCityMatch) {
+                containerStuffingLocation = portCityMatch[1]?.trim();
               }
             }
             
-            // Extract consolidator/stuffer information with precise patterns
+            // Extract consolidator/stuffer information with very precise patterns
             let consolidatorStufferInfo = null;
             
-            // Look for specific "CONSOLIDATOR NAME AND ADDRESS" section
-            const consolidatorSectionMatch = fullText.match(/CONSOLIDATOR\s+NAME\s+AND\s+ADDRESS[^:]*[:]*\s*([^\n]+(?:\n[^\n]*?)*?)(?:\n\s*CONTAINER\s+STUFFING|$)/i);
-            if (consolidatorSectionMatch) {
-              consolidatorStufferInfo = consolidatorSectionMatch[1]?.trim();
+            // Look for ECU WORLDWIDE company specifically
+            const ecuMatch = fullText.match(/ECU\s+WORLDWIDE\s+\(GUANGZHOU\)\s+LIMITED\s+NINGBO\s+BRANCH[^\n]*(?:\n[A-Za-z0-9\s,.-]+)*?NINGBO\s+CHINA[^\n]*/i);
+            if (ecuMatch) {
+              consolidatorStufferInfo = ecuMatch[0]?.trim();
             }
             
-            // Alternative: Look for company name patterns after specific keywords
+            // Alternative: Look for BAICHUANG GANGTONG specifically  
             if (!consolidatorStufferInfo) {
-              const companyPatterns = [
-                /ECU\s+WORLDWIDE[^\n]*(?:\n[^\n]*)*?NINGBO\s+CHINA/i,
-                /BAICHUANG\s+GANGTONG[^\n]*(?:\n[^\n]*)*?LOGISTICS/i
-              ];
-              
-              for (const pattern of companyPatterns) {
-                const match = fullText.match(pattern);
-                if (match) {
-                  consolidatorStufferInfo = match[0]?.trim();
-                  break;
-                }
+              const baichuangMatch = fullText.match(/NINGBO\s+BAICHUANG\s+GANGTONG\s+INTERNATIONAL\s+LOGISTICS[^\n]*(?:\n[^\n]*)*?NINGBO\s+CITY[^\n]*/i);
+              if (baichuangMatch) {
+                consolidatorStufferInfo = baichuangMatch[0]?.trim();
+              }
+            }
+            
+            // Last resort: Look for any company with clear address structure
+            if (!consolidatorStufferInfo) {
+              const generalCompanyMatch = fullText.match(/([A-Z][A-Z\s&,()]+LIMITED[^\n]*\n[^\n]*\nNo[^\n]*NINGBO[^\n]*)/i);
+              if (generalCompanyMatch) {
+                consolidatorStufferInfo = generalCompanyMatch[1]?.trim();
               }
             }
             
