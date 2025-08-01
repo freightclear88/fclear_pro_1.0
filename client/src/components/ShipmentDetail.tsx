@@ -106,10 +106,10 @@ COMMERCIAL:
 - Total Value: ${formatValue(shipment.totalValue)}
 
 DATES:
-- Date of Shipment: ${formatDate(shipment.dateOfShipment)}
-- On Board Date: ${formatDate(shipment.onBoardDate)}
-- ETA: ${formatDate(shipment.eta)}
-- ETD: ${formatDate(shipment.etd)}
+- Date of Shipment: ${formatDate(shipment.dateOfShipment?.toString() || null)}
+- On Board Date: ${formatDate(shipment.onBoardDate?.toString() || null)}
+- ETA: ${formatDate(shipment.eta?.toString() || null)}
+- ETD: ${formatDate(shipment.etd?.toString() || null)}
 
 CONTAINER:
 - Container Number: ${formatValue(shipment.containerNumber)}
@@ -167,7 +167,7 @@ CONTAINER:
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     
     return (
-      <Badge variant={config.variant} className={config.className || ""}>
+      <Badge variant={config.variant} className={"className" in config ? config.className : ""}>
         {config.label}
       </Badge>
     );
@@ -235,7 +235,7 @@ CONTAINER:
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        const trackingUrl = generateAWBTrackingUrl(shipment.airWaybillNumber!);
+                        const trackingUrl = generateAWBTrackingUrl(shipment.airWaybillNumber!, true);
                         if (trackingUrl) {
                           window.open(trackingUrl, '_blank');
                         }

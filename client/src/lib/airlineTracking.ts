@@ -143,10 +143,15 @@ export function detectAirlineFromAWB(awbNumber: string): AirlineInfo | null {
 /**
  * Generates a direct tracking URL for an AWB number
  */
-export function generateAWBTrackingUrl(awbNumber: string): string | null {
+export function generateAWBTrackingUrl(awbNumber: string, useGenericPage: boolean = false): string | null {
   const airline = detectAirlineFromAWB(awbNumber);
   if (!airline) {
     return null;
+  }
+
+  // If generic page is requested, return the base tracking URL
+  if (useGenericPage) {
+    return airline.trackingUrl;
   }
 
   const cleanAWB = awbNumber.trim().replace(/[-\s]/g, '');

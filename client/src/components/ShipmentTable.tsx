@@ -319,7 +319,7 @@ Weight: ${shipment?.weight || "N/A"}
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  const trackingUrl = generateAWBTrackingUrl(shipment?.airWaybillNumber!);
+                                  const trackingUrl = generateAWBTrackingUrl(shipment?.airWaybillNumber!, true);
                                   if (trackingUrl) {
                                     window.open(trackingUrl, '_blank');
                                   }
@@ -383,7 +383,7 @@ Weight: ${shipment?.weight || "N/A"}
                             
                             if (shipment?.transportMode === 'air' && shipment?.airWaybillNumber) {
                               console.log('Air tracking clicked for AWB:', shipment?.airWaybillNumber);
-                              trackingUrl = generateAWBTrackingUrl(shipment?.airWaybillNumber);
+                              trackingUrl = generateAWBTrackingUrl(shipment?.airWaybillNumber, true);
                             } else if (shipment?.containerNumber) {
                               console.log('Container tracking clicked for:', shipment?.containerNumber);
                               trackingUrl = generateContainerTrackingUrl(shipment?.containerNumber);
