@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Ship, MapPin, Clock, Route, Anchor, Navigation, AlertCircle } from 'lucide-react';
-import GoogleMapsConfig from './GoogleMapsConfig';
 import type { Shipment } from '@shared/schema';
 
 interface GoogleMapsRouteProps {
@@ -119,18 +118,8 @@ const GoogleMapsRoute: React.FC<GoogleMapsRouteProps> = ({ shipment, className =
     return Math.min(Math.max((elapsedTime / totalTime) * 100, 0), 100);
   }, [shipment.etd, shipment.eta]);
 
-  // Get API key from environment or localStorage
-  const getApiKey = () => {
-    return import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 
-           localStorage.getItem('GOOGLE_MAPS_API_KEY') || 
-           (window as any).VITE_GOOGLE_MAPS_API_KEY;
-  };
-
   // Load Google Maps script
   useEffect(() => {
-    const apiKey = getApiKey();
-    if (!apiKey) return;
-
     const loadGoogleMaps = () => {
       if ((window as any).google && (window as any).google.maps) {
         setMapLoaded(true);
@@ -138,7 +127,7 @@ const GoogleMapsRoute: React.FC<GoogleMapsRouteProps> = ({ shipment, className =
       }
 
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry&loading=async`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=geometry`;
       script.async = true;
       script.defer = true;
       script.onload = () => setMapLoaded(true);
@@ -313,36 +302,32 @@ const GoogleMapsRoute: React.FC<GoogleMapsRouteProps> = ({ shipment, className =
       
       // Ensure minimum zoom level
       const listener = google.maps.event.addListener(map, "idle", () => {
-        if (map.getZoom() && map.getZoom()! > 10) map.setZoom(10);
+        if (map.getZoom() > 10) map.setZoom(10);
         google.maps.event.removeListener(listener);
       });
     }
 
   }, [mapLoaded, ports, estimatedProgress, shipment]);
 
-  // Show configuration panel if no Google Maps API key
-  const apiKey = getApiKey();
-  if (!apiKey) {
+  // Show error if no Google Maps API key
+  if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
     return (
-      <div className={`space-y-4 ${className}`}>
-        <GoogleMapsConfig 
-          onApiKeySet={() => setMapLoaded(false)} 
-          className="mb-4"
-        />
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-center h-48 text-center">
-              <div>
-                <AlertCircle className="w-12 h-12 mx-auto mb-4 text-yellow-500" />
-                <h3 className="text-lg font-medium mb-2">Configure Google Maps API</h3>
-                <p className="text-sm text-gray-600">
-                  Enter your Google Maps API key above to enable interactive route visualization
-                </p>
-              </div>
+      <Card className={className}>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center h-64 text-center">
+            <div>
+              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-yellow-500" />
+              <h3 className="text-lg font-medium mb-2">Google Maps API Key Required</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                To display interactive route maps, please add your Google Maps API key to the environment variables.
+              </p>
+              <p className="text-xs text-gray-500">
+                Set VITE_GOOGLE_MAPS_API_KEY in your environment
+              </p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
