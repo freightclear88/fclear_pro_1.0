@@ -21,7 +21,7 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
   const { toast } = useToast();
 
   const { data: documents = [], isLoading } = useQuery<Document[]>({
-    queryKey: shipmentId ? ['/api/shipments', shipmentId, 'documents'] : ['/api/documents'],
+    queryKey: shipmentId ? [`/api/shipments/${shipmentId}/documents`] : ['/api/documents'],
     enabled: true,
   });
 
