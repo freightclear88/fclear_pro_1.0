@@ -57,6 +57,9 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
           const fieldName = prefix ? mapAzureFieldToShipment(prefix, key) : mapAzureFieldToShipment('', key);
           if (fieldName) {
             flattened[fieldName] = value;
+            console.log(`Mapped ${prefix ? prefix + '.' + key : key} -> ${fieldName} = ${value}`);
+          } else {
+            console.log(`No mapping found for field: ${prefix ? prefix + '.' + key : key}`);
           }
         }
       }
@@ -70,9 +73,12 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
     if (data && typeof data === 'object') {
       // Check if this looks like Azure nested structure
       if (data.shipper || data.consignee || data.bill_of_lading_no || data.vessel_voyage) {
+        console.log(`Processing Azure nested data with ${Object.keys(data).length} top-level fields`);
         extractedFields = flattenAzureData(data);
+        console.log(`Flattened to ${Object.keys(extractedFields).length} mapped fields:`, Object.keys(extractedFields));
       } else {
         // Regular flat structure
+        console.log(`Processing flat data structure with ${Object.keys(data).length} fields`);
         for (const [field, value] of Object.entries(data)) {
           if (value && value !== '' && value !== 'Processing' && value !== null && value !== undefined) {
             extractedFields[field] = value;
@@ -116,6 +122,7 @@ function mapAzureFieldToShipment(prefix: string, field: string): string | null {
     'place_of_delivery': 'placeOfDelivery',
     'final_destination': 'finalDestination',
     'shipped_on_board_date': 'onBoardDate',
+    'date_shipped_on_board': 'onBoardDate',
     'date_of_issue': 'issueDate',
     'portOfLoading': 'portOfLoading',
     'portOfDischarge': 'portOfDischarge',
@@ -147,11 +154,13 @@ function mapAzureFieldToShipment(prefix: string, field: string): string | null {
     'particulars_furnished_by_shipper.no_of_pkgs': 'numberOfPackages',
     'particulars_furnished_by_shipper.gross_weight_kgs': 'grossWeight',
     'particulars_furnished_by_shipper.measurement_cbm': 'measurement',
-    'particulars_furnished_by_shipper.marks_numbers': 'marks',
+    'particulars_furnished_by_shipper.marks_numbers': 'marksAndNumbers',
     
     // Freight information
+    'freight': 'freightPrepaid',
     'freight_prepaid': 'freightPrepaid',
     'freight_and_charges_payable_by': 'freightPaymentTerms',
+    'freight_and_charges_payable_at': 'freightPayableAt',
     
     // Carrier and release info
     'carrier': 'carrierName',
@@ -159,6 +168,10 @@ function mapAzureFieldToShipment(prefix: string, field: string): string | null {
     'contact_for_release.address': 'releasePartyAddress',
     'contact_for_release.tel': 'releasePartyPhone',
     'contact_for_release.fax': 'releasePartyFax',
+    
+    // Place and date of issue (nested object)
+    'place_and_date_of_issue.place': 'placeOfIssue',
+    'place_and_date_of_issue.date': 'issueDate',
     
     // Additional fields
     'job_no': 'jobNumber',
