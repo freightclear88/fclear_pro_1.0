@@ -58,29 +58,7 @@ export default function Dashboard() {
             Welcome back, {user?.firstName || "User"}
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-          <CreateShipmentDialog trigger={
-            <Button className="btn-secondary w-full sm:w-auto">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Shipment
-            </Button>
-          } />
-          <DocumentUpload 
-            trigger={
-              <Button className="btn-primary w-full sm:w-auto">
-                <FileUp className="w-4 h-4 mr-2" />
-                Multi-Document Upload
-              </Button>
-            }
-            onShipmentCreated={(shipment) => {
-              queryClient.invalidateQueries({ queryKey: ["/api/shipments"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-              setTimeout(() => {
-                window.location.reload();
-              }, 1000);
-            }} 
-          />
-
+        <div className="flex justify-end">
           <Button className="btn-ghost relative w-full sm:w-auto">
             <Bell className="w-5 h-5" />
             <Badge className="absolute -top-1 -right-1 bg-neon-green text-white text-xs w-5 h-5 flex items-center justify-center p-0">
@@ -95,8 +73,11 @@ export default function Dashboard() {
         <CardContent className="p-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h3 className="text-xl font-bold text-white mb-3 flex items-center">
-                <FileUp className="w-6 h-6 mr-3" />
+              <h1 className="text-2xl lg:text-3xl font-bold text-white mb-3 flex items-center">
+                <FileUp className="w-7 h-7 mr-3" />
+                Create Shipment
+              </h1>
+              <h3 className="text-xl font-semibold text-white mb-3">
                 Comprehensive Multi-Document Processing
               </h3>
               <p className="text-blue-100 mb-4 text-sm lg:text-base">
@@ -117,7 +98,7 @@ export default function Dashboard() {
                 trigger={
                   <Button className="bg-white text-freight-blue hover:bg-gray-100">
                     <FileUp className="w-4 h-4 mr-2" />
-                    Try Multi-Document Upload
+                    Multi-Document Upload
                   </Button>
                 }
                 onShipmentCreated={(shipment) => {
