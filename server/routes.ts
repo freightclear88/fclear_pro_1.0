@@ -1216,16 +1216,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Processing ${file.mimetype} with AI: ${file.originalname} at ${file.path}`);
             
             try {
-              // Use OpenAI to extract structured data from the document
-              console.log('Starting OpenAI document analysis...');
+              // Use enhanced Azure Document Intelligence to extract structured data from the document
+              console.log('Starting Azure Document Intelligence analysis...');
               const extractedData = await aiDocProcessor.extractShipmentData(
                 file.path, 
                 documentCategory.replace('_', ' ')
               );
               
-              console.log('OpenAI extracted data:', extractedData);
+              console.log('Azure Document Intelligence extracted data:', extractedData);
               
-              // Map extracted data to our comprehensive Ocean Bill of Lading format
+              // Map extracted Azure data to our comprehensive Ocean Bill of Lading format
               arrivalNoticeData = {
                   documentType: documentCategory.replace('_', ' ').toUpperCase(),
                   fileName: file.originalname,
