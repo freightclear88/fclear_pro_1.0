@@ -134,6 +134,7 @@ export const shipments = pgTable("shipments", {
   containerNumbers: text("container_numbers").array(), // Multiple containers from XML
   sealNumbers: text("seal_numbers").array(), // Container seal numbers
   billOfLadingNumber: varchar("bill_of_lading_number"), // Renamed from "bill_of_lading"
+  airWaybillNumber: varchar("air_waybill_number"), // AWB number for air shipments
   
   // Additional commercial identifiers
   bookingConfirmationNumber: varchar("booking_confirmation_number"),

@@ -301,27 +301,53 @@ Weight: ${shipment?.weight || "N/A"}
                       </div>
                     </div>
 
-                    {/* Container/BL Info */}
+                    {/* Container/AWB/BL Info */}
                     <div>
                       <div className="text-sm font-medium">
-                        {shipment?.containerNumber || "No Container"}
+                        {shipment?.transportMode === 'air' 
+                          ? (shipment?.airWaybillNumber ? `AWB: ${shipment.airWaybillNumber}` : "No AWB")
+                          : (shipment?.containerNumber || "No Container")
+                        }
                       </div>
                       <div className="text-xs text-gray-500 flex items-center space-x-1">
-                        <span>BL: {shipment?.billOfLadingNumber || "N/A"}</span>
-                        {shipment?.billOfLadingNumber && (
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const trackingUrl = generateTrackingUrl(shipment?.billOfLadingNumber!);
-                              if (trackingUrl) {
-                                window.open(trackingUrl, '_blank');
-                              }
-                            }}
-                            className="btn-ghost p-0 h-3"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                          </Button>
+                        {shipment?.transportMode === 'air' ? (
+                          <>
+                            <span>Flight: {shipment?.vesselAndVoyage || "N/A"}</span>
+                            {shipment?.airWaybillNumber && (
+                              <Button
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const trackingUrl = generateTrackingUrl(shipment?.airWaybillNumber!);
+                                  if (trackingUrl) {
+                                    window.open(trackingUrl, '_blank');
+                                  }
+                                }}
+                                className="btn-ghost p-0 h-3"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <span>BL: {shipment?.billOfLadingNumber || "N/A"}</span>
+                            {shipment?.billOfLadingNumber && (
+                              <Button
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const trackingUrl = generateTrackingUrl(shipment?.billOfLadingNumber!);
+                                  if (trackingUrl) {
+                                    window.open(trackingUrl, '_blank');
+                                  }
+                                }}
+                                className="btn-ghost p-0 h-3"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -332,29 +358,42 @@ Weight: ${shipment?.weight || "N/A"}
                       <div className="text-xs text-gray-500">→ {shipment?.portOfDischarge || 'Unknown'}</div>
                     </div>
 
-                    {/* Vessel */}
+                    {/* Vessel/Aircraft */}
                     <div>
-                      <div className="text-sm">{shipment?.vesselAndVoyage || "TBD"}</div>
+                      <div className="text-sm">
+                        {shipment?.transportMode === 'air' 
+                          ? (shipment?.vesselAndVoyage || "TBD Flight")
+                          : (shipment?.vesselAndVoyage || "TBD Vessel")
+                        }
+                      </div>
                       <div className="text-xs text-gray-500">
                         {shipment?.originPort && `From: ${shipment.originPort}`}
                       </div>
                     </div>
 
-                    {/* Container Tracking */}
+                    {/* Tracking */}
                     <div>
-                      {shipment?.containerNumber && (
+                      {(shipment?.containerNumber || shipment?.airWaybillNumber || shipment?.billOfLadingNumber) && (
                         <Button
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            console.log('Container tracking clicked for:', shipment?.containerNumber);
+                            let trackingUrl = null;
                             
-                            // First try container tracking
-                            let trackingUrl = generateContainerTrackingUrl(shipment?.containerNumber!);
-                            
-                            // If container tracking fails, try BL tracking as fallback
-                            if (!trackingUrl && shipment?.billOfLadingNumber) {
-                              console.log('Container tracking failed, trying BL tracking for:', shipment?.billOfLadingNumber);
+                            if (shipment?.transportMode === 'air' && shipment?.airWaybillNumber) {
+                              console.log('Air tracking clicked for AWB:', shipment?.airWaybillNumber);
+                              trackingUrl = generateTrackingUrl(shipment?.airWaybillNumber);
+                            } else if (shipment?.containerNumber) {
+                              console.log('Container tracking clicked for:', shipment?.containerNumber);
+                              trackingUrl = generateContainerTrackingUrl(shipment?.containerNumber);
+                              
+                              // Fallback to BL tracking if container tracking fails
+                              if (!trackingUrl && shipment?.billOfLadingNumber) {
+                                console.log('Container tracking failed, trying BL tracking for:', shipment?.billOfLadingNumber);
+                                trackingUrl = generateTrackingUrl(shipment?.billOfLadingNumber);
+                              }
+                            } else if (shipment?.billOfLadingNumber) {
+                              console.log('BL tracking clicked for:', shipment?.billOfLadingNumber);
                               trackingUrl = generateTrackingUrl(shipment?.billOfLadingNumber);
                             }
                             
@@ -365,14 +404,14 @@ Weight: ${shipment?.weight || "N/A"}
                               console.log('No tracking URL generated');
                               toast({
                                 title: "Tracking Unavailable",
-                                description: "Unable to detect carrier for tracking. Please check the container number or BL number format.",
+                                description: "Unable to detect carrier for tracking. Please check the tracking number format.",
                                 variant: "destructive",
                               });
                             }
                           }}
                           className="btn-outline-accent text-xs"
                         >
-                          Track Container
+                          {shipment?.transportMode === 'air' ? 'Track AWB' : 'Track Container'}
                         </Button>
                       )}
                     </div>

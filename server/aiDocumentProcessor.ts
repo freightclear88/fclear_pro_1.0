@@ -17,6 +17,7 @@ const azureClient = new DocumentAnalysisClient(
 interface ExtractedShipmentData {
   // Core shipping data
   billOfLadingNumber?: string;
+  airWaybillNumber?: string;
   vesselAndVoyage?: string;
   containerNumber?: string;
   containerType?: string;
@@ -255,6 +256,7 @@ export class AIDocumentProcessor {
 
             {
               "billOfLadingNumber": "B/L number if found",
+              "airWaybillNumber": "AWB number for air shipments if found",
               "vesselAndVoyage": "vessel name and voyage if found", 
               "containerNumber": "container number if found",
               "containerType": "container type if found",
@@ -584,7 +586,7 @@ export class AIDocumentProcessor {
    */
   private hasSignificantData(data: ExtractedShipmentData): boolean {
     const significantFields = [
-      'billOfLadingNumber', 'vesselAndVoyage', 'containerNumber', 
+      'billOfLadingNumber', 'airWaybillNumber', 'vesselAndVoyage', 'containerNumber', 
       'shipperName', 'consigneeName', 'portOfLoading', 'portOfDischarge'
     ];
     
@@ -603,7 +605,7 @@ export class AIDocumentProcessor {
     
     // Prefer Azure data for key fields (more structured)
     const azurePreferredFields = [
-      'billOfLadingNumber', 'containerNumber', 'vesselAndVoyage',
+      'billOfLadingNumber', 'airWaybillNumber', 'containerNumber', 'vesselAndVoyage',
       'portOfLoading', 'portOfDischarge', 'numberOfPackages'
     ];
     

@@ -160,6 +160,10 @@ function mapAzureFieldToShipment(prefix: string, field: string): string | null {
     // Core Bill of Lading identifiers
     'billOfLadingNumber': 'billOfLadingNumber',
     'bill_of_lading_no': 'billOfLadingNumber',
+    'airWaybillNumber': 'airWaybillNumber',
+    'air_waybill_number': 'airWaybillNumber',
+    'awb_number': 'airWaybillNumber',
+    'awbNumber': 'airWaybillNumber',
     'vesselAndVoyage': 'vesselAndVoyage',
     'vessel_voyage': 'vesselAndVoyage',
     'containerNumber': 'containerNumber',
@@ -2007,13 +2011,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               console.log('Azure Document Intelligence extracted data:', extractedData);
               
-              // Map extracted Azure data to our comprehensive Ocean Bill of Lading format
+              // Map extracted Azure data to our comprehensive shipping document format
               arrivalNoticeData = {
                   documentType: documentCategory.replace('_', ' ').toUpperCase(),
                   fileName: file.originalname,
                   
                   // Core shipping data from Document Intelligence
                   billOfLadingNumber: extractedData.billOfLadingNumber,
+                  airWaybillNumber: extractedData.airWaybillNumber,
                   vesselAndVoyage: extractedData.vesselAndVoyage,
                   containerNumber: extractedData.containerNumber,
                   containerType: extractedData.containerType,

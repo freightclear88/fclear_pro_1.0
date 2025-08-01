@@ -33,6 +33,7 @@ function getDocumentClient(): DocumentAnalysisClient {
 interface ExtractedShipmentData {
   // Core shipping data
   billOfLadingNumber?: string;
+  airWaybillNumber?: string;
   vesselAndVoyage?: string;
   containerNumber?: string;
   containerType?: string;
@@ -179,7 +180,7 @@ export class AzureDocumentProcessor {
       const poller = await client.beginAnalyzeDocument("prebuilt-layout", documentBuffer);
       const result = await poller.pollUntilDone();
       
-      console.log('Azure analysis result status:', result.status);
+      console.log('Azure analysis completed successfully');
       console.log('Content length:', result.content?.length || 0);
       
       if (!result.content || result.content.length < 50) {
@@ -266,8 +267,27 @@ export class AzureDocumentProcessor {
       /B\/L\s+No\.\s*\n?\s*([A-Z0-9]+)/i,  // Handle multi-line B/L patterns
       /([A-Z]{3,5}\d{6,10})/i  // Pattern for format like OLLAX211102
     ];
+
+    // Air Waybill patterns for air shipments
+    const awbPatterns = [
+      /AIR\s+WAYBILL\s*(?:No\.?|Number|#)?\s*:?\s*([A-Z0-9-]+)/i,
+      /AWB\s*(?:No\.?|Number|#)?\s*:?\s*([A-Z0-9-]+)/i,
+      /AIRWAY\s+BILL\s*(?:No\.?|Number|#)?\s*:?\s*([A-Z0-9-]+)/i,
+      /Air\s+Waybill\s*(?:No\.?|Number|#)?\s*:?\s*([A-Z0-9-]+)/i,
+      /(\d{3}-\d{8})/i,  // Standard AWB format like 125-12345678
+      /([A-Z]{2}\d{8,10})/i  // Airline prefix format like AA12345678
+    ];
     
-    // Look for specific OLLAX pattern first
+    // Extract AWB numbers for air shipments first
+    for (const pattern of awbPatterns) {
+      const awbMatch = text.match(pattern);
+      if (awbMatch && awbMatch[1] && awbMatch[1] !== 'NUMBER' && awbMatch[1].length >= 6) {
+        data.airWaybillNumber = awbMatch[1].trim();
+        break;
+      }
+    }
+
+    // Look for specific OLLAX pattern first for ocean shipments
     const ollaxMatch = text.match(/OLLAX\d{6}/i);
     if (ollaxMatch) {
       data.billOfLadingNumber = ollaxMatch[0].trim();
@@ -741,17 +761,17 @@ export class AzureDocumentProcessor {
           weight: "12,500 KG",
           numberOfPackages: 2,
           eta: etaDate.toISOString().split('T')[0],
-          countryOfOrigin: "China",
-          value: "85000 USD"
+          countryOfOrigin: "China"
         };
       } else {
         // Return minimal fallback data to indicate processing is needed
         return {
-          billOfLading: undefined,
-          vesselName: undefined,
+          billOfLadingNumber: undefined,
+          airWaybillNumber: undefined,
+          vesselAndVoyage: undefined,
           containerNumber: undefined,
-          origin: undefined,
-          destination: undefined,
+          portOfLoading: undefined,
+          portOfDischarge: undefined,
           shipperName: undefined,
           consigneeName: undefined,
           cargoDescription: "Document requires manual review",
@@ -804,6 +824,7 @@ export class AzureDocumentProcessor {
     // Define field length limits based on database schema (prevent varchar(255) errors)
     const fieldLimits = {
       billOfLadingNumber: 100,
+      airWaybillNumber: 100,
       vesselAndVoyage: 150,
       containerNumber: 50,
       portOfLoading: 100,
@@ -829,6 +850,10 @@ export class AzureDocumentProcessor {
     // Clean and validate each field with length limits
     if (data.billOfLadingNumber && data.billOfLadingNumber.length > 3) {
       cleanData.billOfLadingNumber = truncateField(data.billOfLadingNumber.replace(/[^\w-]/g, '').toUpperCase(), fieldLimits.billOfLadingNumber);
+    }
+    
+    if (data.airWaybillNumber && data.airWaybillNumber.length > 3) {
+      cleanData.airWaybillNumber = truncateField(data.airWaybillNumber.replace(/[^\w-]/g, '').toUpperCase(), fieldLimits.airWaybillNumber);
     }
     
     if (data.vesselAndVoyage && data.vesselAndVoyage.length > 2) {

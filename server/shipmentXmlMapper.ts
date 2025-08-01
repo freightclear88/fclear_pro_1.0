@@ -55,21 +55,20 @@ export class ShipmentXMLMapper {
       xmlVersion: xmlData.xml_version,
       
       // Location data
-      origin: xmlData.origin,
+      portOfLoading: xmlData.origin,
       originPort: xmlData.origin_port,
-      destination: xmlData.destination,
+      portOfDischarge: xmlData.destination,
       destinationPort: xmlData.destination_port,
       
       // Transport information
       transportMode: xmlData.transport_mode,
       status: xmlData.status,
-      vessel: xmlData.vessel,
-      voyage: xmlData.voyage,
+      vesselAndVoyage: xmlData.vessel ? `${xmlData.vessel} ${xmlData.voyage || ''}`.trim() : undefined,
       
       // Container and documentation
       containerNumber: xmlData.container_number,
       containerNumbers: xmlData.container_numbers,
-      billOfLading: xmlData.bill_of_lading,
+      billOfLadingNumber: xmlData.bill_of_lading,
       
       // Timing
       eta: parseDate(xmlData.eta),
@@ -125,21 +124,21 @@ export class ShipmentXMLMapper {
       source_system: shipment.sourceSystem || undefined,
       
       // Documentation
-      bill_of_lading: shipment.billOfLading || undefined,
+      bill_of_lading: shipment.billOfLadingNumber || undefined,
       container_number: shipment.containerNumber || undefined,
       container_numbers: shipment.containerNumbers || undefined,
       
       // Location data
-      origin: shipment.origin,
+      origin: shipment.portOfLoading,
       origin_port: shipment.originPort || undefined,
-      destination: shipment.destination,
+      destination: shipment.portOfDischarge,
       destination_port: shipment.destinationPort || undefined,
       
       // Transport information
       transport_mode: shipment.transportMode as any,
       status: shipment.status,
-      vessel: shipment.vessel || undefined,
-      voyage: shipment.voyage || undefined,
+      vessel: shipment.vesselAndVoyage?.split(' ')[0] || undefined,
+      voyage: shipment.vesselAndVoyage?.split(' ').slice(1).join(' ') || undefined,
       
       // Timing
       eta: formatDate(shipment.eta),
@@ -152,7 +151,7 @@ export class ShipmentXMLMapper {
       shipper_address: shipment.shipperAddress || undefined,
       consignee_name: shipment.consigneeName || undefined,
       consignee_address: shipment.consigneeAddress || undefined,
-      notify_party: shipment.notifyParty || undefined,
+      notify_party: shipment.notifyPartyName || undefined,
       
       // Financial
       freight_charges: formatDecimal(shipment.freightCharges),
