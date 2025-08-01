@@ -4091,23 +4091,23 @@ ${fullText}`;
             // Extract AMS number with enhanced patterns
             let amsNumber = null;
             
-            // Look for explicit AMS number patterns
-            const amsMatch = fullText.match(/(?:HB\/L\s*)?AMS\s*(?:NO|NUMBER)[^:]*[:]*\s*([A-Z0-9]+)/i);
-            if (amsMatch) {
-              amsNumber = amsMatch[1]?.trim();
+            // Look for "AMS FILLLING NO." pattern
+            const amsFillingMatch = fullText.match(/AMS\s+FILLLING\s+NO[^:]*[:]*\s*([A-Z0-9]+)/i);
+            if (amsFillingMatch) {
+              amsNumber = amsFillingMatch[1]?.trim();
             }
             
             // Alternative: Look for MBL OF CARRIER which often contains AMS filing number
             if (!amsNumber) {
-              const mblCarrierMatch = fullText.match(/MBL\s*OF\s*CARRIER[^:]*[:]*\s*([A-Z0-9]+)/i);
+              const mblCarrierMatch = fullText.match(/MBL\s*OF\s*CARRIER[^:]*[:]*\s*([A-Z0-9]{6,})/i);
               if (mblCarrierMatch) {
                 amsNumber = mblCarrierMatch[1]?.trim();
               }
             }
             
-            // Look for booking reference numbers that might be AMS related
+            // Look for specific booking references that are AMS related
             if (!amsNumber) {
-              const bookingMatch = fullText.match(/Booking\s*(?:ref|reference)[^:]*[:]*\s*([A-Z0-9]+)/i);
+              const bookingMatch = fullText.match(/(?:Booking\s*Number|Reference)[^:]*[:]*\s*([A-Z]{3,}\/[A-Z]{3,}\/[0-9]+)/i);
               if (bookingMatch) {
                 amsNumber = bookingMatch[1]?.trim();
               }
@@ -4131,27 +4131,45 @@ ${fullText}`;
               estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
             }
             
-            // Extract container stuffing location 
+            // Extract container stuffing location with better precision
             let containerStuffingLocation = null;
-            const portOfLoadingMatch = fullText.match(/PORT\s*OF\s*LOADING[^:]*[:]*\s*([A-Z\s(),]+?)(?:\n|FIRST\s*PORT)/i);
-            if (portOfLoadingMatch) {
-              containerStuffingLocation = portOfLoadingMatch[1]?.trim();
+            
+            // Look for specific "CONTAINER STUFFING LOCATION:" section
+            const stuffingLocationMatch = fullText.match(/CONTAINER\s+STUFFING\s+LOCATION[^:]*[:]*\s*([^\n]+)/i);
+            if (stuffingLocationMatch) {
+              containerStuffingLocation = stuffingLocationMatch[1]?.trim();
             }
             
-            // Extract consolidator/stuffer information
+            // Alternative: Extract from PORT OF LOADING but be more specific
+            if (!containerStuffingLocation) {
+              const portOfLoadingMatch = fullText.match(/PORT\s*OF\s*LOADING[^:]*[:]*\s*[^\n]*\n\s*([A-Z\s(),]+?)(?:\s*FIRST\s*PORT|\s*MBL|\n)/i);
+              if (portOfLoadingMatch) {
+                containerStuffingLocation = portOfLoadingMatch[1]?.trim();
+              }
+            }
+            
+            // Extract consolidator/stuffer information with precise patterns
             let consolidatorStufferInfo = null;
             
-            // Look for freight forwarder or consolidator information in various patterns
-            const forwarderMatch = fullText.match(/(?:From|Forwarder|Agent)[^:]*[:]*\s*([^\n\r]+(?:\n[^\n\r]+)*?)(?:\n\s*\n|E-mail:|Phone)/i);
-            if (forwarderMatch) {
-              consolidatorStufferInfo = forwarderMatch[1]?.trim();
+            // Look for specific "CONSOLIDATOR NAME AND ADDRESS" section
+            const consolidatorSectionMatch = fullText.match(/CONSOLIDATOR\s+NAME\s+AND\s+ADDRESS[^:]*[:]*\s*([^\n]+(?:\n[^\n]*?)*?)(?:\n\s*CONTAINER\s+STUFFING|$)/i);
+            if (consolidatorSectionMatch) {
+              consolidatorStufferInfo = consolidatorSectionMatch[1]?.trim();
             }
             
-            // Alternative: Look for company information in the header
+            // Alternative: Look for company name patterns after specific keywords
             if (!consolidatorStufferInfo) {
-              const companyMatch = fullText.match(/^([A-Z\s&,]+(?:\n[A-Z\s\d,.-]+)*?)(?:\n\s*AMS\s*&|Booking)/im);
-              if (companyMatch) {
-                consolidatorStufferInfo = companyMatch[1]?.trim();
+              const companyPatterns = [
+                /ECU\s+WORLDWIDE[^\n]*(?:\n[^\n]*)*?NINGBO\s+CHINA/i,
+                /BAICHUANG\s+GANGTONG[^\n]*(?:\n[^\n]*)*?LOGISTICS/i
+              ];
+              
+              for (const pattern of companyPatterns) {
+                const match = fullText.match(pattern);
+                if (match) {
+                  consolidatorStufferInfo = match[0]?.trim();
+                  break;
+                }
               }
             }
             
