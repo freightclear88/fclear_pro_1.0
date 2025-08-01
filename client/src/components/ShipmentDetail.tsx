@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { Copy, Download, X, FileUp, ExternalLink, Star, ArrowRight } from "lucide-react";
+import { Copy, Download, X, FileUp, ExternalLink, Star, ArrowRight, Plane, Ship, Truck } from "lucide-react";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
 import { generateAWBTrackingUrl } from "@/lib/airlineTracking";
@@ -220,11 +220,11 @@ CONTAINER:
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                   <div className="bg-white border-2 border-freight-blue rounded-full p-4 shadow-lg">
                     {shipment.transportMode === 'air' ? (
-                      <div className="text-3xl font-bold text-freight-blue">✈️</div>
+                      <Plane className="w-8 h-8 text-freight-blue" />
                     ) : shipment.transportMode === 'ocean' ? (
-                      <div className="text-3xl font-bold text-freight-blue">🚢</div>
+                      <Ship className="w-8 h-8 text-freight-blue" />
                     ) : (
-                      <div className="text-3xl font-bold text-freight-blue">🚛</div>
+                      <Truck className="w-8 h-8 text-freight-blue" />
                     )}
                   </div>
                 </div>
