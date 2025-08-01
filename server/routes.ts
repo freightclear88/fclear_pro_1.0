@@ -15,10 +15,10 @@ import { detectCarrierFromBL, generateTrackingUrl, generateContainerTrackingUrl 
 import nodemailer from "nodemailer";
 import { xmlIntegrator } from './xmlIntegration';
 import zendesk from 'node-zendesk';
-import { AzureDocumentProcessor } from './azureDocumentProcessor';
+import { AIDocumentProcessor } from './aiDocumentProcessor';
 
-// Initialize Azure Document Intelligence processor
-const azureDocProcessor = new AzureDocumentProcessor();
+// Initialize OpenAI Document Processor
+const aiDocProcessor = new AIDocumentProcessor();
 // PDF parsing will be dynamically imported when needed
 
 // Zendesk API configuration
@@ -1216,27 +1216,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Processing ${file.mimetype} with AI: ${file.originalname} at ${file.path}`);
             
             try {
-              // Check if Azure Document Intelligence is available
-              if (!process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT && !process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY) {
-                console.log('Azure Document Intelligence not configured - using fallback extraction');
-                arrivalNoticeData = {
-                  documentType: documentCategory.replace('_', ' ').toUpperCase(),
-                  fileName: file.originalname,
-                  extractedText: `Document: ${file.originalname}\nType: ${documentCategory}\nUploaded: ${new Date().toISOString()}\nNote: Document Intelligence requires Azure configuration\nProcessed at: ${processingTime} EST`,
-                  processingNote: 'Document Intelligence unavailable - Azure setup required'
-                };
-              } else {
-                // Use Azure Document Intelligence to extract structured data from the document
-                console.log('Starting Azure Document Intelligence analysis...');
-                const extractedData = await azureDocProcessor.extractShipmentData(
-                  file.path, 
-                  documentCategory.replace('_', ' ')
-                );
-                
-                console.log('Azure Document Intelligence extracted data:', extractedData);
-                
-                // Map extracted data to our comprehensive Ocean Bill of Lading format
-                arrivalNoticeData = {
+              // Use OpenAI to extract structured data from the document
+              console.log('Starting OpenAI document analysis...');
+              const extractedData = await aiDocProcessor.extractShipmentData(
+                file.path, 
+                documentCategory.replace('_', ' ')
+              );
+              
+              console.log('OpenAI extracted data:', extractedData);
+              
+              // Map extracted data to our comprehensive Ocean Bill of Lading format
+              arrivalNoticeData = {
                   documentType: documentCategory.replace('_', ' ').toUpperCase(),
                   fileName: file.originalname,
                   
@@ -1350,9 +1340,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   
                   // Processing metadata
                   extractedText: `AI-processed Ocean Bill of Lading: ${file.originalname}\nType: ${documentCategory}\nProcessed: ${new Date().toISOString()}\nComprehensive data fields extracted: ${Object.keys(extractedData).filter(key => extractedData[key] !== undefined && extractedData[key] !== null && extractedData[key] !== '').length}\nProcessed at: ${processingTime} EST`,
-                  processingNote: `Azure Document Intelligence extracted ${Object.keys(extractedData).filter(key => extractedData[key] !== undefined && extractedData[key] !== null && extractedData[key] !== '').length} Ocean Bill of Lading data fields`
+                  processingNote: `OpenAI extracted ${Object.keys(extractedData).filter(key => extractedData[key] !== undefined && extractedData[key] !== null && extractedData[key] !== '').length} Ocean Bill of Lading data fields`
                 };
-              }
               
             } catch (aiError) {
               console.error('AI document processing failed:', aiError);

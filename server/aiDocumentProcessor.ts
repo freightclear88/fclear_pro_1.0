@@ -1,75 +1,98 @@
-import { DocumentAnalysisClient } from "@azure/ai-form-recognizer";
-import { DefaultAzureCredential, ChainedTokenCredential, AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
+import OpenAI from "openai";
 import fs from 'fs';
+import pdf2pic from 'pdf2pic';
 
-// Initialize Azure Document Intelligence client
-let documentClient: DocumentAnalysisClient | null = null;
-
-function getDocumentClient(): DocumentAnalysisClient {
-  if (!documentClient) {
-    const endpoint = process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT;
-    const apiKey = process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY;
-    
-    if (!endpoint) {
-      throw new Error('AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT environment variable is required');
-    }
-    
-    if (apiKey) {
-      // Use API key authentication
-      documentClient = new DocumentAnalysisClient(endpoint, { key: apiKey });
-    } else {
-      // Use managed identity or Azure CLI authentication
-      const credential = new ChainedTokenCredential(
-        new ManagedIdentityCredential(),
-        new AzureCliCredential(),
-        new DefaultAzureCredential()
-      );
-      documentClient = new DocumentAnalysisClient(endpoint, credential);
-    }
-  }
-  return documentClient;
-}
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 interface ExtractedShipmentData {
-  billOfLading?: string;
-  vesselName?: string;
-  voyage?: string;
+  // Core shipping data
+  billOfLadingNumber?: string;
+  vesselAndVoyage?: string;
   containerNumber?: string;
-  origin?: string;
-  destination?: string;
+  containerType?: string;
+  sealNumbers?: string[];
+  
+  // Location information
   portOfLoading?: string;
   portOfDischarge?: string;
+  placeOfReceipt?: string;
+  placeOfDelivery?: string;
+  
+  // Shipper information
   shipperName?: string;
+  shipperAddress?: string;
+  shipperCity?: string;
+  shipperState?: string;
+  shipperZipCode?: string;
+  shipperCountry?: string;
+  shipperContactPerson?: string;
+  shipperPhone?: string;
+  shipperEmail?: string;
+  
+  // Consignee information
   consigneeName?: string;
-  notifyParty?: string;
+  consigneeAddress?: string;
+  consigneeCity?: string;
+  consigneeState?: string;
+  consigneeZipCode?: string;
+  consigneeCountry?: string;
+  consigneeContactPerson?: string;
+  consigneePhone?: string;
+  consigneeEmail?: string;
+  
+  // Notify party information
+  notifyPartyName?: string;
+  notifyPartyAddress?: string;
+  notifyPartyCity?: string;
+  notifyPartyState?: string;
+  notifyPartyZipCode?: string;
+  notifyPartyCountry?: string;
+  notifyPartyContactPerson?: string;
+  notifyPartyPhone?: string;
+  notifyPartyEmail?: string;
+  
+  // Cargo information
   cargoDescription?: string;
+  numberOfPackages?: number;
+  packageType?: string;
   weight?: string;
+  grossWeight?: number;
   measurement?: string;
-  packageCount?: string;
-  dateIssued?: string;
-  eta?: string;
-  freightPrepaid?: boolean;
-  freightCollect?: boolean;
   marks?: string;
   commodity?: string;
   htsCode?: string;
   countryOfOrigin?: string;
   value?: string;
   currency?: string;
+  
+  // Dates and other information
+  dateIssued?: string;
+  eta?: string;
+  onBoardDate?: string;
+  freightPrepaid?: boolean;
+  freightCollect?: boolean;
+  bookingNumber?: string;
 }
 
 export class AIDocumentProcessor {
   
   /**
-   * Test Azure Document Intelligence connection
+   * Test OpenAI connection
    */
   async testConnection(): Promise<boolean> {
     try {
-      const client = getDocumentClient();
-      // Test connection by checking if client can be created
-      return true;
+      // Test OpenAI connection with a simple completion
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [{ role: "user", content: "test" }],
+        max_tokens: 5,
+      });
+      return !!response.choices[0]?.message?.content;
     } catch (error) {
-      console.error('Azure Document Intelligence connection test failed:', error);
+      console.error('OpenAI connection test failed:', error);
       return false;
     }
   }
@@ -109,34 +132,49 @@ export class AIDocumentProcessor {
 
       console.log(`Sending ${pdfText.length} characters to AI for analysis`);
 
-      // Use OpenAI to extract structured shipping data
+      // Use OpenAI to extract comprehensive shipping data
       const completion = await openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         messages: [
           {
             role: "system",
-            content: `Extract shipping data from documents. Return JSON with actual found values only:
+            content: `Extract comprehensive shipping data from Ocean Bill of Lading and related documents. Return JSON with all found values:
             {
-              "billOfLading": "B/L number if found",
-              "vesselName": "vessel name if found", 
+              "billOfLadingNumber": "B/L number if found",
+              "vesselAndVoyage": "vessel name and voyage number if found",
               "containerNumber": "container number if found",
-              "origin": "origin port/location if found",
-              "destination": "destination port/location if found",
-              "shipperName": "shipper company if found",
-              "consigneeName": "consignee company if found",
+              "containerType": "container type (e.g., 40HC, 20GP) if found",
+              "sealNumbers": ["seal numbers array if found"],
+              "portOfLoading": "port of loading if found",
+              "portOfDischarge": "port of discharge if found",
+              "placeOfReceipt": "place of receipt if found",
+              "placeOfDelivery": "place of delivery if found",
+              "shipperName": "shipper company name if found",
+              "shipperAddress": "shipper address if found",
+              "consigneeName": "consignee company name if found",
+              "consigneeAddress": "consignee address if found",
+              "notifyPartyName": "notify party name if found",
+              "notifyPartyAddress": "notify party address if found",
               "cargoDescription": "cargo description if found",
-              "weight": "weight if found",
-              "eta": "arrival date if found"
+              "numberOfPackages": "number of packages as integer if found",
+              "packageType": "package type (e.g., cartons, pallets) if found",
+              "weight": "weight with unit if found",
+              "grossWeight": "gross weight as number if found",
+              "countryOfOrigin": "country of origin if found",
+              "dateIssued": "date issued if found",
+              "eta": "estimated arrival date if found",
+              "onBoardDate": "on board date if found",
+              "bookingNumber": "booking reference if found"
             }`
           },
           {
             role: "user",
-            content: `Extract data from this ${documentType}:\n\n${pdfText.substring(0, 3000)}`
+            content: `Extract comprehensive shipping data from this ${documentType}:\n\n${pdfText.substring(0, 4000)}`
           }
         ],
         response_format: { type: "json_object" },
         temperature: 0.1,
-        max_tokens: 800
+        max_tokens: 1500
       });
 
       const result = completion.choices[0].message.content;
