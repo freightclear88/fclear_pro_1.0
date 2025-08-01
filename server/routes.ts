@@ -3972,16 +3972,42 @@ ${fullText}`;
             
             // Extract essential data using simplified patterns to prevent freezing
             
-            // Extract container numbers
-            const containerMatch = fullText.match(/(?:CONTAINER NUMBER|CNTR)[^:]*[:]*\s*([A-Z]{4}\d{7})/i);
-            const containerNumbers = containerMatch ? containerMatch[1] : null;
+            // Extract container numbers with enhanced patterns
+            let containerNumbers = null;
+            const containerMatch = fullText.match(/(?:CONTAINER NUMBER|CNTR|CN)[^:]*[:]*\s*([A-Z]{4}\d{7})/i);
+            if (containerMatch) {
+              containerNumbers = containerMatch[1];
+            } else {
+              // Look for pattern like "SN: CAIU4725419"
+              const snMatch = fullText.match(/SN[^:]*[:]*\s*([A-Z]{4}\d{7})/i);
+              if (snMatch) {
+                containerNumbers = snMatch[1];
+              }
+            }
             
-            // Extract vessel and voyage information  
+            // Extract vessel and voyage information from the specific ISF format
             let vesselName = null, voyageNumber = null;
-            const vesselMatch = fullText.match(/VESSEL[\/\s]*(?:VOYAGE)?[^:]*[:]*\s*([A-Z\s]+?)\s+([A-Z0-9]+)/i);
-            if (vesselMatch) {
-              vesselName = vesselMatch[1]?.trim();
-              voyageNumber = vesselMatch[2]?.trim();
+            
+            // Look for "VESSEL / VOYAGE:" pattern like "GRETE MAERSK / 120E"
+            const vesselVoyageMatch = fullText.match(/VESSEL\s*\/\s*VOYAGE[^:]*[:]*\s*([A-Z\s]+?)\s*\/\s*([A-Z0-9]+)/i);
+            if (vesselVoyageMatch) {
+              vesselName = vesselVoyageMatch[1]?.trim();
+              voyageNumber = vesselVoyageMatch[2]?.trim();
+            }
+            
+            // Alternative pattern for separate vessel and voyage
+            if (!vesselName) {
+              const altVesselMatch = fullText.match(/VESSEL[^:]*[:]*\s*([A-Z\s]+?)(?:\s*VOYAGE|\s*\/)/i);
+              if (altVesselMatch) {
+                vesselName = altVesselMatch[1]?.trim();
+              }
+            }
+            
+            if (!voyageNumber) {
+              const altVoyageMatch = fullText.match(/VOYAGE[^:]*[:]*\s*([A-Z0-9]+)/i);
+              if (altVoyageMatch) {
+                voyageNumber = altVoyageMatch[1]?.trim();
+              }
             }
             
             // Extract comprehensive party information from the document
@@ -4023,9 +4049,22 @@ ${fullText}`;
               }
             }
             
-            // Extract comprehensive shipping data
-            const portMatch = fullText.match(/PORT\s*OF\s*(?:DISCHARGE|DESTINATION)[^:]*[:]*\s*([A-Z\s,]+)/i);
-            const portOfEntry = portMatch ? portMatch[1]?.trim().split('\n')[0]?.trim() : null;
+            // Extract port information with enhanced patterns 
+            let portOfEntry = null;
+            
+            // Look for "FIRST PORT USA:" pattern
+            const firstPortMatch = fullText.match(/FIRST\s+PORT\s+USA[^:]*[:]*\s*([A-Z\s,]+?)(?:\n|$)/i);
+            if (firstPortMatch) {
+              portOfEntry = firstPortMatch[1]?.trim();
+            }
+            
+            // Alternative patterns for port
+            if (!portOfEntry) {
+              const portMatch = fullText.match(/PORT\s*OF\s*(?:DISCHARGE|DESTINATION|ENTRY)[^:]*[:]*\s*([A-Z\s,]+)/i);
+              if (portMatch) {
+                portOfEntry = portMatch[1]?.trim().split('\n')[0]?.trim();
+              }
+            }
             
             const commodityMatch = fullText.match(/(?:Cartons|COMMODITY|CARGO)[^:]*[:]*\s*([^\n]+)/i);
             const commodityDescription = commodityMatch ? commodityMatch[1]?.trim() : null;
@@ -4041,20 +4080,22 @@ ${fullText}`;
             const amsMatch = fullText.match(/(?:HB\/L\s*)?AMS\s*(?:NO|NUMBER)[^:]*[:]*\s*([A-Z0-9]+)/i);
             const amsNumber = amsMatch ? amsMatch[1]?.trim() : null;
             
-            // Extract dates with multiple patterns
+            // Extract dates with enhanced patterns
             let estimatedArrivalDate = null;
             let estimatedDepartureDate = null;
             
-            const etaMatch = fullText.match(/ETA:\s*(\d{4}\/\d{1,2}\/\d{1,2})/i);
-            if (etaMatch) {
-              const [year, month, day] = etaMatch[1].split('/');
-              estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            // Look for ETD pattern like "ETD: 03/06/2021"
+            const etdMatch = fullText.match(/ETD[^:]*[:]*\s*(\d{2}\/\d{2}\/\d{4})/i);
+            if (etdMatch) {
+              const [day, month, year] = etdMatch[1].split('/');
+              estimatedDepartureDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
             }
             
-            const etdMatch = fullText.match(/ETD:\s*(\d{4}\/\d{1,2}\/\d{1,2})/i);
-            if (etdMatch) {
-              const [year, month, day] = etdMatch[1].split('/');
-              estimatedDepartureDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            // Look for ETA pattern
+            const etaMatch = fullText.match(/ETA[^:]*[:]*\s*(\d{2}\/\d{2}\/\d{4})/i);
+            if (etaMatch) {
+              const [day, month, year] = etaMatch[1].split('/');
+              estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
             }
             
             // Extract weight and volume
