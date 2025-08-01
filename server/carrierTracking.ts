@@ -204,19 +204,38 @@ export function generateContainerTrackingUrl(containerNumber: string): string | 
     return null;
   }
 
-  const cleanContainer = containerNumber.trim().toUpperCase();
+  const cleanContainer = containerNumber.trim().replace(/[-\s]/g, '');
   const prefix = cleanContainer.substring(0, 4);
   
   for (const carrier of OCEAN_CARRIERS) {
     if (carrier.containerPrefixes.includes(prefix)) {
       switch (carrier.scacCode) {
         case 'MAEU':
-          return `${carrier.trackingUrl}?tracking=${containerNumber}`;
+          return `https://www.maersk.com/tracking/${cleanContainer}`;
         case 'MSCU':
-          return `${carrier.trackingUrl}?trackingNumber=${containerNumber}`;
+          return `https://www.msc.com/track-a-shipment?agencyPath=msc&reference=${cleanContainer}`;
         case 'CMAU':
-          return `${carrier.trackingUrl}?trackingNumber=${containerNumber}`;
+          return `https://www.cma-cgm.com/ebusiness/tracking/search?reference=${cleanContainer}`;
+        case 'COSU':
+          return `https://elines.coscoshipping.com/ebusiness/cargotracking/cargotracking.do?paramValue=${cleanContainer}`;
+        case 'OOLU':
+          return `https://www.oocl.com/eng/ourservices/eservices/cargotracking/pages/cargotracking.aspx?BLN=${cleanContainer}`;
+        case 'EGLV':
+          return `https://www.evergreen-line.com/emodal/stTrace/stTrace.do?param1=${cleanContainer}`;
+        case 'ONEY':
+          return `https://ecomm.one-line.com/one-ecom/manage-shipment/track-trace/${cleanContainer}`;
+        case 'YMLU':
+          return `https://www.yangming.com/e-service/Track_Trace/track_trace_cargo_tracking.aspx?BLNo=${cleanContainer}`;
+        case 'HLCU':
+          return `https://www.hapag-lloyd.com/en/online-business/track/track-by-container.html?container=${cleanContainer}`;
+        case 'HDMU':
+          return `https://www.hmm21.com/cms/business/ebiz/trackTrace/trackTrace/index.jsp?ref_no=${cleanContainer}`;
+        case 'ZIMU':
+          return `https://www.zim.com/tools/track-a-shipment?reference=${cleanContainer}`;
+        case 'PABV':
+          return `https://www.pilship.com/en--/120.html?reference=${cleanContainer}`;
         default:
+          // Only return official carrier tracking page, no fallbacks
           return carrier.trackingUrl;
       }
     }

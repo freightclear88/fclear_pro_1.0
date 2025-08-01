@@ -253,6 +253,7 @@ export function generateContainerTrackingUrl(containerNumber: string): string | 
     case 'PABV':
       return `https://www.pilship.com/en--/120.html?reference=${cleanContainer}`;
     default:
+      // Only return official carrier tracking page, no fallbacks
       return carrier.trackingUrl;
   }
 }
