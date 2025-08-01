@@ -113,6 +113,105 @@ function generateIntermediatePoints(
   return points;
 }
 
+// World Map Component with accurate geographical features
+interface WorldMapProps {
+  projectToSVG: (coordinates: [number, number]) => [number, number];
+}
+
+const WorldMapOutlines: React.FC<WorldMapProps> = ({ projectToSVG }) => {
+  // Accurate world map coordinates for major continents
+  const continents = [
+    {
+      name: "North America",
+      coordinates: [
+        [-140, 70], [-120, 75], [-100, 75], [-80, 70], [-75, 60], [-70, 50], 
+        [-75, 40], [-80, 30], [-90, 25], [-100, 25], [-110, 30], [-120, 35], 
+        [-135, 45], [-150, 60], [-140, 70]
+      ]
+    },
+    {
+      name: "South America", 
+      coordinates: [
+        [-85, 12], [-75, 10], [-65, 5], [-55, -5], [-50, -15], [-45, -25], 
+        [-50, -35], [-55, -45], [-65, -50], [-75, -45], [-80, -35], [-85, -20], 
+        [-90, -10], [-85, 12]
+      ]
+    },
+    {
+      name: "Europe",
+      coordinates: [
+        [-10, 35], [0, 40], [10, 45], [20, 50], [30, 55], [40, 60], [35, 65], 
+        [25, 70], [10, 70], [0, 65], [-5, 55], [-10, 45], [-10, 35]
+      ]
+    },
+    {
+      name: "Africa",
+      coordinates: [
+        [-20, 35], [10, 37], [25, 35], [35, 30], [40, 20], [45, 10], [40, 0], 
+        [35, -10], [30, -20], [20, -30], [15, -35], [10, -30], [5, -20], 
+        [0, -10], [-5, 0], [-10, 10], [-15, 20], [-20, 35]
+      ]
+    },
+    {
+      name: "Asia",
+      coordinates: [
+        [40, 75], [60, 80], [80, 75], [100, 70], [120, 65], [140, 60], [150, 50], 
+        [145, 40], [140, 30], [130, 25], [120, 20], [110, 15], [100, 20], 
+        [90, 25], [80, 30], [70, 35], [60, 40], [50, 50], [40, 60], [40, 75]
+      ]
+    },
+    {
+      name: "Australia",
+      coordinates: [
+        [110, -10], [130, -12], [140, -15], [150, -20], [155, -25], [150, -35], 
+        [140, -40], [130, -38], [120, -35], [115, -30], [110, -20], [110, -10]
+      ]
+    },
+    {
+      name: "Greenland",
+      coordinates: [
+        [-45, 60], [-35, 65], [-25, 70], [-20, 75], [-25, 80], [-35, 82], 
+        [-45, 80], [-55, 75], [-60, 70], [-55, 65], [-45, 60]
+      ]
+    }
+  ];
+
+  return (
+    <g opacity="0.5">
+      {continents.map((continent, index) => {
+        const svgPath = continent.coordinates.map(coord => projectToSVG(coord as [number, number]));
+        const pathString = svgPath.map((point, i) => 
+          `${i === 0 ? 'M' : 'L'} ${point[0]} ${point[1]}`
+        ).join(' ') + ' Z';
+        
+        return (
+          <path
+            key={index}
+            d={pathString}
+            fill="#16a34a"
+            fillOpacity="0.3"
+            stroke="#15803d"
+            strokeWidth="1"
+            strokeOpacity="0.6"
+          />
+        );
+      })}
+      
+      {/* Add equator and latitude lines */}
+      <line
+        x1={projectToSVG([-180, 0])[0]}
+        y1={projectToSVG([-180, 0])[1]}
+        x2={projectToSVG([180, 0])[0]}
+        y2={projectToSVG([180, 0])[1]}
+        stroke="#64748b"
+        strokeWidth="1"
+        strokeOpacity="0.3"
+        strokeDasharray="5,5"
+      />
+    </g>
+  );
+};
+
 const ShippingRouteMap: React.FC<ShippingRouteMapProps> = ({ shipment, className = '' }) => {
   const [selectedRoute, setSelectedRoute] = useState<'current' | 'historical'>('current');
 
@@ -260,7 +359,7 @@ const ShippingRouteMap: React.FC<ShippingRouteMapProps> = ({ shipment, className
           <div className="relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-6 min-h-[500px] border border-slate-200">
             <div className="absolute top-2 right-2 z-10">
               <Badge variant="outline" className="bg-white/90 backdrop-blur-sm">
-                Interactive Map
+                Interactive World Map
               </Badge>
             </div>
             <WorldMapVisualization 
@@ -418,17 +517,28 @@ const WorldMapVisualization: React.FC<WorldMapVisualizationProps> = ({
   const minLat = Math.min(...latValues);
   const maxLat = Math.max(...latValues);
 
-  // Add padding to bounds
-  const lngRange = maxLng - minLng || 10;
-  const latRange = maxLat - minLat || 10;
-  const boundsPadding = 0.2;
-
+  // Use global bounds for better world map display
   const bounds = {
-    minLng: minLng - lngRange * boundsPadding,
-    maxLng: maxLng + lngRange * boundsPadding,
-    minLat: minLat - latRange * boundsPadding,
-    maxLat: maxLat + latRange * boundsPadding
+    minLng: -180,
+    maxLng: 180,
+    minLat: -85,
+    maxLat: 85
   };
+
+  // If we have specific route data, focus on that region
+  if (lngValues.length > 0 && latValues.length > 0) {
+    const lngRange = maxLng - minLng;
+    const latRange = maxLat - minLat;
+    const boundsPadding = 0.3;
+
+    // Only use focused bounds if the route spans a reasonable area
+    if (lngRange > 10 || latRange > 10) {
+      bounds.minLng = minLng - lngRange * boundsPadding;
+      bounds.maxLng = maxLng + lngRange * boundsPadding;
+      bounds.minLat = minLat - latRange * boundsPadding;
+      bounds.maxLat = maxLat + latRange * boundsPadding;
+    }
+  }
 
   // Convert coordinates to SVG coordinates
   const projectToSVG = (coordinates: [number, number]): [number, number] => {
@@ -491,15 +601,8 @@ const WorldMapVisualization: React.FC<WorldMapVisualizationProps> = ({
       <rect width="100%" height="100%" fill="url(#oceanGradient)" />
       <rect width="100%" height="100%" fill="url(#waves)" />
       
-      {/* Continental outlines (simplified) */}
-      <g opacity="0.3">
-        {/* North America */}
-        <ellipse cx={width * 0.2} cy={height * 0.3} rx="80" ry="60" fill="#065f46" fillOpacity="0.2" stroke="#047857" strokeWidth="1"/>
-        {/* Asia */}
-        <ellipse cx={width * 0.8} cy={height * 0.25} rx="100" ry="80" fill="#065f46" fillOpacity="0.2" stroke="#047857" strokeWidth="1"/>
-        {/* Europe */}
-        <ellipse cx={width * 0.65} cy={height * 0.2} rx="40" ry="30" fill="#065f46" fillOpacity="0.2" stroke="#047857" strokeWidth="1"/>
-      </g>
+      {/* World map outlines */}
+      <WorldMapOutlines projectToSVG={projectToSVG} />
       
       {/* Route line */}
       {svgRoutePoints.length > 1 && (
