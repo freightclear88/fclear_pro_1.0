@@ -4623,8 +4623,9 @@ Excel data:
 ${excelText}`;
 
               const aiResponse = await openaiClient.chat.completions.create({
-                model: "gpt-4o",
+                model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
                 messages: [{ role: "user", content: prompt }],
+                response_format: { type: "json_object" },
                 max_tokens: 2000,
               });
 
@@ -4634,10 +4635,13 @@ ${excelText}`;
               // Clean and validate the extracted data
               extractedData = {};
               Object.entries(aiExtractedData).forEach(([key, value]) => {
-                if (value && value !== "null" && value !== "") {
+                if (value && value !== "null" && value !== "" && value !== null) {
                   extractedData[key] = value;
                 }
               });
+              
+              console.log(`Cleaned Excel extractedData from ${file.originalname}:`, extractedData);
+              console.log(`Number of fields extracted from Excel: ${Object.keys(extractedData).length}`);
               
             } catch (excelError) {
               console.error(`Excel processing error for ${file.originalname}:`, excelError);
@@ -4690,6 +4694,9 @@ ${excelText}`;
                 extractedData = { error: `Excel processing failed: ${excelError.message}` };
               }
             }
+            
+            // Add Excel extracted data to the consolidated data array
+            console.log(`Adding Excel data from ${file.originalname} to consolidation array with ${Object.keys(extractedData).length} fields`);
             
           } else {
             // Use AI document processor for non-Excel files
@@ -4779,7 +4786,9 @@ ${excelText}`;
               extractedData[key] = value;
             }
           });
+          }
           
+          // Add extracted data to the consolidated data array (for both Excel and PDF)
           allExtractedData.push({
             documentType: fileExtension || 'unknown',
             fileName: file.originalname,
@@ -4791,7 +4800,6 @@ ${excelText}`;
             fileType: fileExtension,
             extractedFields: Object.keys(extractedData).length
           });
-          }
           
         } catch (error) {
           console.error(`Error processing ${file.originalname}:`, error);
