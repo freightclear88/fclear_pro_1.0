@@ -67,7 +67,7 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-6">
           <DialogTitle className="flex justify-between items-center text-2xl py-3">
             <span>Shipment Details - {shipment.shipmentId}</span>
