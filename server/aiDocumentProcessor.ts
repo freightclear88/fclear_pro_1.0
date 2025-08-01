@@ -251,7 +251,64 @@ export class AIDocumentProcessor {
         messages: [
           {
             role: "system",
-            content: `Extract comprehensive shipping data from Ocean Bill of Lading and related documents. Return JSON with all found values.`
+            content: `You are a shipping document expert. Extract comprehensive data from Bills of Lading, commercial invoices, and packing lists. Return JSON with ALL found values using exact field names:
+
+            {
+              "billOfLadingNumber": "B/L number if found",
+              "vesselAndVoyage": "vessel name and voyage if found", 
+              "containerNumber": "container number if found",
+              "containerType": "container type if found",
+              "sealNumbers": ["seal numbers array if found"],
+              "portOfLoading": "port of loading if found",
+              "portOfDischarge": "port of discharge if found", 
+              "placeOfReceipt": "place of receipt if found",
+              "placeOfDelivery": "place of delivery if found",
+              "shipperName": "shipper name if found",
+              "shipperAddress": "shipper address if found",
+              "shipperCity": "shipper city if found",
+              "shipperState": "shipper state if found",
+              "shipperZipCode": "shipper zip if found",
+              "shipperCountry": "shipper country if found",
+              "shipperContactPerson": "shipper contact if found",
+              "shipperPhone": "shipper phone if found", 
+              "shipperEmail": "shipper email if found",
+              "consigneeName": "consignee name if found",
+              "consigneeAddress": "consignee address if found",
+              "consigneeCity": "consignee city if found",
+              "consigneeState": "consignee state if found",
+              "consigneeZipCode": "consignee zip if found",
+              "consigneeCountry": "consignee country if found",
+              "consigneeContactPerson": "consignee contact if found",
+              "consigneePhone": "consignee phone if found",
+              "consigneeEmail": "consignee email if found",
+              "notifyPartyName": "notify party name if found",
+              "notifyPartyAddress": "notify party address if found",
+              "cargoDescription": "cargo description if found",
+              "commodity": "commodity type if found", 
+              "numberOfPackages": "number of packages as integer if found",
+              "kindOfPackages": "package type if found",
+              "grossWeight": "gross weight as number if found",
+              "netWeight": "net weight as number if found",
+              "weight": "weight string if found",
+              "weightUnit": "weight unit if found",
+              "volume": "volume as number if found",
+              "volumeUnit": "volume unit if found",
+              "measurement": "measurement if found",
+              "marksAndNumbers": "marks and numbers if found",
+              "bookingNumber": "booking number if found",
+              "freightCharges": "freight charges as number if found",
+              "freightPaymentTerms": "payment terms if found",
+              "declaredValue": "declared value as number if found",
+              "currency": "currency if found",
+              "countryOfOrigin": "country of origin if found",
+              "htsCode": "HTS code if found",
+              "dateOfShipment": "shipment date if found",
+              "onBoardDate": "on board date if found",
+              "eta": "ETA if found",
+              "etd": "ETD if found"
+            }
+
+            Only include fields where you find actual values. Do not include fields with null, "not found", "N/A", etc.`
           },
           {
             role: "user",
@@ -260,7 +317,7 @@ export class AIDocumentProcessor {
         ],
         response_format: { type: "json_object" },
         temperature: 0.1,
-        max_tokens: 1500
+        max_tokens: 2000
       });
 
       const result = completion.choices[0].message.content;
@@ -268,7 +325,10 @@ export class AIDocumentProcessor {
         throw new Error('No response from OpenAI analysis');
       }
 
-      return JSON.parse(result) as ExtractedShipmentData;
+      const extractedData = JSON.parse(result) as ExtractedShipmentData;
+      console.log('OpenAI extracted fields:', Object.keys(extractedData));
+      
+      return this.validateAndCleanData(extractedData);
       
     } catch (error: any) {
       console.error('OpenAI comprehensive extraction failed:', error);
@@ -456,16 +516,18 @@ export class AIDocumentProcessor {
         }
       }
       
-      // Enhance with OpenAI if we have good text content
-      if (fullText.length > 100) {
-        console.log('Enhancing Azure data with OpenAI analysis...');
-        const openaiData = await this.extractComprehensiveData(fullText);
-        
-        // Merge Azure and OpenAI results, preferring Azure for structured data
-        return this.mergeExtractionResults(extractedData, openaiData);
-      }
+      // Always enhance with OpenAI for comprehensive data
+      console.log('Enhancing Azure data with OpenAI analysis...');
+      const openaiData = await this.extractComprehensiveData(fullText);
       
-      return extractedData;
+      console.log('Azure extracted data:', extractedData);
+      console.log('OpenAI extracted data:', openaiData);
+      
+      // Merge Azure and OpenAI results, preferring Azure for structured data
+      const mergedData = this.mergeExtractionResults(extractedData, openaiData);
+      console.log('Final merged data:', mergedData);
+      
+      return mergedData;
       
     } catch (error) {
       console.error('Azure extraction failed:', error);

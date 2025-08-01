@@ -96,6 +96,7 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
           cargoDescription: data.cargoDescription,
           numberOfPackages: data.numberOfPackages
         });
+        console.log('First 10 actual field values:', Object.entries(data).slice(0, 10).map(([k, v]) => `${k}: ${v}`));
         extractedFields = flattenAzureData(data);
         console.log(`Flattened to ${Object.keys(extractedFields).length} mapped fields:`, Object.keys(extractedFields));
         console.log('Successfully mapped fields:', Object.keys(extractedFields).filter(key => extractedFields[key] !== null && extractedFields[key] !== undefined));

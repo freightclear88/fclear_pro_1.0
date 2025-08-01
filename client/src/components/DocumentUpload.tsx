@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { FileUp, FileText, Ship, Plane, Truck, Package, Scale, Receipt } from "lucide-react";
+import { FileUp, FileText, Ship, Plane, Truck, Package, Scale, Receipt, Loader2 } from "lucide-react";
 
 interface DocumentUploadProps {
   shipmentId?: number;
@@ -222,6 +222,24 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
         </DialogHeader>
         
         <div className="flex-1 overflow-hidden flex flex-col space-y-4">
+          {/* Processing Animation */}
+          {uploadMutation.isPending && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="flex items-center space-x-3">
+                <Loader2 className="w-6 h-6 text-orange-600 animate-spin" />
+                <div>
+                  <p className="font-medium text-orange-800">Processing Documents</p>
+                  <p className="text-sm text-orange-600">
+                    AI is extracting shipment data from your documents. This may take up to 60 seconds...
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 bg-orange-200 rounded-full h-2">
+                <div className="bg-orange-500 h-2 rounded-full animate-pulse" style={{ width: '70%' }}></div>
+              </div>
+            </div>
+          )}
+
           {/* File Upload Area */}
           <div className="flex-shrink-0">
             <Label className="text-sm">Upload Files (up to 10 documents)</Label>
