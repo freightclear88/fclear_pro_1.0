@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import ShippingRouteMap from '@/components/ShippingRouteMap';
+import GoogleMapsRoute from '@/components/GoogleMapsRoute';
 import { Route, Ship, MapPin, TrendingUp, Globe } from 'lucide-react';
 import type { Shipment } from '@shared/schema';
 
@@ -184,7 +184,7 @@ export default function RouteVisualization() {
           </Card>
 
           {/* Route Visualization */}
-          <ShippingRouteMap shipment={selectedShipment} />
+          <GoogleMapsRoute shipment={selectedShipment} />
         </div>
       )}
 
