@@ -4108,9 +4108,11 @@ ${fullText}`;
           }
         }
       } else if (fileExtension === 'doc' || fileExtension === 'docx') {
-        // Handle DOC/DOCX files using Azure Document Intelligence
-        console.log("DOC/DOCX file detected, using Azure Document Intelligence for extraction");
+        // Enhanced DOC/DOCX processing with multiple fallback methods
+        console.log("DOC/DOCX file detected, trying multiple extraction methods");
         let fullText = "";
+        
+        // Method 1: Try Azure Document Intelligence first
         try {
           const { DocumentAnalysisClient, AzureKeyCredential } = await import("@azure/ai-form-recognizer");
           const fs = await import('fs');
@@ -4128,65 +4130,40 @@ ${fullText}`;
           fullText = result.content || "";
           console.log("Extracted DOC/DOCX text:", fullText.substring(0, 500) + "...");
           
-          // Use OpenAI to extract structured ISF data from the document text
-          const OpenAI = await import('openai');
-          const openaiClient = new OpenAI.default({ apiKey: process.env.OPENAI_API_KEY });
-          
-          const prompt = `Extract ISF (Importer Security Filing) data from this shipping document text. Return ONLY a JSON object with these exact fields (use null for missing data):
-
-{
-  "importerName": "company name of importer",
-  "consigneeName": "company name of consignee", 
-  "manufacturerCountry": "country where goods were manufactured",
-  "countryOfOrigin": "country of origin",
-  "htsusNumber": "10-digit HTS/tariff code",
-  "commodityDescription": "description of goods",
-  "portOfEntry": "US port of entry",
-  "billOfLading": "bill of lading number",
-  "vesselName": "vessel/ship name",
-  "estimatedArrivalDate": "YYYY-MM-DD format"
-}
-
-Document text:
-${fullText}`;
-
-          const aiResponse = await openaiClient.chat.completions.create({
-            model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-            messages: [{ role: "user", content: prompt }],
-            response_format: { type: "json_object" },
-            max_tokens: 1000,
-          });
-
-          const aiExtractedData = JSON.parse(aiResponse.choices[0].message.content);
-          console.log("AI extracted DOC/DOCX ISF data:", aiExtractedData);
-          
-          // Clean and validate the extracted data
-          extractedData = {};
-          Object.entries(aiExtractedData).forEach(([key, value]) => {
-            if (value && value !== "null" && value !== "") {
-              extractedData[key] = value;
-            }
-          });
+          // Use pattern-based extraction for DOCX files (no OpenAI dependency)
+          console.log("Using pattern-based extraction for DOCX data...");
+          extractedData = extractDataFromText(fullText);
           
         } catch (docError) {
           console.error("DOC/DOCX processing error:", docError);
           
-          // Try alternative text extraction methods for DOCX
+          // Method 2: Try alternative DOCX text extraction
           try {
             console.log("Attempting alternative DOCX text extraction...");
             const fs = await import('fs');
-            const path = await import('path');
             
-            // Try using a simple DOCX parser
+            // Try ZIP-based extraction for DOCX files
             try {
-              const mammoth = await import('mammoth').catch(() => null);
-              if (mammoth) {
-                const result = await mammoth.default.extractRawText({ path: req.file.path });
-                fullText = result.value;
-                console.log("Alternative DOCX extraction successful:", fullText.substring(0, 200) + "...");
+              const AdmZip = await import('adm-zip');
+              const zip = new AdmZip.default(req.file.path);
+              const entries = zip.getEntries();
+              
+              // Find document.xml in the DOCX
+              const documentXml = entries.find(entry => entry.entryName === 'word/document.xml');
+              if (documentXml) {
+                const xmlData = documentXml.getData().toString('utf8');
+                
+                // Simple XML text extraction without xml2js to avoid dependencies
+                const textContent = xmlData
+                  .replace(/<[^>]*>/g, ' ')  // Remove XML tags
+                  .replace(/\s+/g, ' ')      // Normalize whitespace
+                  .trim();
+                
+                fullText = textContent;
+                console.log("DOCX XML extraction successful:", fullText.substring(0, 200) + "...");
               }
-            } catch (altError) {
-              console.log("Alternative DOCX extraction failed, trying basic file analysis");
+            } catch (zipError) {
+              console.log("ZIP extraction failed, trying basic text extraction");
               // Read as binary and look for readable text patterns
               const buffer = fs.default.readFileSync(req.file.path);
               const text = buffer.toString('utf8');
@@ -4197,8 +4174,26 @@ ${fullText}`;
                 console.log("Basic text extraction found content:", fullText.substring(0, 200) + "...");
               }
             }
+            
+            // Extract data from any text we found
+            if (fullText && fullText.length > 10) {
+              extractedData = extractDataFromText(fullText);
+            } else {
+              console.log("No usable text extracted from DOCX file");
+              extractedData = {
+                importerName: "Document processing failed - please complete manually",
+                consigneeName: "Please review document and complete",
+                commodityDescription: "Manual extraction required"
+              };
+            }
+            
           } catch (extractError) {
             console.error("Alternative text extraction failed:", extractError);
+            extractedData = {
+              importerName: "DOCX file format not supported",
+              consigneeName: "Please upload as PDF or Excel",
+              commodityDescription: "File conversion required"
+            };
           }
           
           // Fallback: Enhanced pattern matching for DOC/DOCX data extraction if AI processing fails
@@ -4882,6 +4877,165 @@ function findExcelData(flatData: any[], keywords: string[]): string | null {
     }
   }
   return null;
+}
+
+// Enhanced pattern-based data extraction function
+function extractDataFromText(fullText: string): any {
+  try {
+    // Extract Bill of Lading - prioritize HB/L for ISF filing
+    let billOfLading = null;
+    
+    // Priority 1: Look for HB/L (House Bill of Lading) - preferred for ISF
+    const hblMatch = fullText.match(/HB\/L\s*(?:AMS\s*)?(?:NO|NUMBER)[\.\s]*[:]*\s*([A-Z0-9]+)/i);
+    if (hblMatch) {
+      billOfLading = hblMatch[1];
+    }
+    
+    // Priority 2: Look for standard B/L patterns if no HB/L found
+    if (!billOfLading) {
+      const blMatch = fullText.match(/(?:B\/L|BILL\s*OF\s*LADING)[\s\#]*(?:NO|NUMBER)?[\.\s]*[:]*\s*([A-Z0-9]+)/i);
+      if (blMatch) {
+        billOfLading = blMatch[1];
+      }
+    }
+    
+    // Extract vessel and voyage information
+    let vesselName = null, voyageNumber = null;
+    const vesselMatch = fullText.match(/VESSEL[\s\/]*(?:NAME)?[\s]*[:]*\s*([A-Z\s]+?)(?:\s*\/|\s*VOYAGE)/i);
+    if (vesselMatch) {
+      vesselName = vesselMatch[1]?.trim();
+    }
+    
+    const voyageMatch = fullText.match(/VOYAGE[\s]*(?:NO|NUMBER)?[\s]*[:]*\s*([A-Z0-9]+)/i);
+    if (voyageMatch) {
+      voyageNumber = voyageMatch[1]?.trim();
+    }
+    
+    // Extract container numbers
+    let containerNumbers = null;
+    const containerMatch = fullText.match(/CONTAINER[\s]*(?:NO|NUMBER)?[\s]*[:]*\s*([A-Z0-9\s,]+)/i);
+    if (containerMatch) {
+      containerNumbers = containerMatch[1]?.trim().split(/[,\s]+/)[0]; // Get first container
+    }
+    
+    // Extract comprehensive shipping party information
+    let sellerInfo = null, buyerInfo = null, manufacturerInfo = null;
+    
+    // Extract SHIPPER information (multi-line)
+    const shipperMatch = fullText.match(/SHIPPER[^:]*[:]*\s*([^\n]+(?:\n[^\n:]+)*?)(?=\n\s*[A-Z]+:|$)/i);
+    if (shipperMatch) {
+      sellerInfo = shipperMatch[1]?.trim().replace(/\s+/g, '\n');
+    }
+    
+    // Extract CONSIGNEE information (multi-line)
+    const consigneeMatch = fullText.match(/CONSIGNEE[^:]*[:]*\s*([^\n]+(?:\n[^\n:]+)*?)(?=\n\s*[A-Z]+:|$)/i);
+    if (consigneeMatch) {
+      buyerInfo = consigneeMatch[1]?.trim().replace(/\s+/g, '\n');
+    }
+    
+    // Extract NOTIFY PARTY or MANUFACTURER info
+    const notifyMatch = fullText.match(/(?:NOTIFY\s*PARTY|MANUFACTURER)[^:]*[:]*\s*([^\n]+(?:\n[^\n:]+)*?)(?=\n\s*[A-Z]+:|$)/i);
+    if (notifyMatch) {
+      manufacturerInfo = notifyMatch[1]?.trim().replace(/\s+/g, '\n');
+    }
+    
+    // Extract port information
+    let portOfEntry = null;
+    const portMatch = fullText.match(/PORT\s*OF\s*(?:DISCHARGE|DESTINATION)[^:]*[:]*\s*([A-Z\s,]+)/i);
+    if (portMatch) {
+      portOfEntry = portMatch[1]?.trim().split('\n')[0]?.trim();
+    }
+    
+    // Extract commodity description
+    let commodityDescription = null;
+    const commodityMatch = fullText.match(/(?:COMMODITY|CARGO|DESCRIPTION)[^:]*[:]*\s*([^\n]+)/i);
+    if (commodityMatch) {
+      commodityDescription = commodityMatch[1]?.trim();
+    }
+    
+    // Extract SCAC codes
+    let hblScacCode = null, mblScacCode = null;
+    const hblScacMatch = fullText.match(/HB\/L\s*SCAC\s*CODE[^:]*[:]*\s*([A-Z]+)/i);
+    if (hblScacMatch) {
+      hblScacCode = hblScacMatch[1]?.trim();
+    }
+    
+    const mblScacMatch = fullText.match(/MB\/L\s*SCAC\s*CODE[^:]*[:]*\s*([A-Z]+)/i);
+    if (mblScacMatch) {
+      mblScacCode = mblScacMatch[1]?.trim();
+    }
+    
+    // Extract AMS number
+    let amsNumber = null;
+    const amsMatch = fullText.match(/(?:HB\/L\s*)?AMS\s*(?:NO|NUMBER)[^:]*[:]*\s*([A-Z0-9]+)/i);
+    if (amsMatch) {
+      amsNumber = amsMatch[1]?.trim();
+    }
+    
+    // Extract dates with multiple patterns
+    let estimatedArrivalDate = null, estimatedDepartureDate = null;
+    
+    const etaMatch = fullText.match(/ETA:\s*(\d{4}\/\d{1,2}\/\d{1,2})/i);
+    if (etaMatch) {
+      const [year, month, day] = etaMatch[1].split('/');
+      estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    
+    const etdMatch = fullText.match(/ETD:\s*(\d{4}\/\d{1,2}\/\d{1,2})/i);
+    if (etdMatch) {
+      const [year, month, day] = etdMatch[1].split('/');
+      estimatedDepartureDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    
+    // Extract weight and volume
+    let weight = null, volume = null;
+    const weightMatch = fullText.match(/Weight:\s*([0-9,]+\s*KGS?)/i);
+    if (weightMatch) {
+      weight = weightMatch[1]?.trim();
+    }
+    
+    const volumeMatch = fullText.match(/Volume:\s*([0-9,\.\s]+CBM)/i);
+    if (volumeMatch) {
+      volume = volumeMatch[1]?.trim();
+    }
+    
+    const extractedData = {
+      billOfLading,
+      vesselName,
+      voyageNumber,
+      containerNumbers,
+      portOfEntry,
+      commodityDescription,
+      estimatedArrivalDate,
+      estimatedDepartureDate,
+      // Consolidated party information fields
+      sellerInfo,
+      buyerInfo,
+      manufacturerInfo,
+      // SCAC codes
+      hblScacCode,
+      mblScacCode,
+      // AMS number
+      amsNumber,
+      // Additional shipping details
+      weight,
+      volume,
+      countryOfOrigin: "China" // Common default, can be updated manually
+    };
+    
+    // Filter out null/empty values
+    return Object.fromEntries(
+      Object.entries(extractedData).filter(([_, value]) => value !== null && value !== "")
+    );
+    
+  } catch (error) {
+    console.error("Error in extractDataFromText:", error);
+    return {
+      importerName: "Pattern extraction failed",
+      consigneeName: "Please complete manually",
+      commodityDescription: "Manual data entry required"
+    };
+  }
 }
 
 // Extract data from PDF text content
