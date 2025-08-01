@@ -196,32 +196,19 @@ export class AIDocumentProcessor {
   }
 
   /**
-   * Extract text from PDF using pdfjs-dist with Node.js compatibility
+   * Extract text from PDF using pdf-parse library
    */
   private async extractPDFText(filePath: string): Promise<string> {
     try {
-      // Use pdfjs-dist/legacy for Node.js compatibility
-      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.js');
+      const pdfParse = await import('pdf-parse');
       const pdfBuffer = fs.readFileSync(filePath);
       
       console.log(`Processing PDF buffer: ${pdfBuffer.length} bytes`);
       
-      const pdfDoc = await pdfjs.getDocument({ data: pdfBuffer }).promise;
-      let fullText = '';
+      const data = await pdfParse.default(pdfBuffer);
+      const fullText = data.text;
       
-      const numPages = pdfDoc.numPages;
-      console.log(`Processing ${numPages} pages from PDF`);
-      
-      for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-        const page = await pdfDoc.getPage(pageNum);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
-        fullText += pageText + '\n';
-      }
-      
-      console.log(`Extracted ${fullText.length} characters total`);
+      console.log(`Extracted ${fullText.length} characters from PDF`);
       return fullText.trim();
       
     } catch (error) {
