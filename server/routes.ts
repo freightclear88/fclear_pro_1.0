@@ -3867,6 +3867,32 @@ ${excelText}`;
           extractedData = {};
         }
       } else if (fileExtension === 'pdf') {
+        // Helper functions for parsing vessel/voyage data
+        function extractVesselName(vesselVoyageString: string | null): string | null {
+          if (!vesselVoyageString) return null;
+          
+          // Patterns for vessel/voyage: "GRETE MAERSK / 120E", "VESSEL NAME / VOY123", etc.
+          const match = vesselVoyageString.match(/^([^\/]+)\s*\/\s*(.+)$/);
+          if (match) {
+            return match[1].trim();
+          }
+          
+          // If no slash pattern, return the whole string as vessel name
+          return vesselVoyageString.trim();
+        }
+
+        function extractVoyageNumber(vesselVoyageString: string | null): string | null {
+          if (!vesselVoyageString) return null;
+          
+          // Patterns for vessel/voyage: "GRETE MAERSK / 120E", "VESSEL NAME / VOY123", etc.
+          const match = vesselVoyageString.match(/^([^\/]+)\s*\/\s*(.+)$/);
+          if (match) {
+            return match[2].trim();
+          }
+          
+          return null;
+        }
+
         // Use OpenAI exclusively for PDF processing
         console.log("PDF file detected, using OpenAI for comprehensive ISF data extraction");
         try {
@@ -3878,36 +3904,43 @@ ${excelText}`;
           
           console.log("OpenAI extracted comprehensive data:", extractedShipmentData);
           
-          // Map comprehensive shipping data to ISF-specific fields
+          // Map comprehensive shipping data to ISF-specific fields with enhanced field matching
           const aiExtractedData = {
-            importerName: extractedShipmentData.consigneeName || null,
-            consigneeName: extractedShipmentData.consigneeName || null,
-            manufacturerCountry: extractedShipmentData.countryOfOrigin || null,
-            countryOfOrigin: extractedShipmentData.countryOfOrigin || null,
-            htsusNumber: extractedShipmentData.htsCode || null,
-            commodityDescription: extractedShipmentData.cargoDescription || null,
-            portOfEntry: extractedShipmentData.portOfDischarge || null,
-            billOfLading: extractedShipmentData.billOfLadingNumber || null,
-            vesselName: extractedShipmentData.vesselAndVoyage?.split(' ')[0] || null,
-            voyageNumber: extractedShipmentData.vesselAndVoyage?.split(' ').slice(1).join(' ') || null,
-            containerNumbers: extractedShipmentData.containerNumber || null,
-            estimatedArrivalDate: extractedShipmentData.eta || null,
+            importerName: extractedShipmentData.consigneeName || extractedShipmentData.importer_name || null,
+            consigneeName: extractedShipmentData.consigneeName || extractedShipmentData.consignee_name || null,
+            manufacturerCountry: extractedShipmentData.countryOfOrigin || extractedShipmentData.country_of_origin || null,
+            countryOfOrigin: extractedShipmentData.countryOfOrigin || extractedShipmentData.country_of_origin || null,
+            htsusNumber: extractedShipmentData.htsCode || extractedShipmentData.hts_code || null,
+            commodityDescription: extractedShipmentData.cargoDescription || extractedShipmentData.commodity_description || extractedShipmentData.cargo_description || null,
+            portOfEntry: extractedShipmentData.portOfDischarge || extractedShipmentData.first_port_usa || extractedShipmentData.port_of_discharge || null,
+            billOfLading: extractedShipmentData.billOfLadingNumber || extractedShipmentData.bill_of_lading_number || extractedShipmentData.billOfLading || null,
+            vesselName: extractVesselName(extractedShipmentData.vesselAndVoyage || extractedShipmentData.vessel_voyage || extractedShipmentData.vessel_name),
+            voyageNumber: extractVoyageNumber(extractedShipmentData.vesselAndVoyage || extractedShipmentData.vessel_voyage || extractedShipmentData.voyage_number),
+            containerNumbers: extractedShipmentData.containerNumber || extractedShipmentData.container_number || null,
+            estimatedArrivalDate: extractedShipmentData.eta || extractedShipmentData.estimated_arrival || null,
+            estimatedDepartureDate: extractedShipmentData.etd || extractedShipmentData.estimated_departure || null,
+            foreignPortOfLading: extractedShipmentData.portOfLoading || extractedShipmentData.port_of_loading || null,
             // Additional comprehensive fields from our enhanced extraction
-            shipperName: extractedShipmentData.shipperName || null,
-            shipperAddress: extractedShipmentData.shipperAddress || null,
-            consigneeAddress: extractedShipmentData.consigneeAddress || null,
-            notifyPartyName: extractedShipmentData.notifyPartyName || null,
-            portOfLoading: extractedShipmentData.portOfLoading || null,
-            placeOfReceipt: extractedShipmentData.placeOfReceipt || null,
-            placeOfDelivery: extractedShipmentData.placeOfDelivery || null,
-            packageType: extractedShipmentData.packageType || null,
-            numberOfPackages: extractedShipmentData.numberOfPackages || null,
-            grossWeight: extractedShipmentData.grossWeight || null,
-            sealNumbers: extractedShipmentData.sealNumbers?.join(', ') || null,
-            containerType: extractedShipmentData.containerType || null,
-            bookingNumber: extractedShipmentData.bookingNumber || null,
-            dateIssued: extractedShipmentData.dateIssued || null,
-            onBoardDate: extractedShipmentData.onBoardDate || null
+            shipperName: extractedShipmentData.shipperName || extractedShipmentData.shipper_name || null,
+            shipperAddress: extractedShipmentData.shipperAddress || extractedShipmentData.shipper_address || null,
+            consigneeAddress: extractedShipmentData.consigneeAddress || extractedShipmentData.consignee_address || null,
+            notifyPartyName: extractedShipmentData.notifyPartyName || extractedShipmentData.notify_party_name || null,
+            portOfLoading: extractedShipmentData.portOfLoading || extractedShipmentData.port_of_loading || null,
+            placeOfReceipt: extractedShipmentData.placeOfReceipt || extractedShipmentData.place_of_receipt || null,
+            placeOfDelivery: extractedShipmentData.placeOfDelivery || extractedShipmentData.place_of_delivery || null,
+            packageType: extractedShipmentData.packageType || extractedShipmentData.package_type || null,
+            numberOfPackages: extractedShipmentData.numberOfPackages || extractedShipmentData.number_of_packages || extractedShipmentData.quantity || null,
+            grossWeight: extractedShipmentData.grossWeight || extractedShipmentData.weight || null,
+            sealNumbers: extractedShipmentData.sealNumbers?.join(', ') || extractedShipmentData.seal_number || null,
+            containerType: extractedShipmentData.containerType || extractedShipmentData.container_type || null,
+            bookingNumber: extractedShipmentData.bookingNumber || extractedShipmentData.booking_number || null,
+            dateIssued: extractedShipmentData.dateIssued || extractedShipmentData.date || null,
+            onBoardDate: extractedShipmentData.onBoardDate || extractedShipmentData.on_board_date || null,
+            mblScacCode: extractedShipmentData.scac || extractedShipmentData.scac_code || null,
+            hblScacCode: extractedShipmentData.scac_code || null,
+            amsNumber: extractedShipmentData.ams_filling_no || extractedShipmentData.ams_number || null,
+            consolidatorStufferInfo: extractedShipmentData.consolidator_name_and_address || null,
+            containerStuffingLocation: extractedShipmentData.container_stuffing_location || null
           };
           
           console.log("Mapped ISF data:", aiExtractedData);
