@@ -245,20 +245,41 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
                 
                 {uploadedFiles.length > 0 && (
                   <div className="mt-6">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                      <h4 className="font-semibold text-blue-900 mb-2">
+                        Files Selected ({uploadedFiles.length})
+                      </h4>
+                      <div className="space-y-1">
+                        {uploadedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center space-x-2 text-sm">
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
+                              {index + 1}
+                            </span>
+                            <span className="text-blue-800 font-medium">{file.name}</span>
+                            <span className="text-blue-600">
+                              ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
                     <h4 className="font-medium text-gray-700 mb-4">
-                      Select Document Type for Each File ({uploadedFiles.length})
+                      Select Document Type for Each File
                     </h4>
                     <div className="space-y-4">
                       {uploadedFiles.map((file, index) => (
                         <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white">
                           <div className="flex items-start space-x-3">
-                            <FileText className="w-5 h-5 text-freight-blue mt-1" />
+                            <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold mt-1">
+                              {index + 1}
+                            </div>
                             <div className="flex-1 space-y-3">
                               <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                                  <p className="text-xs text-gray-500">
-                                    {(file.size / 1024 / 1024).toFixed(1)} MB
+                                <div className="flex-1">
+                                  <p className="text-base font-semibold text-gray-900 mb-1">{file.name}</p>
+                                  <p className="text-sm text-gray-600">
+                                    Size: {(file.size / 1024 / 1024).toFixed(1)} MB
                                   </p>
                                 </div>
                                 <Button
@@ -271,9 +292,14 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
                                 </Button>
                               </div>
                               
+                              <div className="bg-gray-50 p-3 rounded-lg mb-3">
+                                <p className="text-sm font-medium text-gray-700 mb-1">File:</p>
+                                <p className="text-lg font-bold text-freight-blue break-all">{file.name}</p>
+                              </div>
+                              
                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                                 <div className="space-y-1">
-                                  <Label className="text-xs font-medium text-gray-600">Document Type *</Label>
+                                  <Label className="text-sm font-medium text-gray-700">Document Type *</Label>
                                   <Select 
                                     value={file.documentType || ""} 
                                     onValueChange={(value) => updateFileType(index, value)}
@@ -287,8 +313,8 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
                                         return (
                                           <SelectItem key={category.value} value={category.value}>
                                             <div className="flex items-center space-x-2">
-                                              <Icon className="w-3 h-3" />
-                                              <span className="text-xs">{category.label}</span>
+                                              <Icon className="w-4 h-4" />
+                                              <span className="text-sm">{category.label}</span>
                                             </div>
                                           </SelectItem>
                                         );
@@ -299,7 +325,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
                                 
                                 {file.documentType === "delivery_order" && (
                                   <div className="space-y-1">
-                                    <Label className="text-xs font-medium text-gray-600">Sub-Category</Label>
+                                    <Label className="text-sm font-medium text-gray-700">Sub-Category</Label>
                                     <Select 
                                       value={file.subCategory || ""} 
                                       onValueChange={(value) => updateFileSubCategory(index, value)}
@@ -310,7 +336,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
                                       <SelectContent>
                                         {SUB_CATEGORIES.map((subCategory) => (
                                           <SelectItem key={subCategory.value} value={subCategory.value}>
-                                            <span className="text-xs">{subCategory.label}</span>
+                                            <span className="text-sm">{subCategory.label}</span>
                                           </SelectItem>
                                         ))}
                                       </SelectContent>
