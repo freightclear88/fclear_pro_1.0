@@ -228,14 +228,6 @@ CONTAINER:
                     )}
                   </div>
                 </div>
-
-                {/* Arrow indicators */}
-                <div className="absolute top-1/2 left-2 transform -translate-y-1/2">
-                  <ArrowRight className="w-4 h-4 text-freight-blue" />
-                </div>
-                <div className="absolute top-1/2 right-2 transform -translate-y-1/2">
-                  <ArrowRight className="w-4 h-4 text-freight-green" />
-                </div>
               </div>
             </div>
 
