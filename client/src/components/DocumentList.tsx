@@ -5,8 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FileText, Eye, Download, Calendar, Hash, X, ExternalLink, Truck } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+
+// Simple text file viewer component
+function TextFileViewer({ documentId }: { documentId: number }) {
+  const [content, setContent] = useState<string>('Loading...');
+  
+  useEffect(() => {
+    fetch(`/api/documents/${documentId}/view`)
+      .then(response => response.text())
+      .then(text => setContent(text))
+      .catch(() => setContent('Error loading file content'));
+  }, [documentId]);
+  
+  return <span>{content}</span>;
+}
 
 interface DocumentListProps {
   shipmentId?: number;
@@ -31,10 +45,24 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
     setIsDetailOpen(true);
   };
 
-  const handleViewPdf = (document: Document) => {
-    // Show PDF viewer dialog for in-app viewing
-    setViewingDocument(document);
-    setIsPdfViewerOpen(true);
+  const handleViewPdf = async (document: Document) => {
+    try {
+      // For PDF files, open in a new tab to avoid Chrome blocking
+      if (document.fileType === 'application/pdf') {
+        window.open(`/api/documents/${document.id}/view`, '_blank');
+        return;
+      }
+      
+      // For other file types, show in dialog
+      setViewingDocument(document);
+      setIsPdfViewerOpen(true);
+    } catch (error) {
+      toast({
+        title: "View Failed",
+        description: "Could not open the document",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDownload = async (doc: Document) => {
@@ -189,7 +217,7 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
                         className="btn-outline-secondary"
                       >
                         <Eye className="w-4 h-4 mr-2" />
-                        View {doc.fileType === 'application/pdf' ? 'PDF' : 'File'}
+                        {doc.fileType === 'application/pdf' ? 'View PDF' : 'View File'}
                       </Button>
                     )}
                     
@@ -308,26 +336,55 @@ export default function DocumentList({ shipmentId, showAll = false }: DocumentLi
           <div className="flex-1 overflow-hidden">
             {viewingDocument && (
               <div className="w-full h-full bg-gray-100 rounded border">
-                {viewingDocument.fileType === 'application/pdf' ? (
-                  <iframe
-                    src={`/api/documents/${viewingDocument.id}/view`}
-                    className="w-full h-full border-0 rounded"
-                    title={viewingDocument.originalName || viewingDocument.fileName}
-                  />
-                ) : viewingDocument.fileType?.startsWith('image/') ? (
+                {viewingDocument.fileType?.startsWith('image/') ? (
                   <div className="w-full h-full flex items-center justify-center p-4">
                     <img
                       src={`/api/documents/${viewingDocument.id}/view`}
                       alt={viewingDocument.originalName || viewingDocument.fileName}
                       className="max-w-full max-h-full object-contain"
+                      onError={(e) => {
+                        toast({
+                          title: "Image Load Failed",
+                          description: "Could not load the image file",
+                          variant: "destructive",
+                        });
+                      }}
                     />
                   </div>
+                ) : viewingDocument.fileType === 'text/plain' ? (
+                  <div className="w-full h-full p-4 overflow-auto">
+                    <pre className="whitespace-pre-wrap text-sm font-mono bg-white p-4 rounded border">
+                      {/* Text content will be loaded via fetch */}
+                      <TextFileViewer documentId={viewingDocument.id} />
+                    </pre>
+                  </div>
                 ) : (
-                  <iframe
-                    src={`/api/documents/${viewingDocument.id}/view`}
-                    className="w-full h-full border-0 rounded bg-white"
-                    title={viewingDocument.originalName || viewingDocument.fileName}
-                  />
+                  <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center">
+                    <FileText className="w-16 h-16 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-700 mb-2">File Preview Not Available</h3>
+                    <p className="text-gray-500 mb-4">
+                      This file type cannot be previewed in the browser. 
+                      {viewingDocument.fileType === 'application/pdf' && 
+                        " PDF files will open in a new tab to avoid browser restrictions."
+                      }
+                    </p>
+                    <div className="flex space-x-2">
+                      <Button
+                        onClick={() => window.open(`/api/documents/${viewingDocument.id}/view`, '_blank')}
+                        className="btn-outline-primary"
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Open in New Tab
+                      </Button>
+                      <Button
+                        onClick={() => handleDownload(viewingDocument)}
+                        className="btn-outline-secondary"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
