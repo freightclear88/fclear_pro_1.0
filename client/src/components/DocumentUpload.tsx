@@ -37,9 +37,15 @@ const SUB_CATEGORIES = [
   { value: "final_delivery", label: "Final Delivery" },
 ];
 
-interface FileWithType extends File {
+interface FileWithType {
+  name: string;
+  size: number;
+  type: string;
+  lastModified: number;
   documentType?: string;
   subCategory?: string;
+  // Keep original File for FormData
+  originalFile: File;
 }
 
 export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated }: DocumentUploadProps) {
@@ -53,10 +59,15 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     console.log('Files dropped:', acceptedFiles.map(f => ({ name: f.name, size: f.size, type: f.type })));
     const filesWithType: FileWithType[] = acceptedFiles.map(file => ({
-      ...file,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified,
       documentType: "", // Will be set by user
-      subCategory: ""
+      subCategory: "",
+      originalFile: file
     }));
+    console.log('Files with type:', filesWithType.map(f => ({ name: f.name, size: f.size, type: f.type })));
     setUploadedFiles(filesWithType);
   }, []);
 
@@ -76,7 +87,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
       const formData = new FormData();
       
       files.forEach((file, index) => {
-        formData.append('documents', file);
+        formData.append('documents', file.originalFile);
         formData.append(`documentTypes`, file.documentType || 'other');
         if (file.subCategory) {
           formData.append(`subCategories`, file.subCategory);
@@ -257,9 +268,9 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
                               {index + 1}
                             </span>
                             <div className="flex-1">
-                              <p className="text-blue-900 font-semibold text-base break-all">{file.name}</p>
+                              <p className="text-blue-900 font-semibold text-base break-all">{file.name || 'Unknown file'}</p>
                               <p className="text-blue-600 text-sm">
-                                Size: {file.size && !isNaN(file.size) ? (file.size / 1024 / 1024).toFixed(1) : '0.0'} MB
+                                Size: {file.size ? (file.size / 1024 / 1024).toFixed(1) : 'Unknown'} MB
                               </p>
                             </div>
                           </div>
@@ -292,9 +303,9 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
                               
                               <div className="bg-freight-blue/10 border-2 border-freight-blue/30 p-4 rounded-lg mb-4">
                                 <p className="text-sm font-medium text-freight-blue mb-2">Original File Name:</p>
-                                <p className="text-xl font-bold text-freight-blue break-all leading-tight">{file.name}</p>
+                                <p className="text-xl font-bold text-freight-blue break-all leading-tight">{file.name || 'Unknown file'}</p>
                                 <p className="text-sm text-freight-blue/70 mt-1">
-                                  Size: {file.size && !isNaN(file.size) ? (file.size / 1024 / 1024).toFixed(1) : '0.0'} MB
+                                  Size: {file.size ? (file.size / 1024 / 1024).toFixed(1) : 'Unknown'} MB
                                 </p>
                               </div>
                               
