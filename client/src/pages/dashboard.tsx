@@ -82,7 +82,7 @@ export default function Dashboard() {
               </h3>
               <p className="text-blue-100 mb-4 text-sm lg:text-base">
                 Upload multiple shipping documents simultaneously (Bill of Lading, Commercial Invoice, 
-                Packing List, etc.) and our AI will automatically extract and consolidate all relevant 
+                Packing List, etc.) and our intelligent processing system will automatically extract and consolidate all relevant 
                 data to create complete shipments with comprehensive information from all documents.
               </p>
               <div className="flex flex-wrap gap-2 mb-4">
