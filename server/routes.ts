@@ -4751,41 +4751,74 @@ ${excelText}`;
           
           // Map comprehensive shipping data to ISF-specific fields with enhanced field matching
           const aiExtractedData = {
-            importerName: extractedShipmentData.consigneeName || extractedShipmentData.importer_name || null,
+            // Core importer information - Enhanced field mapping
+            importerName: extractedShipmentData.importerName || extractedShipmentData.consigneeName || extractedShipmentData.importer_name || null,
+            importerAddress: extractedShipmentData.importerAddress || extractedShipmentData.consigneeAddress || null,
             consigneeName: extractedShipmentData.consigneeName || extractedShipmentData.consignee_name || null,
-            manufacturerCountry: extractedShipmentData.countryOfOrigin || extractedShipmentData.country_of_origin || null,
+            consigneeAddress: extractedShipmentData.consigneeAddress || extractedShipmentData.consignee_address || null,
+            
+            // Manufacturer and party information - NEW Enhanced mappings
+            manufacturerCountry: extractedShipmentData.manufacturerCountry || extractedShipmentData.countryOfOrigin || extractedShipmentData.country_of_origin || null,
             countryOfOrigin: extractedShipmentData.countryOfOrigin || extractedShipmentData.country_of_origin || null,
+            manufacturerInformation: extractedShipmentData.manufacturerName && extractedShipmentData.manufacturerAddress ? 
+              `${extractedShipmentData.manufacturerName}\n${extractedShipmentData.manufacturerAddress}` : 
+              extractedShipmentData.manufacturerName || extractedShipmentData.manufacturer_name || null,
+            sellerInformation: extractedShipmentData.sellerName && extractedShipmentData.sellerAddress ? 
+              `${extractedShipmentData.sellerName}\n${extractedShipmentData.sellerAddress}` : 
+              extractedShipmentData.sellerName || extractedShipmentData.seller_name || null,
+            buyerInformation: extractedShipmentData.buyerName && extractedShipmentData.buyerAddress ? 
+              `${extractedShipmentData.buyerName}\n${extractedShipmentData.buyerAddress}` : 
+              extractedShipmentData.buyerName || extractedShipmentData.buyer_name || null,
+            shipToPartyInformation: extractedShipmentData.shipToPartyName && extractedShipmentData.shipToPartyAddress ? 
+              `${extractedShipmentData.shipToPartyName}\n${extractedShipmentData.shipToPartyAddress}` : 
+              extractedShipmentData.shipToPartyName || extractedShipmentData.ship_to_party_name || null,
+            
+            // Cargo and classification - Enhanced mapping
             htsusNumber: extractedShipmentData.htsCode || extractedShipmentData.hts_code || null,
             commodityDescription: extractedShipmentData.cargoDescription || extractedShipmentData.commodity_description || extractedShipmentData.cargo_description || null,
-            portOfEntry: extractedShipmentData.portOfDischarge || extractedShipmentData.first_port_usa || extractedShipmentData.port_of_discharge || null,
+            
+            // Port and location information - Enhanced mapping
+            portOfEntry: extractedShipmentData.portOfEntry || extractedShipmentData.portOfDischarge || extractedShipmentData.first_port_usa || extractedShipmentData.port_of_discharge || null,
+            foreignPortOfLading: extractedShipmentData.foreignPortOfLading || extractedShipmentData.portOfLoading || extractedShipmentData.port_of_loading || null,
+            
+            // Vessel and voyage details - Enhanced mapping
             billOfLading: extractedShipmentData.billOfLadingNumber || extractedShipmentData.bill_of_lading_number || extractedShipmentData.billOfLading || null,
-            vesselName: extractVesselName(extractedShipmentData.vesselAndVoyage || extractedShipmentData.vessel_voyage || extractedShipmentData.vessel_name),
-            voyageNumber: extractVoyageNumber(extractedShipmentData.vesselAndVoyage || extractedShipmentData.vessel_voyage || extractedShipmentData.voyage_number),
+            vesselName: extractedShipmentData.vesselName || extractVesselName(extractedShipmentData.vesselAndVoyage || extractedShipmentData.vessel_voyage || extractedShipmentData.vessel_name),
+            voyageNumber: extractedShipmentData.voyageNumber || extractVoyageNumber(extractedShipmentData.vesselAndVoyage || extractedShipmentData.vessel_voyage || extractedShipmentData.voyage_number),
             containerNumbers: extractedShipmentData.containerNumber || extractedShipmentData.container_number || null,
+            containerType: extractedShipmentData.containerType || extractedShipmentData.container_type || null,
+            
+            // Dates - Enhanced mapping
             estimatedArrivalDate: extractedShipmentData.eta || extractedShipmentData.estimated_arrival || null,
             estimatedDepartureDate: extractedShipmentData.etd || extractedShipmentData.estimated_departure || null,
-            foreignPortOfLading: extractedShipmentData.portOfLoading || extractedShipmentData.port_of_loading || null,
-            // Additional comprehensive fields from our enhanced extraction
+            
+            // Additional comprehensive party information
             shipperName: extractedShipmentData.shipperName || extractedShipmentData.shipper_name || null,
             shipperAddress: extractedShipmentData.shipperAddress || extractedShipmentData.shipper_address || null,
-            consigneeAddress: extractedShipmentData.consigneeAddress || extractedShipmentData.consignee_address || null,
             notifyPartyName: extractedShipmentData.notifyPartyName || extractedShipmentData.notify_party_name || null,
+            
+            // Locations
             portOfLoading: extractedShipmentData.portOfLoading || extractedShipmentData.port_of_loading || null,
             placeOfReceipt: extractedShipmentData.placeOfReceipt || extractedShipmentData.place_of_receipt || null,
             placeOfDelivery: extractedShipmentData.placeOfDelivery || extractedShipmentData.place_of_delivery || null,
+            
+            // Package and weight information
             packageType: extractedShipmentData.packageType || extractedShipmentData.package_type || null,
             numberOfPackages: extractedShipmentData.numberOfPackages || extractedShipmentData.number_of_packages || extractedShipmentData.quantity || null,
             grossWeight: extractedShipmentData.grossWeight || extractedShipmentData.weight || null,
+            
+            // Seals and container details
             sealNumbers: extractedShipmentData.sealNumbers?.join(', ') || extractedShipmentData.seal_number || null,
-            containerType: extractedShipmentData.containerType || extractedShipmentData.container_type || null,
             bookingNumber: extractedShipmentData.bookingNumber || extractedShipmentData.booking_number || null,
             dateIssued: extractedShipmentData.dateIssued || extractedShipmentData.date || null,
             onBoardDate: extractedShipmentData.onBoardDate || extractedShipmentData.on_board_date || null,
-            mblScacCode: extractedShipmentData.scac || extractedShipmentData.scac_code || null,
-            hblScacCode: extractedShipmentData.scac_code || null,
-            amsNumber: extractedShipmentData.ams_filling_no || extractedShipmentData.ams_number || null,
-            consolidatorStufferInfo: extractedShipmentData.consolidator_name_and_address || null,
-            containerStuffingLocation: extractedShipmentData.container_stuffing_location || null
+            
+            // SCAC codes and regulatory information - Enhanced mapping
+            mblScacCode: extractedShipmentData.mblScacCode || extractedShipmentData.scacCode || extractedShipmentData.scac || extractedShipmentData.scac_code || null,
+            hblScacCode: extractedShipmentData.hblScacCode || extractedShipmentData.hbl_scac_code || null,
+            amsNumber: extractedShipmentData.amsNumber || extractedShipmentData.ams_filling_no || extractedShipmentData.ams_number || null,
+            consolidatorStufferInfo: extractedShipmentData.consolidatorStufferInfo || extractedShipmentData.consolidator_name_and_address || null,
+            containerStuffingLocation: extractedShipmentData.containerStuffingLocation || extractedShipmentData.container_stuffing_location || null
           };
           
           console.log("Mapped ISF data:", aiExtractedData);
