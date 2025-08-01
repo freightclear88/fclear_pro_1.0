@@ -3765,63 +3765,91 @@ ${excelText}`;
             
             // Extract vessel information from the pattern "VESSEL/VOYAGE | COSCO EXCELLENCE/057E"
             let vesselName = null, voyageNumber = null;
-            const vesselData = findExcelData(flatData, ['vessel', 'voyage']);
-            if (vesselData && vesselData.includes('/')) {
-              const parts = vesselData.split('/');
-              if (parts.length >= 2) {
-                vesselName = parts[0]?.trim();
-                voyageNumber = parts[1]?.trim();
+            try {
+              const vesselData = findExcelData(flatData, ['vessel', 'voyage']);
+              if (vesselData && vesselData.includes('/')) {
+                const parts = vesselData.split('/');
+                if (parts.length >= 2) {
+                  vesselName = parts[0]?.trim();
+                  voyageNumber = parts[1]?.trim();
+                }
               }
+            } catch (err) {
+              console.log("Error extracting vessel data:", err);
             }
             
             // Extract Bill of Lading from "M/BL #" pattern
             let billOfLading = null;
-            const blData = findExcelData(flatData, ['M/BL', 'HB/L', 'COSU', 'bill of lading']);
-            if (blData && /^[A-Z]{4}\d+$/.test(blData)) {
-              billOfLading = blData;
+            try {
+              const blData = findExcelData(flatData, ['M/BL', 'HB/L', 'COSU', 'bill of lading']);
+              if (blData && /^[A-Z]{4}\d+$/.test(blData)) {
+                billOfLading = blData;
+              }
+            } catch (err) {
+              console.log("Error extracting B/L data:", err);
             }
             
             // Extract container numbers
             let containerNumbers = null;
-            const containerData = findExcelData(flatData, ['container', 'seal', 'OOLU']);
-            if (containerData && containerData.includes('/')) {
-              containerNumbers = containerData.split('/')[0]?.trim();
+            try {
+              const containerData = findExcelData(flatData, ['container', 'seal', 'OOLU']);
+              if (containerData && containerData.includes('/')) {
+                containerNumbers = containerData.split('/')[0]?.trim();
+              }
+            } catch (err) {
+              console.log("Error extracting container data:", err);
             }
             
             // Extract port information from "POL/PORT OF DELIVERY"
             let portOfEntry = null;
-            const portData = findExcelData(flatData, ['delivery', 'baltimore', 'port']);
-            if (portData && portData.includes(',')) {
-              const parts = portData.split('/');
-              if (parts.length > 1) {
-                portOfEntry = parts[1]?.trim();
+            try {
+              const portData = findExcelData(flatData, ['delivery', 'baltimore', 'port']);
+              if (portData && portData.includes(',')) {
+                const parts = portData.split('/');
+                if (parts.length > 1) {
+                  portOfEntry = parts[1]?.trim();
+                }
               }
+            } catch (err) {
+              console.log("Error extracting port data:", err);
             }
             
             // Extract manufacturer from actual company name, not template
             let manufacturerInfo = null;
-            const companyData = findExcelData(flatData, ['FOSHAN', 'CO.,LTD', 'HOTEL PRODUCT']);
-            if (companyData && !companyData.includes('(') && companyData.length > 10) {
-              manufacturerInfo = companyData;
+            try {
+              const companyData = findExcelData(flatData, ['FOSHAN', 'CO.,LTD', 'HOTEL PRODUCT']);
+              if (companyData && !companyData.includes('(') && companyData.length > 10) {
+                manufacturerInfo = companyData;
+              }
+            } catch (err) {
+              console.log("Error extracting manufacturer data:", err);
             }
             
             // Extract HTS codes from commodity data
             let htsusNumber = null;
             let commodityDescription = null;
-            const htsData = findExcelData(flatData, ['9401', '9403', 'chair', 'table']);
-            if (htsData) {
-              const htsCodes = htsData.match(/\d{10}/g);
-              if (htsCodes) {
-                htsusNumber = htsCodes[0]; // Use first HTS code
-                commodityDescription = htsData.replace(/\d{10}/g, '').replace(/[-\r\n]/g, ' ').trim();
+            try {
+              const htsData = findExcelData(flatData, ['9401', '9403', 'chair', 'table']);
+              if (htsData) {
+                const htsCodes = htsData.match(/\d{10}/g);
+                if (htsCodes) {
+                  htsusNumber = htsCodes[0]; // Use first HTS code
+                  commodityDescription = htsData.replace(/\d{10}/g, '').replace(/[-\r\n]/g, ' ').trim();
+                }
               }
+            } catch (err) {
+              console.log("Error extracting HTS data:", err);
             }
             
             // Extract country from manufacturer address
             let countryOfOrigin = null;
-            const addressData = findExcelData(flatData, ['china', 'guangdong', 'province']);
-            if (addressData && addressData.toLowerCase().includes('china')) {
-              countryOfOrigin = 'China';
+            try {
+              const addressData = findExcelData(flatData, ['china', 'guangdong', 'province']);
+              if (addressData && addressData.toLowerCase().includes('china')) {
+                countryOfOrigin = 'China';
+              }
+            } catch (err) {
+              console.log("Error extracting country data:", err);
             }
             
             extractedData = {
@@ -4427,7 +4455,30 @@ Look for Bill of Lading, Commercial Invoice, Packing List, or other shipping doc
       });
     } catch (error) {
       console.error("Error scanning ISF document:", error);
-      res.status(500).json({ error: "Failed to scan document" });
+      
+      // Provide more specific error information
+      let errorMessage = "Failed to scan document";
+      if (error.message) {
+        if (error.message.includes("quota")) {
+          errorMessage = "AI processing temporarily limited. Document uploaded but extraction may be incomplete.";
+        } else if (error.message.includes("file")) {
+          errorMessage = "File processing error. Please try a different file format (PDF, Excel, Word, or Image).";
+        } else if (error.message.includes("network") || error.message.includes("connection")) {
+          errorMessage = "Network error during processing. Please try again.";
+        } else {
+          errorMessage = `Processing error: ${error.message.substring(0, 100)}`;
+        }
+      }
+      
+      // Still return extracted data if any was found before the error
+      const partialData = extractedData || {};
+      
+      res.json({
+        success: false,
+        error: errorMessage,
+        extractedData: partialData,
+        message: "Document upload completed but extraction encountered issues. You can still fill out the form manually."
+      });
     }
   });
 
