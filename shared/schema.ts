@@ -66,8 +66,8 @@ export const users = pgTable("users", {
   paymentFailureCount: integer("payment_failure_count").default(0),
   
   // Account limits based on subscription tier
-  maxShipments: integer("max_shipments").default(5), // free: 5, pro: unlimited
-  maxDocuments: integer("max_documents").default(20), // free: 20, pro: unlimited  
+  maxShipments: integer("max_shipments").default(3), // free: 3, pro: unlimited
+  maxDocuments: integer("max_documents").default(9), // free: 9, pro: unlimited  
   maxUsers: integer("max_users").default(1), // free: 1, pro: unlimited
   currentShipmentCount: integer("current_shipment_count").default(0),
   currentDocumentCount: integer("current_document_count").default(0),

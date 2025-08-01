@@ -19,6 +19,7 @@ Key Features Requested:
 - Multi-format data export capabilities (XML, CSV, JSON) for external platform integration
 - Consolidated XML management interface under admin section with manual upload and automated source configuration (August 2025)
 - Complete airline tracking system with AWB number detection and direct links to official airline cargo tracking pages (August 2025)
+- Updated free subscription limits to 3 shipments and 9 documents with contextual upgrade prompts to Starter Plan (August 2025)
 
 ## System Architecture
 The application follows a modern full-stack architecture with clear separation between frontend and backend components, featuring enhanced multi-document processing capabilities for comprehensive shipment creation and comprehensive XML-based shipment data management.

@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest } from "@/lib/queryClient";
 import { insertShipmentSchema } from "@shared/schema";
 import { z } from "zod";
 import { Plus, Ship, Plane, Truck } from "lucide-react";
+import { UpgradePrompt, LimitExceededDialog } from "./UpgradePrompt";
 
 const shipmentFormSchema = insertShipmentSchema.extend({
   shipmentId: z.string().min(1, "Shipment ID is required"),
@@ -26,10 +27,27 @@ interface CreateShipmentDialogProps {
   trigger?: React.ReactNode;
 }
 
+interface UserAccess {
+  hasAccess: boolean;
+  isTrialActive: boolean;
+  subscriptionStatus: string;
+  daysUntilExpiry: number;
+  usageLimits: {
+    shipments: { current: number; max: number; };
+    documents: { current: number; max: number; };
+  };
+}
+
 export default function CreateShipmentDialog({ trigger }: CreateShipmentDialogProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Query for user access and subscription status
+  const { data: userAccess } = useQuery<UserAccess>({
+    queryKey: ["/api/subscription/access"],
+    retry: false,
+  });
 
   const {
     register,
@@ -92,7 +110,23 @@ export default function CreateShipmentDialog({ trigger }: CreateShipmentDialogPr
           <DialogTitle>Create New Shipment</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Check for shipment limits and show upgrade prompt */}
+        {userAccess && userAccess.usageLimits.shipments.max !== -1 && (
+          userAccess.usageLimits.shipments.current >= userAccess.usageLimits.shipments.max ? (
+            <LimitExceededDialog type="shipment" />
+          ) : (
+            <UpgradePrompt 
+              type="shipment" 
+              current={userAccess.usageLimits.shipments.current} 
+              max={userAccess.usageLimits.shipments.max}
+              variant="warning"
+            />
+          )
+        )}
+        
+        {/* Only show form if user hasn't exceeded limits */}
+        {(!userAccess || userAccess.usageLimits.shipments.max === -1 || userAccess.usageLimits.shipments.current < userAccess.usageLimits.shipments.max) && (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="shipmentId">Shipment ID *</Label>
@@ -221,10 +255,10 @@ export default function CreateShipmentDialog({ trigger }: CreateShipmentDialogPr
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="vessel">Vessel</Label>
+              <Label htmlFor="vesselAndVoyage">Vessel</Label>
               <Input
-                id="vessel"
-                {...register("vessel")}
+                id="vesselAndVoyage"
+                {...register("vesselAndVoyage")}
                 placeholder="e.g., MSC OSCAR"
               />
             </div>
@@ -241,10 +275,10 @@ export default function CreateShipmentDialog({ trigger }: CreateShipmentDialogPr
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="billOfLading">Bill of Lading</Label>
+              <Label htmlFor="billOfLadingNumber">Bill of Lading</Label>
               <Input
-                id="billOfLading"
-                {...register("billOfLading")}
+                id="billOfLadingNumber"
+                {...register("billOfLadingNumber")}
                 placeholder="e.g., MSC123456789"
               />
             </div>
@@ -269,6 +303,7 @@ export default function CreateShipmentDialog({ trigger }: CreateShipmentDialogPr
             </Button>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );
