@@ -241,7 +241,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       if (result.success && result.extractedData) {
         console.log("Extracted data received:", result.extractedData);
         
-        // Map extracted data to form fields - using new consolidated field structure
+        // Map extracted data to form fields - comprehensive mapping for all OpenAI extracted fields
         const fieldMapping: Record<string, string> = {
           vesselName: 'vesselName',
           voyageNumber: 'voyageNumber', 
@@ -257,13 +257,56 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           hblScacCode: 'hblScacCode',
           amsNumber: 'amsNumber',
           containerStuffingLocation: 'containerStuffingLocation',
-          consolidatorStufferInfo: 'consolidatorStufferInfo'
+          consolidatorStufferInfo: 'consolidatorStufferInfo',
+          // Additional comprehensive fields from OpenAI extraction
+          importerName: 'importerName',
+          consigneeName: 'consigneeName',
+          foreignPortOfLading: 'foreignPortOfLading',
+          bookingNumber: 'bookingReference',
+          containerType: 'containerType',
+          sealNumbers: 'sealNumbers',
+          numberOfPackages: 'numberOfPackages',
+          packageType: 'packageType',
+          grossWeight: 'grossWeight',
+          dateIssued: 'dateIssued',
+          onBoardDate: 'onBoardDate'
         };
 
         // Handle consolidated party information
         const data = result.extractedData;
         
-        // Handle the new consolidated info fields from backend
+        // Handle individual company names first for importer/consignee
+        if (data.importerName && data.importerName.trim()) {
+          form.setValue('importerName', data.importerName.trim());
+          console.log('Set importerName to:', data.importerName);
+        }
+        
+        if (data.consigneeName && data.consigneeName.trim()) {
+          form.setValue('consigneeName', data.consigneeName.trim());
+          console.log('Set consigneeName to:', data.consigneeName);
+        }
+        
+        // Handle consolidated addresses from comprehensive extraction
+        if (data.shipperAddress && data.shipperName) {
+          const shipperInfo = `${data.shipperName}\n${data.shipperAddress}`;
+          form.setValue('sellerInformation', shipperInfo);
+          console.log('Set sellerInformation from shipper data:', shipperInfo);
+        }
+        
+        if (data.consigneeAddress && data.consigneeName) {
+          const consigneeInfo = `${data.consigneeName}\n${data.consigneeAddress}`;
+          form.setValue('buyerInformation', consigneeInfo);
+          console.log('Set buyerInformation from consignee data:', consigneeInfo);
+        }
+        
+        // Handle manufacturer information from country of origin
+        if (data.countryOfOrigin) {
+          const manufacturerInfo = `Manufacturer/Supplier\nCountry: ${data.countryOfOrigin}`;
+          form.setValue('manufacturerInformation', manufacturerInfo);
+          console.log('Set manufacturerInformation with country:', manufacturerInfo);
+        }
+        
+        // Handle the new consolidated info fields from backend (fallback)
         if (data.sellerInfo && data.sellerInfo.trim()) {
           form.setValue('sellerInformation', data.sellerInfo);
           console.log('Set sellerInformation to:', data.sellerInfo);

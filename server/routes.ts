@@ -3867,57 +3867,50 @@ ${excelText}`;
           extractedData = {};
         }
       } else if (fileExtension === 'pdf') {
-        // Use Azure Document Intelligence for PDF parsing
-        console.log("PDF file detected, using Azure Document Intelligence for extraction");
-        let fullText = "";
+        // Use OpenAI exclusively for PDF processing
+        console.log("PDF file detected, using OpenAI for comprehensive ISF data extraction");
         try {
-          const { DocumentAnalysisClient, AzureKeyCredential } = await import("@azure/ai-form-recognizer");
-          const fs = await import('fs');
-          
-          const client = new DocumentAnalysisClient(
-            process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT!,
-            new AzureKeyCredential(process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY!)
+          // Use our enhanced AI document processor for comprehensive extraction
+          const extractedShipmentData = await aiDocProcessor.extractShipmentData(
+            req.file.path, 
+            'ISF Filing Document'
           );
           
-          const documentBuffer = fs.default.readFileSync(req.file.path);
-          const poller = await client.beginAnalyzeDocument("prebuilt-document", documentBuffer);
-          const result = await poller.pollUntilDone();
+          console.log("OpenAI extracted comprehensive data:", extractedShipmentData);
           
-          // Extract text content from the document
-          fullText = result.content || "";
-          console.log("Extracted PDF text:", fullText.substring(0, 500) + "...");
+          // Map comprehensive shipping data to ISF-specific fields
+          const aiExtractedData = {
+            importerName: extractedShipmentData.consigneeName || null,
+            consigneeName: extractedShipmentData.consigneeName || null,
+            manufacturerCountry: extractedShipmentData.countryOfOrigin || null,
+            countryOfOrigin: extractedShipmentData.countryOfOrigin || null,
+            htsusNumber: extractedShipmentData.htsCode || null,
+            commodityDescription: extractedShipmentData.cargoDescription || null,
+            portOfEntry: extractedShipmentData.portOfDischarge || null,
+            billOfLading: extractedShipmentData.billOfLadingNumber || null,
+            vesselName: extractedShipmentData.vesselAndVoyage?.split(' ')[0] || null,
+            voyageNumber: extractedShipmentData.vesselAndVoyage?.split(' ').slice(1).join(' ') || null,
+            containerNumbers: extractedShipmentData.containerNumber || null,
+            estimatedArrivalDate: extractedShipmentData.eta || null,
+            // Additional comprehensive fields from our enhanced extraction
+            shipperName: extractedShipmentData.shipperName || null,
+            shipperAddress: extractedShipmentData.shipperAddress || null,
+            consigneeAddress: extractedShipmentData.consigneeAddress || null,
+            notifyPartyName: extractedShipmentData.notifyPartyName || null,
+            portOfLoading: extractedShipmentData.portOfLoading || null,
+            placeOfReceipt: extractedShipmentData.placeOfReceipt || null,
+            placeOfDelivery: extractedShipmentData.placeOfDelivery || null,
+            packageType: extractedShipmentData.packageType || null,
+            numberOfPackages: extractedShipmentData.numberOfPackages || null,
+            grossWeight: extractedShipmentData.grossWeight || null,
+            sealNumbers: extractedShipmentData.sealNumbers?.join(', ') || null,
+            containerType: extractedShipmentData.containerType || null,
+            bookingNumber: extractedShipmentData.bookingNumber || null,
+            dateIssued: extractedShipmentData.dateIssued || null,
+            onBoardDate: extractedShipmentData.onBoardDate || null
+          };
           
-          // Use OpenAI to extract structured ISF data from the document text
-          const OpenAI = await import('openai');
-          const openaiClient = new OpenAI.default({ apiKey: process.env.OPENAI_API_KEY });
-          
-          const prompt = `Extract ISF (Importer Security Filing) data from this shipping document text. Return ONLY a JSON object with these exact fields (use null for missing data):
-
-{
-  "importerName": "company name of importer",
-  "consigneeName": "company name of consignee", 
-  "manufacturerCountry": "country where goods were manufactured",
-  "countryOfOrigin": "country of origin",
-  "htsusNumber": "10-digit HTS/tariff code",
-  "commodityDescription": "description of goods",
-  "portOfEntry": "US port of entry",
-  "billOfLading": "bill of lading number",
-  "vesselName": "vessel/ship name",
-  "estimatedArrivalDate": "YYYY-MM-DD format"
-}
-
-Document text:
-${fullText}`;
-
-          const aiResponse = await openaiClient.chat.completions.create({
-            model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-            messages: [{ role: "user", content: prompt }],
-            response_format: { type: "json_object" },
-            max_tokens: 1000,
-          });
-
-          const aiExtractedData = JSON.parse(aiResponse.choices[0].message.content);
-          console.log("AI extracted ISF data:", aiExtractedData);
+          console.log("Mapped ISF data:", aiExtractedData);
           
           // Clean and validate the extracted data
           extractedData = {};
@@ -3928,293 +3921,8 @@ ${fullText}`;
           });
           
         } catch (pdfError) {
-          console.error("PDF parsing error:", pdfError);
-          
-          // Fallback: Extract data using enhanced pattern matching if OpenAI fails
-          if (fullText) {
-            console.log("Using enhanced fallback pattern matching for PDF data extraction...");
-            
-            // Detect ISF document type for better extraction
-            let docType = "unknown";
-            if (fullText.includes("AMS & '10 + 2'") || fullText.includes("IMPORTER SECURITY FILING")) {
-              docType = "isf_filing";
-            } else if (fullText.includes("BILL OF LADING")) {
-              docType = "bill_of_lading";
-            } else if (fullText.includes("COMMERCIAL INVOICE")) {
-              docType = "commercial_invoice";
-            }
-            
-            console.log("Detected document type:", docType);
-            
-            // Extract Bill of Lading - prioritize HB/L for ISF filing
-            let billOfLading = null;
-            
-            // Priority 1: Look for HB/L (House Bill of Lading) - preferred for ISF
-            const hblMatch = fullText.match(/HB\/L\s*(?:AMS\s*)?(?:NO|NUMBER)[\.\s]*[:]*\s*([A-Z0-9]+)/i);
-            if (hblMatch) {
-              billOfLading = hblMatch[1];
-            }
-            
-            // Priority 2: Specific Bill of Lading number pattern
-            if (!billOfLading) {
-              const blNumberMatch = fullText.match(/Bill\s+of\s+lading\s+number:\s*([A-Z0-9]+)/i);
-              if (blNumberMatch) {
-                billOfLading = blNumberMatch[1];
-              }
-            }
-            
-            // Priority 3: General B/L pattern (last resort, avoid MB/L)
-            if (!billOfLading) {
-              const genericMatch = fullText.match(/(?:B\/L|BILL\s*OF\s*LADING)\s*(?:NO|NUMBER)[\.\s]*[:]*\s*([A-Z0-9]+)/i);
-              if (genericMatch && !fullText.match(/MB\/L\s*(?:NO|NUMBER)[\.\s]*[:]*\s*" + genericMatch[1]/i)) {
-                billOfLading = genericMatch[1];
-              }
-            }
-            
-            // Extract essential data using simplified patterns to prevent freezing
-            
-            // Extract container numbers with enhanced patterns
-            let containerNumbers = null;
-            const containerMatch = fullText.match(/(?:CONTAINER NUMBER|CNTR|CN)[^:]*[:]*\s*([A-Z]{4}\d{7})/i);
-            if (containerMatch) {
-              containerNumbers = containerMatch[1];
-            } else {
-              // Look for pattern like "SN: CAIU4725419"
-              const snMatch = fullText.match(/SN[^:]*[:]*\s*([A-Z]{4}\d{7})/i);
-              if (snMatch) {
-                containerNumbers = snMatch[1];
-              }
-            }
-            
-            // Extract vessel and voyage information from the specific ISF format
-            let vesselName = null, voyageNumber = null;
-            
-            // Look for "GRETE MAERSK / 120E" pattern after VESSEL / VOYAGE line
-            const vesselVoyageMatch = fullText.match(/VESSEL\s*\/\s*VOYAGE[^:]*[:]*\s*[^\n]*\n\s*[^\n]*\n\s*([A-Z\s]+?)\s*\/\s*([A-Z0-9]+)/i);
-            if (vesselVoyageMatch) {
-              vesselName = vesselVoyageMatch[1]?.trim();
-              voyageNumber = vesselVoyageMatch[2]?.trim();
-            }
-            
-            // Alternative: Look for GRETE MAERSK specifically
-            if (!vesselName) {
-              const greteMatch = fullText.match(/GRETE\s+MAERSK/i);
-              if (greteMatch) {
-                vesselName = greteMatch[0]?.trim();
-              }
-            }
-            
-            // Alternative: Look for 120E voyage number specifically  
-            if (!voyageNumber) {
-              const voyageMatch = fullText.match(/GRETE\s+MAERSK\s*\/\s*([A-Z0-9]+)/i);
-              if (voyageMatch) {
-                voyageNumber = voyageMatch[1]?.trim();
-              }
-            }
-            
-            // Extract comprehensive party information from the document
-            let sellerInfo = "";
-            let buyerInfo = "";
-            let manufacturerInfo = "";
-            
-            // Extract SHIPPER information (seller)
-            const shipperMatch = fullText.match(/SHIPPER[^:]*[:]*\s*([^\n\r]+(?:\n[^\n\r]+)*)/i);
-            if (shipperMatch) {
-              sellerInfo = shipperMatch[1]?.trim();
-            }
-            
-            // Extract CONSIGNEE information (buyer)  
-            const consigneeMatch = fullText.match(/CONSIGNEE[^:]*[:]*\s*([^\n\r]+(?:\n[^\n\r]+)*)/i);
-            if (consigneeMatch) {
-              buyerInfo = consigneeMatch[1]?.trim();
-            }
-            
-            // Extract NOTIFY PARTY as additional buyer info if no consignee
-            if (!buyerInfo) {
-              const notifyMatch = fullText.match(/NOTIFY\s*PARTY[^:]*[:]*\s*([^\n\r]+(?:\n[^\n\r]+)*)/i);
-              if (notifyMatch) {
-                buyerInfo = notifyMatch[1]?.trim();
-              }
-            }
-            
-            // Extract LCH/consolidator info (manufacturer/consolidator)
-            const lchMatch = fullText.match(/LCH\s+Company\s+and\s+address\s*[:]*\s*([^\n\r]+(?:\n[^\n\r]+)*)/i);
-            if (lchMatch) {
-              manufacturerInfo = lchMatch[1]?.trim();
-            }
-            
-            // If no LCH info, try to extract general manufacturer info
-            if (!manufacturerInfo) {
-              const mfgMatch = fullText.match(/(?:MANUFACTURER|SUPPLIER)[^:]*[:]*\s*([^\n\r]+(?:\n[^\n\r]+)*)/i);
-              if (mfgMatch) {
-                manufacturerInfo = mfgMatch[1]?.trim();
-              }
-            }
-            
-            // Extract port information with enhanced patterns 
-            let portOfEntry = null;
-            
-            // Look for "FIRST PORT USA:" pattern
-            const firstPortMatch = fullText.match(/FIRST\s+PORT\s+USA[^:]*[:]*\s*([A-Z\s,]+?)(?:\n|$)/i);
-            if (firstPortMatch) {
-              portOfEntry = firstPortMatch[1]?.trim();
-            }
-            
-            // Alternative patterns for port
-            if (!portOfEntry) {
-              const portMatch = fullText.match(/PORT\s*OF\s*(?:DISCHARGE|DESTINATION|ENTRY)[^:]*[:]*\s*([A-Z\s,]+)/i);
-              if (portMatch) {
-                portOfEntry = portMatch[1]?.trim().split('\n')[0]?.trim();
-              }
-            }
-            
-            const commodityMatch = fullText.match(/(?:Cartons|COMMODITY|CARGO)[^:]*[:]*\s*([^\n]+)/i);
-            const commodityDescription = commodityMatch ? commodityMatch[1]?.trim() : null;
-            
-            // Extract SCAC codes
-            const hblScacMatch = fullText.match(/HB\/L\s*SCAC\s*CODE[^:]*[:]*\s*([A-Z]+)/i);
-            const hblScacCode = hblScacMatch ? hblScacMatch[1]?.trim() : null;
-            
-            const mblScacMatch = fullText.match(/MB\/L\s*SCAC\s*CODE[^:]*[:]*\s*([A-Z]+)/i);
-            const mblScacCode = mblScacMatch ? mblScacMatch[1]?.trim() : null;
-            
-            // Extract AMS number with enhanced patterns
-            let amsNumber = null;
-            
-            // Look for MEDUNE204288 which is the actual MBL/AMS number in this document
-            const mblCarrierMatch = fullText.match(/MBL\s*OF\s*CARRIER[^:]*[:]*\s*[^\n]*\n\s*[^\n]*\n\s*([A-Z0-9]{6,})/i);
-            if (mblCarrierMatch) {
-              amsNumber = mblCarrierMatch[1]?.trim();
-            }
-            
-            // Alternative: Look for explicit AMS filing number pattern
-            if (!amsNumber) {
-              const amsFillingMatch = fullText.match(/AMS\s+FILLLING\s+NO[^:]*[:]*\s*([A-Z0-9]{6,})/i);
-              if (amsFillingMatch) {
-                amsNumber = amsFillingMatch[1]?.trim();
-              }
-            }
-            
-            // Look for booking number format like "NGB/LUI/0684791"
-            if (!amsNumber) {
-              const bookingMatch = fullText.match(/Booking\s*Number[^:]*[:]*\s*([A-Z]{3}\/[A-Z]{3}\/[0-9]+)/i);
-              if (bookingMatch) {
-                amsNumber = bookingMatch[1]?.trim();
-              }
-            }
-            
-            // Extract dates with enhanced patterns
-            let estimatedArrivalDate = null;
-            let estimatedDepartureDate = null;
-            
-            // Look for ETD pattern like "ETD: 03/06/2021"
-            const etdMatch = fullText.match(/ETD[^:]*[:]*\s*(\d{2}\/\d{2}\/\d{4})/i);
-            if (etdMatch) {
-              const [day, month, year] = etdMatch[1].split('/');
-              estimatedDepartureDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-            }
-            
-            // Look for ETA pattern
-            const etaMatch = fullText.match(/ETA[^:]*[:]*\s*(\d{2}\/\d{2}\/\d{4})/i);
-            if (etaMatch) {
-              const [day, month, year] = etaMatch[1].split('/');
-              estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-            }
-            
-            // Extract container stuffing location with precise targeting
-            let containerStuffingLocation = null;
-            
-            // Look for NINGBO (ZHEJIANG) which is the actual port of loading
-            const ningboMatch = fullText.match(/NINGBO\s*\(ZHEJIANG\)/i);
-            if (ningboMatch) {
-              containerStuffingLocation = ningboMatch[0]?.trim();
-            }
-            
-            // Alternative: Look for any other specific port location patterns
-            if (!containerStuffingLocation) {
-              const portCityMatch = fullText.match(/PORT\s*OF\s*LOADING[^:]*[:]*\s*[^\n]*\n\s*[^\n]*\n\s*([A-Z\s(),]+?)(?:\s*FIRST\s*PORT|$)/i);
-              if (portCityMatch) {
-                containerStuffingLocation = portCityMatch[1]?.trim();
-              }
-            }
-            
-            // Extract consolidator/stuffer information with very precise patterns
-            let consolidatorStufferInfo = null;
-            
-            // Look for ECU WORLDWIDE company specifically
-            const ecuMatch = fullText.match(/ECU\s+WORLDWIDE\s+\(GUANGZHOU\)\s+LIMITED\s+NINGBO\s+BRANCH[^\n]*(?:\n[A-Za-z0-9\s,.-]+)*?NINGBO\s+CHINA[^\n]*/i);
-            if (ecuMatch) {
-              consolidatorStufferInfo = ecuMatch[0]?.trim();
-            }
-            
-            // Alternative: Look for BAICHUANG GANGTONG specifically  
-            if (!consolidatorStufferInfo) {
-              const baichuangMatch = fullText.match(/NINGBO\s+BAICHUANG\s+GANGTONG\s+INTERNATIONAL\s+LOGISTICS[^\n]*(?:\n[^\n]*)*?NINGBO\s+CITY[^\n]*/i);
-              if (baichuangMatch) {
-                consolidatorStufferInfo = baichuangMatch[0]?.trim();
-              }
-            }
-            
-            // Last resort: Look for any company with clear address structure
-            if (!consolidatorStufferInfo) {
-              const generalCompanyMatch = fullText.match(/([A-Z][A-Z\s&,()]+LIMITED[^\n]*\n[^\n]*\nNo[^\n]*NINGBO[^\n]*)/i);
-              if (generalCompanyMatch) {
-                consolidatorStufferInfo = generalCompanyMatch[1]?.trim();
-              }
-            }
-            
-            // Extract weight and volume
-            const weightMatch = fullText.match(/Weight:\s*([0-9,]+\s*KGS?)/i);
-            const weight = weightMatch ? weightMatch[1]?.trim() : null;
-            
-            const volumeMatch = fullText.match(/Volume:\s*([0-9,\.\s]+CBM)/i);
-            const volume = volumeMatch ? volumeMatch[1]?.trim() : null;
-            
-            extractedData = {
-              billOfLading,
-              vesselName,
-              voyageNumber,
-              containerNumbers,
-              portOfEntry,
-              commodityDescription,
-              estimatedArrivalDate,
-              estimatedDepartureDate,
-              // Container stuffing and consolidator information
-              containerStuffingLocation,
-              consolidatorStufferInfo,
-              // Consolidated party information fields
-              sellerInfo,
-              buyerInfo,
-              manufacturerInfo,
-              // SCAC codes
-              hblScacCode,
-              mblScacCode,
-              // AMS number
-              amsNumber,
-              // Additional shipping details
-              weight,
-              volume,
-              countryOfOrigin: "China"
-            };
-            
-            // Filter out null values
-            extractedData = Object.fromEntries(
-              Object.entries(extractedData).filter(([_, value]) => value !== null && value !== "")
-            );
-          } else {
-            extractedData = {
-              importerName: "Data extraction in progress",
-              consigneeName: "Please review and complete", 
-              manufacturerCountry: "TBD",
-              countryOfOrigin: "TBD",
-              htsusNumber: "0000000000",
-              commodityDescription: "Please verify commodity details",
-              portOfEntry: "TBD",
-              billOfLading: "TBD",
-              vesselName: "TBD",
-              estimatedArrivalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            };
-          }
+          console.error("OpenAI PDF processing error:", pdfError);
+          extractedData = {};
         }
       } else if (fileExtension === 'doc' || fileExtension === 'docx') {
         // Enhanced DOC/DOCX processing with multiple fallback methods
