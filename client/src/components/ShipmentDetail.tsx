@@ -45,6 +45,115 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
     }
   };
 
+  const handleCopyAllData = async () => {
+    if (!shipment) return;
+    
+    const formatDate = (dateString: string | null) => {
+      if (!dateString) return 'N/A';
+      return new Date(dateString).toLocaleDateString();
+    };
+
+    const formatValue = (value: any) => {
+      if (value === null || value === undefined) return 'N/A';
+      if (typeof value === 'string' && value.trim() === '') return 'N/A';
+      return value.toString();
+    };
+
+    const simplifiedData = `
+SHIPMENT DETAILS - ${shipment.shipmentId}
+=====================================
+
+BASIC INFORMATION:
+- Shipment ID: ${formatValue(shipment.shipmentId)}
+- Bill of Lading: ${formatValue(shipment.billOfLadingNumber)}
+- Booking Number: ${formatValue(shipment.bookingNumber)}
+- Vessel & Voyage: ${formatValue(shipment.vesselAndVoyage)}
+- Transport Mode: ${formatValue(shipment.transportMode)}
+- Status: ${formatValue(shipment.status)}
+
+ROUTING:
+- Port of Loading: ${formatValue(shipment.portOfLoading)}
+- Port of Discharge: ${formatValue(shipment.portOfDischarge)}
+- Place of Receipt: ${formatValue(shipment.placeOfReceipt)}
+- Place of Delivery: ${formatValue(shipment.placeOfDelivery)}
+
+PARTIES:
+- Shipper: ${formatValue(shipment.shipperName)}
+- Shipper Address: ${formatValue(shipment.shipperAddress)}
+- Shipper Phone: ${formatValue(shipment.shipperPhone)}
+- Shipper Email: ${formatValue(shipment.shipperEmail)}
+
+- Consignee: ${formatValue(shipment.consigneeName)}
+- Consignee Address: ${formatValue(shipment.consigneeAddress)}
+- Consignee Phone: ${formatValue(shipment.consigneePhone)}
+- Consignee Email: ${formatValue(shipment.consigneeEmail)}
+
+- Notify Party: ${formatValue(shipment.notifyPartyName)}
+- Notify Party Phone: ${formatValue(shipment.notifyPartyPhone)}
+- Notify Party Email: ${formatValue(shipment.notifyPartyEmail)}
+
+CARGO:
+- Description: ${formatValue(shipment.cargoDescription)}
+- Marks & Numbers: ${formatValue(shipment.marksAndNumbers)}
+- Number of Packages: ${formatValue(shipment.numberOfPackages)} ${formatValue(shipment.kindOfPackages)}
+- Gross Weight: ${formatValue(shipment.grossWeight || shipment.weight)} ${formatValue(shipment.weightUnit)}
+- Measurement: ${formatValue(shipment.measurement)}
+
+COMMERCIAL:
+- Freight Terms: ${formatValue(shipment.freightPaymentTerms)}
+- Currency: ${formatValue(shipment.currency)}
+- Total Value: ${formatValue(shipment.totalValue)}
+
+DATES:
+- Date of Shipment: ${formatDate(shipment.dateOfShipment)}
+- On Board Date: ${formatDate(shipment.onBoardDate)}
+- ETA: ${formatDate(shipment.eta)}
+- ETD: ${formatDate(shipment.etd)}
+
+CONTAINER:
+- Container Number: ${formatValue(shipment.containerNumber)}
+- Container Type: ${formatValue(shipment.containerType)}
+- Seal Numbers: ${formatValue(shipment.sealNumbers)}
+`;
+
+    try {
+      await navigator.clipboard.writeText(simplifiedData.trim());
+      toast({
+        title: "Copied",
+        description: "All shipment data copied in readable format",
+      });
+    } catch (error) {
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy shipment data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Helper component for field rows with copy buttons
+  const FieldRow = ({ label, value, className = "" }: { label: string; value: string | null | undefined; className?: string }) => {
+    const displayValue = value || 'N/A';
+    if (!value) return null;
+    
+    return (
+      <div className={`flex justify-between items-center ${className}`}>
+        <span className="text-gray-600">{label}:</span>
+        <div className="flex items-center space-x-2">
+          <span className="font-medium">{displayValue}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleCopyField(label, displayValue)}
+            className="text-freight-orange hover:text-freight-dark"
+          >
+            <Copy className="w-3 h-3" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   const getDocumentStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { variant: "secondary" as const, label: "Pending" },
@@ -57,7 +166,7 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     
     return (
-      <Badge variant={config.variant} className={config.className}>
+      <Badge variant={config.variant} className={config.className || ""}>
         {config.label}
       </Badge>
     );
@@ -150,15 +259,10 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
                 </div>
               )}
 
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Port of Loading:</span>
-                <span className="font-medium">{shipment.portOfLoading || 'N/A'}</span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Port of Discharge:</span>
-                <span className="font-medium">{shipment.portOfDischarge || 'N/A'}</span>
-              </div>
+              <FieldRow label="Port of Loading" value={shipment.portOfLoading} />
+              <FieldRow label="Port of Discharge" value={shipment.portOfDischarge} />
+              <FieldRow label="Place of Receipt" value={shipment.placeOfReceipt} />
+              <FieldRow label="Place of Delivery" value={shipment.placeOfDelivery} />
 
               {shipment.bookingNumber && (
                 <div className="flex justify-between items-center">
@@ -177,19 +281,10 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
                 </div>
               )}
 
-              {shipment.containerType && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Container Type:</span>
-                  <span className="font-medium">{shipment.containerType}</span>
-                </div>
-              )}
-
-              {shipment.transportMode && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Transport Mode:</span>
-                  <span className="font-medium capitalize">{shipment.transportMode}</span>
-                </div>
-              )}
+              <FieldRow label="Container Type" value={shipment.containerType} />
+              <FieldRow label="Transport Mode" value={shipment.transportMode} />
+              <FieldRow label="Container Numbers" value={shipment.containerNumbers ? shipment.containerNumbers.join(', ') : null} />
+              <FieldRow label="Seal Numbers" value={shipment.sealNumbers ? shipment.sealNumbers.join(', ') : null} />
 
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Status:</span>
@@ -210,14 +305,62 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
                 <div className="border-l-4 border-freight-blue pl-4">
                   <h4 className="font-semibold text-freight-blue mb-2">Shipper</h4>
                   <div className="space-y-1 text-sm">
-                    <div className="font-medium">{shipment.shipperName}</div>
-                    {shipment.shipperAddress && <div className="text-gray-600">{shipment.shipperAddress}</div>}
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">{shipment.shipperName}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCopyField("Shipper Name", shipment.shipperName!)}
+                        className="text-freight-orange hover:text-freight-dark"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    {shipment.shipperAddress && (
+                      <div className="flex justify-between items-start">
+                        <span className="text-gray-600 flex-1">{shipment.shipperAddress}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyField("Shipper Address", shipment.shipperAddress!)}
+                          className="text-freight-orange hover:text-freight-dark ml-2"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
                     {(shipment.shipperCity || shipment.shipperState || shipment.shipperZipCode) && (
                       <div className="text-gray-600">
                         {[shipment.shipperCity, shipment.shipperState, shipment.shipperZipCode].filter(Boolean).join(', ')}
                       </div>
                     )}
                     {shipment.shipperCountry && <div className="text-gray-600">{shipment.shipperCountry}</div>}
+                    {shipment.shipperPhone && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Tel: {shipment.shipperPhone}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyField("Shipper Phone", shipment.shipperPhone!)}
+                          className="text-freight-orange hover:text-freight-dark"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
+                    {shipment.shipperEmail && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Email: {shipment.shipperEmail}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyField("Shipper Email", shipment.shipperEmail!)}
+                          className="text-freight-orange hover:text-freight-dark"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -226,14 +369,62 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
                 <div className="border-l-4 border-freight-green pl-4">
                   <h4 className="font-semibold text-freight-green mb-2">Consignee</h4>
                   <div className="space-y-1 text-sm">
-                    <div className="font-medium">{shipment.consigneeName}</div>
-                    {shipment.consigneeAddress && <div className="text-gray-600">{shipment.consigneeAddress}</div>}
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">{shipment.consigneeName}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCopyField("Consignee Name", shipment.consigneeName!)}
+                        className="text-freight-orange hover:text-freight-dark"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    {shipment.consigneeAddress && (
+                      <div className="flex justify-between items-start">
+                        <span className="text-gray-600 flex-1">{shipment.consigneeAddress}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyField("Consignee Address", shipment.consigneeAddress!)}
+                          className="text-freight-orange hover:text-freight-dark ml-2"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
                     {(shipment.consigneeCity || shipment.consigneeState || shipment.consigneeZipCode) && (
                       <div className="text-gray-600">
                         {[shipment.consigneeCity, shipment.consigneeState, shipment.consigneeZipCode].filter(Boolean).join(', ')}
                       </div>
                     )}
                     {shipment.consigneeCountry && <div className="text-gray-600">{shipment.consigneeCountry}</div>}
+                    {shipment.consigneePhone && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Tel: {shipment.consigneePhone}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyField("Consignee Phone", shipment.consigneePhone!)}
+                          className="text-freight-orange hover:text-freight-dark"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
+                    {shipment.consigneeEmail && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Email: {shipment.consigneeEmail}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyField("Consignee Email", shipment.consigneeEmail!)}
+                          className="text-freight-orange hover:text-freight-dark"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -279,58 +470,62 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
               {shipment.cargoDescription && (
                 <div className="flex justify-between items-start">
                   <span className="text-gray-600 w-1/3">Description:</span>
-                  <span className="font-medium w-2/3 text-right">{shipment.cargoDescription}</span>
+                  <div className="flex items-start space-x-2 w-2/3 justify-end">
+                    <span className="font-medium text-right">{shipment.cargoDescription}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCopyField("Cargo Description", shipment.cargoDescription!)}
+                      className="text-freight-orange hover:text-freight-dark"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
               )}
 
-              {shipment.commodity && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Commodity:</span>
-                  <span className="font-medium">{shipment.commodity}</span>
-                </div>
-              )}
-
+              <FieldRow label="Commodity" value={shipment.commodity} />
+              
               {shipment.numberOfPackages && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Number of Packages:</span>
-                  <span className="font-medium">{shipment.numberOfPackages} {shipment.kindOfPackages || ''}</span>
-                </div>
+                <FieldRow 
+                  label="Number of Packages" 
+                  value={`${shipment.numberOfPackages} ${shipment.kindOfPackages || ''}`}
+                />
               )}
 
               {(shipment.grossWeight || shipment.weight) && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Gross Weight:</span>
-                  <span className="font-medium">
-                    {shipment.grossWeight || shipment.weight} {shipment.weightUnit || 'KG'}
-                  </span>
-                </div>
+                <FieldRow 
+                  label="Gross Weight" 
+                  value={`${shipment.grossWeight || shipment.weight} ${shipment.weightUnit || 'KG'}`}
+                />
               )}
 
-              {shipment.netWeight && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Net Weight:</span>
-                  <span className="font-medium">{shipment.netWeight} {shipment.weightUnit || 'KG'}</span>
-                </div>
-              )}
+              <FieldRow 
+                label="Net Weight" 
+                value={shipment.netWeight ? `${shipment.netWeight} ${shipment.weightUnit || 'KG'}` : null}
+              />
 
-              {shipment.volume && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Volume:</span>
-                  <span className="font-medium">{shipment.volume} {shipment.volumeUnit || 'CBM'}</span>
-                </div>
-              )}
+              <FieldRow 
+                label="Volume" 
+                value={shipment.volume ? `${shipment.volume} ${shipment.volumeUnit || 'CBM'}` : null}
+              />
 
-              {shipment.measurement && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Measurement:</span>
-                  <span className="font-medium">{shipment.measurement}</span>
-                </div>
-              )}
+              <FieldRow label="Measurement" value={shipment.measurement} />
 
               {shipment.marksAndNumbers && (
                 <div className="flex justify-between items-start">
                   <span className="text-gray-600 w-1/3">Marks & Numbers:</span>
-                  <span className="font-medium w-2/3 text-right">{shipment.marksAndNumbers}</span>
+                  <div className="flex items-start space-x-2 w-2/3 justify-end">
+                    <span className="font-medium text-right">{shipment.marksAndNumbers}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCopyField("Marks & Numbers", shipment.marksAndNumbers!)}
+                      className="text-freight-orange hover:text-freight-dark"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -362,19 +557,12 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
                 <CardTitle className="text-lg py-2">Commercial Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {shipment.freightCharges && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Freight Charges:</span>
-                    <span className="font-medium">{shipment.freightCurrency || '$'}{shipment.freightCharges}</span>
-                  </div>
-                )}
+                <FieldRow 
+                  label="Freight Charges" 
+                  value={shipment.freightCharges ? `${shipment.freightCurrency || '$'}${shipment.freightCharges}` : null}
+                />
 
-                {shipment.freightPaymentTerms && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Payment Terms:</span>
-                    <span className="font-medium">{shipment.freightPaymentTerms}</span>
-                  </div>
-                )}
+                <FieldRow label="Payment Terms" value={shipment.freightPaymentTerms} />
 
                 {shipment.prepaidCollectDesignation && (
                   <div className="flex justify-between items-center">
@@ -385,26 +573,17 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
                   </div>
                 )}
 
-                {shipment.totalValue && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Total Value:</span>
-                    <span className="font-medium">{shipment.currency || '$'}{shipment.totalValue}</span>
-                  </div>
-                )}
+                <FieldRow 
+                  label="Total Value" 
+                  value={shipment.totalValue ? `${shipment.currency || '$'}${shipment.totalValue}` : null}
+                />
 
-                {shipment.declaredValue && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Declared Value:</span>
-                    <span className="font-medium">{shipment.currency || '$'}{shipment.declaredValue}</span>
-                  </div>
-                )}
+                <FieldRow 
+                  label="Declared Value" 
+                  value={shipment.declaredValue ? `${shipment.currency || '$'}${shipment.declaredValue}` : null}
+                />
 
-                {shipment.customsBroker && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Customs Broker:</span>
-                    <span className="font-medium">{shipment.customsBroker}</span>
-                  </div>
-                )}
+                <FieldRow label="Customs Broker" value={shipment.customsBroker} />
               </CardContent>
             </Card>
 
@@ -414,54 +593,40 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
                 <CardTitle className="text-lg py-2">Important Dates</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {shipment.issueDate && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Issue Date:</span>
-                    <span className="font-medium">{new Date(shipment.issueDate).toLocaleDateString()}</span>
-                  </div>
-                )}
+                <FieldRow 
+                  label="Issue Date" 
+                  value={shipment.issueDate ? new Date(shipment.issueDate).toLocaleDateString() : null}
+                />
 
-                {shipment.onBoardDate && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">On Board Date:</span>
-                    <span className="font-medium">{new Date(shipment.onBoardDate).toLocaleDateString()}</span>
-                  </div>
-                )}
+                <FieldRow 
+                  label="On Board Date" 
+                  value={shipment.onBoardDate ? new Date(shipment.onBoardDate).toLocaleDateString() : null}
+                />
 
-                {shipment.dateOfShipment && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Shipment Date:</span>
-                    <span className="font-medium">{new Date(shipment.dateOfShipment).toLocaleDateString()}</span>
-                  </div>
-                )}
+                <FieldRow 
+                  label="Shipment Date" 
+                  value={shipment.dateOfShipment ? new Date(shipment.dateOfShipment).toLocaleDateString() : null}
+                />
 
-                {shipment.etd && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">ETD:</span>
-                    <span className="font-medium">{new Date(shipment.etd).toLocaleDateString()}</span>
-                  </div>
-                )}
+                <FieldRow 
+                  label="ETD" 
+                  value={shipment.etd ? new Date(shipment.etd).toLocaleDateString() : null}
+                />
 
-                {shipment.eta && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">ETA:</span>
-                    <span className="font-medium">{new Date(shipment.eta).toLocaleDateString()}</span>
-                  </div>
-                )}
+                <FieldRow 
+                  label="ETA" 
+                  value={shipment.eta ? new Date(shipment.eta).toLocaleDateString() : null}
+                />
 
-                {shipment.atd && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">ATD:</span>
-                    <span className="font-medium">{new Date(shipment.atd).toLocaleDateString()}</span>
-                  </div>
-                )}
+                <FieldRow 
+                  label="ATD" 
+                  value={shipment.atd ? new Date(shipment.atd).toLocaleDateString() : null}
+                />
 
-                {shipment.ata && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">ATA:</span>
-                    <span className="font-medium">{new Date(shipment.ata).toLocaleDateString()}</span>
-                  </div>
-                )}
+                <FieldRow 
+                  label="ATA" 
+                  value={shipment.ata ? new Date(shipment.ata).toLocaleDateString() : null}
+                />
               </CardContent>
             </Card>
           </div>
@@ -537,7 +702,7 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
           {/* Action Buttons */}
           <div className="flex justify-end space-x-4 pt-6 border-t mt-6">
             <Button 
-              onClick={() => handleCopyField("All shipment data", JSON.stringify(shipment, null, 2))}
+              onClick={handleCopyAllData}
               className="btn-outline-primary"
             >
               <Copy className="w-4 h-4 mr-2" />
