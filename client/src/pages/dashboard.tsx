@@ -236,9 +236,9 @@ export default function Dashboard() {
               <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
                 <FileText className="w-8 h-8 text-green-600" />
               </div>
-              <h4 className="font-semibold text-freight-dark mb-2">2. AI Data Extraction</h4>
+              <h4 className="font-semibold text-freight-dark mb-2">2. Intelligent Data Extraction</h4>
               <p className="text-sm text-gray-600">
-                Azure Document Intelligence and OpenAI extract and map all relevant shipping data
+                Advanced document processing technology extracts and maps all relevant shipping data
               </p>
             </div>
             <div className="text-center">
