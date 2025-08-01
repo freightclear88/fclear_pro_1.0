@@ -65,9 +65,9 @@ SHIPMENT DETAILS - ${shipment.shipmentId}
 
 BASIC INFORMATION:
 - Shipment ID: ${formatValue(shipment.shipmentId)}
-- Bill of Lading: ${formatValue(shipment.billOfLadingNumber)}
+- ${shipment.transportMode === 'air' ? 'Air Waybill Number' : 'Bill of Lading'}: ${formatValue(shipment.transportMode === 'air' ? shipment.airWaybillNumber : shipment.billOfLadingNumber)}
 - Booking Number: ${formatValue(shipment.bookingNumber)}
-- Vessel & Voyage: ${formatValue(shipment.vesselAndVoyage)}
+- ${shipment.transportMode === 'air' ? 'Flight' : 'Vessel'} & Voyage: ${formatValue(shipment.vesselAndVoyage)}
 - Transport Mode: ${formatValue(shipment.transportMode)}
 - Status: ${formatValue(shipment.status)}
 
@@ -225,7 +225,24 @@ CONTAINER:
                 </div>
               )}
 
-              {shipment.billOfLadingNumber && (
+              {shipment.transportMode === 'air' && shipment.airWaybillNumber && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Air Waybill Number:</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">{shipment.airWaybillNumber}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCopyField("Air Waybill", shipment.airWaybillNumber!)}
+                      className="text-freight-orange hover:text-freight-dark"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {shipment.transportMode === 'ocean' && shipment.billOfLadingNumber && (
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Bill of Lading Number:</span>
                   <div className="flex items-center space-x-2">
