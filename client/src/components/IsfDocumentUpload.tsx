@@ -363,28 +363,7 @@ export default function IsfDocumentUpload({
           </div>
         )}
 
-        {/* Document Type Priority Legend */}
-        <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg">
-          <p className="font-medium mb-2">Document Priority Guide:</p>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center space-x-2">
-              <Badge variant="destructive" className="text-xs">Required</Badge>
-              <span>Essential for ISF filing</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="default" className="text-xs">Recommended</Badge>
-              <span>Improves data accuracy</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="secondary" className="text-xs">Helpful</Badge>
-              <span>Additional verification</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="text-xs">Optional</Badge>
-              <span>Supplementary information</span>
-            </div>
-          </div>
-        </div>
+
       </CardContent>
     </Card>
   );

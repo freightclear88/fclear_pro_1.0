@@ -4561,27 +4561,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               console.log(`Excel data extracted from ${file.originalname}:`, excelText.substring(0, 500) + "...");
               
-              // Use OpenAI to intelligently extract ISF data from Excel content
+              // Use OpenAI to intelligently extract comprehensive ISF data from Excel content
               const OpenAI = await import('openai');
               const openaiClient = new OpenAI.default({ apiKey: process.env.OPENAI_API_KEY });
               
-              const prompt = `Extract ISF (Importer Security Filing) data from this Excel/spreadsheet content. Return ONLY a JSON object with these exact fields (use null for missing data):
+              const prompt = `Extract comprehensive ISF (Importer Security Filing) data from this Excel/spreadsheet content. Look for ALL available fields and return ONLY a JSON object with these exact fields (use null for missing data, but extract as much as possible):
 
 {
   "importerName": "company name of importer",
+  "importerAddress": "full importer address",
+  "importerCity": "importer city",
+  "importerState": "importer state",
+  "importerZip": "importer zip code",
+  "importerCountry": "importer country",
   "consigneeName": "company name of consignee", 
+  "consigneeAddress": "full consignee address",
+  "consigneeCity": "consignee city",
+  "consigneeState": "consignee state",
+  "consigneeZip": "consignee zip code",
+  "consigneeCountry": "consignee country",
+  "consigneePhone": "consignee phone number",
+  "consigneeEmail": "consignee email",
   "manufacturerCountry": "country where goods were manufactured",
-  "countryOfOrigin": "country of origin",
-  "htsusNumber": "10-digit HTS/tariff code",
-  "commodityDescription": "description of goods",
-  "portOfEntry": "US port of entry",
+  "countryOfOrigin": "country of origin/manufacture",
+  "htsusNumber": "HTS/tariff classification code",
+  "commodityDescription": "detailed description of goods",
+  "portOfEntry": "US port of entry/discharge",
+  "foreignPortOfLading": "foreign port of loading",
   "billOfLading": "bill of lading number",
   "vesselName": "vessel/ship name",
-  "estimatedArrivalDate": "YYYY-MM-DD format",
-  "containerNumbers": "container number(s)",
   "voyageNumber": "voyage number",
+  "estimatedArrivalDate": "estimated arrival date",
+  "estimatedDepartureDate": "estimated departure date",
+  "onBoardDate": "on board date",
+  "containerNumbers": "container number(s)",
+  "containerType": "container type",
+  "sealNumbers": "seal numbers",
+  "bookingNumber": "booking confirmation number",
+  "shipperName": "shipper/seller company name",
+  "shipperAddress": "shipper/seller address",
+  "shipperPhone": "shipper phone",
+  "shipperEmail": "shipper email",
+  "notifyPartyName": "notify party name",
+  "notifyPartyAddress": "notify party address",
+  "manufacturerInformation": "manufacturer name and address",
   "sellerInformation": "seller/shipper details",
-  "buyerInformation": "buyer/consignee details"
+  "buyerInformation": "buyer/consignee details",
+  "freightPaymentTerms": "freight payment terms",
+  "numberOfPackages": "number of packages",
+  "packageType": "type of packages",
+  "grossWeight": "gross weight",
+  "volume": "volume/measurement",
+  "marksAndNumbers": "marks and numbers",
+  "totalValue": "total value",
+  "currency": "currency",
+  "placeOfReceipt": "place of receipt",
+  "placeOfDelivery": "place of delivery"
 }
 
 Excel data:
@@ -4590,7 +4625,7 @@ ${excelText}`;
               const aiResponse = await openaiClient.chat.completions.create({
                 model: "gpt-4o",
                 messages: [{ role: "user", content: prompt }],
-                max_tokens: 1000,
+                max_tokens: 2000,
               });
 
               const aiExtractedData = JSON.parse(aiResponse.choices[0].message.content);
@@ -4606,7 +4641,54 @@ ${excelText}`;
               
             } catch (excelError) {
               console.error(`Excel processing error for ${file.originalname}:`, excelError);
-              extractedData = { error: `Excel processing failed: ${excelError.message}` };
+              
+              // Enhanced fallback pattern matching for Excel ISF data
+              console.log(`Using enhanced fallback pattern matching for Excel ISF data from ${file.originalname}...`);
+              
+              try {
+                const findExcelData = (data: any[], patterns: string[]): string | null => {
+                  for (const item of data) {
+                    const str = String(item).toLowerCase();
+                    for (const pattern of patterns) {
+                      if (str.includes(pattern.toLowerCase())) {
+                        return String(item);
+                      }
+                    }
+                  }
+                  return null;
+                };
+                
+                // Extract key ISF fields using pattern matching
+                extractedData = {
+                  billOfLading: findExcelData(flatData, ['m/bl', 'mbl', 'bill of lading', 'bl number']),
+                  vesselName: findExcelData(flatData, ['vessel', 'ship name']),
+                  voyageNumber: findExcelData(flatData, ['voyage', 'voy']),
+                  containerNumbers: findExcelData(flatData, ['container', 'cntr', 'cont']),
+                  portOfEntry: findExcelData(flatData, ['port of discharge', 'pod', 'destination port', 'us port']),
+                  foreignPortOfLading: findExcelData(flatData, ['port of loading', 'pol', 'origin port']),
+                  consigneeName: findExcelData(flatData, ['consignee', 'receiver', 'buyer']),
+                  shipperName: findExcelData(flatData, ['shipper', 'sender', 'seller']),
+                  commodityDescription: findExcelData(flatData, ['description', 'commodity', 'goods', 'cargo']),
+                  htsusNumber: findExcelData(flatData, ['hts', 'tariff', 'classification']),
+                  manufacturerCountry: findExcelData(flatData, ['country of origin', 'origin country', 'manufacture country']),
+                  numberOfPackages: findExcelData(flatData, ['packages', 'quantity', 'qty']),
+                  grossWeight: findExcelData(flatData, ['weight', 'gross weight', 'kg', 'lbs']),
+                  volume: findExcelData(flatData, ['volume', 'cbm', 'measurement'])
+                };
+                
+                // Clean the extracted data
+                const cleanedData: any = {};
+                Object.entries(extractedData).forEach(([key, value]) => {
+                  if (value && value !== "null" && value !== "" && value.length > 0) {
+                    cleanedData[key] = value;
+                  }
+                });
+                extractedData = cleanedData;
+                
+              } catch (fallbackError) {
+                console.error(`Fallback processing also failed for ${file.originalname}:`, fallbackError);
+                extractedData = { error: `Excel processing failed: ${excelError.message}` };
+              }
             }
             
           } else {
