@@ -30,6 +30,8 @@
   --powder-blue: hsl(200, 70%, 60%);
   --freight-dark: hsl(210, 24%, 16%);
   --freight-orange: hsl(25, 85%, 55%);
+  --freight-blue: hsl(200, 80%, 45%);
+  --freight-green: hsl(140, 70%, 45%);
   
   /* Light Gradient Definitions for Better Contrast */
   --gradient-primary: linear-gradient(135deg, hsl(180, 80%, 35%) 0%, hsl(120, 70%, 40%) 50%, hsl(200, 70%, 60%) 100%);
