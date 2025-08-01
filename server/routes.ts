@@ -927,7 +927,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "POA file not found on disk" });
       }
       
-      // Check file type and set appropriate headers
+      // Check file type and set appropriate headers with Chrome compatibility
       const fileExtension = path.extname(user.powerOfAttorneyDocumentPath).toLowerCase();
       if (fileExtension === '.html') {
         res.setHeader('Content-Type', 'text/html');
@@ -939,6 +939,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.setHeader('Content-Type', 'application/octet-stream');
         res.setHeader('Content-Disposition', `attachment; filename="Power_of_Attorney${fileExtension}"`);
       }
+      
+      // Chrome compatibility headers
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      res.setHeader('Content-Security-Policy', "frame-ancestors 'self'");
       
       const fileStream = fs.createReadStream(user.powerOfAttorneyDocumentPath);
       fileStream.pipe(res);
@@ -1710,9 +1718,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found on disk" });
       }
       
-      // Set headers for inline viewing (not download)
+      // Set headers for inline viewing with Chrome compatibility
       res.setHeader('Content-Type', document.fileType || 'application/octet-stream');
       res.setHeader('Content-Disposition', `inline; filename="${document.originalName || document.fileName}"`);
+      
+      // Chrome compatibility headers
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      // Allow iframe embedding from same origin
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      res.setHeader('Content-Security-Policy', "frame-ancestors 'self'");
       
       // Stream the file content
       const fileStream = fs.createReadStream(document.filePath);
