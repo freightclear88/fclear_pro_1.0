@@ -11,6 +11,7 @@ import type { Shipment, Document } from "@shared/schema";
 import ShipmentHtmlPage from "./ShipmentHtmlPage";
 import DocumentUpload from "./DocumentUpload";
 import { detectCarrierFromBL, generateTrackingUrl, generateContainerTrackingUrl } from "@/lib/carrierTracking";
+import { detectAirlineFromAWB, generateAWBTrackingUrl } from "@/lib/airlineTracking";
 
 interface ShipmentTableProps {
   shipments: Shipment[];
@@ -318,7 +319,7 @@ Weight: ${shipment?.weight || "N/A"}
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  const trackingUrl = generateTrackingUrl(shipment?.airWaybillNumber!);
+                                  const trackingUrl = generateAWBTrackingUrl(shipment?.airWaybillNumber!);
                                   if (trackingUrl) {
                                     window.open(trackingUrl, '_blank');
                                   }
@@ -382,7 +383,7 @@ Weight: ${shipment?.weight || "N/A"}
                             
                             if (shipment?.transportMode === 'air' && shipment?.airWaybillNumber) {
                               console.log('Air tracking clicked for AWB:', shipment?.airWaybillNumber);
-                              trackingUrl = generateTrackingUrl(shipment?.airWaybillNumber);
+                              trackingUrl = generateAWBTrackingUrl(shipment?.airWaybillNumber);
                             } else if (shipment?.containerNumber) {
                               console.log('Container tracking clicked for:', shipment?.containerNumber);
                               trackingUrl = generateContainerTrackingUrl(shipment?.containerNumber);
