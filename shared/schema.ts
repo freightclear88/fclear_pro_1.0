@@ -860,3 +860,51 @@ export const shipmentChargesRelations = relations(shipmentCharges, ({ one }) => 
     references: [xmlShipments.id],
   }),
 }));
+
+// XML Sources for scheduled retrieval
+export const xmlSources = pgTable('xml_sources', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 200 }).notNull(),
+  url: text('url').notNull(),
+  authType: varchar('auth_type', { length: 20 }).notNull().default('none'), // none, basic, bearer, apikey
+  authConfig: jsonb('auth_config'), // Store authentication details
+  schedule: varchar('schedule', { length: 100 }).notNull(), // Cron expression
+  isActive: boolean('is_active').default(true),
+  lastRetrieved: timestamp('last_retrieved'),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// XML Scheduled Job Logs
+export const xmlScheduledJobs = pgTable('xml_scheduled_jobs', {
+  id: serial('id').primaryKey(),
+  sourceId: integer('source_id').notNull().references(() => xmlSources.id, { onDelete: 'cascade' }),
+  executedAt: timestamp('executed_at').notNull(),
+  success: boolean('success').notNull(),
+  message: text('message'),
+  details: jsonb('details'), // Store processing details
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Types for XML Sources
+export type XmlSource = typeof xmlSources.$inferSelect;
+export type InsertXmlSource = typeof xmlSources.$inferInsert;
+export type XmlScheduledJob = typeof xmlScheduledJobs.$inferSelect;
+export type InsertXmlScheduledJob = typeof xmlScheduledJobs.$inferInsert;
+
+// Relations for XML Sources
+export const xmlSourcesRelations = relations(xmlSources, ({ one, many }) => ({
+  user: one(users, {
+    fields: [xmlSources.userId],
+    references: [users.id],
+  }),
+  jobs: many(xmlScheduledJobs),
+}));
+
+export const xmlScheduledJobsRelations = relations(xmlScheduledJobs, ({ one }) => ({
+  source: one(xmlSources, {
+    fields: [xmlScheduledJobs.sourceId],
+    references: [xmlSources.id],
+  }),
+}));

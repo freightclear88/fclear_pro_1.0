@@ -18,6 +18,7 @@ import zendesk from 'node-zendesk';
 import { AIDocumentProcessor } from './aiDocumentProcessor';
 import { xmlShipmentProcessor } from './xmlShipmentProcessor';
 import { xmlExporter } from './xmlExporter';
+import { simpleXmlScheduler } from './simpleXmlScheduler';
 
 // Initialize OpenAI Document Processor
 const aiDocProcessor = new AIDocumentProcessor();
@@ -1369,6 +1370,244 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error bulk exporting XML shipments:", error);
       res.status(500).json({ message: "Failed to bulk export XML shipments", error: error.message });
+    }
+  });
+
+  // XML Source Management Routes
+  
+  // Get all XML sources for a user
+  app.get('/api/xml-sources', requireSubscription, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const sources = await db.query.xmlSources.findMany({
+        where: eq(xmlSources.userId, userId),
+        orderBy: (table, { desc }) => [desc(table.createdAt)],
+      });
+      
+      res.json(sources);
+    } catch (error: any) {
+      console.error("Error fetching XML sources:", error);
+      res.status(500).json({ message: "Failed to fetch XML sources" });
+    }
+  });
+
+  // Create new XML source
+  app.post('/api/xml-sources', requireSubscription, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { name, url, authType, authConfig, schedule } = req.body;
+
+      // Validate cron expression
+      if (!cron.validate(schedule)) {
+        return res.status(400).json({ message: "Invalid cron schedule expression" });
+      }
+
+      // Validate URL
+      try {
+        new URL(url);
+      } catch {
+        return res.status(400).json({ message: "Invalid URL format" });
+      }
+
+      const [newSource] = await db.insert(xmlSources).values({
+        name,
+        url,
+        authType,
+        authConfig,
+        schedule,
+        userId,
+        isActive: true,
+      }).returning();
+
+      // Schedule the new source
+      simpleXmlScheduler.scheduleXmlRetrieval(newSource as any);
+
+      res.json(newSource);
+    } catch (error: any) {
+      console.error("Error creating XML source:", error);
+      res.status(500).json({ message: "Failed to create XML source", error: error.message });
+    }
+  });
+
+  // Update XML source
+  app.put('/api/xml-sources/:id', requireSubscription, async (req: any, res) => {
+    try {
+      const sourceId = parseInt(req.params.id);
+      const userId = getUserId(req);
+      const updates = req.body;
+
+      // Verify ownership
+      const existingSource = await db.query.xmlSources.findFirst({
+        where: and(eq(xmlSources.id, sourceId), eq(xmlSources.userId, userId)),
+      });
+
+      if (!existingSource) {
+        return res.status(404).json({ message: "XML source not found" });
+      }
+
+      // Validate cron expression if schedule is being updated
+      if (updates.schedule && !cron.validate(updates.schedule)) {
+        return res.status(400).json({ message: "Invalid cron schedule expression" });
+      }
+
+      const [updatedSource] = await db.update(xmlSources)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(xmlSources.id, sourceId))
+        .returning();
+
+      // Reschedule if needed
+      if (updates.schedule || updates.hasOwnProperty('isActive')) {
+        simpleXmlScheduler.scheduleXmlRetrieval(updatedSource as any);
+      }
+
+      res.json(updatedSource);
+    } catch (error: any) {
+      console.error("Error updating XML source:", error);
+      res.status(500).json({ message: "Failed to update XML source", error: error.message });
+    }
+  });
+
+  // Delete XML source
+  app.delete('/api/xml-sources/:id', requireSubscription, async (req: any, res) => {
+    try {
+      const sourceId = parseInt(req.params.id);
+      const userId = getUserId(req);
+
+      // Verify ownership
+      const existingSource = await db.query.xmlSources.findFirst({
+        where: and(eq(xmlSources.id, sourceId), eq(xmlSources.userId, userId)),
+      });
+
+      if (!existingSource) {
+        return res.status(404).json({ message: "XML source not found" });
+      }
+
+      await db.delete(xmlSources).where(eq(xmlSources.id, sourceId));
+
+      res.json({ message: "XML source deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting XML source:", error);
+      res.status(500).json({ message: "Failed to delete XML source" });
+    }
+  });
+
+  // Test XML source connection
+  app.post('/api/xml-sources/test', requireSubscription, async (req: any, res) => {
+    try {
+      const { url, authType, authConfig } = req.body;
+
+      // Prepare request headers
+      const headers: Record<string, string> = {
+        'User-Agent': 'FreightClear-XMLRetriever/1.0',
+        'Accept': 'application/xml, text/xml, */*'
+      };
+
+      // Add authentication
+      if (authType === 'basic' && authConfig?.username && authConfig?.password) {
+        const credentials = Buffer.from(`${authConfig.username}:${authConfig.password}`).toString('base64');
+        headers['Authorization'] = `Basic ${credentials}`;
+      } else if (authType === 'bearer' && authConfig?.token) {
+        headers['Authorization'] = `Bearer ${authConfig.token}`;
+      } else if (authType === 'apikey' && authConfig?.apiKey && authConfig?.headerName) {
+        headers[authConfig.headerName] = authConfig.apiKey;
+      }
+
+      // Test connection
+      const response = await fetch(url, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        return res.json({
+          success: false,
+          message: `HTTP ${response.status}: ${response.statusText}`
+        });
+      }
+
+      const xmlContent = await response.text();
+
+      if (!xmlContent || xmlContent.trim().length === 0) {
+        return res.json({
+          success: false,
+          message: 'Empty XML content received'
+        });
+      }
+
+      // Basic XML validation
+      if (!xmlContent.includes('<Shipment>') && !xmlContent.includes('<shipment>')) {
+        return res.json({
+          success: false,
+          message: 'Invalid XML format - no shipment data found',
+          preview: xmlContent.substring(0, 500)
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Connection successful - valid XML data received',
+        preview: xmlContent.substring(0, 500)
+      });
+
+    } catch (error: any) {
+      res.json({
+        success: false,
+        message: `Connection failed: ${error.message}`
+      });
+    }
+  });
+
+  // Manually trigger XML retrieval
+  app.post('/api/xml-sources/:id/retrieve', requireSubscription, async (req: any, res) => {
+    try {
+      const sourceId = parseInt(req.params.id);
+      const userId = getUserId(req);
+
+      // Verify ownership
+      const existingSource = await db.query.xmlSources.findFirst({
+        where: and(eq(xmlSources.id, sourceId), eq(xmlSources.userId, userId)),
+      });
+
+      if (!existingSource) {
+        return res.status(404).json({ message: "XML source not found" });
+      }
+
+      const result = await simpleXmlScheduler.manualRetrieve(sourceId);
+      res.json(result);
+
+    } catch (error: any) {
+      console.error("Error manually retrieving XML:", error);
+      res.status(500).json({ message: "Failed to retrieve XML", error: error.message });
+    }
+  });
+
+  // Get job history for a source
+  app.get('/api/xml-sources/:id/jobs', requireSubscription, async (req: any, res) => {
+    try {
+      const sourceId = parseInt(req.params.id);
+      const userId = getUserId(req);
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      // Verify ownership
+      const existingSource = await db.query.xmlSources.findFirst({
+        where: and(eq(xmlSources.id, sourceId), eq(xmlSources.userId, userId)),
+      });
+
+      if (!existingSource) {
+        return res.status(404).json({ message: "XML source not found" });
+      }
+
+      const jobs = await db.query.xmlScheduledJobs.findMany({
+        where: eq(xmlScheduledJobs.sourceId, sourceId),
+        orderBy: (table, { desc }) => [desc(table.executedAt)],
+        limit,
+      });
+
+      res.json(jobs);
+
+    } catch (error: any) {
+      console.error("Error fetching job history:", error);
+      res.status(500).json({ message: "Failed to fetch job history" });
     }
   });
 

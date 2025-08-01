@@ -24,14 +24,16 @@ import Chat from "@/pages/chat";
 import FastIsf from "@/pages/fastisf";
 import IsfEdit from "@/pages/isf-edit";
 import XmlUpload from "@/pages/XmlUpload";
+import XmlSources from "@/pages/XmlSources";
 
-import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle, FileText, Menu, X, Upload } from "lucide-react";
+import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle, FileText, Menu, X, Upload, Settings } from "lucide-react";
 import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_1751903859339.png";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
   { name: "Shipments", href: "/shipments", icon: Ship },
   { name: "XML Upload", href: "/xml-upload", icon: Upload },
+  { name: "XML Sources", href: "/xml-sources", icon: Settings },
   { name: "Fast ISF", href: "/fastisf", icon: FileText },
   { name: "Chat/Support", href: "/chat", icon: MessageCircle },
   { name: "Payments", href: "/payments", icon: Receipt },
@@ -243,6 +245,7 @@ function Router() {
         <Route path="/" component={Dashboard} />
         <Route path="/shipments" component={Shipments} />
         <Route path="/xml-upload" component={XmlUpload} />
+        <Route path="/xml-sources" component={XmlSources} />
         <Route path="/fastisf" component={FastIsf} />
         <Route path="/isf/edit/:id" component={IsfEdit} />
         <Route path="/chat" component={Chat} />

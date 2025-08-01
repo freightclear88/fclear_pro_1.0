@@ -38,6 +38,15 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+  
+  // Initialize XML scheduler after routes are set up
+  try {
+    const { simpleXmlScheduler } = await import('./simpleXmlScheduler.js');
+    await simpleXmlScheduler.initializeScheduledJobs();
+    console.log('XML scheduler initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize XML scheduler:', error);
+  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error('Express error handler:', err);
