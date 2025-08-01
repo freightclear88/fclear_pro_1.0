@@ -3941,9 +3941,21 @@ ${fullText}`;
         } catch (pdfError) {
           console.error("PDF parsing error:", pdfError);
           
-          // Fallback: Extract data using simplified pattern matching if OpenAI fails
+          // Fallback: Extract data using enhanced pattern matching if OpenAI fails
           if (fullText) {
-            console.log("Using simplified fallback pattern matching for PDF data extraction...");
+            console.log("Using enhanced fallback pattern matching for PDF data extraction...");
+            
+            // Detect ISF document type for better extraction
+            let docType = "unknown";
+            if (fullText.includes("AMS & '10 + 2'") || fullText.includes("IMPORTER SECURITY FILING")) {
+              docType = "isf_filing";
+            } else if (fullText.includes("BILL OF LADING")) {
+              docType = "bill_of_lading";
+            } else if (fullText.includes("COMMERCIAL INVOICE")) {
+              docType = "commercial_invoice";
+            }
+            
+            console.log("Detected document type:", docType);
             
             // Extract Bill of Lading - prioritize HB/L for ISF filing
             let billOfLading = null;
@@ -4076,9 +4088,30 @@ ${fullText}`;
             const mblScacMatch = fullText.match(/MB\/L\s*SCAC\s*CODE[^:]*[:]*\s*([A-Z]+)/i);
             const mblScacCode = mblScacMatch ? mblScacMatch[1]?.trim() : null;
             
-            // Extract AMS number
+            // Extract AMS number with enhanced patterns
+            let amsNumber = null;
+            
+            // Look for explicit AMS number patterns
             const amsMatch = fullText.match(/(?:HB\/L\s*)?AMS\s*(?:NO|NUMBER)[^:]*[:]*\s*([A-Z0-9]+)/i);
-            const amsNumber = amsMatch ? amsMatch[1]?.trim() : null;
+            if (amsMatch) {
+              amsNumber = amsMatch[1]?.trim();
+            }
+            
+            // Alternative: Look for MBL OF CARRIER which often contains AMS filing number
+            if (!amsNumber) {
+              const mblCarrierMatch = fullText.match(/MBL\s*OF\s*CARRIER[^:]*[:]*\s*([A-Z0-9]+)/i);
+              if (mblCarrierMatch) {
+                amsNumber = mblCarrierMatch[1]?.trim();
+              }
+            }
+            
+            // Look for booking reference numbers that might be AMS related
+            if (!amsNumber) {
+              const bookingMatch = fullText.match(/Booking\s*(?:ref|reference)[^:]*[:]*\s*([A-Z0-9]+)/i);
+              if (bookingMatch) {
+                amsNumber = bookingMatch[1]?.trim();
+              }
+            }
             
             // Extract dates with enhanced patterns
             let estimatedArrivalDate = null;
@@ -4098,6 +4131,30 @@ ${fullText}`;
               estimatedArrivalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
             }
             
+            // Extract container stuffing location 
+            let containerStuffingLocation = null;
+            const portOfLoadingMatch = fullText.match(/PORT\s*OF\s*LOADING[^:]*[:]*\s*([A-Z\s(),]+?)(?:\n|FIRST\s*PORT)/i);
+            if (portOfLoadingMatch) {
+              containerStuffingLocation = portOfLoadingMatch[1]?.trim();
+            }
+            
+            // Extract consolidator/stuffer information
+            let consolidatorStufferInfo = null;
+            
+            // Look for freight forwarder or consolidator information in various patterns
+            const forwarderMatch = fullText.match(/(?:From|Forwarder|Agent)[^:]*[:]*\s*([^\n\r]+(?:\n[^\n\r]+)*?)(?:\n\s*\n|E-mail:|Phone)/i);
+            if (forwarderMatch) {
+              consolidatorStufferInfo = forwarderMatch[1]?.trim();
+            }
+            
+            // Alternative: Look for company information in the header
+            if (!consolidatorStufferInfo) {
+              const companyMatch = fullText.match(/^([A-Z\s&,]+(?:\n[A-Z\s\d,.-]+)*?)(?:\n\s*AMS\s*&|Booking)/im);
+              if (companyMatch) {
+                consolidatorStufferInfo = companyMatch[1]?.trim();
+              }
+            }
+            
             // Extract weight and volume
             const weightMatch = fullText.match(/Weight:\s*([0-9,]+\s*KGS?)/i);
             const weight = weightMatch ? weightMatch[1]?.trim() : null;
@@ -4114,6 +4171,9 @@ ${fullText}`;
               commodityDescription,
               estimatedArrivalDate,
               estimatedDepartureDate,
+              // Container stuffing and consolidator information
+              containerStuffingLocation,
+              consolidatorStufferInfo,
               // Consolidated party information fields
               sellerInfo,
               buyerInfo,

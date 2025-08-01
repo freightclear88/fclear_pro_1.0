@@ -256,6 +256,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           mblScacCode: 'mblScacCode',
           hblScacCode: 'hblScacCode',
           amsNumber: 'amsNumber',
+          containerStuffingLocation: 'containerStuffingLocation',
           consolidatorStufferInfo: 'consolidatorStufferInfo'
         };
 
