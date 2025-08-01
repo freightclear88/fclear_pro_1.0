@@ -24,7 +24,8 @@ import Chat from "@/pages/chat";
 import FastIsf from "@/pages/fastisf";
 import IsfEdit from "@/pages/isf-edit";
 import RouteVisualization from "@/pages/route-visualization";
-import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle, FileText, Menu, X, Route as RouteIcon } from "lucide-react";
+import Settings from "@/pages/settings";
+import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle, FileText, Menu, X, Route as RouteIcon, Settings as SettingsIcon } from "lucide-react";
 import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_1751903859339.png";
 
 const navigation = [
@@ -36,6 +37,7 @@ const navigation = [
   { name: "Payments", href: "/payments", icon: Receipt },
   { name: "Profile", href: "/profile", icon: User },
   { name: "Subscription", href: "/subscription", icon: CreditCard },
+  { name: "Settings", href: "/settings", icon: SettingsIcon },
 ];
 
 const adminNavigation = [
@@ -250,6 +252,7 @@ function Router() {
         <Route path="/admin" component={Admin} />
         <Route path="/agent" component={Agent} />
         <Route path="/profile" component={Profile} />
+        <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>
     </AuthenticatedLayout>
