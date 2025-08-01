@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Loader2, Upload, FileText, Database } from 'lucide-react';
+import { Loader2, Upload, FileText, Database, Download, ExternalLink } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 export default function XmlUpload() {
@@ -262,12 +262,105 @@ export default function XmlUpload() {
                       </div>
                     </div>
                   )}
+
+                  <Separator />
+                  
+                  {/* Export Options */}
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h5 className="font-medium mb-3">Export Options</h5>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Export this shipment data for external platform integration:
+                    </p>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(`/api/shipments/xml/${uploadResult.shipmentId}/export/xml`, '_blank')}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        XML
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(`/api/shipments/xml/${uploadResult.shipmentId}/export/csv`, '_blank')}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        CSV
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(`/api/shipments/xml/${uploadResult.shipmentId}/export/json`, '_blank')}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        JSON
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      These exports enable seamless data exchange with external shipping platforms, ERPs, and customs systems.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Additional Export Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <ExternalLink className="h-5 w-5" />
+            <span>Platform Integration</span>
+          </CardTitle>
+          <CardDescription>
+            Export all your XML shipment data for integration with external shipping platforms
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button
+              variant="outline"
+              onClick={() => window.open('/api/shipments/xml/export/json', '_blank')}
+              className="flex flex-col items-center p-4 h-auto"
+            >
+              <Download className="h-6 w-6 mb-2" />
+              <span className="font-medium">Bulk JSON Export</span>
+              <span className="text-xs text-muted-foreground">All shipments in JSON format</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={() => window.open('/api/shipments/xml/export/csv', '_blank')}
+              className="flex flex-col items-center p-4 h-auto"
+            >
+              <Download className="h-6 w-6 mb-2" />
+              <span className="font-medium">Summary CSV</span>
+              <span className="text-xs text-muted-foreground">Shipment summary for analysis</span>
+            </Button>
+            
+            <div className="flex flex-col items-center p-4 border rounded-lg">
+              <Database className="h-6 w-6 mb-2 text-muted-foreground" />
+              <span className="font-medium text-sm">API Access</span>
+              <span className="text-xs text-muted-foreground text-center">
+                Use REST API endpoints for real-time integration
+              </span>
+            </div>
+          </div>
+          
+          <div className="bg-slate-50 p-4 rounded-lg">
+            <h4 className="font-medium text-sm mb-2">Integration Benefits:</h4>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li>• Seamless data exchange with external platforms</li>
+              <li>• Automated synchronization with shipping systems</li>
+              <li>• Compatible with customs and logistics software</li>
+              <li>• Standardized formats (XML, JSON, CSV) for universal compatibility</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

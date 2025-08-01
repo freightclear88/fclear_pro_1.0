@@ -17,6 +17,7 @@ import { xmlIntegrator } from './xmlIntegration';
 import zendesk from 'node-zendesk';
 import { AIDocumentProcessor } from './aiDocumentProcessor';
 import { xmlShipmentProcessor } from './xmlShipmentProcessor';
+import { xmlExporter } from './xmlExporter';
 
 // Initialize OpenAI Document Processor
 const aiDocProcessor = new AIDocumentProcessor();
@@ -1268,6 +1269,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching XML shipment:", error);
       res.status(500).json({ message: "Failed to fetch XML shipment" });
+    }
+  });
+
+  // Export XML shipment to various formats
+  app.get('/api/shipments/xml/:id/export/:format', requireSubscription, async (req: any, res) => {
+    try {
+      const shipmentId = parseInt(req.params.id);
+      const format = req.params.format.toLowerCase();
+      const userId = getUserId(req);
+      
+      // Verify user owns this shipment
+      const completeShipment = await xmlShipmentProcessor.getXmlShipmentById(shipmentId);
+      if (completeShipment.shipment.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      switch (format) {
+        case 'xml':
+          const xmlData = await xmlExporter.exportShipmentToXml(shipmentId);
+          res.setHeader('Content-Type', 'application/xml');
+          res.setHeader('Content-Disposition', `attachment; filename="shipment_${shipmentId}.xml"`);
+          res.send(xmlData);
+          break;
+
+        case 'csv':
+          const csvData = await xmlExporter.exportShipmentToCsv(shipmentId);
+          res.setHeader('Content-Type', 'text/csv');
+          res.setHeader('Content-Disposition', `attachment; filename="shipment_${shipmentId}.csv"`);
+          res.send(csvData);
+          break;
+
+        case 'json':
+          const jsonData = await xmlExporter.exportShipmentToJson(shipmentId);
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Content-Disposition', `attachment; filename="shipment_${shipmentId}.json"`);
+          res.json(jsonData);
+          break;
+
+        default:
+          return res.status(400).json({ message: "Unsupported export format. Use xml, csv, or json." });
+      }
+
+    } catch (error: any) {
+      console.error("Error exporting XML shipment:", error);
+      res.status(500).json({ message: "Failed to export XML shipment", error: error.message });
+    }
+  });
+
+  // Bulk export all XML shipments for a user
+  app.get('/api/shipments/xml/export/:format', requireSubscription, async (req: any, res) => {
+    try {
+      const format = req.params.format.toLowerCase();
+      const userId = getUserId(req);
+      
+      const xmlShipments = await xmlShipmentProcessor.getXmlShipmentsByUser(userId);
+      
+      if (xmlShipments.length === 0) {
+        return res.status(404).json({ message: "No XML shipments found" });
+      }
+
+      switch (format) {
+        case 'json':
+          // Export all shipments as a JSON array
+          const allJsonData = [];
+          for (const shipment of xmlShipments) {
+            const shipmentData = await xmlExporter.exportShipmentToJson(shipment.id);
+            allJsonData.push(shipmentData);
+          }
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Content-Disposition', `attachment; filename="all_xml_shipments.json"`);
+          res.json(allJsonData);
+          break;
+
+        case 'csv':
+          // Export summary CSV of all shipments
+          let bulkCsv = 'Shipment ID,Transaction ID,Transaction Date,Shipment Type,Transportation Method,Vessel Name,Master Bill,House Bill,Booking Number,Status\n';
+          for (const shipment of xmlShipments) {
+            bulkCsv += `${shipment.id},`;
+            bulkCsv += `${xmlExporter['escapeCsv'](shipment.transactionId)},`;
+            bulkCsv += `${shipment.transactionDateTime.toISOString()},`;
+            bulkCsv += `${xmlExporter['escapeCsv'](shipment.shipmentType || '')},`;
+            bulkCsv += `${xmlExporter['escapeCsv'](shipment.transportationMethod || '')},`;
+            bulkCsv += `${xmlExporter['escapeCsv'](shipment.vesselName || '')},`;
+            bulkCsv += `${xmlExporter['escapeCsv'](shipment.masterBillNumber || '')},`;
+            bulkCsv += `${xmlExporter['escapeCsv'](shipment.houseBillNumber || '')},`;
+            bulkCsv += `${xmlExporter['escapeCsv'](shipment.bookingNumber || '')},`;
+            bulkCsv += `${xmlExporter['escapeCsv'](shipment.status)}\n`;
+          }
+          res.setHeader('Content-Type', 'text/csv');
+          res.setHeader('Content-Disposition', `attachment; filename="all_xml_shipments_summary.csv"`);
+          res.send(bulkCsv);
+          break;
+
+        default:
+          return res.status(400).json({ message: "Unsupported bulk export format. Use csv or json." });
+      }
+
+    } catch (error: any) {
+      console.error("Error bulk exporting XML shipments:", error);
+      res.status(500).json({ message: "Failed to bulk export XML shipments", error: error.message });
     }
   });
 

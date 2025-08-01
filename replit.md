@@ -15,6 +15,8 @@ Key Features Requested:
 - Comprehensive ISF document data extraction using Azure Document Intelligence (January 2025)
 - Fixed critical data consolidation bug preventing comprehensive shipment data extraction (August 2025)
 - Enhanced multi-document processing with improved Azure Document Intelligence integration and fallback logic
+- Comprehensive XML shipment processing system with hierarchical database structure (August 2025)
+- Multi-format data export capabilities (XML, CSV, JSON) for external platform integration
 
 ## System Architecture
 The application follows a modern full-stack architecture with clear separation between frontend and backend components, featuring enhanced multi-document processing capabilities for comprehensive shipment creation and comprehensive XML-based shipment data management.
@@ -65,7 +67,7 @@ The application follows a modern full-stack architecture with clear separation b
 -   **Invoice Management**: Admin/agent upload of invoices, user-specific invoice display, and "Pay Now" functionality.
 -   **Last Mile Integration**: Dedicated document categories and sub-categories, with automatic shipment creation from delivery orders.
 -   **Fast ISF Filing**: Comprehensive 10+2 form with hybrid AI-powered document scanning (Azure + OpenAI), automatic ISF filing creation from uploaded documents with comprehensive field population (vessel, container, port, dates, SCAC codes, etc.), ISF editing workflow, and Stripe payment integration ($35.00 filing fee).
--   **XML Integration**: Support for external shipment database updates using XML (UN/EDIFACT, SMDG) with bidirectional data mapping.
+-   **XML Integration**: Comprehensive XML shipment processing system with hierarchical database structure supporting parties, locations, containers, contents, and charges. Includes bidirectional data mapping and multi-format export capabilities (XML, CSV, JSON) for seamless integration with external shipping platforms, ERPs, and customs systems.
 -   **Chat/Support System**: Integrated customer support via Zendesk API for ticket management.
 -   **Pagination**: Implemented for large data sets (e.g., shipments table) for improved performance.
 -   **Branding**: Consistent Freightclear branding across the UI, including custom color schemes and professional design elements.
