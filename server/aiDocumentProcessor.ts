@@ -196,24 +196,50 @@ export class AIDocumentProcessor {
   }
 
   /**
-   * Extract text from PDF using pdf-parse library
+   * Extract text from PDF using vision API approach
    */
   private async extractPDFText(filePath: string): Promise<string> {
     try {
-      const pdfParse = await import('pdf-parse');
-      const pdfBuffer = fs.readFileSync(filePath);
+      console.log(`Starting PDF to image conversion for: ${filePath}`);
       
-      console.log(`Processing PDF buffer: ${pdfBuffer.length} bytes`);
+      // Convert PDF to image and use OpenAI vision for text extraction
+      const base64Image = await this.convertPDFToBase64Image(filePath);
       
-      const data = await pdfParse.default(pdfBuffer);
-      const fullText = data.text;
+      console.log(`Successfully converted PDF to image, proceeding with vision analysis`);
       
-      console.log(`Extracted ${fullText.length} characters from PDF`);
-      return fullText.trim();
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Extract all text content from this shipping document image. Return only the raw text content, preserving the structure and formatting as much as possible. Focus on shipping data like vessel names, container numbers, B/L numbers, company names, addresses, ports, dates, etc."
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 4000
+      });
+
+      const extractedText = completion.choices[0].message.content || '';
+      console.log(`Extracted ${extractedText.length} characters from PDF via vision`);
+      
+      if (extractedText.length < 50) {
+        throw new Error('Insufficient text extracted from PDF');
+      }
+      
+      return extractedText.trim();
       
     } catch (error) {
-      console.error('PDF text extraction failed:', error);
-      // Try alternative: read file as buffer and send to OpenAI for vision analysis
+      console.error('PDF vision extraction failed:', error);
       throw new Error(`PDF text extraction failed: ${error.message}`);
     }
   }
@@ -290,9 +316,26 @@ export class AIDocumentProcessor {
    * Convert PDF to base64 image for vision analysis
    */
   private async convertPDFToBase64Image(filePath: string): Promise<string> {
-    // This would require additional image processing libraries
-    // For now, return empty string as fallback
-    throw new Error('PDF to image conversion not yet implemented');
+    try {
+      const convert = pdf2pic.fromPath(filePath, {
+        density: 100,
+        saveFilename: "untitled",
+        savePath: "./temp",
+        format: "jpeg",
+        width: 1700,
+        height: 2200
+      });
+      
+      const result = await convert(1); // Convert first page
+      if (result && result.base64) {
+        return result.base64;
+      }
+      
+      throw new Error('Failed to convert PDF to image');
+    } catch (error) {
+      console.error('PDF to image conversion failed:', error);
+      throw error;
+    }
   }
 }
 
