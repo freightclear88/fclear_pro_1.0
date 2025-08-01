@@ -88,9 +88,17 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
         console.log('Has nested objects:', hasNestedObjects);
         console.log('Has Azure fields:', hasAzureFields);
         console.log('Has complex extraction:', hasComplexExtraction);
+        console.log('Sample extracted values:', {
+          billOfLadingNumber: data.billOfLadingNumber,
+          vesselAndVoyage: data.vesselAndVoyage,
+          shipperName: data.shipperName,
+          consigneeName: data.consigneeName,
+          cargoDescription: data.cargoDescription,
+          numberOfPackages: data.numberOfPackages
+        });
         extractedFields = flattenAzureData(data);
         console.log(`Flattened to ${Object.keys(extractedFields).length} mapped fields:`, Object.keys(extractedFields));
-        console.log('Mapped field values:', extractedFields);
+        console.log('Successfully mapped fields:', Object.keys(extractedFields).filter(key => extractedFields[key] !== null && extractedFields[key] !== undefined));
       } else if (Object.keys(data).length === 0) {
         // Empty Azure response - skip this document entirely
         console.log(`Skipping empty Azure data from ${fileName}`);
