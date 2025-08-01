@@ -347,9 +347,27 @@ Weight: ${shipment?.weight || "N/A"}
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            const trackingUrl = generateContainerTrackingUrl(shipment?.containerNumber!);
+                            console.log('Container tracking clicked for:', shipment?.containerNumber);
+                            
+                            // First try container tracking
+                            let trackingUrl = generateContainerTrackingUrl(shipment?.containerNumber!);
+                            
+                            // If container tracking fails, try BL tracking as fallback
+                            if (!trackingUrl && shipment?.billOfLadingNumber) {
+                              console.log('Container tracking failed, trying BL tracking for:', shipment?.billOfLadingNumber);
+                              trackingUrl = generateTrackingUrl(shipment?.billOfLadingNumber);
+                            }
+                            
                             if (trackingUrl) {
+                              console.log('Opening tracking URL:', trackingUrl);
                               window.open(trackingUrl, '_blank');
+                            } else {
+                              console.log('No tracking URL generated');
+                              toast({
+                                title: "Tracking Unavailable",
+                                description: "Unable to detect carrier for tracking. Please check the container number or BL number format.",
+                                variant: "destructive",
+                              });
                             }
                           }}
                           className="btn-outline-accent text-xs"

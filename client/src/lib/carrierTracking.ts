@@ -165,9 +165,51 @@ export function detectCarrierFromContainer(containerNumber: string): CarrierInfo
   const cleanContainer = containerNumber.trim().toUpperCase();
   const prefix = cleanContainer.substring(0, 4);
   
+  // First try exact prefix matching
   for (const carrier of OCEAN_CARRIERS) {
     if (carrier.containerPrefixes.includes(prefix)) {
       return carrier;
+    }
+  }
+
+  // Extended container prefix patterns for common carriers
+  const extendedPrefixes = [
+    // Maersk variations
+    { prefixes: ['MSKU', 'MRKU', 'MSNU', 'MAEU'], carrier: 'MAEU' },
+    // MSC variations  
+    { prefixes: ['MSCU', 'MEDU', 'MSMU'], carrier: 'MSCU' },
+    // CMA CGM variations
+    { prefixes: ['CMAU', 'CMDU'], carrier: 'CMAU' },
+    // COSCO variations
+    { prefixes: ['COSU', 'COCU', 'CBHU', 'CJLU'], carrier: 'COSU' },
+    // OOCL variations
+    { prefixes: ['OOLU', 'OOCU'], carrier: 'OOLU' },
+    // Evergreen variations
+    { prefixes: ['EGLV', 'GESU', 'EMCU'], carrier: 'EGLV' },
+    // ONE variations
+    { prefixes: ['ONEU', 'NYKU', 'TTNU'], carrier: 'ONEY' },
+    // Yang Ming variations
+    { prefixes: ['YMLU', 'YARU'], carrier: 'YMLU' },
+    // Hapag-Lloyd variations
+    { prefixes: ['HLCU', 'HLBU', 'HASU'], carrier: 'HLCU' },
+    // HMM variations
+    { prefixes: ['HDMU', 'HMMU'], carrier: 'HDMU' },
+    // PIL variations
+    { prefixes: ['PONU', 'PILU'], carrier: 'PABV' },
+    // ZIM variations
+    { prefixes: ['ZIMU', 'ZIMB'], carrier: 'ZIMU' },
+    // Common leasing company prefixes that often indicate specific carriers
+    { prefixes: ['TRHU', 'TRLU', 'TRIU', 'TGHU'], carrier: 'GENERIC_LEASING' }
+  ];
+
+  for (const pattern of extendedPrefixes) {
+    if (pattern.prefixes.includes(prefix)) {
+      if (pattern.carrier === 'GENERIC_LEASING') {
+        // For leasing containers, we can't determine the specific carrier
+        // but we can still provide a generic tracking option
+        return null;
+      }
+      return OCEAN_CARRIERS.find(c => c.scacCode === pattern.carrier) || null;
     }
   }
 
