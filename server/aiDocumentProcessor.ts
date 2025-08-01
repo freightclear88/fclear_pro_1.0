@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
 import fs from 'fs';
 import pdf2pic from 'pdf2pic';
 
@@ -6,6 +7,12 @@ import pdf2pic from 'pdf2pic';
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// Initialize Azure Document Intelligence client
+const azureClient = new DocumentAnalysisClient(
+  process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT!,
+  new AzureKeyCredential(process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY!)
+);
 
 interface ExtractedShipmentData {
   // Core shipping data
@@ -98,11 +105,26 @@ export class AIDocumentProcessor {
   }
   
   /**
-   * Extract structured data from PDF document using AI
+   * Extract structured data from PDF document using Azure + AI
    */
   async extractShipmentData(filePath: string, documentType: string): Promise<ExtractedShipmentData> {
     try {
-      // Test OpenAI connection first
+      // Try Azure Document Intelligence first (better for structured documents)
+      try {
+        console.log('Using Azure Document Intelligence for document processing...');
+        const azureResult = await this.extractWithAzure(filePath);
+        
+        if (this.hasSignificantData(azureResult)) {
+          console.log('Azure extraction successful, using Azure data');
+          return azureResult;
+        } else {
+          console.log('Azure extraction yielded minimal data, trying OpenAI enhancement...');
+        }
+      } catch (azureError) {
+        console.log('Azure processing failed, falling back to OpenAI:', azureError.message);
+      }
+
+      // Fallback to OpenAI processing
       console.log('Testing OpenAI connection...');
       const connectionTest = await this.testConnection();
       if (!connectionTest) {
@@ -354,6 +376,146 @@ export class AIDocumentProcessor {
         throw new Error(`PDF processing failed: ${directError.message}`);
       }
     }
+  }
+
+  /**
+   * Extract data using Azure Document Intelligence
+   */
+  private async extractWithAzure(filePath: string): Promise<ExtractedShipmentData> {
+    try {
+      const documentBuffer = fs.readFileSync(filePath);
+      
+      // Use Azure's general document model for comprehensive extraction
+      const poller = await azureClient.beginAnalyzeDocument("prebuilt-document", documentBuffer);
+      const result = await poller.pollUntilDone();
+      
+      // Extract all text content
+      let fullText = '';
+      if (result.content) {
+        fullText = result.content;
+      }
+      
+      console.log(`Azure extracted ${fullText.length} characters of text`);
+      
+      // Parse the extracted content using structured field extraction
+      const extractedData: ExtractedShipmentData = {};
+      
+      // Extract key-value pairs from Azure results
+      if (result.keyValuePairs) {
+        for (const kvPair of result.keyValuePairs) {
+          if (kvPair.key && kvPair.value) {
+            const key = kvPair.key.content.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const value = kvPair.value.content;
+            
+            // Map common shipping document fields
+            this.mapAzureField(extractedData, key, value);
+          }
+        }
+      }
+      
+      // Extract table data if present
+      if (result.tables) {
+        for (const table of result.tables) {
+          this.extractTableData(extractedData, table);
+        }
+      }
+      
+      // Enhance with OpenAI if we have good text content
+      if (fullText.length > 100) {
+        console.log('Enhancing Azure data with OpenAI analysis...');
+        const openaiData = await this.extractDataWithOpenAI(fullText, 'bill_of_lading');
+        
+        // Merge Azure and OpenAI results, preferring Azure for structured data
+        return this.mergeExtractionResults(extractedData, openaiData);
+      }
+      
+      return extractedData;
+      
+    } catch (error) {
+      console.error('Azure extraction failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Map Azure field to our data structure
+   */
+  private mapAzureField(data: ExtractedShipmentData, key: string, value: string): void {
+    const fieldMappings: Record<string, keyof ExtractedShipmentData> = {
+      'billoflading': 'billOfLadingNumber',
+      'blnumber': 'billOfLadingNumber',
+      'vessel': 'vesselAndVoyage',
+      'voyagenumber': 'vesselAndVoyage',
+      'container': 'containerNumber',
+      'containernumber': 'containerNumber',
+      'shipper': 'shipperName',
+      'consignee': 'consigneeName',
+      'portofloading': 'portOfLoading',
+      'portofdischarge': 'portOfDischarge',
+      'grossweight': 'weight',
+      'packages': 'numberOfPackages',
+      'commodity': 'cargoDescription',
+      'booking': 'bookingNumber'
+    };
+    
+    if (fieldMappings[key]) {
+      (data as any)[fieldMappings[key]] = value;
+    }
+  }
+
+  /**
+   * Extract data from table structures
+   */
+  private extractTableData(data: ExtractedShipmentData, table: any): void {
+    // Look for common shipping document table patterns
+    for (const cell of table.cells) {
+      const content = cell.content.toLowerCase();
+      
+      if (content.includes('container') && content.includes('number')) {
+        // Try to extract container number from adjacent cells
+        const containerMatch = cell.content.match(/[A-Z]{4}\d{7}/);
+        if (containerMatch) {
+          data.containerNumber = containerMatch[0];
+        }
+      }
+    }
+  }
+
+  /**
+   * Check if extraction has significant data
+   */
+  private hasSignificantData(data: ExtractedShipmentData): boolean {
+    const significantFields = [
+      'billOfLadingNumber', 'vesselAndVoyage', 'containerNumber', 
+      'shipperName', 'consigneeName', 'portOfLoading', 'portOfDischarge'
+    ];
+    
+    const foundFields = significantFields.filter(field => 
+      (data as any)[field] && String((data as any)[field]).trim().length > 2
+    );
+    
+    return foundFields.length >= 2;
+  }
+
+  /**
+   * Merge results from Azure and OpenAI
+   */
+  private mergeExtractionResults(azureData: ExtractedShipmentData, openaiData: ExtractedShipmentData): ExtractedShipmentData {
+    const merged = { ...openaiData };
+    
+    // Prefer Azure data for key fields (more structured)
+    const azurePreferredFields = [
+      'billOfLadingNumber', 'containerNumber', 'vesselAndVoyage',
+      'portOfLoading', 'portOfDischarge', 'numberOfPackages'
+    ];
+    
+    for (const field of azurePreferredFields) {
+      if ((azureData as any)[field]) {
+        (merged as any)[field] = (azureData as any)[field];
+      }
+    }
+    
+    return merged;
   }
 }
 
