@@ -14,7 +14,7 @@ export const AIRLINES: AirlineInfo[] = [
     name: "Delta Air Lines",
     iataCode: "DL",
     prefix: "006",
-    trackingUrl: "https://www.delta.com/us/en/cargo/tracking",
+    trackingUrl: "https://www.deltacargo.com/Cargo/",
     awbPattern: /^006[-\s]?\d{8}$/
   },
   {
@@ -154,7 +154,7 @@ export function generateAWBTrackingUrl(awbNumber: string): string | null {
   // Generate airline-specific tracking URLs
   switch (airline.prefix) {
     case '006': // Delta
-      return `https://www.delta.com/us/en/cargo/tracking?awbNumber=${cleanAWB}`;
+      return `https://www.deltacargo.com/Cargo/tracking?awbNumber=${cleanAWB}`;
     case '001': // American Airlines
       return `https://www.aa.com/i18n/cargo/tracking.jsp?awbNumber=${cleanAWB}`;
     case '016': // United
