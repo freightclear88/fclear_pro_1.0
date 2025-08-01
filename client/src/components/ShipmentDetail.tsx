@@ -25,7 +25,7 @@ export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDe
   console.log('ShipmentDetail received shipment:', shipment);
 
   const { data: documents } = useQuery({
-    queryKey: ["/api/shipments", shipment?.id, "documents"],
+    queryKey: [`/api/shipments/${shipment?.id}/documents`],
     enabled: !!shipment?.id,
   });
 
