@@ -43,20 +43,55 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
     const { documentType, fileName, data } = docData;
     const priority = documentTypePriority[documentType] || 1;
     
-    // Iterate through all extracted fields
-    for (const [field, value] of Object.entries(data)) {
-      if (value && value !== '' && value !== 'Processing' && value !== null && value !== undefined) {
-        // Only update if we don't have this field or if current document has higher priority
-        const currentPriority = sourceTracker[field]?.priority || 0;
-        
-        if (!consolidated[field] || priority > currentPriority) {
-          consolidated[field] = value;
-          sourceTracker[field] = {
-            source: fileName,
-            documentType,
-            priority
-          };
+    // Helper function to flatten nested Azure data structure
+    const flattenAzureData = (obj: any, prefix = ''): any => {
+      const flattened: any = {};
+      
+      for (const [key, value] of Object.entries(obj || {})) {
+        if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+          // Handle nested objects like shipper: { company: 'X', address: 'Y' }
+          const nested = flattenAzureData(value, key);
+          Object.assign(flattened, nested);
+        } else if (value && value !== '' && value !== 'Processing' && value !== null && value !== undefined) {
+          // Map Azure fields to shipment schema fields
+          const fieldName = prefix ? mapAzureFieldToShipment(prefix, key) : mapAzureFieldToShipment('', key);
+          if (fieldName) {
+            flattened[fieldName] = value;
+          }
         }
+      }
+      
+      return flattened;
+    };
+    
+    // Flatten Azure data structure or process regular extracted data
+    let extractedFields: any = {};
+    
+    if (data && typeof data === 'object') {
+      // Check if this looks like Azure nested structure
+      if (data.shipper || data.consignee || data.bill_of_lading_no || data.vessel_voyage) {
+        extractedFields = flattenAzureData(data);
+      } else {
+        // Regular flat structure
+        for (const [field, value] of Object.entries(data)) {
+          if (value && value !== '' && value !== 'Processing' && value !== null && value !== undefined) {
+            extractedFields[field] = value;
+          }
+        }
+      }
+    }
+    
+    // Update consolidated data with priority-based logic
+    for (const [field, value] of Object.entries(extractedFields)) {
+      const currentPriority = sourceTracker[field]?.priority || 0;
+      
+      if (!consolidated[field] || priority > currentPriority) {
+        consolidated[field] = value;
+        sourceTracker[field] = {
+          source: fileName,
+          documentType,
+          priority
+        };
       }
     }
   }
@@ -67,6 +102,75 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
   ));
   
   return consolidated;
+}
+
+// Helper function to map Azure Document Intelligence fields to shipment schema
+function mapAzureFieldToShipment(prefix: string, field: string): string | null {
+  const mappings: Record<string, string> = {
+    // Bill of Lading mappings
+    'bill_of_lading_no': 'billOfLadingNumber',
+    'vessel_voyage': 'vesselAndVoyage',
+    'port_of_loading': 'portOfLoading',
+    'port_of_discharge': 'portOfDischarge',
+    'place_of_receipt': 'placeOfReceipt',
+    'place_of_delivery': 'placeOfDelivery',
+    'final_destination': 'finalDestination',
+    'shipped_on_board_date': 'onBoardDate',
+    'date_of_issue': 'issueDate',
+    'portOfLoading': 'portOfLoading',
+    'portOfDischarge': 'portOfDischarge',
+    
+    // Shipper mappings (prefix: shipper)
+    'shipper.company': 'shipperName',
+    'shipper.address': 'shipperAddress',
+    'shipper.contact_person': 'shipperContactPerson',
+    'shipper.tel': 'shipperPhone',
+    'shipper.email': 'shipperEmail',
+    
+    // Consignee mappings (prefix: consignee)
+    'consignee.company': 'consigneeName',
+    'consignee.address': 'consigneeAddress',
+    'consignee.contact_person': 'consigneeContactPerson',
+    'consignee.company_tel': 'consigneePhone',
+    'consignee.email': 'consigneeEmail',
+    
+    // Notify party mappings
+    'notify_party': 'notifyPartyName',
+    
+    // Cargo/container information
+    'container_number': 'containerNumber',
+    'container_type': 'containerType',
+    'seal_numbers': 'sealNumbers',
+    
+    // Cargo details from particulars_furnished_by_shipper
+    'particulars_furnished_by_shipper.description_of_goods': 'cargoDescription',
+    'particulars_furnished_by_shipper.no_of_pkgs': 'numberOfPackages',
+    'particulars_furnished_by_shipper.gross_weight_kgs': 'grossWeight',
+    'particulars_furnished_by_shipper.measurement_cbm': 'measurement',
+    'particulars_furnished_by_shipper.marks_numbers': 'marks',
+    
+    // Freight information
+    'freight_prepaid': 'freightPrepaid',
+    'freight_and_charges_payable_by': 'freightPaymentTerms',
+    
+    // Carrier and release info
+    'carrier': 'carrierName',
+    'contact_for_release.company': 'releasePartyName',
+    'contact_for_release.address': 'releasePartyAddress',
+    'contact_for_release.tel': 'releasePartyPhone',
+    'contact_for_release.fax': 'releasePartyFax',
+    
+    // Additional fields
+    'job_no': 'jobNumber',
+    'booking_number': 'bookingNumber',
+    'place_of_issue': 'placeOfIssue',
+    'number_of_original_bill_of_lading_issued': 'numberOfOriginalsIssued',
+    'total_packages': 'totalPackages'
+  };
+  
+  // Create full field path for nested objects
+  const fullPath = prefix ? `${prefix}.${field}` : field;
+  return mappings[fullPath] || mappings[field] || null;
 }
 
 // Zendesk API configuration
