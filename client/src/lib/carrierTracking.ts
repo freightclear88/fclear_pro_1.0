@@ -14,100 +14,85 @@ export const OCEAN_CARRIERS: CarrierInfo[] = [
     name: "Maersk Line",
     scacCode: "MAEU",
     trackingUrl: "https://www.maersk.com/tracking/",
-    blPattern: /^MAEU\d{9}$/,
-    containerPrefixes: ["MAEU", "MSKU", "MRKU"]
+    blPattern: /^MAEU\d{7,12}$/,
+    containerPrefixes: ["MAEU", "MSKU", "MRKU", "MSNU"]
   },
   {
     name: "Mediterranean Shipping Company (MSC)",
     scacCode: "MSCU",
     trackingUrl: "https://www.msc.com/en/track-a-shipment",
-    blPattern: /^(MSCU|MEDU)\d{9}$/,
+    blPattern: /^(MSCU|MEDU|MSC)\d{7,12}$/,
     containerPrefixes: ["MSCU", "MEDU", "MSMU"]
   },
   {
     name: "CMA CGM",
     scacCode: "CMAU",
     trackingUrl: "https://www.cma-cgm.com/ebusiness/tracking",
-    blPattern: /^(CMAU|CMDU)\d{9}$/,
+    blPattern: /^(CMAU|CMDU|CMA)\d{7,12}$/,
     containerPrefixes: ["CMAU", "CMDU"]
   },
   {
     name: "COSCO Shipping Lines",
     scacCode: "COSU",
     trackingUrl: "https://elines.coscoshipping.com/ebusiness/cargotracking",
-    blPattern: /^COSU\d{9}$/,
-    containerPrefixes: ["COSU", "COCU", "CBHU"]
+    blPattern: /^(COSU|COSCO|CSCL|LLL)\w{7,15}$/,
+    containerPrefixes: ["COSU", "COCU", "CBHU", "CJLU"]
   },
   {
     name: "Orient Overseas Container Line (OOCL)",
     scacCode: "OOLU",
     trackingUrl: "https://www.oocl.com/eng/ourservices/eservices/cargotracking/pages/cargotracking.aspx",
-    blPattern: /^OOLU\d{9}$/,
-    containerPrefixes: ["OOLU"]
+    blPattern: /^(OOLU|OOCL)\d{7,12}$/,
+    containerPrefixes: ["OOLU", "OOCU"]
   },
   {
     name: "Evergreen Marine",
     scacCode: "EGLV",
     trackingUrl: "https://www.evergreen-line.com/emodal/stTrace/stTrace.do",
-    blPattern: /^EGLV\d{9}$/,
-    containerPrefixes: ["EGLV"]
+    blPattern: /^(EGLV|EVGN|EMC)\d{7,12}$/,
+    containerPrefixes: ["EGLV", "GESU", "EMCU"]
+  },
+  {
+    name: "Ocean Network Express (ONE)",
+    scacCode: "ONEY",
+    trackingUrl: "https://ecomm.one-line.com/one-ecom/manage-shipment/track-trace",
+    blPattern: /^(ONEY|ONE)\w{7,15}$/,
+    containerPrefixes: ["ONEU", "NYKU", "TTNU"]
+  },
+  {
+    name: "Yang Ming Marine Transport",
+    scacCode: "YMLU",
+    trackingUrl: "https://www.yangming.com/e-service/Track_Trace/track_trace_cargo_tracking.aspx",
+    blPattern: /^(YMLU|YML|YM)\w{7,15}$/,
+    containerPrefixes: ["YMLU", "YARU"]
   },
   {
     name: "Hapag-Lloyd",
     scacCode: "HLCU",
-    trackingUrl: "https://www.hapag-lloyd.com/en/online-business/track/track-by-container-solution.html",
-    blPattern: /^HLCU\d{9}$/,
-    containerPrefixes: ["HLCU"]
+    trackingUrl: "https://www.hapag-lloyd.com/en/online-business/track/track-by-container.html",
+    blPattern: /^(HLCU|HAPL|HL)\w{7,15}$/,
+    containerPrefixes: ["HLCU", "HLBU", "HASU"]
   },
   {
-    name: "ONE (Ocean Network Express)",
-    scacCode: "ONEY",
-    trackingUrl: "https://ecomm.one-line.com/one-cyberport/Tracking",
-    blPattern: /^ONEY\d{9}$/,
-    containerPrefixes: ["ONEY"]
-  },
-  {
-    name: "Yang Ming Line",
-    scacCode: "YMLU",
-    trackingUrl: "https://www.yangming.com/e-service/Track_Trace/track_trace_cargo_tracking.aspx",
-    blPattern: /^YMLU\d{9}$/,
-    containerPrefixes: ["YMLU", "YMPR", "YMSG", "YMJA"]
-  },
-  {
-    name: "ZIM Integrated Shipping Services",
-    scacCode: "ZIMU",
-    trackingUrl: "https://www.zim.com/tools/track-a-shipment",
-    blPattern: /^ZIMU\d{9}$/,
-    containerPrefixes: ["ZIMU"]
-  },
-  {
-    name: "Hyundai Merchant Marine (HMM)",
+    name: "HMM (Hyundai Merchant Marine)",
     scacCode: "HDMU",
     trackingUrl: "https://www.hmm21.com/cms/business/ebiz/trackTrace/trackTrace/index.jsp",
-    blPattern: /^HDMU\d{9}$/,
-    containerPrefixes: ["HDMU"]
-  },
-  // Generic patterns for non-SCAC BL numbers (forwarders, smaller carriers)
-  {
-    name: "Generic Ocean Carrier",
-    scacCode: "GENERIC",
-    trackingUrl: "https://www.track-trace.com/container",
-    blPattern: /^\d{8,12}$/,  // 8-12 digit numeric BL numbers
-    containerPrefixes: []
+    blPattern: /^(HDMU|HMM|HYUN)\w{7,15}$/,
+    containerPrefixes: ["HDMU", "HMMU"]
   },
   {
-    name: "Mixed Alphanumeric Carrier",
-    scacCode: "MIXED",
-    trackingUrl: "https://www.searates.com/container/tracking/",
-    blPattern: /^[A-Z]{2,6}\d{6,10}$/,  // 2-6 letters + 6-10 digits
-    containerPrefixes: []
+    name: "PIL Pacific International Lines",
+    scacCode: "PABV",
+    trackingUrl: "https://www.pilship.com/en--/120.html",
+    blPattern: /^(PABV|PIL)\w{7,15}$/,
+    containerPrefixes: ["PONU", "PILU"]
   },
   {
-    name: "Forwarding Agent BL",
-    scacCode: "FORWARDER", 
-    trackingUrl: "https://www.track-trace.com/container",
-    blPattern: /^[A-Z0-9]{8,15}$/,  // Mixed alphanumeric 8-15 chars
-    containerPrefixes: []
+    name: "ZIM Integrated Shipping",
+    scacCode: "ZIMU",
+    trackingUrl: "https://www.zim.com/tools/track-a-shipment",
+    blPattern: /^(ZIMU|ZIM)\w{7,15}$/,
+    containerPrefixes: ["ZIMU", "ZIMB"]
   }
 ];
 
@@ -119,11 +104,50 @@ export function detectCarrierFromBL(blNumber: string): CarrierInfo | null {
     return null;
   }
 
-  const cleanBL = blNumber.trim().toUpperCase();
+  const cleanBL = blNumber.trim().toUpperCase().replace(/[-\s]/g, '');
   
+  // First try exact pattern matching
   for (const carrier of OCEAN_CARRIERS) {
     if (carrier.blPattern.test(cleanBL)) {
       return carrier;
+    }
+  }
+
+  // Fallback: try prefix matching for common patterns
+  const prefixPatterns = [
+    { prefix: 'COSU', carrier: 'COSU' },
+    { prefix: 'COSCO', carrier: 'COSU' },
+    { prefix: 'CSCL', carrier: 'COSU' },
+    { prefix: 'LLL', carrier: 'COSU' },
+    { prefix: 'MAEU', carrier: 'MAEU' },
+    { prefix: 'MSKU', carrier: 'MAEU' },
+    { prefix: 'MSCU', carrier: 'MSCU' },
+    { prefix: 'MSC', carrier: 'MSCU' },
+    { prefix: 'CMAU', carrier: 'CMAU' },
+    { prefix: 'CMA', carrier: 'CMAU' },
+    { prefix: 'EGLV', carrier: 'EGLV' },
+    { prefix: 'EVGN', carrier: 'EGLV' },
+    { prefix: 'OOLU', carrier: 'OOLU' },
+    { prefix: 'OOCL', carrier: 'OOLU' },
+    { prefix: 'ONEY', carrier: 'ONEY' },
+    { prefix: 'ONE', carrier: 'ONEY' },
+    { prefix: 'YMLU', carrier: 'YMLU' },
+    { prefix: 'YML', carrier: 'YMLU' },
+    { prefix: 'YM', carrier: 'YMLU' },
+    { prefix: 'HLCU', carrier: 'HLCU' },
+    { prefix: 'HAPL', carrier: 'HLCU' },
+    { prefix: 'HL', carrier: 'HLCU' },
+    { prefix: 'HDMU', carrier: 'HDMU' },
+    { prefix: 'HMM', carrier: 'HDMU' },
+    { prefix: 'ZIMU', carrier: 'ZIMU' },
+    { prefix: 'ZIM', carrier: 'ZIMU' },
+    { prefix: 'PABV', carrier: 'PABV' },
+    { prefix: 'PIL', carrier: 'PABV' }
+  ];
+
+  for (const pattern of prefixPatterns) {
+    if (cleanBL.startsWith(pattern.prefix)) {
+      return OCEAN_CARRIERS.find(c => c.scacCode === pattern.carrier) || null;
     }
   }
 
@@ -159,21 +183,34 @@ export function generateTrackingUrl(blNumber: string): string | null {
     return null;
   }
 
-  // For most carriers, we'll use their general tracking page
-  // Some carriers have specific URL patterns for direct linking
+  const cleanBL = blNumber.trim().replace(/[-\s]/g, '');
+
+  // Generate carrier-specific tracking URLs
   switch (carrier.scacCode) {
     case 'MAEU':
-      return `${carrier.trackingUrl}?tracking=${blNumber}`;
+      return `https://www.maersk.com/tracking/${cleanBL}`;
     case 'MSCU':
-      return `${carrier.trackingUrl}?trackingNumber=${blNumber}`;
+      return `https://www.msc.com/track-a-shipment?agencyPath=msc&reference=${cleanBL}`;
     case 'CMAU':
-      return `${carrier.trackingUrl}?trackingNumber=${blNumber}`;
-    case 'GENERIC':
-      return `${carrier.trackingUrl}?number=${blNumber}`;
-    case 'MIXED':
-      return `${carrier.trackingUrl}?container=${blNumber}`;
-    case 'FORWARDER':
-      return `${carrier.trackingUrl}?number=${blNumber}`;
+      return `https://www.cma-cgm.com/ebusiness/tracking/search?reference=${cleanBL}`;
+    case 'COSU':
+      return `https://elines.coscoshipping.com/ebusiness/cargotracking/cargotracking.do?paramValue=${cleanBL}`;
+    case 'OOLU':
+      return `https://www.oocl.com/eng/ourservices/eservices/cargotracking/pages/cargotracking.aspx?BLN=${cleanBL}`;
+    case 'EGLV':
+      return `https://www.evergreen-line.com/emodal/stTrace/stTrace.do?param1=${cleanBL}`;
+    case 'ONEY':
+      return `https://ecomm.one-line.com/one-ecom/manage-shipment/track-trace/${cleanBL}`;
+    case 'YMLU':
+      return `https://www.yangming.com/e-service/Track_Trace/track_trace_cargo_tracking.aspx?BLNo=${cleanBL}`;
+    case 'HLCU':
+      return `https://www.hapag-lloyd.com/en/online-business/track/track-by-container.html?container=${cleanBL}`;
+    case 'HDMU':
+      return `https://www.hmm21.com/cms/business/ebiz/trackTrace/trackTrace/index.jsp?ref_no=${cleanBL}`;
+    case 'ZIMU':
+      return `https://www.zim.com/tools/track-a-shipment?reference=${cleanBL}`;
+    case 'PABV':
+      return `https://www.pilship.com/en--/120.html?reference=${cleanBL}`;
     default:
       return carrier.trackingUrl;
   }
@@ -188,13 +225,33 @@ export function generateContainerTrackingUrl(containerNumber: string): string | 
     return null;
   }
 
+  const cleanContainer = containerNumber.trim().replace(/[-\s]/g, '');
+
   switch (carrier.scacCode) {
     case 'MAEU':
-      return `${carrier.trackingUrl}?tracking=${containerNumber}`;
+      return `https://www.maersk.com/tracking/${cleanContainer}`;
     case 'MSCU':
-      return `${carrier.trackingUrl}?trackingNumber=${containerNumber}`;
+      return `https://www.msc.com/track-a-shipment?agencyPath=msc&reference=${cleanContainer}`;
     case 'CMAU':
-      return `${carrier.trackingUrl}?trackingNumber=${containerNumber}`;
+      return `https://www.cma-cgm.com/ebusiness/tracking/search?reference=${cleanContainer}`;
+    case 'COSU':
+      return `https://elines.coscoshipping.com/ebusiness/cargotracking/cargotracking.do?paramValue=${cleanContainer}`;
+    case 'OOLU':
+      return `https://www.oocl.com/eng/ourservices/eservices/cargotracking/pages/cargotracking.aspx?BLN=${cleanContainer}`;
+    case 'EGLV':
+      return `https://www.evergreen-line.com/emodal/stTrace/stTrace.do?param1=${cleanContainer}`;
+    case 'ONEY':
+      return `https://ecomm.one-line.com/one-ecom/manage-shipment/track-trace/${cleanContainer}`;
+    case 'YMLU':
+      return `https://www.yangming.com/e-service/Track_Trace/track_trace_cargo_tracking.aspx?BLNo=${cleanContainer}`;
+    case 'HLCU':
+      return `https://www.hapag-lloyd.com/en/online-business/track/track-by-container.html?container=${cleanContainer}`;
+    case 'HDMU':
+      return `https://www.hmm21.com/cms/business/ebiz/trackTrace/trackTrace/index.jsp?ref_no=${cleanContainer}`;
+    case 'ZIMU':
+      return `https://www.zim.com/tools/track-a-shipment?reference=${cleanContainer}`;
+    case 'PABV':
+      return `https://www.pilship.com/en--/120.html?reference=${cleanContainer}`;
     default:
       return carrier.trackingUrl;
   }
