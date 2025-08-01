@@ -51,6 +51,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
   const queryClient = useQueryClient();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
+    console.log('Files dropped:', acceptedFiles.map(f => ({ name: f.name, size: f.size, type: f.type })));
     const filesWithType: FileWithType[] = acceptedFiles.map(file => ({
       ...file,
       documentType: "", // Will be set by user
@@ -257,7 +258,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
                             </span>
                             <span className="text-blue-800 font-medium">{file.name}</span>
                             <span className="text-blue-600">
-                              ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                              ({file.size && !isNaN(file.size) ? (file.size / 1024 / 1024).toFixed(1) : '0.0'} MB)
                             </span>
                           </div>
                         ))}
@@ -279,7 +280,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
                                 <div className="flex-1">
                                   <p className="text-base font-semibold text-gray-900 mb-1">{file.name}</p>
                                   <p className="text-sm text-gray-600">
-                                    Size: {(file.size / 1024 / 1024).toFixed(1)} MB
+                                    Size: {file.size && !isNaN(file.size) ? (file.size / 1024 / 1024).toFixed(1) : '0.0'} MB
                                   </p>
                                 </div>
                                 <Button
