@@ -34,7 +34,7 @@ export const OCEAN_CARRIERS: CarrierInfo[] = [
   {
     name: "COSCO Shipping Lines",
     scacCode: "COSU",
-    trackingUrl: "https://elines.coscoshipping.com/ebusiness/cargotracking",
+    trackingUrl: "https://elines.coscoshipping.com/ebusiness/cargoTracking/",
     blPattern: /^(COSU|COSCO|CSCL|LLL)\w{7,15}$/,
     containerPrefixes: ["COSU", "COCU", "CBHU", "CJLU"]
   },
@@ -174,7 +174,7 @@ export function generateTrackingUrl(blNumber: string): string | null {
     case 'CMAU':
       return `https://www.cma-cgm.com/ebusiness/tracking/search?reference=${cleanBL}`;
     case 'COSU':
-      return `https://elines.coscoshipping.com/ebusiness/cargotracking/cargotracking.do?paramValue=${cleanBL}`;
+      return `https://elines.coscoshipping.com/ebusiness/cargoTracking/`;
     case 'OOLU':
       return `https://www.oocl.com/eng/ourservices/eservices/cargotracking/pages/cargotracking.aspx?BLN=${cleanBL}`;
     case 'EGLV':
@@ -217,7 +217,7 @@ export function generateContainerTrackingUrl(containerNumber: string): string | 
         case 'CMAU':
           return `https://www.cma-cgm.com/ebusiness/tracking/search?reference=${cleanContainer}`;
         case 'COSU':
-          return `https://elines.coscoshipping.com/ebusiness/cargotracking/cargotracking.do?paramValue=${cleanContainer}`;
+          return `https://elines.coscoshipping.com/ebusiness/cargoTracking/`;
         case 'OOLU':
           return `https://www.oocl.com/eng/ourservices/eservices/cargotracking/pages/cargotracking.aspx?BLN=${cleanContainer}`;
         case 'EGLV':
