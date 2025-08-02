@@ -4425,7 +4425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ISF Filing Routes
-  app.get('/api/isf/filings', async (req: any, res) => {
+  app.get('/api/isf/filings', isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const filings = await storage.getIsfFilingsByUserId(userId);
@@ -4436,8 +4436,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get specific ISF filing with documents - duplicate endpoint for frontend compatibility
-  app.get('/api/isf/:id', async (req: any, res) => {
+  // Get specific ISF filing with documents
+  app.get('/api/isf/filings/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const filing = await storage.getIsfFilingById(parseInt(id));
@@ -4473,31 +4473,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/isf/filings/:id', async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const filing = await storage.getIsfFilingById(parseInt(id));
-      
-      if (!filing) {
-        return res.status(404).json({ message: "ISF filing not found" });
-      }
 
-      // Check if user owns this filing or is admin/agent
-      const userId = getUserId(req);
-      const user = await storage.getUser(userId);
-      if (filing.userId !== userId && !user?.isAdmin && !user?.isAgent) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      res.json(filing);
-    } catch (error) {
-      console.error("Error fetching ISF filing:", error);
-      res.status(500).json({ message: "Failed to fetch ISF filing" });
-    }
-  });
 
   // Update ISF filing
-  app.put('/api/isf/filings/:id', async (req: any, res) => {
+  app.put('/api/isf/filings/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const userId = getUserId(req);
@@ -4547,7 +4526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Submit ISF filing for processing
-  app.post('/api/isf/filings/:id/submit', async (req: any, res) => {
+  app.post('/api/isf/filings/:id/submit', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const userId = getUserId(req);
