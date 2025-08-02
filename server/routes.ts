@@ -122,7 +122,7 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
           // ISF-specific fields from Excel
           'billOfLading', 'vesselName', 'containerNumbers', 'importerName', 
           'importerAddress', 'htsusNumber', 'commodityDescription',
-          'portOfEntry', 'foreignPortOfLading', 'scacCode', 'amsNumber',
+          'portOfEntry', 'foreignPortOfLading', 'scacCode', 'mblScacCode', 'hblScacCode', 'amsNumber',
           'containerStuffingLocation', 'consolidatorInformation'
         ];
         const hasValidData = meaningfulFields.some(field => data[field] && data[field] !== null);
@@ -4629,6 +4629,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   "placeOfReceipt": "place of receipt",
   "placeOfDelivery": "place of delivery",
   "scacCode": "SCAC code (4-letter carrier code)",
+  "mblScacCode": "Master Bill of Lading SCAC code",
+  "hblScacCode": "House Bill of Lading SCAC code", 
   "amsNumber": "AMS number/filing number",
   "containerStuffingLocation": "container stuffing location",
   "consolidatorInformation": "consolidator company details"
@@ -4730,6 +4732,9 @@ ${excelText}`;
                   estimatedDepartureDate: findAdjacentData(flatData, ['etd', 'estimated departure', 'departure date', 'sailing date']),
                   scacCode: findAdjacentData(flatData, ['scac', 'scac code', 'carrier code', 'steamship line']) ||
                            findExcelData(flatData, ['COSU', 'OOLU', 'MSCU', 'HLCU', 'EGLV', 'KMTU']),
+                  mblScacCode: findAdjacentData(flatData, ['mbl scac', 'master bill scac', 'ocean carrier scac', 'vessel scac']) ||
+                              findExcelData(flatData, ['COSU', 'OOLU', 'MSCU', 'HLCU', 'EGLV', 'KMTU']),
+                  hblScacCode: findAdjacentData(flatData, ['hbl scac', 'house bill scac', 'forwarder scac', 'consolidator scac']),
                   amsNumber: findAdjacentData(flatData, ['ams', 'ams number', 'ams no', 'filing number']),
                   containerStuffingLocation: findAdjacentData(flatData, ['stuffing location', 'container stuffing', 'stuffing', 'packing location']),
                   consolidatorInformation: findAdjacentData(flatData, ['consolidator', 'forwarder', 'freight forwarder', 'nvocc'])
