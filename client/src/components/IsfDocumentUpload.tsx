@@ -254,10 +254,16 @@ export default function IsfDocumentUpload({
         >
           <input {...getInputProps()} />
           {isScanning ? (
-            <>
-              <Clock className="w-8 h-8 mb-2 text-teal-500 animate-pulse mx-auto" />
-              <p className="text-sm text-teal-600">Processing documents...</p>
-            </>
+            <div className="flex flex-col items-center space-y-4">
+              {/* Gradient Wave Animation */}
+              <div className="relative w-32 h-16 overflow-hidden rounded-lg">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-400 via-teal-500 to-blue-500 wave-animation"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-green-300 via-teal-400 to-blue-400 wave-animation wave-delay-1"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-green-200 via-teal-300 to-blue-300 wave-animation wave-delay-2"></div>
+              </div>
+              <p className="text-sm text-teal-600 font-medium">Processing documents...</p>
+              <p className="text-xs text-gray-500">Extracting ISF data with AI</p>
+            </div>
           ) : uploadedFiles.length > 0 ? (
             <>
               <CheckCircle className="w-8 h-8 mb-2 text-green-500 mx-auto" />
