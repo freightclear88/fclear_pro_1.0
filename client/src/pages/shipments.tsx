@@ -117,22 +117,6 @@ export default function Shipments() {
           <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">Manage Shipments</h2>
           <p className="text-gray-600 text-sm lg:text-base">Track and manage your freight shipments</p>
         </div>
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 px-2 lg:pr-8 lg:mr-6">
-          <DocumentUpload 
-            trigger={
-              <Button className="btn-outline-primary w-full sm:w-auto">
-                <Plus className="w-4 h-4 mr-2" />
-                Upload Documents
-              </Button>
-            }
-          />
-          <CreateShipmentDialog trigger={
-            <Button className="btn-secondary w-full sm:w-auto lg:mr-4">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Shipment
-            </Button>
-          } />
-        </div>
       </div>
 
       {/* Search */}
