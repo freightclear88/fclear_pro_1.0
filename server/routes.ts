@@ -114,8 +114,17 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
         continue;
       } else {
         // Check if this is a proper shipment data structure with meaningful fields
-        const meaningfulFields = ['billOfLadingNumber', 'vesselAndVoyage', 'containerNumber', 
-                                 'shipperName', 'consigneeName', 'portOfLoading', 'portOfDischarge'];
+        // Include both Azure/PDF format and Excel/ISF format field names
+        const meaningfulFields = [
+          // Standard shipment fields
+          'billOfLadingNumber', 'vesselAndVoyage', 'containerNumber', 
+          'shipperName', 'consigneeName', 'portOfLoading', 'portOfDischarge',
+          // ISF-specific fields from Excel
+          'billOfLading', 'vesselName', 'containerNumbers', 'importerName', 
+          'importerAddress', 'htsusNumber', 'commodityDescription',
+          'portOfEntry', 'foreignPortOfLading', 'scacCode', 'amsNumber',
+          'containerStuffingLocation', 'consolidatorInformation'
+        ];
         const hasValidData = meaningfulFields.some(field => data[field] && data[field] !== null);
         
         if (hasValidData) {
@@ -4618,7 +4627,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   "totalValue": "total value",
   "currency": "currency",
   "placeOfReceipt": "place of receipt",
-  "placeOfDelivery": "place of delivery"
+  "placeOfDelivery": "place of delivery",
+  "scacCode": "SCAC code (4-letter carrier code)",
+  "amsNumber": "AMS number/filing number",
+  "containerStuffingLocation": "container stuffing location",
+  "consolidatorInformation": "consolidator company details"
 }
 
 Excel data:
@@ -4714,7 +4727,12 @@ ${excelText}`;
                   grossWeight: findAdjacentData(flatData, ['weight', 'gross weight', 'kg', 'lbs', 'gross', 'total weight']),
                   volume: findAdjacentData(flatData, ['volume', 'cbm', 'measurement', 'cubic', 'cubic meters']),
                   estimatedArrivalDate: findAdjacentData(flatData, ['eta', 'estimated arrival', 'arrival date', 'expected arrival']),
-                  estimatedDepartureDate: findAdjacentData(flatData, ['etd', 'estimated departure', 'departure date', 'sailing date'])
+                  estimatedDepartureDate: findAdjacentData(flatData, ['etd', 'estimated departure', 'departure date', 'sailing date']),
+                  scacCode: findAdjacentData(flatData, ['scac', 'scac code', 'carrier code', 'steamship line']) ||
+                           findExcelData(flatData, ['COSU', 'OOLU', 'MSCU', 'HLCU', 'EGLV', 'KMTU']),
+                  amsNumber: findAdjacentData(flatData, ['ams', 'ams number', 'ams no', 'filing number']),
+                  containerStuffingLocation: findAdjacentData(flatData, ['stuffing location', 'container stuffing', 'stuffing', 'packing location']),
+                  consolidatorInformation: findAdjacentData(flatData, ['consolidator', 'forwarder', 'freight forwarder', 'nvocc'])
                 };
                 
                 console.log(`Fallback extraction results before cleaning:`, extractedData);
