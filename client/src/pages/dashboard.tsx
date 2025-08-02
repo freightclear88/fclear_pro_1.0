@@ -163,22 +163,8 @@ export default function Dashboard() {
 
       </div>
 
-      {/* Document Upload and Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
-        <div className="lg:col-span-2">
-          {recentShipments.length > 0 ? (
-            <DocumentUpload shipmentId={recentShipments[0].id} />
-          ) : (
-            <Card>
-              <CardContent className="p-4 lg:p-6">
-                <p className="text-gray-500 text-center text-sm lg:text-base">
-                  Create your first shipment to start uploading documents
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
+      {/* Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
         <Card>
           <CardHeader className="p-4 lg:p-6">
             <CardTitle className="text-lg lg:text-xl">Recent Activity</CardTitle>
