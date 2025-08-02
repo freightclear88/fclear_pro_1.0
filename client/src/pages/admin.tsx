@@ -557,16 +557,15 @@ export default function Admin() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {user.powerOfAttorneyDocumentPath && (
-                      <Button
-                        size="sm"
-                        onClick={() => window.open(`/api/admin/users/${user.id}/poa/view`, '_blank')}
-                        className="btn-outline-accent"
-                      >
-                        <FileText className="h-4 w-4 mr-1" />
-                        View POA
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => window.open(`/api/admin/users/${user.id}/poa/view`, '_blank')}
+                      disabled={!user.powerOfAttorneyDocumentPath}
+                      className="btn-outline-accent"
+                    >
+                      <FileText className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
                     <Button
                       size="sm"
                       onClick={() => handleValidatePOA(user.id, 'validated')}
