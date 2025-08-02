@@ -560,7 +560,7 @@ export default function Admin() {
                     {user.powerOfAttorneyDocumentPath && (
                       <Button
                         size="sm"
-                        onClick={() => window.open(`/api/profile/poa/view?userId=${user.id}`, '_blank')}
+                        onClick={() => window.open(`/api/admin/users/${user.id}/poa/view`, '_blank')}
                         className="btn-outline-accent"
                       >
                         <FileText className="h-4 w-4 mr-1" />

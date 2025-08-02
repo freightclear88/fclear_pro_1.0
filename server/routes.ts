@@ -1879,6 +1879,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin POA validation routes
+  // Admin route to view user's POA document
+  app.get('/api/admin/users/:userId/poa/view', requireAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.powerOfAttorneyDocumentPath) {
+        return res.status(404).json({ message: "POA document not found" });
+      }
+      
+      if (!fs.existsSync(user.powerOfAttorneyDocumentPath)) {
+        return res.status(404).json({ message: "POA file not found on disk" });
+      }
+      
+      // Check file type and set appropriate headers with Chrome compatibility
+      const fileExtension = path.extname(user.powerOfAttorneyDocumentPath).toLowerCase();
+      if (fileExtension === '.html') {
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Disposition', `inline; filename="Power_of_Attorney_${user.firstName}_${user.lastName}.html"`);
+      } else if (fileExtension === '.pdf') {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="Power_of_Attorney_${user.firstName}_${user.lastName}.pdf"`);
+      } else {
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="Power_of_Attorney_${user.firstName}_${user.lastName}${fileExtension}"`);
+      }
+      
+      // Chrome compatibility headers
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      res.setHeader('Content-Security-Policy', "frame-ancestors 'self'");
+      
+      const fileStream = fs.createReadStream(user.powerOfAttorneyDocumentPath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error("Error viewing user POA:", error);
+      res.status(500).json({ message: "Failed to view POA" });
+    }
+  });
+
   app.patch('/api/admin/users/:userId/poa/validate', requireAdmin, async (req: any, res) => {
     try {
       const { userId } = req.params;

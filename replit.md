@@ -21,6 +21,7 @@ Key Features Requested:
 - Complete airline tracking system with AWB number detection and direct links to official airline cargo tracking pages (August 2025)
 - Updated free subscription limits to 3 shipments and 9 documents with contextual upgrade prompts to Starter Plan (August 2025)
 - Visual route map implementation on shipment details with FreightClear blue-green gradient, stars for origin/destination, transport mode indicators, and journey progress tracking (August 2025)
+- Enhanced admin POA management with document viewing capability before validation - admins can now view user POA documents in-browser before approving or rejecting (August 2025)
 
 ## System Architecture
 The application follows a modern full-stack architecture with clear separation between frontend and backend components, featuring enhanced multi-document processing capabilities for comprehensive shipment creation and comprehensive XML-based shipment data management.
