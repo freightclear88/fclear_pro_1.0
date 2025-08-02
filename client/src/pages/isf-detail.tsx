@@ -74,7 +74,7 @@ export default function IsfDetailPage() {
   const { toast } = useToast();
 
   const { data: isfDetail, isLoading } = useQuery<IsfDetail>({
-    queryKey: ['/api/isf', id],
+    queryKey: ['/api/isf/filings', id],
     enabled: !!id
   });
 
