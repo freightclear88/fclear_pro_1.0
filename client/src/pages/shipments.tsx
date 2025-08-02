@@ -111,11 +111,28 @@ export default function Shipments() {
         </CardContent>
       </Card>
 
-      {/* Header */}
+      {/* Header with Status Card */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start space-y-4 lg:space-y-0 pt-2 lg:pt-6 pb-4">
         <div className="px-2 lg:px-6 lg:ml-4">
           <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">Manage Shipments</h2>
           <p className="text-gray-600 text-sm lg:text-base">Track and manage your freight shipments</p>
+        </div>
+        <div className="px-2 lg:pr-8 lg:mr-6">
+          <Card className="gradient-card hover-glow border-0">
+            <CardContent className="p-4 lg:p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Total Shipments</p>
+                  <p className="text-3xl font-bold text-freight-dark">
+                    {shipments.length}
+                  </p>
+                </div>
+                <div className="bg-teal/10 p-3 rounded-lg">
+                  <Ship className="w-6 h-6 text-teal" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
