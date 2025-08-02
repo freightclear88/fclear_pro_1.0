@@ -110,91 +110,6 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
-        <Card className="gradient-card hover-glow border-0">
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Active Shipments</p>
-                <p className="text-3xl font-bold text-freight-dark">
-                  {stats?.activeShipments || 0}
-                </p>
-              </div>
-              <div className="bg-teal/10 p-3 rounded-lg">
-                <Ship className="w-6 h-6 text-teal" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card hover-glow border-0">
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Documents</p>
-                <p className="text-3xl font-bold text-freight-dark">
-                  {stats?.pendingDocuments || 0}
-                </p>
-              </div>
-              <div className="bg-neon-green/10 p-3 rounded-lg">
-                <FileText className="w-6 h-6 text-neon-green" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card hover-glow border-0">
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Processed This Month</p>
-                <p className="text-3xl font-bold text-freight-dark">
-                  {stats?.processedThisMonth || 0}
-                </p>
-              </div>
-              <div className="bg-powder-blue/15 p-3 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-powder-blue" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-
-      </div>
-
-      {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
-        <Card>
-          <CardHeader className="p-4 lg:p-6">
-            <CardTitle className="text-lg lg:text-xl">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 lg:p-6">
-            {recentShipments.length > 0 ? (
-              <div className="space-y-4">
-                {recentShipments.map((shipment: Shipment) => (
-                  <div key={shipment.id} className="flex items-start space-x-3">
-                    <div className="bg-freight-green/10 p-2 rounded-full">
-                      <CheckCircle className="w-4 h-4 text-freight-green" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-freight-dark">
-                        Shipment created
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {shipment.shipmentId} - {new Date(shipment.createdAt!).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-4">No recent activity</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
       {/* How Multi-Document Processing Works */}
       <Card className="mb-6 lg:mb-8 border-gray-200">
         <CardHeader>
@@ -235,6 +150,70 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Stats Cards with Recent Activity */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
+        <Card className="gradient-card hover-glow border-0">
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Active Shipments</p>
+                <p className="text-3xl font-bold text-freight-dark">
+                  {stats?.activeShipments || 0}
+                </p>
+              </div>
+              <div className="bg-teal/10 p-3 rounded-lg">
+                <Ship className="w-6 h-6 text-teal" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="gradient-card hover-glow border-0">
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Documents</p>
+                <p className="text-3xl font-bold text-freight-dark">
+                  {stats?.pendingDocuments || 0}
+                </p>
+              </div>
+              <div className="bg-neon-green/10 p-3 rounded-lg">
+                <FileText className="w-6 h-6 text-neon-green" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="p-4 lg:p-6">
+            <CardTitle className="text-lg lg:text-xl">Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 lg:p-6">
+            {recentShipments.length > 0 ? (
+              <div className="space-y-4">
+                {recentShipments.slice(0, 2).map((shipment: Shipment) => (
+                  <div key={shipment.id} className="flex items-start space-x-3">
+                    <div className="bg-freight-green/10 p-2 rounded-full">
+                      <CheckCircle className="w-4 h-4 text-freight-green" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-freight-dark">
+                        Shipment created
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {shipment.shipmentId} - {new Date(shipment.createdAt!).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No recent activity</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Active Shipments */}
       <Card>
