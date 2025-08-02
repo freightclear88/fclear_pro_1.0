@@ -559,7 +559,24 @@ export default function Admin() {
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"
-                      onClick={() => window.open(`/api/admin/users/${user.id}/poa/view`, '_blank')}
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(`/api/admin/users/${user.id}/poa/view`, {
+                            credentials: 'include'
+                          });
+                          if (response.ok) {
+                            const blob = await response.blob();
+                            const url = URL.createObjectURL(blob);
+                            window.open(url, '_blank');
+                            // Clean up the object URL after a delay
+                            setTimeout(() => URL.revokeObjectURL(url), 1000);
+                          } else {
+                            console.error('Failed to fetch POA document');
+                          }
+                        } catch (error) {
+                          console.error('Error viewing POA:', error);
+                        }
+                      }}
                       disabled={!user.powerOfAttorneyDocumentPath}
                       className="btn-outline-accent"
                     >
