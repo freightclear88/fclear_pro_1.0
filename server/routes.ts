@@ -4393,6 +4393,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get specific ISF filing with documents - duplicate endpoint for frontend compatibility
+  app.get('/api/isf/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const filing = await storage.getIsfFilingById(parseInt(id));
+      
+      if (!filing) {
+        return res.status(404).json({ message: "ISF filing not found" });
+      }
+
+      // Check if user owns this filing or is admin/agent
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId);
+      if (filing.userId !== userId && !user?.isAdmin && !user?.isAgent) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Get associated documents
+      const documents = await storage.getDocumentsByIsfId(parseInt(id));
+      
+      // Return filing with documents
+      res.json({
+        ...filing,
+        documents: documents.map(doc => ({
+          id: doc.id,
+          fileName: doc.fileName,
+          fileSize: doc.fileSize,
+          uploadDate: doc.uploadDate,
+          documentType: doc.documentType || 'Unknown'
+        }))
+      });
+    } catch (error) {
+      console.error("Error fetching ISF filing:", error);
+      res.status(500).json({ message: "Failed to fetch ISF filing" });
+    }
+  });
+
   app.get('/api/isf/filings/:id', async (req: any, res) => {
     try {
       const { id } = req.params;

@@ -1,818 +1,412 @@
-import { useState } from "react";
-import { useRoute } from "wouter";
+import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Copy, 
-  ArrowLeft, 
   FileText, 
-  Building2, 
-  Users, 
-  Globe, 
-  Package, 
   Ship, 
-  CreditCard,
-  Calendar,
+  Copy, 
+  Download, 
+  CreditCard, 
+  CheckCircle, 
+  Clock, 
+  AlertCircle,
+  ArrowLeft,
+  Building,
   MapPin,
-  Phone,
-  Mail,
-  Hash,
-  DollarSign
+  Package,
+  Truck
 } from "lucide-react";
-import { Link } from "wouter";
-import type { IsfFiling } from "@shared/schema";
 
-export default function IsfDetail() {
-  const [, params] = useRoute("/isf/detail/:id");
+interface IsfDetail {
+  id: number;
+  isfNumber: string;
+  status: string;
+  filingDate: string;
+  importerName: string;
+  importerAddress: string;
+  importerCity?: string;
+  importerState?: string;
+  importerZip?: string;
+  importerCountry: string;
+  consigneeName: string;
+  consigneeAddress: string;
+  consigneeCity?: string;
+  consigneeState?: string;
+  consigneeZip?: string;
+  consigneeCountry: string;
+  vesselName?: string;
+  voyageNumber?: string;
+  billOfLading?: string;
+  containerNumbers?: string;
+  portOfEntry: string;
+  estimatedArrivalDate?: string;
+  mblScacCode?: string;
+  hblScacCode?: string;
+  amsNumber?: string;
+  containerStuffingLocation?: string;
+  consolidatorStufferInfo?: string;
+  manufacturerInformation?: string;
+  sellerInformation?: string;
+  buyerInformation?: string;
+  countryOfOrigin?: string;
+  htsusNumber?: string;
+  commodityDescription?: string;
+  invoiceNumber?: string;
+  invoiceValue?: string;
+  currency?: string;
+  filingFee: number;
+  paymentStatus: string;
+  documents?: Array<{
+    id: number;
+    fileName: string;
+    fileSize: number;
+    uploadDate: string;
+    documentType: string;
+  }>;
+}
+
+export default function IsfDetailPage() {
+  const { id } = useParams();
   const { toast } = useToast();
 
-  const { data: isfFiling, isLoading } = useQuery<IsfFiling>({
-    queryKey: [`/api/isf/filings/${params?.id}`],
-    enabled: !!params?.id,
+  const { data: isfDetail, isLoading } = useQuery<IsfDetail>({
+    queryKey: ['/api/isf', id],
+    enabled: !!id
   });
 
-  const handleCopyField = async (label: string, value: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      toast({
-        title: "Copied",
-        description: `${label} copied to clipboard`,
-      });
-    } catch (error) {
-      toast({
-        title: "Copy Failed",
-        description: `Failed to copy ${label}`,
-        variant: "destructive",
-      });
-    }
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied to clipboard",
+      description: `${label} copied successfully`,
+    });
   };
 
-  const handleCopyAllData = async () => {
-    if (!isfFiling) return;
-    
-    const formatDate = (dateString: string | null) => {
-      if (!dateString) return 'N/A';
-      return new Date(dateString).toLocaleDateString();
-    };
-
-    const formatValue = (value: any) => {
-      if (value === null || value === undefined) return 'N/A';
-      if (typeof value === 'string' && value.trim() === '') return 'N/A';
-      return value.toString();
-    };
-
-    const isfData = `
-ISF FILING DETAILS - ${isfFiling.isfNumber}
-=========================================
-
-FILING INFORMATION:
-- ISF Number: ${formatValue(isfFiling.isfNumber)}
-- Status: ${formatValue(isfFiling.status)}
-- Filing Date: ${formatDate(isfFiling.filingDate?.toString() || null)}
-
-IMPORTER INFORMATION:
-- Importer of Record: ${formatValue(isfFiling.importerOfRecord)}
-- Name: ${formatValue(isfFiling.importerName)}
-- Address: ${formatValue(isfFiling.importerAddress)}
-- City: ${formatValue(isfFiling.importerCity)}
-- State: ${formatValue(isfFiling.importerState)}
-- ZIP: ${formatValue(isfFiling.importerZip)}
-- Country: ${formatValue(isfFiling.importerCountry)}
-
-CONSIGNEE INFORMATION:
-- Consignee Number: ${formatValue(isfFiling.consigneeNumber)}
-- Name: ${formatValue(isfFiling.consigneeName)}
-- Address: ${formatValue(isfFiling.consigneeAddress)}
-- City: ${formatValue(isfFiling.consigneeCity)}
-- State: ${formatValue(isfFiling.consigneeState)}
-- ZIP: ${formatValue(isfFiling.consigneeZip)}
-- Country: ${formatValue(isfFiling.consigneeCountry)}
-
-ISF 10+2 DATA ELEMENTS:
-- Manufacturer Information: ${formatValue(isfFiling.manufacturerInformation)}
-- Ship-to Party Information: ${formatValue(isfFiling.shipToPartyInformation)}
-- Country of Origin: ${formatValue(isfFiling.countryOfOrigin)}
-- HTSUS Number: ${formatValue(isfFiling.htsusNumber)}
-- Commodity Description: ${formatValue(isfFiling.commodityDescription)}
-- Container Stuffing Location: ${formatValue(isfFiling.containerStuffingLocation)}
-- Consolidator Information: ${formatValue(isfFiling.consolidatorStufferInfo)}
-- Buyer Information: ${formatValue(isfFiling.buyerInformation)}
-- Seller Information: ${formatValue(isfFiling.sellerInformation)}
-
-BOOKING PARTY:
-- Name: ${formatValue(isfFiling.bookingPartyName)}
-- Address: ${formatValue(isfFiling.bookingPartyAddress)}
-- City: ${formatValue(isfFiling.bookingPartyCity)}
-- Country: ${formatValue(isfFiling.bookingPartyCountry)}
-
-SHIPMENT DETAILS:
-- Bill of Lading: ${formatValue(isfFiling.billOfLading)}
-- Vessel Name: ${formatValue(isfFiling.vesselName)}
-- Voyage Number: ${formatValue(isfFiling.voyageNumber)}
-- Container Numbers: ${formatValue(isfFiling.containerNumbers)}
-- MBL SCAC Code: ${formatValue(isfFiling.mblScacCode)}
-- HBL SCAC Code: ${formatValue(isfFiling.hblScacCode)}
-- AMS Number: ${formatValue(isfFiling.amsNumber)}
-- Estimated Arrival Date: ${formatDate(isfFiling.estimatedArrivalDate?.toString() || null)}
-- Port of Entry: ${formatValue(isfFiling.portOfEntry)}
-- Foreign Port of Unlading: ${formatValue(isfFiling.foreignPortOfUnlading)}
-
-COMMERCIAL INFORMATION:
-- Invoice Number: ${formatValue(isfFiling.invoiceNumber)}
-- Invoice Date: ${formatDate(isfFiling.invoiceDate?.toString() || null)}
-- Invoice Value: ${formatValue(isfFiling.invoiceValue)} ${formatValue(isfFiling.currency)}
-- Terms: ${formatValue(isfFiling.terms)}
-`;
-
-    try {
-      await navigator.clipboard.writeText(isfData.trim());
-      toast({
-        title: "Copied",
-        description: "All ISF filing data copied in readable format",
-      });
-    } catch (error) {
-      toast({
-        title: "Copy Failed",
-        description: "Failed to copy ISF filing data",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'submitted':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'paid':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'processed':
-        return 'bg-teal-100 text-teal-800 border-teal-200';
-      case 'rejected':
-        return 'bg-red-100 text-red-800 border-red-200';
       case 'draft':
+        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Draft</Badge>;
+      case 'submitted':
+        return <Badge variant="default"><FileText className="w-3 h-3 mr-1" />Submitted</Badge>;
+      case 'paid':
+        return <Badge variant="default"><CreditCard className="w-3 h-3 mr-1" />Paid</Badge>;
+      case 'processed':
+        return <Badge className="bg-blue-500"><Ship className="w-3 h-3 mr-1" />Processing</Badge>;
+      case 'completed':
+        return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Completed</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive"><AlertCircle className="w-3 h-3 mr-1" />Rejected</Badge>;
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return <Badge variant="outline">{status}</Badge>;
     }
+  };
+
+  const CopyField = ({ label, value, icon }: { label: string; value?: string; icon?: React.ReactNode }) => {
+    if (!value) return null;
+    
+    return (
+      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+        <div className="flex items-center space-x-2 flex-1">
+          {icon && <div className="text-gray-500">{icon}</div>}
+          <div className="flex-1">
+            <div className="text-xs text-gray-500 font-medium">{label}</div>
+            <div className="text-sm text-gray-900 font-mono break-all">{value}</div>
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => copyToClipboard(value, label)}
+          className="h-8 w-8 p-0 hover:bg-gray-200"
+        >
+          <Copy className="w-3 h-3" />
+        </Button>
+      </div>
+    );
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-teal"></div>
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+        </div>
       </div>
     );
   }
 
-  if (!isfFiling) {
+  if (!isfDetail) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-600">ISF Filing Not Found</h2>
-          <p className="text-gray-500 mt-2">The requested ISF filing could not be found.</p>
-        </div>
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">ISF Filing Not Found</h2>
+            <p className="text-gray-600 mb-4">The requested ISF filing could not be found.</p>
+            <Link href="/fast-isf">
+              <Button>Back to ISF Filings</Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Link href="/fastisf">
-            <Button variant="outline" size="sm">
+          <Link href="/fast-isf">
+            <Button variant="ghost" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to ISF
+              Back
             </Button>
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">ISF Filing Details</h1>
-            <p className="text-gray-500">ISF Number: {isfFiling.isfNumber}</p>
+            <p className="text-gray-600">Filing #{isfDetail.isfNumber}</p>
           </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <Badge className={getStatusColor(isfFiling.status)}>
-            {isfFiling.status.charAt(0).toUpperCase() + isfFiling.status.slice(1)}
-          </Badge>
-          <Button onClick={handleCopyAllData} variant="outline">
-            <Copy className="w-4 h-4 mr-2" />
-            Copy All Data
-          </Button>
+        <div className="flex items-center space-x-2">
+          {getStatusBadge(isfDetail.status)}
+          {isfDetail.status === 'draft' && (
+            <Button>
+              <CreditCard className="w-4 h-4 mr-2" />
+              Pay Filing Fee (${isfDetail.filingFee})
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* ISF Filing Overview */}
-      <Card className="bg-gradient-to-r from-teal-50 to-cyan-50 border-teal-200">
-        <CardHeader>
-          <CardTitle className="flex items-center text-teal-700">
-            <FileText className="w-5 h-5 mr-2" />
-            ISF Filing Overview
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">ISF Number</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleCopyField("ISF Number", isfFiling.isfNumber)}
-                className="h-6 w-6 p-0"
-              >
-                <Copy className="w-3 h-3" />
-              </Button>
-            </div>
-            <p className="text-sm text-gray-900 font-mono">{isfFiling.isfNumber}</p>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Filing Date</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleCopyField("Filing Date", isfFiling.filingDate?.toString() || 'N/A')}
-                className="h-6 w-6 p-0"
-              >
-                <Copy className="w-3 h-3" />
-              </Button>
-            </div>
-            <p className="text-sm text-gray-900">
-              {isfFiling.filingDate ? new Date(isfFiling.filingDate).toLocaleDateString() : 'Not filed yet'}
-            </p>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Port of Entry</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleCopyField("Port of Entry", isfFiling.portOfEntry || 'N/A')}
-                className="h-6 w-6 p-0"
-              >
-                <Copy className="w-3 h-3" />
-              </Button>
-            </div>
-            <p className="text-sm text-gray-900">{isfFiling.portOfEntry || 'N/A'}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Importer Information */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <CardHeader>
-          <CardTitle className="flex items-center text-blue-700">
-            <Building2 className="w-5 h-5 mr-2" />
-            Importer Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Importer of Record</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Importer of Record", isfFiling.importerOfRecord)}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-900 font-mono">{isfFiling.importerOfRecord}</p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Company Name</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Importer Name", isfFiling.importerName)}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-900">{isfFiling.importerName}</p>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Address</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Importer Address", `${isfFiling.importerAddress}, ${isfFiling.importerCity}, ${isfFiling.importerState} ${isfFiling.importerZip}, ${isfFiling.importerCountry}`)}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <div className="text-sm text-gray-900">
-                <p>{isfFiling.importerAddress}</p>
-                <p>{isfFiling.importerCity}, {isfFiling.importerState} {isfFiling.importerZip}</p>
-                <p>{isfFiling.importerCountry}</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Consignee Information */}
-      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
-        <CardHeader>
-          <CardTitle className="flex items-center text-green-700">
-            <Users className="w-5 h-5 mr-2" />
-            Consignee Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Consignee Number</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Consignee Number", isfFiling.consigneeNumber)}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-900 font-mono">{isfFiling.consigneeNumber}</p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Company Name</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Consignee Name", isfFiling.consigneeName)}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-900">{isfFiling.consigneeName}</p>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Address</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Consignee Address", `${isfFiling.consigneeAddress}, ${isfFiling.consigneeCity}, ${isfFiling.consigneeState} ${isfFiling.consigneeZip}, ${isfFiling.consigneeCountry}`)}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <div className="text-sm text-gray-900">
-                <p>{isfFiling.consigneeAddress}</p>
-                <p>{isfFiling.consigneeCity}, {isfFiling.consigneeState} {isfFiling.consigneeZip}</p>
-                <p>{isfFiling.consigneeCountry}</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ISF 10+2 Data Elements */}
-      <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
-        <CardHeader>
-          <CardTitle className="flex items-center text-purple-700">
-            <Package className="w-5 h-5 mr-2" />
-            ISF 10+2 Required Data Elements
-          </CardTitle>
-          <CardDescription>
-            The 10+2 security filing data elements required by CBP
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Row 1: Manufacturer, Ship-to Party, Country of Origin */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Manufacturer Information</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Manufacturer Information", isfFiling.manufacturerInformation || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <div className="text-xs text-gray-900 whitespace-pre-line bg-gray-50 p-2 rounded border">
-                {isfFiling.manufacturerInformation || 'N/A'}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Ship-to Party Information</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Ship-to Party Information", isfFiling.shipToPartyInformation || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <div className="text-xs text-gray-900 whitespace-pre-line bg-gray-50 p-2 rounded border">
-                {isfFiling.shipToPartyInformation || 'N/A'}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Country of Origin</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Country of Origin", isfFiling.countryOfOrigin || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-900">{isfFiling.countryOfOrigin || 'N/A'}</p>
-            </div>
-          </div>
-
-          {/* Row 2: HTSUS, Container Stuffing, Consolidator */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">HTSUS Number</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("HTSUS Number", isfFiling.htsusNumber || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-900 font-mono">{isfFiling.htsusNumber || 'N/A'}</p>
-              {isfFiling.commodityDescription && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-gray-600">Commodity Description</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCopyField("Commodity Description", isfFiling.commodityDescription || 'N/A')}
-                      className="h-4 w-4 p-0"
-                    >
-                      <Copy className="w-2 h-2" />
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-800">{isfFiling.commodityDescription}</p>
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Container Stuffing Location</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Container Stuffing Location", isfFiling.containerStuffingLocation || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <div className="text-xs text-gray-900 whitespace-pre-line bg-gray-50 p-2 rounded border">
-                {isfFiling.containerStuffingLocation || 'N/A'}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Consolidator Information</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Consolidator Information", isfFiling.consolidatorStufferInfo || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <div className="text-xs text-gray-900 whitespace-pre-line bg-gray-50 p-2 rounded border">
-                {isfFiling.consolidatorStufferInfo || 'N/A'}
-              </div>
-            </div>
-          </div>
-
-          {/* Row 3: Buyer and Seller Information */}
-          {(isfFiling.buyerInformation || isfFiling.sellerInformation) && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {isfFiling.buyerInformation && (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          
+          {/* Party Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Building className="w-5 h-5 mr-2" />
+                Party Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-3">Importer of Record</h4>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Buyer Information</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCopyField("Buyer Information", isfFiling.buyerInformation || 'N/A')}
-                      className="h-6 w-6 p-0"
-                    >
-                      <Copy className="w-3 h-3" />
-                    </Button>
-                  </div>
-                  <div className="text-xs text-gray-900 whitespace-pre-line bg-gray-50 p-2 rounded border">
-                    {isfFiling.buyerInformation}
-                  </div>
+                  <CopyField label="Company Name" value={isfDetail.importerName} />
+                  <CopyField label="Address" value={isfDetail.importerAddress} />
+                  {isfDetail.importerCity && (
+                    <CopyField 
+                      label="City, State ZIP" 
+                      value={`${isfDetail.importerCity}${isfDetail.importerState ? `, ${isfDetail.importerState}` : ''}${isfDetail.importerZip ? ` ${isfDetail.importerZip}` : ''}`} 
+                    />
+                  )}
+                  <CopyField label="Country" value={isfDetail.importerCountry} />
                 </div>
-              )}
-              {isfFiling.sellerInformation && (
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-3">Consignee</h4>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Seller Information</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCopyField("Seller Information", isfFiling.sellerInformation || 'N/A')}
-                      className="h-6 w-6 p-0"
-                    >
-                      <Copy className="w-3 h-3" />
-                    </Button>
-                  </div>
-                  <div className="text-xs text-gray-900 whitespace-pre-line bg-gray-50 p-2 rounded border">
-                    {isfFiling.sellerInformation}
-                  </div>
+                  <CopyField label="Company Name" value={isfDetail.consigneeName} />
+                  <CopyField label="Address" value={isfDetail.consigneeAddress} />
+                  {isfDetail.consigneeCity && (
+                    <CopyField 
+                      label="City, State ZIP" 
+                      value={`${isfDetail.consigneeCity}${isfDetail.consigneeState ? `, ${isfDetail.consigneeState}` : ''}${isfDetail.consigneeZip ? ` ${isfDetail.consigneeZip}` : ''}`} 
+                    />
+                  )}
+                  <CopyField label="Country" value={isfDetail.consigneeCountry} />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Shipment Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Ship className="w-5 h-5 mr-2" />
+                Shipment Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <CopyField label="Bill of Lading" value={isfDetail.billOfLading} />
+                  <CopyField label="Vessel Name" value={isfDetail.vesselName} />
+                  <CopyField label="Voyage Number" value={isfDetail.voyageNumber} />
+                  <CopyField label="Container Numbers" value={isfDetail.containerNumbers} />
+                </div>
+                <div className="space-y-2">
+                  <CopyField label="Port of Entry" value={isfDetail.portOfEntry} icon={<MapPin className="w-4 h-4" />} />
+                  <CopyField label="MBL SCAC Code" value={isfDetail.mblScacCode} />
+                  <CopyField label="HBL SCAC Code" value={isfDetail.hblScacCode} />
+                  <CopyField label="AMS Number" value={isfDetail.amsNumber} />
+                </div>
+              </div>
+              
+              {isfDetail.estimatedArrivalDate && (
+                <CopyField 
+                  label="Estimated Arrival Date" 
+                  value={new Date(isfDetail.estimatedArrivalDate).toLocaleDateString()} 
+                />
               )}
-            </div>
+            </CardContent>
+          </Card>
+
+          {/* Commodity Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Package className="w-5 h-5 mr-2" />
+                Commodity Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <CopyField label="Country of Origin" value={isfDetail.countryOfOrigin} />
+              <CopyField label="HTSUS Number" value={isfDetail.htsusNumber} />
+              <CopyField label="Commodity Description" value={isfDetail.commodityDescription} />
+            </CardContent>
+          </Card>
+
+          {/* Additional Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Truck className="w-5 h-5 mr-2" />
+                Additional Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <CopyField label="Container Stuffing Location" value={isfDetail.containerStuffingLocation} />
+              <CopyField label="Consolidator Information" value={isfDetail.consolidatorStufferInfo} />
+              <CopyField label="Manufacturer Information" value={isfDetail.manufacturerInformation} />
+              <CopyField label="Seller Information" value={isfDetail.sellerInformation} />
+              <CopyField label="Buyer Information" value={isfDetail.buyerInformation} />
+            </CardContent>
+          </Card>
+
+          {/* Commercial Information */}
+          {(isfDetail.invoiceNumber || isfDetail.invoiceValue) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Commercial Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <CopyField label="Invoice Number" value={isfDetail.invoiceNumber} />
+                {isfDetail.invoiceValue && (
+                  <CopyField 
+                    label="Invoice Value" 
+                    value={`${isfDetail.currency || 'USD'} ${isfDetail.invoiceValue}`} 
+                  />
+                )}
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Booking Party Information */}
-      <Card className="bg-gradient-to-r from-orange-50 to-red-50 border-orange-200">
-        <CardHeader>
-          <CardTitle className="flex items-center text-orange-700">
-            <Building2 className="w-5 h-5 mr-2" />
-            Booking Party Information (+2 Element)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Filing Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Filing Status</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Party Name</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Booking Party Name", isfFiling.bookingPartyName || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
+                <span className="text-sm text-gray-600">Status</span>
+                {getStatusBadge(isfDetail.status)}
               </div>
-              <p className="text-sm text-gray-900">{isfFiling.bookingPartyName || 'N/A'}</p>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="space-y-2">
+              
+              {isfDetail.filingDate && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Filed Date</span>
+                  <span className="text-sm font-medium">
+                    {new Date(isfDetail.filingDate).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+              
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Address</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Booking Party Address", `${isfFiling.bookingPartyAddress}, ${isfFiling.bookingPartyCity}, ${isfFiling.bookingPartyCountry}`)}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
+                <span className="text-sm text-gray-600">Filing Fee</span>
+                <span className="text-sm font-medium">${isfDetail.filingFee}</span>
               </div>
-              <div className="text-sm text-gray-900">
-                <p>{isfFiling.bookingPartyAddress || 'N/A'}</p>
-                <p>{isfFiling.bookingPartyCity}, {isfFiling.bookingPartyCountry}</p>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Payment Status</span>
+                <Badge variant={isfDetail.paymentStatus === 'paid' ? 'default' : 'secondary'}>
+                  {isfDetail.paymentStatus}
+                </Badge>
               </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {/* Shipment Details */}
-      <Card className="bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200">
-        <CardHeader>
-          <CardTitle className="flex items-center text-cyan-700">
-            <Ship className="w-5 h-5 mr-2" />
-            Shipment Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Bill of Lading</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Bill of Lading", isfFiling.billOfLading || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
+          {/* Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Button variant="outline" className="w-full">
+                <Download className="w-4 h-4 mr-2" />
+                Download PDF
+              </Button>
+              
+              {isfDetail.status === 'draft' && (
+                <Button className="w-full">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Pay Filing Fee
                 </Button>
-              </div>
-              <p className="text-sm text-gray-900 font-mono">{isfFiling.billOfLading || 'N/A'}</p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Vessel Name</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Vessel Name", isfFiling.vesselName || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-900">{isfFiling.vesselName || 'N/A'}</p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Voyage Number</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Voyage Number", isfFiling.voyageNumber || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-900">{isfFiling.voyageNumber || 'N/A'}</p>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Container Numbers</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Container Numbers", isfFiling.containerNumbers || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-900 font-mono">{isfFiling.containerNumbers || 'N/A'}</p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">MBL SCAC Code</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("MBL SCAC Code", isfFiling.mblScacCode || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-900 font-mono">{isfFiling.mblScacCode || 'N/A'}</p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">HBL SCAC Code</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("HBL SCAC Code", isfFiling.hblScacCode || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-900 font-mono">{isfFiling.hblScacCode || 'N/A'}</p>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">AMS Number</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("AMS Number", isfFiling.amsNumber || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-900 font-mono">{isfFiling.amsNumber || 'N/A'}</p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Estimated Arrival Date</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Estimated Arrival Date", isfFiling.estimatedArrivalDate?.toString() || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-900">
-                {isfFiling.estimatedArrivalDate ? new Date(isfFiling.estimatedArrivalDate).toLocaleDateString() : 'N/A'}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Foreign Port of Unlading</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopyField("Foreign Port of Unlading", isfFiling.foreignPortOfUnlading || 'N/A')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-900">{isfFiling.foreignPortOfUnlading || 'N/A'}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Commercial Information */}
-      {(isfFiling.invoiceNumber || isfFiling.invoiceValue || isfFiling.terms) && (
-        <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200">
-          <CardHeader>
-            <CardTitle className="flex items-center text-yellow-700">
-              <DollarSign className="w-5 h-5 mr-2" />
-              Commercial Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {isfFiling.invoiceNumber && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Invoice Number</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleCopyField("Invoice Number", isfFiling.invoiceNumber || 'N/A')}
-                    className="h-6 w-6 p-0"
+          {/* Documents */}
+          {isfDetail.documents && isfDetail.documents.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Submitted Documents</CardTitle>
+                <CardDescription>
+                  {isfDetail.documents.length} document(s) uploaded
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {isfDetail.documents.map((doc) => (
+                  <div 
+                    key={doc.id} 
+                    className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                   >
-                    <Copy className="w-3 h-3" />
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-900 font-mono">{isfFiling.invoiceNumber}</p>
-              </div>
-            )}
-            {isfFiling.invoiceValue && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Invoice Value</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleCopyField("Invoice Value", `${isfFiling.invoiceValue} ${isfFiling.currency}`)}
-                    className="h-6 w-6 p-0"
-                  >
-                    <Copy className="w-3 h-3" />
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-900">{isfFiling.invoiceValue} {isfFiling.currency}</p>
-              </div>
-            )}
-            {isfFiling.terms && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Terms</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleCopyField("Terms", isfFiling.terms || 'N/A')}
-                    className="h-6 w-6 p-0"
-                  >
-                    <Copy className="w-3 h-3" />
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-900">{isfFiling.terms}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                    <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {doc.fileName}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {doc.documentType} • {(doc.fileSize / 1024).toFixed(1)} KB
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(doc.uploadDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm">
+                      <Download className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

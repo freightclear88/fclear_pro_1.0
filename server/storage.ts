@@ -704,6 +704,10 @@ export class DatabaseStorage implements IStorage {
     return `${prefix}${nextNumber}`;
   }
 
+  async getDocumentsByIsfId(isfId: number): Promise<Document[]> {
+    return await db.select().from(documents).where(eq(documents.isfFilingId, isfId));
+  }
+
   // Agent assignment operations
   async assignAgentToUser(assignment: InsertAgentAssignment): Promise<AgentAssignment> {
     // First deactivate any existing assignments for this user
