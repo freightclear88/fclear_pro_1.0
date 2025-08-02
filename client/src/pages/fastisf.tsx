@@ -242,6 +242,8 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           amsNumber: 'amsNumber',
           containerStuffingLocation: 'containerStuffingLocation',
           consolidatorStufferInfo: 'consolidatorStufferInfo',
+          consolidator: 'consolidator',
+          consolidatorInformation: 'consolidatorStufferInfo',
           // Enhanced party information fields
           importerName: 'importerName',
           importerAddress: 'importerAddress',

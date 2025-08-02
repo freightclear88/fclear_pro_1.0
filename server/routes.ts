@@ -123,7 +123,7 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
           'billOfLading', 'vesselName', 'containerNumbers', 'importerName', 
           'importerAddress', 'htsusNumber', 'commodityDescription',
           'portOfEntry', 'foreignPortOfLading', 'scacCode', 'mblScacCode', 'hblScacCode', 'amsNumber',
-          'containerStuffingLocation', 'consolidatorInformation'
+          'containerStuffingLocation', 'consolidatorInformation', 'consolidator'
         ];
         const hasValidData = meaningfulFields.some(field => data[field] && data[field] !== null);
         
@@ -4633,7 +4633,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   "hblScacCode": "House Bill of Lading SCAC code", 
   "amsNumber": "AMS number/filing number",
   "containerStuffingLocation": "container stuffing location",
-  "consolidatorInformation": "consolidator company details"
+  "consolidatorInformation": "consolidator company details",
+  "consolidator": "consolidator name/company"
 }
 
 Excel data:
@@ -4737,7 +4738,8 @@ ${excelText}`;
                   hblScacCode: findAdjacentData(flatData, ['hbl scac', 'house bill scac', 'forwarder scac', 'consolidator scac']),
                   amsNumber: findAdjacentData(flatData, ['ams', 'ams number', 'ams no', 'filing number']),
                   containerStuffingLocation: findAdjacentData(flatData, ['stuffing location', 'container stuffing', 'stuffing', 'packing location']),
-                  consolidatorInformation: findAdjacentData(flatData, ['consolidator', 'forwarder', 'freight forwarder', 'nvocc'])
+                  consolidatorInformation: findAdjacentData(flatData, ['consolidator', 'forwarder', 'freight forwarder', 'nvocc']),
+                  consolidator: findAdjacentData(flatData, ['consolidator name', 'consolidator', 'forwarder name', 'nvocc name'])
                 };
                 
                 console.log(`Fallback extraction results before cleaning:`, extractedData);
@@ -5585,7 +5587,7 @@ Look for Bill of Lading, Commercial Invoice, Packing List, or other shipping doc
     }
   });
 
-  app.post('/api/isf/create', requireSubscription, upload.single('isfDocument'), async (req: any, res) => {
+  app.post('/api/isf/create', requireSubscription, upload.array('isfDocuments', 10), async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const user = await storage.getUser(userId);
