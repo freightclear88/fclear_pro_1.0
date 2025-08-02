@@ -6632,6 +6632,131 @@ function generateIsfXml(formData: any, isfNumber: string): string {
     }
   });
 
+  // Zendesk Configuration Management
+  app.get('/api/admin/zendesk/config', requireAdmin, async (req: any, res) => {
+    try {
+      // Get current configuration (sanitized)
+      const config = {
+        subdomain: process.env.ZENDESK_SUBDOMAIN || 'wcscargo',
+        username: process.env.ZENDESK_USERNAME || '',
+        hasToken: !!process.env.ZENDESK_API_TOKEN,
+        defaultRequester: process.env.ZENDESK_DEFAULT_REQUESTER || 'noreply@freightclear.com',
+        defaultTags: (process.env.ZENDESK_DEFAULT_TAGS || 'freightclear,workflow').split(','),
+        defaultPriority: process.env.ZENDESK_DEFAULT_PRIORITY || 'normal',
+        defaultType: process.env.ZENDESK_DEFAULT_TYPE || 'question',
+        autoAssignAgent: process.env.ZENDESK_AUTO_ASSIGN_AGENT || 'none',
+        isConfigured: !!zendeskClient
+      };
+      
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching Zendesk config:", error);
+      res.status(500).json({ message: "Failed to fetch Zendesk configuration" });
+    }
+  });
+
+  app.post('/api/admin/zendesk/config', requireAdmin, async (req: any, res) => {
+    try {
+      const { 
+        subdomain, 
+        username, 
+        token, 
+        defaultRequester, 
+        defaultTags, 
+        defaultPriority, 
+        defaultType, 
+        autoAssignAgent 
+      } = req.body;
+
+      // Test the new configuration if credentials provided
+      if (username && token && subdomain) {
+        try {
+          const testClient = zendesk.createClient({
+            username: username,
+            token: token,
+            remoteUri: `https://${subdomain}.zendesk.com/api/v2`,
+          });
+
+          // Test connection
+          await new Promise((resolve, reject) => {
+            testClient.users.me((err: any, req: any, result: any) => {
+              if (err) reject(err);
+              else resolve(result);
+            });
+          });
+
+          // If test successful, update the global client
+          zendeskClient = testClient;
+          console.log('Zendesk configuration updated successfully');
+        } catch (testError) {
+          return res.status(400).json({ 
+            message: 'Invalid Zendesk credentials or configuration',
+            error: testError.message 
+          });
+        }
+      }
+
+      // Note: In production, these would be stored in a secure configuration system
+      const configUpdate = {
+        ZENDESK_SUBDOMAIN: subdomain,
+        ZENDESK_USERNAME: username,
+        ZENDESK_DEFAULT_REQUESTER: defaultRequester,
+        ZENDESK_DEFAULT_TAGS: Array.isArray(defaultTags) ? defaultTags.join(',') : defaultTags,
+        ZENDESK_DEFAULT_PRIORITY: defaultPriority,
+        ZENDESK_DEFAULT_TYPE: defaultType,
+        ZENDESK_AUTO_ASSIGN_AGENT: autoAssignAgent
+      };
+
+      res.json({ 
+        message: 'Zendesk configuration updated successfully',
+        configUpdate: Object.keys(configUpdate),
+        isConfigured: !!zendeskClient
+      });
+    } catch (error) {
+      console.error("Error updating Zendesk config:", error);
+      res.status(500).json({ message: "Failed to update Zendesk configuration" });
+    }
+  });
+
+  app.post('/api/admin/zendesk/test-connection', requireAdmin, async (req: any, res) => {
+    try {
+      const { subdomain, username, token } = req.body;
+      
+      if (!subdomain || !username || !token) {
+        return res.status(400).json({ message: 'Missing required credentials' });
+      }
+
+      const testClient = zendesk.createClient({
+        username: username,
+        token: token,
+        remoteUri: `https://${subdomain}.zendesk.com/api/v2`,
+      });
+
+      // Test connection
+      testClient.users.me((err: any, req: any, result: any) => {
+        if (err) {
+          return res.status(400).json({ 
+            message: 'Connection failed',
+            error: err.message,
+            connected: false
+          });
+        }
+        
+        res.json({ 
+          message: 'Connection successful',
+          user: result?.name || 'Unknown',
+          connected: true
+        });
+      });
+    } catch (error) {
+      console.error("Error testing Zendesk connection:", error);
+      res.status(500).json({ 
+        message: "Connection test failed",
+        connected: false 
+      });
+    }
+  });
+
   // Agent assignment routes
   app.get('/api/admin/agents', requireAdmin, async (req: any, res) => {
     try {

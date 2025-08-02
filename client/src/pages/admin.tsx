@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle, Receipt, ChevronDown, ChevronRight, ChevronLeft, Folder, CreditCard, Crown, Zap, Eye, Plus, ExternalLink } from "lucide-react";
+import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle, Receipt, ChevronDown, ChevronRight, ChevronLeft, Folder, CreditCard, Crown, Zap, Eye, Plus, ExternalLink, Settings, Loader2 } from "lucide-react";
 import type { Shipment, Document, User } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -127,6 +127,18 @@ export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Zendesk configuration state
+  const [zendeskConfig, setZendeskConfig] = useState({
+    subdomain: 'wcscargo',
+    username: '',
+    token: '',
+    defaultRequester: 'noreply@freightclear.com',
+    defaultTags: 'freightclear,workflow',
+    defaultPriority: 'normal',
+    defaultType: 'question',
+    autoAssignAgent: 'none'
+  });
+
   const { data: allShipments = [] } = useQuery<Shipment[]>({
     queryKey: ["/api/admin/shipments"],
   });
@@ -146,6 +158,109 @@ export default function Admin() {
   const { data: subscriptionPlans = [] } = useQuery({
     queryKey: ["/api/admin/subscription/plans"],
   });
+
+  // Zendesk configuration queries and mutations
+  const { data: zendeskConfigData, isLoading: configLoading } = useQuery({
+    queryKey: ['/api/admin/zendesk/config'],
+    refetchOnWindowFocus: false,
+  });
+
+  // Load config data into state when available
+  useEffect(() => {
+    if (zendeskConfigData) {
+      setZendeskConfig({
+        subdomain: zendeskConfigData.subdomain || 'wcscargo',
+        username: zendeskConfigData.username || '',
+        token: '',
+        defaultRequester: zendeskConfigData.defaultRequester || 'noreply@freightclear.com',
+        defaultTags: Array.isArray(zendeskConfigData.defaultTags) 
+          ? zendeskConfigData.defaultTags.join(',') 
+          : zendeskConfigData.defaultTags || 'freightclear,workflow',
+        defaultPriority: zendeskConfigData.defaultPriority || 'normal',
+        defaultType: zendeskConfigData.defaultType || 'question',
+        autoAssignAgent: zendeskConfigData.autoAssignAgent || 'none'
+      });
+    }
+  }, [zendeskConfigData]);
+
+  const saveZendeskConfigMutation = useMutation({
+    mutationFn: async (config: typeof zendeskConfig) => {
+      return apiRequest('/api/admin/zendesk/config', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...config,
+          defaultTags: config.defaultTags.split(',').map(tag => tag.trim())
+        }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/zendesk/config'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/zendesk/stats'] });
+      toast({
+        title: "Configuration Saved",
+        description: data.message || "Zendesk configuration updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Save Failed",
+        description: error.message || "Failed to save Zendesk configuration",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const testConnectionMutation = useMutation({
+    mutationFn: async (config: typeof zendeskConfig) => {
+      return apiRequest('/api/admin/zendesk/test-connection', {
+        method: 'POST',
+        body: JSON.stringify({
+          subdomain: config.subdomain,
+          username: config.username,
+          token: config.token
+        }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Connection Successful",
+        description: `Connected as ${data.user}`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Connection Failed",
+        description: error.message || "Failed to connect to Zendesk",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSaveZendeskConfig = () => {
+    if (!zendeskConfig.subdomain || !zendeskConfig.username) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter subdomain and username",
+        variant: "destructive",
+      });
+      return;
+    }
+    saveZendeskConfigMutation.mutate(zendeskConfig);
+  };
+
+  const handleTestConnection = () => {
+    if (!zendeskConfig.subdomain || !zendeskConfig.username || !zendeskConfig.token) {
+      toast({
+        title: "Missing Credentials",
+        description: "Please enter subdomain, username, and API token",
+        variant: "destructive",
+      });
+      return;
+    }
+    testConnectionMutation.mutate(zendeskConfig);
+  };
 
   const filteredShipments = allShipments.filter((shipment: Shipment) => {
     const matchesSearch = shipment.shipmentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1079,21 +1194,187 @@ export default function Admin() {
         </CardContent>
       </Card>
 
-      {/* Zendesk Support Management */}
+      {/* Zendesk Configuration & Management */}
       <Card className="mt-8">
         <CardHeader>
           <CardTitle className="flex items-center">
             <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-2 rounded-lg mr-3">
               <Shield className="w-5 h-5 text-white" />
             </div>
-            Zendesk Support Management
+            Zendesk Configuration & Management
           </CardTitle>
           <CardDescription>
-            Manage customer support tickets, create new tickets, and monitor support statistics through Zendesk integration
+            Configure Zendesk settings, manage support tickets, and monitor integration status
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ZendeskTicketManager />
+          <div className="space-y-6">
+            {/* Zendesk Settings Configuration */}
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  <span className="flex items-center">
+                    <Shield className="w-4 h-4 mr-2" />
+                    Zendesk Account Settings
+                  </span>
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4 mt-4 p-4 border rounded-lg bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="zendesk-subdomain">Zendesk Subdomain</Label>
+                    <div className="flex">
+                      <Input 
+                        id="zendesk-subdomain"
+                        placeholder="wcscargo" 
+                        value={zendeskConfig.subdomain}
+                        onChange={(e) => setZendeskConfig({...zendeskConfig, subdomain: e.target.value})}
+                        className="rounded-r-none"
+                      />
+                      <div className="px-3 py-2 bg-gray-100 border border-l-0 rounded-r-md text-sm text-gray-600">
+                        .zendesk.com
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500">Your Zendesk account subdomain</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="zendesk-username">Admin Username</Label>
+                    <Input 
+                      id="zendesk-username"
+                      placeholder="admin@freightclear.com"
+                      type="email"
+                      value={zendeskConfig.username}
+                      onChange={(e) => setZendeskConfig({...zendeskConfig, username: e.target.value})}
+                    />
+                    <p className="text-xs text-gray-500">Zendesk admin email address</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="zendesk-token">API Token</Label>
+                    <Input 
+                      id="zendesk-token"
+                      placeholder="Enter your Zendesk API token"
+                      type="password"
+                      value={zendeskConfig.token}
+                      onChange={(e) => setZendeskConfig({...zendeskConfig, token: e.target.value})}
+                    />
+                    <p className="text-xs text-gray-500">Generate from Admin Center → APIs → Zendesk API</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="default-requester">Default Requester Email</Label>
+                    <Input 
+                      id="default-requester"
+                      placeholder="noreply@freightclear.com"
+                      type="email"
+                      value={zendeskConfig.defaultRequester}
+                      onChange={(e) => setZendeskConfig({...zendeskConfig, defaultRequester: e.target.value})}
+                    />
+                    <p className="text-xs text-gray-500">Default email for system-generated tickets</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="default-tags">Default Tags (comma-separated)</Label>
+                  <Input 
+                    id="default-tags"
+                    placeholder="freightclear, workflow, system"
+                    value={zendeskConfig.defaultTags}
+                    onChange={(e) => setZendeskConfig({...zendeskConfig, defaultTags: e.target.value})}
+                  />
+                  <p className="text-xs text-gray-500">Tags automatically added to new tickets</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="default-priority">Default Priority</Label>
+                    <Select value={zendeskConfig.defaultPriority} onValueChange={(value) => setZendeskConfig({...zendeskConfig, defaultPriority: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="default-type">Default Type</Label>
+                    <Select value={zendeskConfig.defaultType} onValueChange={(value) => setZendeskConfig({...zendeskConfig, defaultType: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="question">Question</SelectItem>
+                        <SelectItem value="incident">Incident</SelectItem>
+                        <SelectItem value="problem">Problem</SelectItem>
+                        <SelectItem value="task">Task</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="auto-assign">Auto-assign Agent</Label>
+                    <Select value={zendeskConfig.autoAssignAgent} onValueChange={(value) => setZendeskConfig({...zendeskConfig, autoAssignAgent: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select agent" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No auto-assignment</SelectItem>
+                        <SelectItem value="admin">Admin User</SelectItem>
+                        <SelectItem value="support">Support Team</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between items-center pt-4 border-t">
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleTestConnection}
+                      disabled={testConnectionMutation.isPending}
+                    >
+                      {testConnectionMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Testing...
+                        </>
+                      ) : (
+                        'Test Connection'
+                      )}
+                    </Button>
+                    <Badge variant="outline" className={zendeskConfigData?.isConfigured ? "text-green-600 border-green-600" : "text-amber-600 border-amber-600"}>
+                      {configLoading ? 'Loading...' : zendeskConfigData?.isConfigured ? 'Connected' : 'Not Configured'}
+                    </Badge>
+                  </div>
+                  <Button 
+                    className="btn-primary"
+                    onClick={handleSaveZendeskConfig}
+                    disabled={saveZendeskConfigMutation.isPending}
+                  >
+                    {saveZendeskConfigMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Configuration'
+                    )}
+                  </Button>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+            
+            {/* Ticket Management Interface */}
+            <ZendeskTicketManager />
+          </div>
         </CardContent>
       </Card>
 
