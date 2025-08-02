@@ -78,6 +78,8 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
       'image/*': ['.png', '.jpg', '.jpeg', '.gif'],
       'application/msword': ['.doc'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
     },
     multiple: true,
   });
@@ -258,7 +260,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
                   {isDragActive ? "Drop files here..." : "Drag & drop files here"}
                 </p>
                 <p className="text-xs text-gray-500">
-                  or click to select • Supports PDF, DOC, DOCX, images
+                  or click to select • Supports PDF, DOC, DOCX, Excel, images
                 </p>
               </div>
             </div>
