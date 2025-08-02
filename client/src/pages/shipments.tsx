@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ShipmentTable from "@/components/ShipmentTable";
 import ShipmentDetail from "@/components/ShipmentDetail";
 import CreateShipmentDialog from "@/components/CreateShipmentDialog";
 import DocumentUpload from "@/components/DocumentUpload";
-import { Ship, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Ship, Plus, Search, ChevronLeft, ChevronRight, FileUp } from "lucide-react";
 import type { Shipment } from "@shared/schema";
 
 export default function Shipments() {
@@ -17,6 +18,7 @@ export default function Shipments() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [shipmentsPerPage, setShipmentsPerPage] = useState(10);
+  const queryClient = useQueryClient();
 
 
   const { data: shipments = [] } = useQuery<Shipment[]>({
@@ -64,16 +66,56 @@ export default function Shipments() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
+      {/* Multi-Document Processing Feature Highlight */}
+      <Card className="gradient-primary border-0 mb-6 lg:mb-8">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h1 className="text-2xl lg:text-3xl font-bold text-white mb-3 flex items-center">
+                <FileUp className="w-7 h-7 mr-3" />
+                Create Shipment
+              </h1>
+              <h3 className="text-xl font-semibold text-white mb-3">
+                Comprehensive Multi-Document Processing
+              </h3>
+              <p className="text-blue-100 mb-4 text-sm lg:text-base">
+                Upload multiple shipping documents simultaneously (Bill of Lading, Commercial Invoice, 
+                Packing List, etc.) and our intelligent processing system will automatically extract and consolidate all relevant 
+                data to create complete shipments with comprehensive information from all documents.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Badge className="bg-white/20 text-white border-white/30">Bill of Lading</Badge>
+                <Badge className="bg-white/20 text-white border-white/30">Commercial Invoice</Badge>
+                <Badge className="bg-white/20 text-white border-white/30">Packing List</Badge>
+                <Badge className="bg-white/20 text-white border-white/30">Arrival Notice</Badge>
+                <Badge className="bg-white/20 text-white border-white/30">+ More</Badge>
+              </div>
+            </div>
+            <div className="hidden lg:block">
+              <DocumentUpload 
+                trigger={
+                  <Button className="bg-white text-freight-blue hover:bg-gray-100">
+                    <FileUp className="w-4 h-4 mr-2" />
+                    Multi-Document Upload
+                  </Button>
+                }
+                onShipmentCreated={(shipment) => {
+                  queryClient.invalidateQueries({ queryKey: ["/api/shipments"] });
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 1000);
+                }} 
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start space-y-4 lg:space-y-0 pt-2 lg:pt-6 pb-4">
         <div className="px-2 lg:px-6 lg:ml-4">
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">Shipments</h1>
+          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">Manage Shipments</h2>
           <p className="text-gray-600 text-sm lg:text-base">Track and manage your freight shipments</p>
-          <div className="mt-3 lg:mt-4 p-3 lg:p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-blue-800 text-xs lg:text-sm leading-relaxed">
-              Our AI automatically scans and transforms your BL, AWB and ISF data into a new shipment in Freightclear Workflows. Upload a doc to get started.
-            </p>
-          </div>
         </div>
         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 px-2 lg:pr-8 lg:mr-6">
           <DocumentUpload 
