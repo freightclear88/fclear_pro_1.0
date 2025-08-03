@@ -4480,16 +4480,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OneView integration status and configuration
   app.get('/api/xml/oneview/status', requireAdmin, async (req, res) => {
     try {
-      // Get count of shipments available for OneView export
-      const totalShipments = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(xmlShipments);
+      // Get count of shipments available for OneView export from storage
+      const allShipments = await storage.getAllShipments();
+      const totalShipments = allShipments.length;
 
       res.json({
         success: true,
         integration_status: 'active',
         supported_formats: ['oneview-standard', 'edifact', 'cargo-xml'],
-        total_exportable_shipments: totalShipments[0]?.count || 0,
+        total_exportable_shipments: totalShipments,
         last_updated: new Date().toISOString()
       });
     } catch (error: any) {

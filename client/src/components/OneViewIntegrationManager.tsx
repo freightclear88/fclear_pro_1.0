@@ -40,6 +40,13 @@ export default function OneViewIntegrationManager() {
   const [selectedShipments, setSelectedShipments] = useState<number[]>([]);
   const [batchExportMode, setBatchExportMode] = useState(false);
   const { toast } = useToast();
+  
+  // Define supported formats directly for reliability
+  const supportedFormats = [
+    'oneview-standard',
+    'edifact', 
+    'cargo-xml'
+  ];
 
   // Fetch OneView integration status
   const { data: statusData, isLoading: statusLoading, refetch: refetchStatus } = useQuery<OneViewStatusData>({
@@ -255,7 +262,7 @@ export default function OneViewIntegrationManager() {
               <SelectValue placeholder="Select export format" />
             </SelectTrigger>
             <SelectContent>
-              {statusData?.supported_formats?.map((format) => (
+              {supportedFormats.map((format) => (
                 <SelectItem key={format} value={format}>
                   {formatDisplayName(format)}
                 </SelectItem>
