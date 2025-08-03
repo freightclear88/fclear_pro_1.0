@@ -40,6 +40,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import OneViewIntegrationManager from '@/components/OneViewIntegrationManager';
 
 interface XmlSource {
   id: number;
@@ -293,9 +294,10 @@ export default function XmlManagement() {
       </div>
 
       <Tabs defaultValue="upload" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="upload">Manual Upload</TabsTrigger>
           <TabsTrigger value="sources">Automated Sources</TabsTrigger>
+          <TabsTrigger value="oneview">OneView Integration</TabsTrigger>
         </TabsList>
 
         <TabsContent value="upload" className="space-y-6">
@@ -702,6 +704,11 @@ export default function XmlManagement() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* OneView Integration Tab */}
+        <TabsContent value="oneview" className="space-y-6">
+          <OneViewIntegrationManager />
         </TabsContent>
       </Tabs>
     </div>
