@@ -185,14 +185,11 @@ export default function Admin() {
 
   const saveZendeskConfigMutation = useMutation({
     mutationFn: async (config: typeof zendeskConfig) => {
-      return apiRequest('/api/admin/zendesk/config', {
-        method: 'POST',
-        body: JSON.stringify({
-          ...config,
-          defaultTags: config.defaultTags.split(',').map(tag => tag.trim())
-        }),
-        headers: { 'Content-Type': 'application/json' },
+      const response = await apiRequest('POST', '/api/admin/zendesk/config', {
+        ...config,
+        defaultTags: config.defaultTags.split(',').map(tag => tag.trim())
       });
+      return response.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/zendesk/config'] });
@@ -213,15 +210,12 @@ export default function Admin() {
 
   const testConnectionMutation = useMutation({
     mutationFn: async (config: typeof zendeskConfig) => {
-      return apiRequest('/api/admin/zendesk/test-connection', {
-        method: 'POST',
-        body: JSON.stringify({
-          subdomain: config.subdomain,
-          username: config.username,
-          token: config.token
-        }),
-        headers: { 'Content-Type': 'application/json' },
+      const response = await apiRequest('POST', '/api/admin/zendesk/test-connection', {
+        subdomain: config.subdomain,
+        username: config.username,
+        token: config.token
       });
+      return response.json();
     },
     onSuccess: (data) => {
       toast({
