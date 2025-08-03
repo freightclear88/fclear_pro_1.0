@@ -22,6 +22,7 @@ Key Features Requested:
 - Updated free subscription limits to 3 shipments and 9 documents with contextual upgrade prompts to Starter Plan (August 2025)
 - Visual route map implementation on shipment details with FreightClear blue-green gradient, stars for origin/destination, transport mode indicators, and journey progress tracking (August 2025)
 - Enhanced admin POA management with document viewing capability before validation - admins can now view user POA documents in-browser before approving or rejecting (August 2025)
+- Comprehensive Descartes OneView XML integration with support for OneView Standard, UN/EDIFACT, and Cargo XML formats for seamless freight management platform connectivity (August 2025)
 
 ## System Architecture
 The application follows a modern full-stack architecture with clear separation between frontend and backend components, featuring enhanced multi-document processing capabilities for comprehensive shipment creation and comprehensive XML-based shipment data management.
@@ -48,6 +49,7 @@ The application follows a modern full-stack architecture with clear separation b
 -   **Document Processing**: Enhanced multi-document processing system supporting simultaneous upload of up to 10 documents with intelligent data consolidation. Uses hybrid AI-powered OCR with Azure Document Intelligence as primary processor and OpenAI GPT-4o enhancement for comprehensive data extraction (supporting PDF, Excel, Word documents) with automatic ISF filing creation and intelligent field mapping. Features priority-based data consolidation from multiple documents to create complete shipments.
 -   **Reporting**: CSV export for shipments
 -   **XML Integration**: Server-side XML processing engine for UN/EDIFACT COPRAR, COPARN, generic shipments, and container status formats.
+-   **Descartes OneView Integration**: Comprehensive XML export service supporting OneView Standard, UN/EDIFACT, and Cargo XML formats for seamless integration with Descartes OneView freight management platform.
 
 **Database Schema (PostgreSQL):**
 -   **Users**: Stores user profiles, subscription data, and admin/agent roles.
@@ -73,6 +75,7 @@ The application follows a modern full-stack architecture with clear separation b
 -   **Last Mile Integration**: Dedicated document categories and sub-categories, with automatic shipment creation from delivery orders.
 -   **Fast ISF Filing**: Comprehensive 10+2 form with hybrid AI-powered document scanning (Azure + OpenAI), automatic ISF filing creation from uploaded documents with comprehensive field population (vessel, container, port, dates, SCAC codes, etc.), ISF editing workflow, and Stripe payment integration ($35.00 filing fee).
 -   **XML Integration**: Comprehensive XML shipment processing system with hierarchical database structure supporting parties, locations, containers, contents, and charges. Includes bidirectional data mapping and multi-format export capabilities (XML, CSV, JSON) for seamless integration with external shipping platforms, ERPs, and customs systems. Features consolidated admin-only interface combining manual XML upload with automated source configuration and scheduling.
+-   **Descartes OneView Integration**: Advanced XML export functionality specifically designed for Descartes OneView freight forwarding platform. Supports three industry-standard formats: OneView Standard (optimized for Forwarder Enterprise), UN/EDIFACT COPRAR (maritime container messaging), and IATA Cargo XML (air freight operations). Features single shipment export, batch processing, and comprehensive admin management interface with real-time status monitoring.
 -   **Chat/Support System**: Integrated customer support via Zendesk API for ticket management.
 -   **Pagination**: Implemented for large data sets (e.g., shipments table) for improved performance.
 -   **Branding**: Consistent Freightclear branding across the UI, including custom color schemes and professional design elements.

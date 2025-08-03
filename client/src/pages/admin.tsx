@@ -19,6 +19,7 @@ import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
 
 import XMLIntegrationManager from "@/components/XMLIntegrationManager";
+import OneViewIntegrationManager from "@/components/OneViewIntegrationManager";
 import AdminInvoiceUpload from "@/components/AdminInvoiceUpload";
 import ZendeskTicketManager from "@/components/ZendeskTicketManager";
 
@@ -1169,6 +1170,9 @@ export default function Admin() {
           <XMLIntegrationManager />
         </CardContent>
       </Card>
+
+      {/* Descartes OneView Integration */}
+      <OneViewIntegrationManager />
 
       {/* Invoice Management */}
       <Card className="mt-8">

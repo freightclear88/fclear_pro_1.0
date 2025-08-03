@@ -4424,6 +4424,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== DESCARTES ONEVIEW INTEGRATION ENDPOINTS =====
+  
+  // Descartes OneView XML export endpoints
+  app.get('/api/xml/oneview/export/:shipmentId', requireAdmin, async (req, res) => {
+    try {
+      const { DescartesOneViewIntegration } = await import('./descartesOneViewIntegration');
+      const oneViewIntegration = new DescartesOneViewIntegration();
+      
+      const shipmentId = parseInt(req.params.shipmentId);
+      const format = req.query.format as 'edifact' | 'cargo-xml' | 'oneview-standard' || 'oneview-standard';
+      
+      if (isNaN(shipmentId)) {
+        return res.status(400).json({ error: 'Invalid shipment ID' });
+      }
+
+      const xml = await oneViewIntegration.exportToOneViewXML(shipmentId, format);
+      
+      res.setHeader('Content-Type', 'application/xml');
+      res.setHeader('Content-Disposition', `attachment; filename="oneview-shipment-${shipmentId}-${format}.xml"`);
+      res.send(xml);
+    } catch (error: any) {
+      console.error('OneView XML export error:', error);
+      res.status(500).json({ error: error.message || 'OneView XML export failed' });
+    }
+  });
+
+  // Batch export multiple shipments to OneView
+  app.post('/api/xml/oneview/batch-export', requireAdmin, async (req, res) => {
+    try {
+      const { DescartesOneViewIntegration } = await import('./descartesOneViewIntegration');
+      const oneViewIntegration = new DescartesOneViewIntegration();
+      
+      const { shipmentIds, format = 'oneview-standard' } = req.body;
+      
+      if (!Array.isArray(shipmentIds) || shipmentIds.length === 0) {
+        return res.status(400).json({ error: 'shipmentIds array is required' });
+      }
+
+      const results = await oneViewIntegration.batchExportToOneView(shipmentIds, format);
+      
+      res.json({
+        success: true,
+        results,
+        totalShipments: shipmentIds.length,
+        successfulExports: results.filter(r => r.success).length,
+        failedExports: results.filter(r => !r.success).length
+      });
+    } catch (error: any) {
+      console.error('OneView batch export error:', error);
+      res.status(500).json({ error: error.message || 'OneView batch export failed' });
+    }
+  });
+
+  // OneView integration status and configuration
+  app.get('/api/xml/oneview/status', requireAdmin, async (req, res) => {
+    try {
+      // Get count of shipments available for OneView export
+      const totalShipments = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(xmlShipments);
+
+      res.json({
+        success: true,
+        integration_status: 'active',
+        supported_formats: ['oneview-standard', 'edifact', 'cargo-xml'],
+        total_exportable_shipments: totalShipments[0]?.count || 0,
+        last_updated: new Date().toISOString()
+      });
+    } catch (error: any) {
+      console.error('OneView status error:', error);
+      res.status(500).json({ error: error.message || 'Failed to get OneView status' });
+    }
+  });
+
   // ISF Filing Routes
   app.get('/api/isf/filings', isAuthenticated, async (req: any, res) => {
     try {
