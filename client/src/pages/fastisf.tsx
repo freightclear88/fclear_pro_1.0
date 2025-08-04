@@ -562,6 +562,27 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         
         // Note: Country of origin should use the value from the ISF document as provided
         
+        // CRITICAL ISF FIELD PROCESSING - Override automatic mappings with ISF-specific logic
+        console.log('🔍 ISF FIELD OVERRIDE - Processing ISF-specific fields');
+        
+        // Override manufacturerInformation with manufacturerCountry from ISF
+        if (data.manufacturerCountry) {
+          form.setValue('manufacturerInformation', data.manufacturerCountry, { shouldValidate: false, shouldDirty: true });
+          console.log('🎯 OVERRIDE manufacturerInformation with ISF manufacturerCountry:', data.manufacturerCountry);
+        }
+        
+        // Override container stuffing location with port fallback
+        if (data.portOfLoading) {
+          form.setValue('containerStuffingLocation', data.portOfLoading, { shouldValidate: false, shouldDirty: true });
+          console.log('🎯 OVERRIDE containerStuffingLocation with ISF port:', data.portOfLoading);
+        }
+        
+        // Override country of origin to ensure it's from ISF document
+        if (data.countryOfOrigin) {
+          form.setValue('countryOfOrigin', data.countryOfOrigin, { shouldValidate: false, shouldDirty: true });
+          console.log('🎯 OVERRIDE countryOfOrigin with ISF value:', data.countryOfOrigin);
+        }
+        
         // Force form re-render and clear validation errors
         setTimeout(() => {
           console.log("Form values after population:", form.getValues());
