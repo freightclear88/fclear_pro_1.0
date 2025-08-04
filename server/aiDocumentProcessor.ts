@@ -166,7 +166,7 @@ export class AIDocumentProcessor {
         messages: [
           {
             role: "system",
-            content: `Extract comprehensive shipping data from Ocean Bill of Lading, ISF documents, commercial invoices, and related shipping documents. Focus on ISF (Importer Security Filing) required fields. Return JSON with all found values:
+            content: `Extract comprehensive shipping data from Ocean Bill of Lading, ISF Information Sheets, commercial invoices, and related shipping documents. If this is an ISF Information Sheet document, prioritize extracting ALL ISF-specific fields with their exact values. Return JSON with all found values:
             {
               "billOfLadingNumber": "B/L or Master B/L number if found",
               "airWaybillNumber": "AWB number for air shipments if found",
@@ -222,7 +222,7 @@ export class AIDocumentProcessor {
               "hblScacCode": "HBL SCAC code if found",
               "amsNumber": "AMS filing number if found",
               "consolidatorStufferInfo": "consolidator/container stuffer information if found",
-              "containerStuffingLocation": "container stuffing location - look for: 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'Consolidator Location', 'CFS Location' if found",
+              "containerStuffingLocation": "EXACT container stuffing location from ISF form - look for fields labeled: 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'Consolidator Location', 'CFS Location', 'Place where container was stuffed' - extract the EXACT location value, not just 'CFS/CFS'",
               "containerStuffing": "any container stuffing related information if found",
               "stuffingLocation": "stuffing location if found"
             }`
@@ -350,7 +350,7 @@ export class AIDocumentProcessor {
               "onBoardDate": "on board date if found",
               "eta": "ETA if found",
               "etd": "ETD if found",
-              "containerStuffingLocation": "container stuffing location - look for: 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'Consolidator Location', 'CFS Location' if found",
+              "containerStuffingLocation": "EXACT container stuffing location from ISF form - look for fields labeled: 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'Consolidator Location', 'CFS Location', 'Place where container was stuffed' - extract the EXACT location value, not just 'CFS/CFS'",
               "containerStuffing": "any container stuffing related information if found",
               "stuffingLocation": "stuffing location if found"
             }

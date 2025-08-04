@@ -35,12 +35,14 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
   const sourceTracker: any = {}; // Track which document each field came from
   
   // Priority hierarchy for document types (higher priority documents override lower ones)
+  // ISF Information Sheet has highest priority for ISF-specific fields
   const documentTypePriority = {
+    'isf_information_sheet': 15, // Highest priority for ISF forms
+    'isf_data_sheet': 14,        // Second highest for ISF data
     'bill_of_lading': 10,
     'arrival_notice': 9,
     'commercial_invoice': 8,
     'packing_list': 7,
-    'isf_data_sheet': 6,
     'airway_bill': 10, // Same priority as B/L for air shipments
     'delivery_order': 5,
     'other': 1
@@ -4985,8 +4987,24 @@ ${excelText}`;
           }
           
           // Add extracted data to the consolidated data array (for both Excel and PDF)
+          // Determine proper document type - ISF documents get highest priority
+          let documentType = 'unknown';
+          const fileName = file.originalname.toLowerCase();
+          
+          if (fileName.includes('isf') || fileName.includes('information_sheet') || fileName.includes('data_sheet')) {
+            documentType = 'isf_information_sheet'; // Highest priority
+          } else if (fileName.includes('bl') || fileName.includes('bill_of_lading') || fileName.includes('lading')) {
+            documentType = 'bill_of_lading';
+          } else if (fileName.includes('invoice')) {
+            documentType = 'commercial_invoice';
+          } else {
+            documentType = fileExtension || 'unknown';
+          }
+          
+          console.log(`Document ${file.originalname} identified as type: ${documentType}`);
+          
           allExtractedData.push({
-            documentType: fileExtension || 'unknown',
+            documentType: documentType,
             fileName: file.originalname,
             data: extractedData
           });
