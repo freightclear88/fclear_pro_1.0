@@ -278,6 +278,15 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         // Handle consolidated party information
         const data = result.extractedData;
         
+        // Debug: Log all extracted field names to identify ISF-specific fields
+        console.log('All extracted field names:', Object.keys(data));
+        console.log('Looking for stuffing location fields...', {
+          stuffingLocation: data.stuffingLocation,
+          'container stuffing location': data['container stuffing location'],
+          containerStuffingLocation: data.containerStuffingLocation,
+          'stuffing location': data['stuffing location']
+        });
+        
         // Handle individual company names first for importer/consignee
         if (data.importerName && data.importerName.trim()) {
           form.setValue('importerName', data.importerName.trim(), { shouldValidate: false, shouldDirty: true });
@@ -399,14 +408,31 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           console.log('Set shipToPartyInformation from consignee:', shipToInfo);
         }
 
-        // Container Stuffing Location - use ISF-specific field first, then fallback
-        if (data.stuffingLocation) {
-          form.setValue('containerStuffingLocation', data.stuffingLocation, { shouldValidate: false, shouldDirty: true });
-          console.log('Set containerStuffingLocation from ISF field:', data.stuffingLocation);
-        } else if (data.portOfLoading || data.placeOfReceipt) {
+        // Container Stuffing Location - check multiple possible field variations
+        let stuffingLocationFound = false;
+        const possibleStuffingFields = [
+          'stuffingLocation',
+          'stuffing location', 
+          'container stuffing location',
+          'containerStuffingLocation',
+          'Container Stuffing Location',
+          'CONTAINER STUFFING LOCATION'
+        ];
+        
+        for (const fieldName of possibleStuffingFields) {
+          if (data[fieldName] && !stuffingLocationFound) {
+            form.setValue('containerStuffingLocation', data[fieldName], { shouldValidate: false, shouldDirty: true });
+            console.log(`Set containerStuffingLocation from ISF field "${fieldName}":`, data[fieldName]);
+            stuffingLocationFound = true;
+            break;
+          }
+        }
+        
+        // Fallback to port information if no ISF-specific stuffing location found
+        if (!stuffingLocationFound && (data.portOfLoading || data.placeOfReceipt)) {
           const stuffingLocation = data.portOfLoading || data.placeOfReceipt;
           form.setValue('containerStuffingLocation', stuffingLocation, { shouldValidate: false, shouldDirty: true });
-          console.log('Set containerStuffingLocation from port:', stuffingLocation);
+          console.log('Set containerStuffingLocation from port (fallback):', stuffingLocation);
         }
 
         // Consolidator information - use shipper as consolidator if available
