@@ -571,10 +571,23 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           console.log('🎯 OVERRIDE manufacturerInformation with ISF manufacturerCountry:', data.manufacturerCountry);
         }
         
-        // Override container stuffing location with port fallback
-        if (data.portOfLoading) {
+        // Override container stuffing location with specific stuffing fields first, then port fallback
+        let stuffingLocationSet = false;
+        const stuffingFields = ['containerStuffingLocation', 'containerStuffing', 'stuffingLocation'];
+        
+        for (const fieldName of stuffingFields) {
+          if (data[fieldName] && !stuffingLocationSet) {
+            form.setValue('containerStuffingLocation', data[fieldName], { shouldValidate: false, shouldDirty: true });
+            console.log('🎯 OVERRIDE containerStuffingLocation with ISF field:', fieldName, '=', data[fieldName]);
+            stuffingLocationSet = true;
+            break;
+          }
+        }
+        
+        // If no specific stuffing location found, use port as fallback
+        if (!stuffingLocationSet && data.portOfLoading) {
           form.setValue('containerStuffingLocation', data.portOfLoading, { shouldValidate: false, shouldDirty: true });
-          console.log('🎯 OVERRIDE containerStuffingLocation with ISF port:', data.portOfLoading);
+          console.log('🎯 OVERRIDE containerStuffingLocation with ISF port fallback:', data.portOfLoading);
         }
         
         // Override country of origin to ensure it's from ISF document

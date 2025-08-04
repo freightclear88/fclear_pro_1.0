@@ -217,7 +217,9 @@ export class AIDocumentProcessor {
               "hblScacCode": "HBL SCAC code if found",
               "amsNumber": "AMS filing number if found",
               "consolidatorStufferInfo": "consolidator/container stuffer information if found",
-              "containerStuffingLocation": "container stuffing location if found"
+              "containerStuffingLocation": "container stuffing location - look for: 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'Consolidator Location', 'CFS Location' if found",
+              "containerStuffing": "any container stuffing related information if found",
+              "stuffingLocation": "stuffing location if found"
             }`
           },
           {
@@ -337,7 +339,10 @@ export class AIDocumentProcessor {
               "dateOfShipment": "shipment date if found",
               "onBoardDate": "on board date if found",
               "eta": "ETA if found",
-              "etd": "ETD if found"
+              "etd": "ETD if found",
+              "containerStuffingLocation": "container stuffing location - look for: 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'Consolidator Location', 'CFS Location' if found",
+              "containerStuffing": "any container stuffing related information if found",
+              "stuffingLocation": "stuffing location if found"
             }
 
             Only include fields where you find actual values. Do not include fields with null, "not found", "N/A", etc.`
