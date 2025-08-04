@@ -383,9 +383,9 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           }
         }
 
-        // Handle missing critical ISF fields
-        // Ship-to Party Information - use consignee data if not already set
-        if (!form.getValues('shipToPartyInformation') && data.consigneeName && data.consigneeAddress) {
+        // Handle missing critical ISF fields BEFORE the automatic field mapping
+        // Ship-to Party Information - use consignee data
+        if (data.consigneeName && data.consigneeAddress) {
           const shipToInfo = `${data.consigneeName}\n${data.consigneeAddress}`;
           form.setValue('shipToPartyInformation', shipToInfo, { shouldValidate: false, shouldDirty: true });
           console.log('Set shipToPartyInformation from consignee:', shipToInfo);
@@ -425,18 +425,6 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
             form.setValue('hblScacCode', scacCode, { shouldValidate: false, shouldDirty: true });
             console.log(`Set SCAC codes for ${data.vesselName}: ${scacCode}`);
           }
-        }
-
-        // Fix Country of Origin - should be based on port of loading, not destination
-        if (data.portOfLoading && data.portOfLoading.includes('KOREA')) {
-          form.setValue('countryOfOrigin', 'South Korea', { shouldValidate: false, shouldDirty: true });
-          console.log('Set countryOfOrigin to South Korea based on port of loading');
-        } else if (data.manufacturerCountry && data.manufacturerCountry !== 'USA') {
-          form.setValue('countryOfOrigin', data.manufacturerCountry, { shouldValidate: false, shouldDirty: true });
-          console.log('Set countryOfOrigin from manufacturerCountry:', data.manufacturerCountry);
-        } else if (data.placeOfReceipt && data.placeOfReceipt.includes('KOREA')) {
-          form.setValue('countryOfOrigin', 'South Korea', { shouldValidate: false, shouldDirty: true });
-          console.log('Set countryOfOrigin to South Korea based on place of receipt');
         }
 
         // Store extracted data and populate form
@@ -511,6 +499,16 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
             form.setValue("consolidatorStufferInfo", consolidatorInfo.join('\n'));
             console.log('Set consolidatorStufferInfo to:', consolidatorInfo.join('\n'));
           }
+        }
+        
+        // CRITICAL: Fix country of origin AFTER all automatic mappings
+        // Override any incorrect country of origin mapping
+        if (data.portOfLoading && data.portOfLoading.includes('KOREA')) {
+          form.setValue('countryOfOrigin', 'South Korea', { shouldValidate: false, shouldDirty: true });
+          console.log('FINAL: Set countryOfOrigin to South Korea based on port of loading');
+        } else if (data.placeOfReceipt && data.placeOfReceipt.includes('KOREA')) {
+          form.setValue('countryOfOrigin', 'South Korea', { shouldValidate: false, shouldDirty: true });
+          console.log('FINAL: Set countryOfOrigin to South Korea based on place of receipt');
         }
         
         // Force form re-render and clear validation errors
