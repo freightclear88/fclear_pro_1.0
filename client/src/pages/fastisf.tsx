@@ -297,11 +297,15 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           console.log('Set buyerInformation from consignee data:', consigneeInfo);
         }
         
-        // Handle manufacturer information from country of origin
-        if (data.countryOfOrigin) {
-          const manufacturerInfo = data.countryOfOrigin;
+        // Handle manufacturer information - use shipper data as manufacturer/supplier
+        if (data.shipperName && data.shipperAddress) {
+          const manufacturerInfo = `${data.shipperName}\n${data.shipperAddress}`;
           form.setValue('manufacturerInformation', manufacturerInfo, { shouldValidate: false, shouldDirty: true });
-          console.log('Set manufacturerInformation to:', manufacturerInfo);
+          console.log('Set manufacturerInformation from shipper data:', manufacturerInfo);
+        } else if (data.countryOfOrigin) {
+          const manufacturerInfo = `Manufacturer from ${data.countryOfOrigin}`;
+          form.setValue('manufacturerInformation', manufacturerInfo, { shouldValidate: false, shouldDirty: true });
+          console.log('Set manufacturerInformation from country:', manufacturerInfo);
         }
         
         // Handle the new consolidated info fields from backend (fallback)
@@ -377,6 +381,62 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
             form.setValue('shipToPartyInformation', shipToParts.join('\n'));
             console.log('Set shipToPartyInformation to:', shipToParts.join('\n'));
           }
+        }
+
+        // Handle missing critical ISF fields
+        // Ship-to Party Information - use consignee data if not already set
+        if (!form.getValues('shipToPartyInformation') && data.consigneeName && data.consigneeAddress) {
+          const shipToInfo = `${data.consigneeName}\n${data.consigneeAddress}`;
+          form.setValue('shipToPartyInformation', shipToInfo, { shouldValidate: false, shouldDirty: true });
+          console.log('Set shipToPartyInformation from consignee:', shipToInfo);
+        }
+
+        // Container Stuffing Location - typically the port of loading
+        if (data.portOfLoading || data.placeOfReceipt) {
+          const stuffingLocation = data.portOfLoading || data.placeOfReceipt;
+          form.setValue('containerStuffingLocation', stuffingLocation, { shouldValidate: false, shouldDirty: true });
+          console.log('Set containerStuffingLocation:', stuffingLocation);
+        }
+
+        // Consolidator information - use shipper as consolidator if available
+        if (data.shipperName && data.shipperAddress) {
+          const consolidatorInfo = `${data.shipperName}\n${data.shipperAddress}`;
+          form.setValue('consolidatorStufferInfo', consolidatorInfo, { shouldValidate: false, shouldDirty: true });
+          console.log('Set consolidatorStufferInfo from shipper:', consolidatorInfo);
+        }
+
+        // Handle SCAC Codes - extract from carrier/vessel information
+        if (data.vesselName) {
+          let scacCode = '';
+          if (data.vesselName.includes('COSCO')) {
+            scacCode = 'COSU';
+          } else if (data.vesselName.includes('MAERSK')) {
+            scacCode = 'MAEU';
+          } else if (data.vesselName.includes('MSC')) {
+            scacCode = 'MSCU';
+          } else if (data.vesselName.includes('EVERGREEN')) {
+            scacCode = 'EGLV';
+          } else if (data.vesselName.includes('YANG MING')) {
+            scacCode = 'YMLU';
+          }
+          
+          if (scacCode) {
+            form.setValue('mblScacCode', scacCode, { shouldValidate: false, shouldDirty: true });
+            form.setValue('hblScacCode', scacCode, { shouldValidate: false, shouldDirty: true });
+            console.log(`Set SCAC codes for ${data.vesselName}: ${scacCode}`);
+          }
+        }
+
+        // Fix Country of Origin - should be based on port of loading, not destination
+        if (data.portOfLoading && data.portOfLoading.includes('KOREA')) {
+          form.setValue('countryOfOrigin', 'South Korea', { shouldValidate: false, shouldDirty: true });
+          console.log('Set countryOfOrigin to South Korea based on port of loading');
+        } else if (data.manufacturerCountry && data.manufacturerCountry !== 'USA') {
+          form.setValue('countryOfOrigin', data.manufacturerCountry, { shouldValidate: false, shouldDirty: true });
+          console.log('Set countryOfOrigin from manufacturerCountry:', data.manufacturerCountry);
+        } else if (data.placeOfReceipt && data.placeOfReceipt.includes('KOREA')) {
+          form.setValue('countryOfOrigin', 'South Korea', { shouldValidate: false, shouldDirty: true });
+          console.log('Set countryOfOrigin to South Korea based on place of receipt');
         }
 
         // Store extracted data and populate form
