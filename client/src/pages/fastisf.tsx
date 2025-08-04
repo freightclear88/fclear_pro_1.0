@@ -222,7 +222,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       
       // Handle the multi-document response with consolidated extracted data
       if (result.success && result.extractedData) {
-        console.log("Consolidated data received:", result.extractedData);
+        console.log("🚀 EXECUTION CHECKPOINT 1: Consolidated data received:", result.extractedData);
         setProcessedDocuments(result.processedDocuments || []);
         
         // Map extracted data to form fields - comprehensive mapping for all extracted fields
@@ -274,6 +274,8 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           'ams b/l#': 'amsNumber',
           amsBl: 'amsNumber'
         };
+
+        console.log("🚀 EXECUTION CHECKPOINT 2: Field mapping defined, about to process data");
 
         // Handle consolidated party information
         const data = result.extractedData;
