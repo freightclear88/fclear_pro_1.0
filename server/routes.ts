@@ -4988,6 +4988,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Consolidated ISF form data:', consolidatedData);
 
+      // Debug logging for container stuffing location field mapping
+      console.log('🔍 ISF CONTAINER STUFFING DEBUG:');
+      console.log('  containerStuffingLocation:', consolidatedData.containerStuffingLocation);
+      console.log('  stuffing location:', consolidatedData['stuffing location']);
+      console.log('  stuffingLocation:', consolidatedData.stuffingLocation);
+      console.log('  container stuffing location:', consolidatedData['container stuffing location']);
+      console.log('  portOfLoading:', consolidatedData.portOfLoading);
+      console.log('  placeOfReceipt:', consolidatedData.placeOfReceipt);
+
       // Map consolidated data to ISF form fields using the exact same field mappings
       const isfFormData = {
         // Core importer information - Enhanced field mapping
@@ -4996,12 +5005,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         consigneeName: consolidatedData.consigneeName || null,
         consigneeAddress: consolidatedData.consigneeAddress || null,
         
-        // Manufacturer and party information - Enhanced mappings
+        // Manufacturer and party information - Enhanced mappings with ISF-specific fields
         manufacturerCountry: consolidatedData.manufacturerCountry || consolidatedData.countryOfOrigin || null,
         countryOfOrigin: consolidatedData.countryOfOrigin || null,
         manufacturerInformation: consolidatedData.manufacturerName && consolidatedData.manufacturerAddress ? 
           `${consolidatedData.manufacturerName}\n${consolidatedData.manufacturerAddress}` : 
-          consolidatedData.manufacturerName || null,
+          consolidatedData.manufacturerName || 
+          consolidatedData.manufacture || 
+          consolidatedData.manufacturerCountry || 
+          null,
         sellerInformation: consolidatedData.sellerName && consolidatedData.sellerAddress ? 
           `${consolidatedData.sellerName}\n${consolidatedData.sellerAddress}` : 
           consolidatedData.sellerName || null,
@@ -5029,14 +5041,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         grossWeight: consolidatedData.grossWeight || null,
         volume: consolidatedData.volume || null,
         
-        // SCAC and AMS information - Critical for ISF filing
+        // SCAC and AMS information - Critical for ISF filing with enhanced field mapping
         scacCode: consolidatedData.scacCode || null,
         mblScacCode: consolidatedData.mblScacCode || null,
         hblScacCode: consolidatedData.hblScacCode || null,
-        amsNumber: consolidatedData.amsNumber || null,
+        amsNumber: consolidatedData.amsNumber || 
+                  consolidatedData['ams b/l#'] || 
+                  consolidatedData.amsBl || 
+                  consolidatedData['ams bl'] ||
+                  null,
         
-        // Container stuffing location - Key ISF requirement 
-        containerStuffingLocation: consolidatedData.containerStuffingLocation || null,
+        // Container stuffing location - Key ISF requirement with enhanced field mapping
+        containerStuffingLocation: consolidatedData.containerStuffingLocation || 
+                                  consolidatedData['stuffing location'] || 
+                                  consolidatedData.stuffingLocation ||
+                                  consolidatedData['container stuffing location'] ||
+                                  consolidatedData.portOfLoading ||
+                                  consolidatedData.placeOfReceipt ||
+                                  null,
         
         // Consolidator information - ISF requirement
         consolidatorInformation: consolidatedData.consolidatorInformation || null,
