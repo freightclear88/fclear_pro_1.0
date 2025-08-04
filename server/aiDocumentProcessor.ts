@@ -83,6 +83,11 @@ interface ExtractedShipmentData {
   freightPrepaid?: boolean;
   freightCollect?: boolean;
   bookingNumber?: string;
+  
+  // Container stuffing fields
+  containerStuffingLocation?: string;
+  containerStuffing?: string;
+  stuffingLocation?: string;
 }
 
 export class AIDocumentProcessor {
@@ -240,6 +245,11 @@ export class AIDocumentProcessor {
       const extractedData = JSON.parse(result) as ExtractedShipmentData;
       
       console.log('AI extracted data:', extractedData);
+      console.log('🔍 DEBUG container stuffing fields:', {
+        containerStuffingLocation: extractedData.containerStuffingLocation,
+        containerStuffing: extractedData.containerStuffing,
+        stuffingLocation: extractedData.stuffingLocation
+      });
       
       // Validate and clean the extracted data
       return this.validateAndCleanData(extractedData);

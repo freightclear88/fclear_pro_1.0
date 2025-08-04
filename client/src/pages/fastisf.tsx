@@ -575,6 +575,8 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         let stuffingLocationSet = false;
         const stuffingFields = ['containerStuffingLocation', 'containerStuffing', 'stuffingLocation'];
         
+        console.log('🔍 DEBUG container stuffing - Available fields:', stuffingFields.map(f => `${f}: ${data[f] || 'NOT_FOUND'}`));
+        
         for (const fieldName of stuffingFields) {
           if (data[fieldName] && !stuffingLocationSet) {
             form.setValue('containerStuffingLocation', data[fieldName], { shouldValidate: false, shouldDirty: true });
