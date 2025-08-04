@@ -267,7 +267,12 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           manufacturerCountry: 'countryOfOrigin',
           portOfLoading: 'foreignPortOfLading',
           placeOfReceipt: 'foreignPortOfLading',
-          placeOfDelivery: 'portOfEntry'
+          placeOfDelivery: 'portOfEntry',
+          // ISF-specific field mappings
+          stuffingLocation: 'containerStuffingLocation',
+          manufacture: 'manufacturerInformation',
+          'ams b/l#': 'amsNumber',
+          amsBl: 'amsNumber'
         };
 
         // Handle consolidated party information
@@ -297,8 +302,11 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           console.log('Set buyerInformation from consignee data:', consigneeInfo);
         }
         
-        // Handle manufacturer information - use shipper data as manufacturer/supplier
-        if (data.shipperName && data.shipperAddress) {
+        // Handle manufacturer information - prioritize ISF-specific field
+        if (data.manufacture) {
+          form.setValue('manufacturerInformation', data.manufacture, { shouldValidate: false, shouldDirty: true });
+          console.log('Set manufacturerInformation from ISF manufacture field:', data.manufacture);
+        } else if (data.shipperName && data.shipperAddress) {
           const manufacturerInfo = `${data.shipperName}\n${data.shipperAddress}`;
           form.setValue('manufacturerInformation', manufacturerInfo, { shouldValidate: false, shouldDirty: true });
           console.log('Set manufacturerInformation from shipper data:', manufacturerInfo);
@@ -391,11 +399,14 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           console.log('Set shipToPartyInformation from consignee:', shipToInfo);
         }
 
-        // Container Stuffing Location - typically the port of loading
-        if (data.portOfLoading || data.placeOfReceipt) {
+        // Container Stuffing Location - use ISF-specific field first, then fallback
+        if (data.stuffingLocation) {
+          form.setValue('containerStuffingLocation', data.stuffingLocation, { shouldValidate: false, shouldDirty: true });
+          console.log('Set containerStuffingLocation from ISF field:', data.stuffingLocation);
+        } else if (data.portOfLoading || data.placeOfReceipt) {
           const stuffingLocation = data.portOfLoading || data.placeOfReceipt;
           form.setValue('containerStuffingLocation', stuffingLocation, { shouldValidate: false, shouldDirty: true });
-          console.log('Set containerStuffingLocation:', stuffingLocation);
+          console.log('Set containerStuffingLocation from port:', stuffingLocation);
         }
 
         // Consolidator information - use shipper as consolidator if available
@@ -425,6 +436,13 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
             form.setValue('hblScacCode', scacCode, { shouldValidate: false, shouldDirty: true });
             console.log(`Set SCAC codes for ${data.vesselName}: ${scacCode}`);
           }
+        }
+
+        // Handle AMS Number from ISF-specific field
+        if (data['ams b/l#'] || data.amsBl) {
+          const amsNumber = data['ams b/l#'] || data.amsBl;
+          form.setValue('amsNumber', amsNumber, { shouldValidate: false, shouldDirty: true });
+          console.log('Set amsNumber from ISF field:', amsNumber);
         }
 
         // Store extracted data and populate form
