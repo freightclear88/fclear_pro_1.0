@@ -264,7 +264,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           dateIssued: 'dateIssued',
           onBoardDate: 'onBoardDate',
           // Key fields from the log data that need mapping
-          manufacturerCountry: 'countryOfOrigin',
+          // manufacturerCountry: 'countryOfOrigin', // Commented out to prevent override of ISF country of origin
           portOfLoading: 'foreignPortOfLading',
           placeOfReceipt: 'foreignPortOfLading',
           placeOfDelivery: 'portOfEntry',
@@ -286,6 +286,45 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           containerStuffingLocation: data.containerStuffingLocation,
           'stuffing location': data['stuffing location']
         });
+        
+        // CRITICAL: Handle ISF-specific fields FIRST before automatic mapping
+        // Container Stuffing Location - check multiple possible field variations
+        let stuffingLocationFound = false;
+        const possibleStuffingFields = [
+          'stuffingLocation',
+          'stuffing location', 
+          'container stuffing location',
+          'containerStuffingLocation',
+          'Container Stuffing Location',
+          'CONTAINER STUFFING LOCATION'
+        ];
+        
+        for (const fieldName of possibleStuffingFields) {
+          if (data[fieldName] && !stuffingLocationFound) {
+            form.setValue('containerStuffingLocation', data[fieldName], { shouldValidate: false, shouldDirty: true });
+            console.log(`Set containerStuffingLocation from ISF field "${fieldName}":`, data[fieldName]);
+            stuffingLocationFound = true;
+            // Remove from automatic mapping to prevent override
+            delete data[fieldName];
+            break;
+          }
+        }
+        
+        // Handle ISF manufacture field
+        if (data.manufacture) {
+          form.setValue('manufacturerInformation', data.manufacture, { shouldValidate: false, shouldDirty: true });
+          console.log('Set manufacturerInformation from ISF manufacture field:', data.manufacture);
+          delete data.manufacture; // Prevent override by automatic mapping
+        }
+        
+        // Handle AMS Number from ISF-specific field
+        if (data['ams b/l#'] || data.amsBl) {
+          const amsNumber = data['ams b/l#'] || data.amsBl;
+          form.setValue('amsNumber', amsNumber, { shouldValidate: false, shouldDirty: true });
+          console.log('Set amsNumber from ISF field:', amsNumber);
+          delete data['ams b/l#'];
+          delete data.amsBl;
+        }
         
         // Handle individual company names first for importer/consignee
         if (data.importerName && data.importerName.trim()) {
@@ -311,19 +350,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           console.log('Set buyerInformation from consignee data:', consigneeInfo);
         }
         
-        // Handle manufacturer information - prioritize ISF-specific field
-        if (data.manufacture) {
-          form.setValue('manufacturerInformation', data.manufacture, { shouldValidate: false, shouldDirty: true });
-          console.log('Set manufacturerInformation from ISF manufacture field:', data.manufacture);
-        } else if (data.shipperName && data.shipperAddress) {
-          const manufacturerInfo = `${data.shipperName}\n${data.shipperAddress}`;
-          form.setValue('manufacturerInformation', manufacturerInfo, { shouldValidate: false, shouldDirty: true });
-          console.log('Set manufacturerInformation from shipper data:', manufacturerInfo);
-        } else if (data.countryOfOrigin) {
-          const manufacturerInfo = `Manufacturer from ${data.countryOfOrigin}`;
-          form.setValue('manufacturerInformation', manufacturerInfo, { shouldValidate: false, shouldDirty: true });
-          console.log('Set manufacturerInformation from country:', manufacturerInfo);
-        }
+
         
         // Handle the new consolidated info fields from backend (fallback)
         if (data.sellerInfo && data.sellerInfo.trim()) {
@@ -408,27 +435,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           console.log('Set shipToPartyInformation from consignee:', shipToInfo);
         }
 
-        // Container Stuffing Location - check multiple possible field variations
-        let stuffingLocationFound = false;
-        const possibleStuffingFields = [
-          'stuffingLocation',
-          'stuffing location', 
-          'container stuffing location',
-          'containerStuffingLocation',
-          'Container Stuffing Location',
-          'CONTAINER STUFFING LOCATION'
-        ];
-        
-        for (const fieldName of possibleStuffingFields) {
-          if (data[fieldName] && !stuffingLocationFound) {
-            form.setValue('containerStuffingLocation', data[fieldName], { shouldValidate: false, shouldDirty: true });
-            console.log(`Set containerStuffingLocation from ISF field "${fieldName}":`, data[fieldName]);
-            stuffingLocationFound = true;
-            break;
-          }
-        }
-        
-        // Fallback to port information if no ISF-specific stuffing location found
+        // Fallback for container stuffing location if not set by ISF-specific fields
         if (!stuffingLocationFound && (data.portOfLoading || data.placeOfReceipt)) {
           const stuffingLocation = data.portOfLoading || data.placeOfReceipt;
           form.setValue('containerStuffingLocation', stuffingLocation, { shouldValidate: false, shouldDirty: true });
