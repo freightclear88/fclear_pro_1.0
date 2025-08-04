@@ -519,15 +519,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           }
         }
         
-        // CRITICAL: Fix country of origin AFTER all automatic mappings
-        // Override any incorrect country of origin mapping
-        if (data.portOfLoading && data.portOfLoading.includes('KOREA')) {
-          form.setValue('countryOfOrigin', 'South Korea', { shouldValidate: false, shouldDirty: true });
-          console.log('FINAL: Set countryOfOrigin to South Korea based on port of loading');
-        } else if (data.placeOfReceipt && data.placeOfReceipt.includes('KOREA')) {
-          form.setValue('countryOfOrigin', 'South Korea', { shouldValidate: false, shouldDirty: true });
-          console.log('FINAL: Set countryOfOrigin to South Korea based on place of receipt');
-        }
+        // Note: Country of origin should use the value from the ISF document as provided
         
         // Force form re-render and clear validation errors
         setTimeout(() => {
