@@ -195,7 +195,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
     },
   });
 
-  // ISF document processing handler for the new upload component
+  // ISF document processing handler using the new consolidated backend system
   const handleIsfDocumentProcessing = async (files: File[]) => {
     if (!files.length) return;
 
@@ -206,10 +206,10 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
     try {
       const formData = new FormData();
       files.forEach(file => {
-        formData.append("isfDocuments", file);
+        formData.append("documents", file);
       });
 
-      const response = await fetch("/api/isf/scan-documents", {
+      const response = await fetch("/api/isf/fill-form", {
         method: "POST",
         body: formData,
       });
@@ -220,413 +220,77 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
 
       const result = await response.json();
       
-      // Handle the multi-document response with consolidated extracted data
-      if (result.success && result.extractedData) {
-        console.log("🚀 EXECUTION CHECKPOINT 1: Consolidated data received:", result.extractedData);
-        setProcessedDocuments(result.processedDocuments || []);
+      // Handle the consolidated document response from the new backend system
+      if (result.success && result.isfFormData) {
+        console.log("ISF form data received from consolidated extraction:", result.isfFormData);
+        setExtractedData(result.isfFormData);
         
-        // Map extracted data to form fields - comprehensive mapping for all extracted fields
-        const fieldMapping: Record<string, string> = {
-          vesselName: 'vesselName',
-          voyageNumber: 'voyageNumber', 
-          containerNumbers: 'containerNumbers',
-          billOfLading: 'billOfLading',
-          portOfEntry: 'portOfEntry',
-          estimatedArrivalDate: 'estimatedArrivalDate',
-          estimatedDepartureDate: 'estimatedDepartureDate',
-          countryOfOrigin: 'countryOfOrigin',
-          htsusNumber: 'htsusNumber',
-          commodityDescription: 'commodityDescription',
-          mblScacCode: 'mblScacCode',
-          hblScacCode: 'hblScacCode',
-          amsNumber: 'amsNumber',
-          containerStuffingLocation: 'containerStuffingLocation',
-          consolidatorStufferInfo: 'consolidatorStufferInfo',
-          consolidator: 'consolidatorStufferInfo',
-          consolidatorInformation: 'consolidatorStufferInfo',
-          // Enhanced party information fields
-          importerName: 'importerName',
-          importerAddress: 'importerAddress',
-          consigneeName: 'consigneeName',
-          consigneeAddress: 'consigneeAddress',
-          manufacturerInformation: 'manufacturerInformation',
-          sellerInformation: 'sellerInformation',
-          buyerInformation: 'buyerInformation',
-          shipToPartyInformation: 'shipToPartyInformation',
-          // Additional comprehensive fields from extraction
-          foreignPortOfLading: 'foreignPortOfLading',
-          bookingNumber: 'bookingReference',
-          containerType: 'containerType',
-          sealNumbers: 'sealNumbers',
-          numberOfPackages: 'numberOfPackages',
-          packageType: 'packageType',
-          grossWeight: 'grossWeight',
-          dateIssued: 'dateIssued',
-          onBoardDate: 'onBoardDate',
-          // Key fields from the log data that need mapping
-          // manufacturerCountry: 'countryOfOrigin', // Commented out to prevent override of ISF country of origin
-          portOfLoading: 'foreignPortOfLading',
-          placeOfReceipt: 'foreignPortOfLading',
-          placeOfDelivery: 'portOfEntry',
-          // ISF-specific field mappings
-          stuffingLocation: 'containerStuffingLocation',
-          manufacture: 'manufacturerInformation',
-          'ams b/l#': 'amsNumber',
-          amsBl: 'amsNumber'
-        };
-
-        console.log("🚀 EXECUTION CHECKPOINT 2: Field mapping defined, about to process data");
-
-        // Handle consolidated party information
-        const data = result.extractedData;
+        // Apply the extracted data directly to the form fields
+        const data = result.isfFormData;
         
-        // CRITICAL DEBUG: This should appear in console logs
-        console.log('🔍 ISF FIELD MAPPING DEBUG - START');
-        console.log('All extracted field names:', Object.keys(data));
-        console.log('Looking for stuffing location fields...', {
-          stuffingLocation: data.stuffingLocation,
-          'container stuffing location': data['container stuffing location'],
-          containerStuffingLocation: data.containerStuffingLocation,
-          'stuffing location': data['stuffing location']
-        });
-        
-        // CRITICAL: Handle ISF-specific fields FIRST before automatic mapping
-        // Container Stuffing Location - check multiple possible field variations
-        let stuffingLocationFound = false;
-        const possibleStuffingFields = [
-          'stuffingLocation',
-          'stuffing location', 
-          'container stuffing location',
-          'containerStuffingLocation',
-          'Container Stuffing Location',
-          'CONTAINER STUFFING LOCATION'
-        ];
-        
-        for (const fieldName of possibleStuffingFields) {
-          if (data[fieldName] && !stuffingLocationFound) {
-            form.setValue('containerStuffingLocation', data[fieldName], { shouldValidate: false, shouldDirty: true });
-            console.log(`Set containerStuffingLocation from ISF field "${fieldName}":`, data[fieldName]);
-            stuffingLocationFound = true;
-            // Remove from automatic mapping to prevent override
-            delete data[fieldName];
-            break;
-          }
-        }
-        
-        // Handle ISF manufacture field - check multiple variations
-        if (data.manufacture) {
-          form.setValue('manufacturerInformation', data.manufacture, { shouldValidate: false, shouldDirty: true });
-          console.log('Set manufacturerInformation from ISF manufacture field:', data.manufacture);
-          delete data.manufacture; // Prevent override by automatic mapping
-        } else if (data.manufacturerCountry) {
-          // Use manufacturerCountry from ISF document for manufacturer information
-          form.setValue('manufacturerInformation', data.manufacturerCountry, { shouldValidate: false, shouldDirty: true });
-          console.log('Set manufacturerInformation from ISF manufacturerCountry field:', data.manufacturerCountry);
-          delete data.manufacturerCountry; // Prevent override by automatic mapping
-        }
-        
-        // Handle AMS Number from ISF-specific field
-        if (data['ams b/l#'] || data.amsBl) {
-          const amsNumber = data['ams b/l#'] || data.amsBl;
-          form.setValue('amsNumber', amsNumber, { shouldValidate: false, shouldDirty: true });
-          console.log('Set amsNumber from ISF field:', amsNumber);
-          delete data['ams b/l#'];
-          delete data.amsBl;
-        }
-        
-        // Handle individual company names first for importer/consignee
-        if (data.importerName && data.importerName.trim()) {
-          form.setValue('importerName', data.importerName.trim(), { shouldValidate: false, shouldDirty: true });
-          console.log('Set importerName to:', data.importerName);
-        }
-        
-        if (data.consigneeName && data.consigneeName.trim()) {
-          form.setValue('consigneeName', data.consigneeName.trim(), { shouldValidate: false, shouldDirty: true });
-          console.log('Set consigneeName to:', data.consigneeName);
-        }
-        
-        // Handle consolidated addresses from comprehensive extraction
-        if (data.shipperAddress && data.shipperName) {
-          const shipperInfo = `${data.shipperName}\n${data.shipperAddress}`;
-          form.setValue('sellerInformation', shipperInfo, { shouldValidate: false, shouldDirty: true });
-          console.log('Set sellerInformation from shipper data:', shipperInfo);
-        }
-        
-        if (data.consigneeAddress && data.consigneeName) {
-          const consigneeInfo = `${data.consigneeName}\n${data.consigneeAddress}`;
-          form.setValue('buyerInformation', consigneeInfo, { shouldValidate: false, shouldDirty: true });
-          console.log('Set buyerInformation from consignee data:', consigneeInfo);
-        }
-        
-
-        
-        // Handle the new consolidated info fields from backend (fallback)
-        if (data.sellerInfo && data.sellerInfo.trim()) {
-          form.setValue('sellerInformation', data.sellerInfo);
-          console.log('Set sellerInformation to:', data.sellerInfo);
-        }
-        
-        if (data.buyerInfo && data.buyerInfo.trim()) {
-          form.setValue('buyerInformation', data.buyerInfo);
-          console.log('Set buyerInformation to:', data.buyerInfo);
-        }
-        
-        if (data.manufacturerInfo && data.manufacturerInfo.trim()) {
-          form.setValue('manufacturerInformation', data.manufacturerInfo);
-          console.log('Set manufacturerInformation to:', data.manufacturerInfo);
-        }
-        
-        // Build consolidated seller information (fallback for old format)
-        if (!data.sellerInfo && (data.sellerName || data.sellerAddress || data.sellerCity || data.sellerCountry)) {
-          const sellerParts = [];
-          if (data.sellerName) sellerParts.push(data.sellerName);
-          if (data.sellerAddress) sellerParts.push(data.sellerAddress);
-          if (data.sellerCity && data.sellerCountry) sellerParts.push(`${data.sellerCity}, ${data.sellerCountry}`);
-          else if (data.sellerCity) sellerParts.push(data.sellerCity);
-          else if (data.sellerCountry) sellerParts.push(data.sellerCountry);
-          
-          if (sellerParts.length > 0) {
-            form.setValue('sellerInformation', sellerParts.join('\n'));
-            console.log('Set sellerInformation to:', sellerParts.join('\n'));
-          }
-        }
-
-        // Build consolidated buyer information (fallback for old format)
-        if (!data.buyerInfo && (data.buyerName || data.buyerAddress || data.buyerCity || data.buyerCountry)) {
-          const buyerParts = [];
-          if (data.buyerName) buyerParts.push(data.buyerName);
-          if (data.buyerAddress) buyerParts.push(data.buyerAddress);
-          if (data.buyerCity && data.buyerCountry) buyerParts.push(`${data.buyerCity}, ${data.buyerCountry}`);
-          else if (data.buyerCity) buyerParts.push(data.buyerCity);
-          else if (data.buyerCountry) buyerParts.push(data.buyerCountry);
-          
-          if (buyerParts.length > 0) {
-            form.setValue('buyerInformation', buyerParts.join('\n'));
-            console.log('Set buyerInformation to:', buyerParts.join('\n'));
-          }
-        }
-
-        // Build consolidated manufacturer information (fallback for old format)
-        if (!data.manufacturerInfo && (data.manufacturerName || data.manufacturerAddress || data.manufacturerCity || data.manufacturerCountry)) {
-          const manufacturerParts = [];
-          if (data.manufacturerName) manufacturerParts.push(data.manufacturerName);
-          if (data.manufacturerAddress) manufacturerParts.push(data.manufacturerAddress);
-          if (data.manufacturerCity && data.manufacturerCountry) manufacturerParts.push(`${data.manufacturerCity}, ${data.manufacturerCountry}`);
-          else if (data.manufacturerCity) manufacturerParts.push(data.manufacturerCity);
-          else if (data.manufacturerCountry) manufacturerParts.push(data.manufacturerCountry);
-          
-          if (manufacturerParts.length > 0) {
-            form.setValue('manufacturerInformation', manufacturerParts.join('\n'));
-            console.log('Set manufacturerInformation to:', manufacturerParts.join('\n'));
-          }
-        }
-
-        // Build consolidated ship-to party information
-        if (data.shipToPartyName || data.shipToPartyAddress || data.shipToPartyCity) {
-          const shipToParts = [];
-          if (data.shipToPartyName) shipToParts.push(data.shipToPartyName);
-          if (data.shipToPartyAddress) shipToParts.push(data.shipToPartyAddress);
-          if (data.shipToPartyCity) shipToParts.push(`${data.shipToPartyCity}, USA`);
-          else shipToParts.push('USA');
-          
-          if (shipToParts.length > 0) {
-            form.setValue('shipToPartyInformation', shipToParts.join('\n'));
-            console.log('Set shipToPartyInformation to:', shipToParts.join('\n'));
-          }
-        }
-
-        // Handle missing critical ISF fields BEFORE the automatic field mapping
-        // Ship-to Party Information - use consignee data
-        if (data.consigneeName && data.consigneeAddress) {
-          const shipToInfo = `${data.consigneeName}\n${data.consigneeAddress}`;
-          form.setValue('shipToPartyInformation', shipToInfo, { shouldValidate: false, shouldDirty: true });
-          console.log('Set shipToPartyInformation from consignee:', shipToInfo);
-        }
-
-        // Fallback for container stuffing location if not set by ISF-specific fields
-        if (!stuffingLocationFound && (data.portOfLoading || data.placeOfReceipt)) {
-          const stuffingLocation = data.portOfLoading || data.placeOfReceipt;
-          form.setValue('containerStuffingLocation', stuffingLocation, { shouldValidate: false, shouldDirty: true });
-          console.log('Set containerStuffingLocation from port (fallback):', stuffingLocation);
-        }
-
-        // Consolidator information - use shipper as consolidator if available
-        if (data.shipperName && data.shipperAddress) {
-          const consolidatorInfo = `${data.shipperName}\n${data.shipperAddress}`;
-          form.setValue('consolidatorStufferInfo', consolidatorInfo, { shouldValidate: false, shouldDirty: true });
-          console.log('Set consolidatorStufferInfo from shipper:', consolidatorInfo);
-        }
-
-        // Handle SCAC Codes - extract from carrier/vessel information
-        if (data.vesselName) {
-          let scacCode = '';
-          if (data.vesselName.includes('COSCO')) {
-            scacCode = 'COSU';
-          } else if (data.vesselName.includes('MAERSK')) {
-            scacCode = 'MAEU';
-          } else if (data.vesselName.includes('MSC')) {
-            scacCode = 'MSCU';
-          } else if (data.vesselName.includes('EVERGREEN')) {
-            scacCode = 'EGLV';
-          } else if (data.vesselName.includes('YANG MING')) {
-            scacCode = 'YMLU';
-          }
-          
-          if (scacCode) {
-            form.setValue('mblScacCode', scacCode, { shouldValidate: false, shouldDirty: true });
-            form.setValue('hblScacCode', scacCode, { shouldValidate: false, shouldDirty: true });
-            console.log(`Set SCAC codes for ${data.vesselName}: ${scacCode}`);
-          }
-        }
-
-        // Handle AMS Number from ISF-specific field
-        if (data['ams b/l#'] || data.amsBl) {
-          const amsNumber = data['ams b/l#'] || data.amsBl;
-          form.setValue('amsNumber', amsNumber, { shouldValidate: false, shouldDirty: true });
-          console.log('Set amsNumber from ISF field:', amsNumber);
-        }
-
-        // Store extracted data and populate form
-        setExtractedData(result.extractedData);
-        
-        // Clear any placeholder text from required fields before populating
-        const requiredFields = ['manufacturerInformation', 'sellerInformation', 'buyerInformation', 'shipToPartyInformation'];
-        requiredFields.forEach(field => {
-          const currentValue = form.getValues(field as keyof IsfFormData);
-          if (currentValue && typeof currentValue === 'string' && currentValue.includes('Enter ')) {
-            form.setValue(field as keyof IsfFormData, '', { shouldValidate: false, shouldDirty: true });
-          }
-        });
-        
-        // Populate form with extracted data
-        Object.entries(result.extractedData).forEach(([extractedKey, value]) => {
-          const formFieldKey = fieldMapping[extractedKey];
-          
-          if (formFieldKey && value && value.toString().trim() && value.toString().trim() !== 'TBD') {
-            try {
-              console.log(`Setting ${formFieldKey} to:`, value);
-              
-              // Handle date fields specially
-              if (formFieldKey === 'estimatedArrivalDate' && value) {
-                const dateValue = new Date(value.toString());
-                if (!isNaN(dateValue.getTime())) {
-                  const dateString = dateValue.toISOString().split('T')[0];
-                  form.setValue(formFieldKey as keyof IsfFormData, dateString, { 
-                    shouldValidate: false, 
-                    shouldDirty: true 
-                  });
-                  console.log(`Set date field ${formFieldKey} to:`, dateString);
-                }
-              } else {
-                const stringValue = value.toString().trim();
-                form.setValue(formFieldKey as keyof IsfFormData, stringValue, { 
+        // Set form values using the pre-mapped data from backend
+        Object.entries(data).forEach(([key, value]) => {
+          if (value && typeof value === 'string' && value.trim() !== '') {
+            // Map backend field names to form field names
+            const formFieldMap: Record<string, string> = {
+              // Direct field mappings
+              importerName: 'importerName',
+              importerAddress: 'importerAddress', 
+              consigneeName: 'consigneeName',
+              consigneeAddress: 'consigneeAddress',
+              manufacturerInformation: 'manufacturerInformation',
+              sellerInformation: 'sellerInformation',
+              buyerInformation: 'buyerInformation',
+              shipToPartyInformation: 'shipToPartyInformation',
+              billOfLading: 'billOfLading',
+              vesselName: 'vesselName',
+              voyageNumber: 'voyageNumber',
+              containerNumbers: 'containerNumbers',
+              portOfEntry: 'portOfEntry',
+              foreignPortOfLading: 'foreignPortOfLading',
+              estimatedArrivalDate: 'estimatedArrivalDate',
+              estimatedDepartureDate: 'estimatedDepartureDate',
+              commodityDescription: 'commodityDescription',
+              htsusNumber: 'htsusNumber',
+              countryOfOrigin: 'countryOfOrigin',
+              scacCode: 'mblScacCode',
+              mblScacCode: 'mblScacCode',
+              hblScacCode: 'hblScacCode',
+              amsNumber: 'amsNumber',
+              containerStuffingLocation: 'containerStuffingLocation',
+              consolidatorInformation: 'consolidatorStufferInfo',
+              consolidator: 'consolidatorStufferInfo'
+            };
+            
+            const formField = formFieldMap[key] || key;
+            
+            // Set the form value with proper validation
+            if (form.setValue && typeof form.setValue === 'function') {
+              try {
+                form.setValue(formField as any, value, { 
                   shouldValidate: false, 
                   shouldDirty: true 
                 });
-                console.log(`Set field ${formFieldKey} to:`, stringValue);
+                console.log(`Set ${formField}:`, value);
+              } catch (error) {
+                console.warn(`Failed to set form field ${formField}:`, error);
               }
-            } catch (error) {
-              console.error(`Failed to set ${formFieldKey}:`, error);
             }
           }
         });
-
-        // Handle separate container stuffing location and consolidator/stuffer info from extracted data
         
-        // Build container stuffing location info
-        if (!data.containerStuffingLocation && (data.containerStuffingCity || data.containerStuffingCountry)) {
-          const locationInfo = [];
-          if (data.containerStuffingLocation) locationInfo.push(data.containerStuffingLocation);
-          if (data.containerStuffingCity) locationInfo.push(`City: ${data.containerStuffingCity}`);
-          if (data.containerStuffingCountry) locationInfo.push(`Country: ${data.containerStuffingCountry}`);
-          
-          if (locationInfo.length > 0) {
-            form.setValue("containerStuffingLocation", locationInfo.join('\n'));
-            console.log('Set containerStuffingLocation to:', locationInfo.join('\n'));
-          }
-        }
-        
-        // Build consolidator info
-        if (!data.consolidatorStufferInfo && (data.consolidatorName || data.consolidatorAddress)) {
-          const consolidatorInfo = [];
-          if (data.consolidatorName) consolidatorInfo.push(`Company: ${data.consolidatorName}`);
-          if (data.consolidatorAddress) consolidatorInfo.push(`Address: ${data.consolidatorAddress}`);
-          if (data.consolidatorCity) consolidatorInfo.push(`City: ${data.consolidatorCity}`);
-          if (data.consolidatorCountry) consolidatorInfo.push(`Country: ${data.consolidatorCountry}`);
-          
-          if (consolidatorInfo.length > 0) {
-            form.setValue("consolidatorStufferInfo", consolidatorInfo.join('\n'));
-            console.log('Set consolidatorStufferInfo to:', consolidatorInfo.join('\n'));
-          }
-        }
-        
-        // Note: Country of origin should use the value from the ISF document as provided
-        
-        // CRITICAL ISF FIELD PROCESSING - Override automatic mappings with ISF-specific logic
-        console.log('🔍 ISF FIELD OVERRIDE - Processing ISF-specific fields');
-        
-        // Override manufacturerInformation with manufacturerCountry from ISF
-        if (data.manufacturerCountry) {
-          form.setValue('manufacturerInformation', data.manufacturerCountry, { shouldValidate: false, shouldDirty: true });
-          console.log('🎯 OVERRIDE manufacturerInformation with ISF manufacturerCountry:', data.manufacturerCountry);
-        }
-        
-        // Override container stuffing location with specific stuffing fields first, then port fallback
-        let stuffingLocationSet = false;
-        const stuffingFields = ['containerStuffingLocation', 'containerStuffing', 'stuffingLocation'];
-        
-        console.log('🔍 DEBUG container stuffing - Available fields:', stuffingFields.map(f => `${f}: ${data[f] || 'NOT_FOUND'}`));
-        
-        for (const fieldName of stuffingFields) {
-          if (data[fieldName] && !stuffingLocationSet) {
-            form.setValue('containerStuffingLocation', data[fieldName], { shouldValidate: false, shouldDirty: true });
-            console.log('🎯 OVERRIDE containerStuffingLocation with ISF field:', fieldName, '=', data[fieldName]);
-            stuffingLocationSet = true;
-            break;
-          }
-        }
-        
-        // If no specific stuffing location found, use port as fallback
-        if (!stuffingLocationSet && data.portOfLoading) {
-          form.setValue('containerStuffingLocation', data.portOfLoading, { shouldValidate: false, shouldDirty: true });
-          console.log('🎯 OVERRIDE containerStuffingLocation with ISF port fallback:', data.portOfLoading);
-        }
-        
-        // Override country of origin to ensure it's from ISF document
-        if (data.countryOfOrigin) {
-          form.setValue('countryOfOrigin', data.countryOfOrigin, { shouldValidate: false, shouldDirty: true });
-          console.log('🎯 OVERRIDE countryOfOrigin with ISF value:', data.countryOfOrigin);
-        }
-        
-        // Force form re-render and clear validation errors
-        setTimeout(() => {
-          console.log("Form values after population:", form.getValues());
-          form.clearErrors(); // Clear validation errors to allow manual entry
-          form.trigger(); // Trigger validation to update the form state
-          
-          // Force re-render
-          setIsScanning(false);
-        }, 200);
-
         toast({
           title: "Documents Processed Successfully",
-          description: `Processed ${files.length} document(s) and extracted ${result.consolidatedFields} ISF fields. Review and complete any missing information.`,
+          description: `${result.extractionSummary?.documentsProcessed || files.length} documents processed, ${result.extractionSummary?.fieldsExtracted || 0} fields extracted`,
         });
-        
-        return;
-
       } else {
-        toast({
-          title: "No data extracted",
-          description: "Unable to extract ISF data from the document",
-          variant: "destructive",
-        });
+        throw new Error("No data extracted from documents");
       }
     } catch (error) {
-      console.error("Document scanning error:", error);
+      console.error("Error processing ISF documents:", error);
       toast({
-        title: "Scanning failed",
-        description: "Could not extract data from document. Please fill form manually.",
+        title: "Document Processing Failed",
+        description: error.message || "Failed to process documents",
         variant: "destructive",
       });
     } finally {
