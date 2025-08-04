@@ -5002,6 +5002,14 @@ ${excelText}`;
           }
           
           console.log(`Document ${file.originalname} identified as type: ${documentType}`);
+          console.log(`🔍 DEBUG extractedData for ${file.originalname}:`, JSON.stringify(extractedData, null, 2));
+          console.log(`🔍 DEBUG container stuffing fields:`, {
+            containerStuffingLocation: extractedData.containerStuffingLocation,
+            containerStuffing: extractedData.containerStuffing,
+            stuffingLocation: extractedData.stuffingLocation,
+            containerStuffing_location: extractedData.containerStuffing_location,
+            container_stuffing_location: extractedData.container_stuffing_location
+          });
           
           allExtractedData.push({
             documentType: documentType,
