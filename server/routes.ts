@@ -4988,14 +4988,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Consolidated ISF form data:', consolidatedData);
 
-      // Debug logging for container stuffing location field mapping
-      console.log('🔍 ISF CONTAINER STUFFING DEBUG:');
+      // Debug logging for ISF field mapping - ALL FIELDS
+      console.log('🔍 ISF FIELD MAPPING DEBUG - ALL CONSOLIDATED FIELDS:');
+      console.log('ALL FIELD NAMES:', Object.keys(consolidatedData));
+      console.log('🔍 CONTAINER STUFFING DEBUG:');
       console.log('  containerStuffingLocation:', consolidatedData.containerStuffingLocation);
       console.log('  stuffing location:', consolidatedData['stuffing location']);
       console.log('  stuffingLocation:', consolidatedData.stuffingLocation);
       console.log('  container stuffing location:', consolidatedData['container stuffing location']);
       console.log('  portOfLoading:', consolidatedData.portOfLoading);
       console.log('  placeOfReceipt:', consolidatedData.placeOfReceipt);
+      console.log('🔍 MANUFACTURER DEBUG:');
+      console.log('  manufacturerName:', consolidatedData.manufacturerName);
+      console.log('  manufacturerAddress:', consolidatedData.manufacturerAddress);
+      console.log('  manufacturerCountry:', consolidatedData.manufacturerCountry);
+      console.log('  manufacture:', consolidatedData.manufacture);
+      console.log('  countryOfOrigin:', consolidatedData.countryOfOrigin);
 
       // Map consolidated data to ISF form fields using the exact same field mappings
       const isfFormData = {
@@ -5066,6 +5074,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       console.log('ISF form data mapped from consolidated extraction:', isfFormData);
+      
+      // Debug the specific problematic fields
+      console.log('🎯 FINAL ISF FIELD VALUES:');
+      console.log('  Final containerStuffingLocation:', isfFormData.containerStuffingLocation);
+      console.log('  Final manufacturerInformation:', isfFormData.manufacturerInformation);
 
       res.json({
         success: true,
