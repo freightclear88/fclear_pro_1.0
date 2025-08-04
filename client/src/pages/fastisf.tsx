@@ -225,7 +225,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         console.log("Consolidated data received:", result.extractedData);
         setProcessedDocuments(result.processedDocuments || []);
         
-        // Map extracted data to form fields - comprehensive mapping for all OpenAI extracted fields
+        // Map extracted data to form fields - comprehensive mapping for all extracted fields
         const fieldMapping: Record<string, string> = {
           vesselName: 'vesselName',
           voyageNumber: 'voyageNumber', 
@@ -242,7 +242,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           amsNumber: 'amsNumber',
           containerStuffingLocation: 'containerStuffingLocation',
           consolidatorStufferInfo: 'consolidatorStufferInfo',
-          consolidator: 'consolidator',
+          consolidator: 'consolidatorStufferInfo',
           consolidatorInformation: 'consolidatorStufferInfo',
           // Enhanced party information fields
           importerName: 'importerName',
@@ -253,7 +253,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           sellerInformation: 'sellerInformation',
           buyerInformation: 'buyerInformation',
           shipToPartyInformation: 'shipToPartyInformation',
-          // Additional comprehensive fields from OpenAI extraction
+          // Additional comprehensive fields from extraction
           foreignPortOfLading: 'foreignPortOfLading',
           bookingNumber: 'bookingReference',
           containerType: 'containerType',
@@ -262,7 +262,12 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           packageType: 'packageType',
           grossWeight: 'grossWeight',
           dateIssued: 'dateIssued',
-          onBoardDate: 'onBoardDate'
+          onBoardDate: 'onBoardDate',
+          // Key fields from the log data that need mapping
+          manufacturerCountry: 'countryOfOrigin',
+          portOfLoading: 'foreignPortOfLading',
+          placeOfReceipt: 'foreignPortOfLading',
+          placeOfDelivery: 'portOfEntry'
         };
 
         // Handle consolidated party information
@@ -270,33 +275,33 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         
         // Handle individual company names first for importer/consignee
         if (data.importerName && data.importerName.trim()) {
-          form.setValue('importerName', data.importerName.trim());
+          form.setValue('importerName', data.importerName.trim(), { shouldValidate: false, shouldDirty: true });
           console.log('Set importerName to:', data.importerName);
         }
         
         if (data.consigneeName && data.consigneeName.trim()) {
-          form.setValue('consigneeName', data.consigneeName.trim());
+          form.setValue('consigneeName', data.consigneeName.trim(), { shouldValidate: false, shouldDirty: true });
           console.log('Set consigneeName to:', data.consigneeName);
         }
         
         // Handle consolidated addresses from comprehensive extraction
         if (data.shipperAddress && data.shipperName) {
           const shipperInfo = `${data.shipperName}\n${data.shipperAddress}`;
-          form.setValue('sellerInformation', shipperInfo);
+          form.setValue('sellerInformation', shipperInfo, { shouldValidate: false, shouldDirty: true });
           console.log('Set sellerInformation from shipper data:', shipperInfo);
         }
         
         if (data.consigneeAddress && data.consigneeName) {
           const consigneeInfo = `${data.consigneeName}\n${data.consigneeAddress}`;
-          form.setValue('buyerInformation', consigneeInfo);
+          form.setValue('buyerInformation', consigneeInfo, { shouldValidate: false, shouldDirty: true });
           console.log('Set buyerInformation from consignee data:', consigneeInfo);
         }
         
         // Handle manufacturer information from country of origin
         if (data.countryOfOrigin) {
-          const manufacturerInfo = `Manufacturer/Supplier\nCountry: ${data.countryOfOrigin}`;
-          form.setValue('manufacturerInformation', manufacturerInfo);
-          console.log('Set manufacturerInformation with country:', manufacturerInfo);
+          const manufacturerInfo = data.countryOfOrigin;
+          form.setValue('manufacturerInformation', manufacturerInfo, { shouldValidate: false, shouldDirty: true });
+          console.log('Set manufacturerInformation to:', manufacturerInfo);
         }
         
         // Handle the new consolidated info fields from backend (fallback)
@@ -377,6 +382,15 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         // Store extracted data and populate form
         setExtractedData(result.extractedData);
         
+        // Clear any placeholder text from required fields before populating
+        const requiredFields = ['manufacturerInformation', 'sellerInformation', 'buyerInformation', 'shipToPartyInformation'];
+        requiredFields.forEach(field => {
+          const currentValue = form.getValues(field as keyof IsfFormData);
+          if (currentValue && typeof currentValue === 'string' && currentValue.includes('Enter ')) {
+            form.setValue(field as keyof IsfFormData, '', { shouldValidate: false, shouldDirty: true });
+          }
+        });
+        
         // Populate form with extracted data
         Object.entries(result.extractedData).forEach(([extractedKey, value]) => {
           const formFieldKey = fieldMapping[extractedKey];
@@ -443,6 +457,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         setTimeout(() => {
           console.log("Form values after population:", form.getValues());
           form.clearErrors(); // Clear validation errors to allow manual entry
+          form.trigger(); // Trigger validation to update the form state
           
           // Force re-render
           setIsScanning(false);
