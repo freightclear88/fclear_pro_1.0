@@ -278,7 +278,8 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         // Handle consolidated party information
         const data = result.extractedData;
         
-        // Debug: Log all extracted field names to identify ISF-specific fields
+        // CRITICAL DEBUG: This should appear in console logs
+        console.log('🔍 ISF FIELD MAPPING DEBUG - START');
         console.log('All extracted field names:', Object.keys(data));
         console.log('Looking for stuffing location fields...', {
           stuffingLocation: data.stuffingLocation,
@@ -310,11 +311,16 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           }
         }
         
-        // Handle ISF manufacture field
+        // Handle ISF manufacture field - check multiple variations
         if (data.manufacture) {
           form.setValue('manufacturerInformation', data.manufacture, { shouldValidate: false, shouldDirty: true });
           console.log('Set manufacturerInformation from ISF manufacture field:', data.manufacture);
           delete data.manufacture; // Prevent override by automatic mapping
+        } else if (data.manufacturerCountry) {
+          // Use manufacturerCountry from ISF document for manufacturer information
+          form.setValue('manufacturerInformation', data.manufacturerCountry, { shouldValidate: false, shouldDirty: true });
+          console.log('Set manufacturerInformation from ISF manufacturerCountry field:', data.manufacturerCountry);
+          delete data.manufacturerCountry; // Prevent override by automatic mapping
         }
         
         // Handle AMS Number from ISF-specific field
