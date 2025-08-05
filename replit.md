@@ -24,6 +24,7 @@ Key Features Requested:
 - Enhanced admin POA management with document viewing capability before validation - admins can now view user POA documents in-browser before approving or rejecting (August 2025)
 - Comprehensive Descartes OneView XML integration with support for OneView Standard, UN/EDIFACT, and Cargo XML formats for seamless freight management platform connectivity (August 2025)
 - Updated ISF form field #4 from "Consignee Number" to "Consignee" with multi-line text area to better capture complete consignee information including company name, address, and contact details (August 2025)
+- ISF Filing to Shipment conversion functionality with automatic ocean transport mode assignment - ISF filings always convert to ocean shipments as ISF is specifically required for maritime imports to the USA (August 2025)
 
 ## System Architecture
 The application follows a modern full-stack architecture with clear separation between frontend and backend components, featuring enhanced multi-document processing capabilities for comprehensive shipment creation and comprehensive XML-based shipment data management.

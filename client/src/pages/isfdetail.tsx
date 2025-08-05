@@ -40,15 +40,17 @@ export default function IsfDetail() {
       console.log("Conversion successful:", data);
       toast({
         title: "Conversion Successful",
-        description: `ISF filing converted to shipment ${data.shipment.shipmentId}. ${data.documentsLinked} document(s) linked.`,
+        description: `ISF filing converted to ocean shipment ${data.shipment?.shipmentId || 'successfully'}. ${data.documentsLinked || 0} document(s) linked.`,
       });
       // Refresh queries
       queryClient.invalidateQueries({ queryKey: ['/api/shipments'] });
       queryClient.invalidateQueries({ queryKey: [`/api/isf/filings/${id}`] });
       // Navigate to the new shipment (use numeric ID)
-      setTimeout(() => {
-        setLocation(`/shipments/detail/${data.shipment.id}`);
-      }, 1000); // Small delay to allow queries to refresh
+      if (data.shipment?.id) {
+        setTimeout(() => {
+          setLocation(`/shipments/detail/${data.shipment.id}`);
+        }, 1000); // Small delay to allow queries to refresh
+      }
     },
     onError: (error: any) => {
       console.error("Conversion error:", error);
@@ -276,13 +278,14 @@ export default function IsfDetail() {
               onClick={() => convertToShipmentMutation.mutate()}
               disabled={convertToShipmentMutation.isPending}
               className="bg-freight-blue hover:bg-freight-blue/90 text-white"
+              title="Convert ISF filing to ocean shipment - ISF is required for maritime imports only"
             >
               {convertToShipmentMutation.isPending ? (
                 <>Converting...</>
               ) : (
                 <>
                   <Ship className="h-4 w-4 mr-2" />
-                  Convert to Shipment
+                  Convert to Ocean Shipment
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </>
               )}
