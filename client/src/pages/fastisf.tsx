@@ -248,6 +248,53 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           combinedFields.buyerInformation = `${data.consigneeName}\n${data.consigneeAddress}`;
         }
         
+        // CRITICAL: Consolidate consignee information for ISF field #4
+        const consigneeParts: string[] = [];
+        
+        // Priority order: consigneeInformation -> consigneeName + consigneeAddress -> individual fields
+        if (rawConsolidated.consigneeInformation) {
+          consigneeParts.push(rawConsolidated.consigneeInformation);
+        } else if (data.consigneeInformation) {
+          consigneeParts.push(data.consigneeInformation);
+        } else {
+          // Build from individual fields
+          if (rawConsolidated.consigneeName || data.consigneeName) {
+            consigneeParts.push(rawConsolidated.consigneeName || data.consigneeName);
+          }
+          if (rawConsolidated.consigneeAddress || data.consigneeAddress) {
+            consigneeParts.push(rawConsolidated.consigneeAddress || data.consigneeAddress);
+          }
+          if (rawConsolidated.consigneeCity || data.consigneeCity) {
+            const cityState = [
+              rawConsolidated.consigneeCity || data.consigneeCity,
+              rawConsolidated.consigneeState || data.consigneeState
+            ].filter(Boolean).join(', ');
+            if (cityState) consigneeParts.push(cityState);
+          }
+          if (rawConsolidated.consigneeCountry || data.consigneeCountry) {
+            consigneeParts.push(rawConsolidated.consigneeCountry || data.consigneeCountry);
+          }
+        }
+        
+        // Also check for alternative consignee field names from Bill of Lading
+        if (!consigneeParts.length) {
+          const altConsigneeFields = [
+            rawConsolidated.deliverTo, data.deliverTo,
+            rawConsolidated.recipient, data.recipient,
+            rawConsolidated.consigneeContact, data.consigneeContact,
+            rawConsolidated.consigneeCompany, data.consigneeCompany
+          ].filter(Boolean);
+          
+          if (altConsigneeFields.length > 0) {
+            consigneeParts.push(...altConsigneeFields);
+          }
+        }
+        
+        // Consolidate all consignee information
+        if (consigneeParts.length > 0) {
+          combinedFields.consignee = consigneeParts.join('\n');
+        }
+        
         // Handle ship-to party (usually same as consignee)
         if (rawConsolidated.notifyPartyName) {
           if (rawConsolidated.notifyPartyName.toLowerCase().includes('same as consignee') && combinedFields.buyerInformation) {
@@ -304,10 +351,20 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           mblScacCode: 'mblScacCode',
           hblScacCode: 'hblScacCode',
           
-          // Additional critical ISF field mappings
+          // Critical consignee field mappings - extract complete consignee information
           consigneeName: 'consignee', // Map consignee name to the new consignee field
           consigneeAddress: 'consignee', // Map consignee address to the new consignee field
           consigneeInformation: 'consignee', // Direct mapping for consignee info
+          consigneeCompany: 'consignee', // Company name mapping
+          consigneeContact: 'consignee', // Contact information
+          consigneeDetails: 'consignee', // General consignee details
+          'consignee name': 'consignee', // Alternative field name format
+          'consignee address': 'consignee', // Alternative address format
+          'consignee information': 'consignee', // Alternative info format
+          deliverTo: 'consignee', // Delivery destination mapping
+          receiveBy: 'consignee', // Receiving party mapping
+          recipient: 'consignee', // Recipient information
+          deliveryAddress: 'consignee', // Delivery address info
           shipperName: 'importerName', // Alternative mapping if importer not available
           shipperAddress: 'importerAddress', // Alternative mapping
           vesselAndVoyage: 'vesselName', // Will be split by combinedFields logic

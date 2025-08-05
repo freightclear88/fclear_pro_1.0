@@ -40,13 +40,18 @@ interface ExtractedShipmentData {
   shipperPhone?: string;
   shipperEmail?: string;
   
-  // Consignee information
+  // Consignee information - CRITICAL for ISF field #4
   consigneeName?: string;
   consigneeAddress?: string;
   consigneeCity?: string;
   consigneeState?: string;
   consigneeZipCode?: string;
   consigneeCountry?: string;
+  consigneeInformation?: string; // Complete consolidated consignee information
+  consigneeCompany?: string; // Company name specifically
+  consigneeContact?: string; // Contact details
+  deliverTo?: string; // Alternative consignee field name
+  recipient?: string; // Recipient information
   consigneeContactPerson?: string;
   consigneePhone?: string;
   consigneeEmail?: string;
@@ -186,11 +191,16 @@ export class AIDocumentProcessor {
               "shipperAddress": "shipper complete address with country if found",
               "shipperCity": "shipper city if found",
               "shipperCountry": "shipper country if found",
-              "consigneeName": "consignee/importer company name if found",
-              "consigneeAddress": "consignee complete address if found",
-              "consigneeCity": "consignee city if found",
-              "consigneeState": "consignee state if found",
-              "consigneeCountry": "consignee country if found",
+              "consigneeName": "consignee/importer company name if found - CRITICAL for ISF field #4",
+              "consigneeAddress": "consignee complete address if found - CRITICAL for ISF field #4",
+              "consigneeCity": "consignee city if found - CRITICAL for ISF field #4",
+              "consigneeState": "consignee state if found - CRITICAL for ISF field #4",
+              "consigneeCountry": "consignee country if found - CRITICAL for ISF field #4",
+              "consigneeInformation": "COMPLETE consolidated consignee information with company name, full address, city, state, country - look for 'CONSIGNEE', 'DELIVER TO', 'SHIP TO', 'RECEIVER', 'RECIPIENT' sections - CRITICAL for ISF field #4",
+              "consigneeCompany": "consignee company name specifically if found separately",
+              "consigneeContact": "consignee contact person and details if found",
+              "deliverTo": "deliver to party information if found (alternative consignee field)",
+              "recipient": "recipient information if found (alternative consignee field)",
               "importerName": "importer of record name if found (may be same as consignee)",
               "importerAddress": "importer of record address if found",
               "manufacturerName": "manufacturer/supplier company name if found",
