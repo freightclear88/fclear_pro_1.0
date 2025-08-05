@@ -48,6 +48,14 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
     'other': 1
   };
   
+  // ISF-specific fields that should ALWAYS be prioritized from ISF documents
+  const isfSpecificFields = [
+    'consolidatorStufferInfo', 'consolidatorInformation', 'consolidator',
+    'containerStuffer', 'stufferName', 'amsNumber', 'amsNo', 'amsReference',
+    'manifestNumber', 'manufacturerInformation', 'manufacturerName', 'manufacturerAddress',
+    'buyerInformation', 'sellerInformation', 'shipToPartyInformation'
+  ];
+  
   // Process each document's extracted data
   for (const docData of allExtractedData) {
     const { documentType, fileName, data } = docData;
@@ -146,14 +154,38 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
     // Update consolidated data with priority-based logic
     for (const [field, value] of Object.entries(extractedFields)) {
       const currentPriority = sourceTracker[field]?.priority || 0;
+      const currentDocType = sourceTracker[field]?.documentType || '';
       
-      if (!consolidated[field] || priority > currentPriority) {
-        consolidated[field] = value;
-        sourceTracker[field] = {
-          source: fileName,
-          documentType,
-          priority
-        };
+      // Special handling for ISF-specific fields: ISF documents always win
+      if (isfSpecificFields.includes(field)) {
+        if (documentType === 'isf_information_sheet' || documentType === 'isf_data_sheet') {
+          // ISF document data always takes priority for ISF fields
+          consolidated[field] = value;
+          sourceTracker[field] = {
+            source: fileName,
+            documentType,
+            priority
+          };
+          console.log(`🎯 ISF FIELD OVERRIDE: ${field} set from ISF document: ${value}`);
+        } else if (!currentDocType.includes('isf_') && (!consolidated[field] || priority > currentPriority)) {
+          // Only update if current data isn't from an ISF document
+          consolidated[field] = value;
+          sourceTracker[field] = {
+            source: fileName,
+            documentType,
+            priority
+          };
+        }
+      } else {
+        // Regular priority-based consolidation for non-ISF fields
+        if (!consolidated[field] || priority > currentPriority) {
+          consolidated[field] = value;
+          sourceTracker[field] = {
+            source: fileName,
+            documentType,
+            priority
+          };
+        }
       }
     }
   }
@@ -5228,7 +5260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let documentType = 'other';
           const fileName = file.originalname.toLowerCase();
           
-          if (fileName.includes('isf') || fileName.includes('information sheet')) {
+          if (fileName.includes('isf') || fileName.includes('information sheet') || fileName.includes('isf_') || fileName.includes('data sheet')) {
             documentType = 'isf_information_sheet';
           } else if (fileName.includes('bill') && fileName.includes('lading')) {
             documentType = 'bill_of_lading';
@@ -5239,6 +5271,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else if (fileName.includes('arrival')) {
             documentType = 'arrival_notice';
           }
+          
+          console.log(`📄 Document ${file.originalname} classified as: ${documentType}`);
           
           // Extract data using the same AI processor as shipment creation
           const extractedData = await aiDocProcessor.extractShipmentData(file.path, documentType);
