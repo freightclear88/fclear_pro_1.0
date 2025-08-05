@@ -5436,11 +5436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                 consolidatedData.containerStuffer ||
                                 consolidatedData.stufferName ||
                                 consolidatedData.cfsOperator ||
-                                // Check container stuffing location as potential consolidator info
-                                (consolidatedData.containerStuffingLocation && !consolidatedData.containerStuffingLocation.includes('CFS/CFS') ? 
-                                 `CONTAINER STUFFER: ${consolidatedData.containerStuffingLocation}` : null) ||
-                                // Only use shipper as absolute last resort and mark it clearly
-                                (consolidatedData.shipperName ? `[FROM SHIPPER - VERIFY]: ${consolidatedData.shipperName}` : null) ||
+                                // DO NOT use container stuffing location - that's a separate ISF field
                                 null,
         consolidatorInformation: consolidatedData.consolidatorInformation || null,
         consolidator: consolidatedData.consolidator || null

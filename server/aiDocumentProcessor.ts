@@ -242,9 +242,9 @@ export class AIDocumentProcessor {
               "amsNo": "AMS number if found with 'AMS NO' label",
               "amsReference": "AMS reference number if found",
               "manifestNumber": "Manifest number if found separately",
-              "consolidatorStufferInfo": "CRITICAL: Complete consolidator/container stuffer information - look for ANY of these patterns: 'CONSOLIDATOR NAME', 'CONSOLIDATOR', 'CONTAINER STUFFER', 'STUFFER', 'CFS', 'CONSOLIDATOR/STUFFER', 'CONSOLIDATION', 'CONSOLIDATE', or sections that mention who consolidated/stuffed the container. This is typically a different company from the shipper who prepared the goods for containerization - THIS IS DIFFERENT FROM SHIPPER",
+              "consolidatorStufferInfo": "CRITICAL: The COMPANY NAME of the consolidator/container stuffer - look for 'CONSOLIDATOR NAME', 'CONSOLIDATOR', 'CONTAINER STUFFER', 'STUFFER', 'CFS OPERATOR' - extract only the COMPANY NAME, not the address or location. This is the business entity that consolidated/stuffed the container - THIS IS DIFFERENT FROM SHIPPER and DIFFERENT FROM CONTAINER STUFFING LOCATION",
               "consolidator": "consolidator company name if found separately - look for 'CONSOLIDATOR NAME' specifically - NOT the shipper",
-              "consolidatorName": "CRITICAL: Look specifically for 'CONSOLIDATOR NAME', 'CONSOLIDATOR:', 'CONSOLIDATOR NAME:', or 'CONSOLIDATOR/STUFFER NAME' fields - these are exact field names in ISF documents",
+              "consolidatorName": "CRITICAL: Look specifically for 'CONSOLIDATOR NAME', 'CONSOLIDATOR:', 'CONSOLIDATOR NAME:', or 'CONSOLIDATOR/STUFFER NAME' fields in ISF documents - extract only the COMPANY NAME, not the location or address",
               "consolidatorStufferName": "Look for 'CONSOLIDATOR/STUFFER NAME' field specifically",
               "consolidatorAddress": "Look for consolidator address information",
               "consolidatorInformation": "complete consolidator information with address if found - NOT the shipper information",
@@ -252,7 +252,7 @@ export class AIDocumentProcessor {
               "stufferName": "stuffer company name if found",
               "cfsOperator": "CFS (Container Freight Station) operator name if found",
               "cfsFacility": "CFS facility information if found",
-              "containerStuffingLocation": "EXACT container stuffing location from ISF form - look for fields labeled: 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'Consolidator Location', 'CFS Location', 'Place where container was stuffed' - extract the EXACT location value, not just 'CFS/CFS'",
+              "containerStuffingLocation": "EXACT container stuffing location from ISF form - look for fields labeled: 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'CFS Location', 'Place where container was stuffed' - extract the EXACT LOCATION/ADDRESS where stuffing occurred, NOT the company name - this is SEPARATE from consolidator name",
               "containerStuffing": "any container stuffing related information if found",
               "stuffingLocation": "stuffing location if found"
             }`
