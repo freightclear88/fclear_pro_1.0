@@ -33,23 +33,34 @@ export default function IsfDetail() {
   const convertToShipmentMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", `/api/isf/filings/${id}/convert-to-shipment`);
-      console.log("Conversion response:", response);
-      return response;
+      const data = await response.json();
+      console.log("Parsed conversion response:", data);
+      return data;
     },
     onSuccess: (data) => {
       console.log("Conversion successful:", data);
-      toast({
-        title: "Conversion Successful",
-        description: `ISF filing converted to ocean shipment ${data.shipment?.shipmentId || 'successfully'}. ${data.documentsLinked || 0} document(s) linked.`,
-      });
-      // Refresh queries
-      queryClient.invalidateQueries({ queryKey: ['/api/shipments'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/isf/filings/${id}`] });
-      // Navigate to the new shipment (use numeric ID)
-      if (data.shipment?.id) {
+      
+      if (data?.success && data?.shipment) {
+        toast({
+          title: "Conversion Successful",
+          description: `ISF filing converted to ocean shipment ${data.shipment.shipmentId}. ${data.documentsLinked || 0} document(s) linked.`,
+        });
+        
+        // Refresh queries
+        queryClient.invalidateQueries({ queryKey: ['/api/shipments'] });
+        queryClient.invalidateQueries({ queryKey: [`/api/isf/filings/${id}`] });
+        
+        // Navigate to the new shipment
         setTimeout(() => {
           setLocation(`/shipments/detail/${data.shipment.id}`);
-        }, 1000); // Small delay to allow queries to refresh
+        }, 1000);
+      } else {
+        console.error("Invalid response structure:", data);
+        toast({
+          title: "Conversion Error",
+          description: "Invalid response from server",
+          variant: "destructive",
+        });
       }
     },
     onError: (error: any) => {
