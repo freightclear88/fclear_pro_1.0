@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { ArrowLeft, Save, CreditCard, FileText, Building2, Truck, Package, DollarSign } from "lucide-react";
+import { ArrowLeft, Save, CreditCard, FileText, Building2, Truck, Package, DollarSign, Globe, MapPin, Ship } from "lucide-react";
 import { Link } from "wouter";
 
 // ISF Form Schema (same as fastisf.tsx but with optional fields for editing)
@@ -431,6 +431,545 @@ export default function IsfEdit() {
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+
+            {/* 5. Country of Origin */}
+            <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+              <CardHeader>
+                <CardTitle className="text-green-700 flex items-center">
+                  <Globe className="w-5 h-5 mr-2" />
+                  5. Country of Origin
+                </CardTitle>
+                <CardDescription>Country where goods were manufactured, produced, or grown</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="countryOfOrigin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country of Origin *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select country of origin" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {COUNTRIES.map((country) => (
+                            <SelectItem key={country} value={country}>{country}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* 6. HTS Number & Commodity Description */}
+            <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
+              <CardHeader>
+                <CardTitle className="text-indigo-700 flex items-center">
+                  <Package className="w-5 h-5 mr-2" />
+                  6. HTS Number & Commodity Description
+                </CardTitle>
+                <CardDescription>Harmonized Tariff Schedule number and commodity description</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="htsusNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>HTS Number (10 digits) *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter 10-digit HTS number" maxLength={10} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="commodityDescription"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Commodity Description *</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Detailed description of the goods"
+                          className="min-h-20"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* 7. Container Stuffing Location */}
+            <Card className="bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200">
+              <CardHeader>
+                <CardTitle className="text-yellow-700 flex items-center">
+                  <Package className="w-5 h-5 mr-2" />
+                  7. Container Stuffing Location
+                </CardTitle>
+                <CardDescription>Location where goods were stuffed into the container</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="containerStuffingLocation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Container Stuffing Location</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Address where container was loaded/stuffed"
+                          className="min-h-20"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* 8. Consolidator Information */}
+            <Card className="bg-gradient-to-r from-pink-50 to-rose-50 border-pink-200">
+              <CardHeader>
+                <CardTitle className="text-pink-700 flex items-center">
+                  <Building2 className="w-5 h-5 mr-2" />
+                  8. Consolidator/Stuffer Information
+                </CardTitle>
+                <CardDescription>Entity that consolidated or loaded the container</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="consolidatorStufferInfo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Consolidator/Stuffer Information</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Company name and address of consolidator/stuffer"
+                          className="min-h-20"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Shipment Details */}
+            <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
+              <CardHeader>
+                <CardTitle className="text-blue-700 flex items-center">
+                  <Ship className="w-5 h-5 mr-2" />
+                  Shipment Details
+                </CardTitle>
+                <CardDescription>Vessel, container, and shipment information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="billOfLading"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bill of Lading</FormLabel>
+                        <FormControl>
+                          <Input placeholder="B/L number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="vesselName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Vessel Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Vessel name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="voyageNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Voyage Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Voyage number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="containerNumbers"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Container Numbers</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Container numbers (comma separated)" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Port Information */}
+            <Card className="bg-gradient-to-r from-purple-50 to-violet-50 border-purple-200">
+              <CardHeader>
+                <CardTitle className="text-purple-700 flex items-center">
+                  <MapPin className="w-5 h-5 mr-2" />
+                  Port Information
+                </CardTitle>
+                <CardDescription>Port details and arrival information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="portOfEntry"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Port of Entry *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select US port of entry" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {US_PORTS.map((port) => (
+                              <SelectItem key={port} value={port}>{port}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="foreignPortOfUnlading"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Foreign Port of Unlading *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Foreign port where container is unloaded" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="estimatedArrivalDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estimated Arrival Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Importer Information */}
+            <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
+              <CardHeader>
+                <CardTitle className="text-emerald-700 flex items-center">
+                  <Building2 className="w-5 h-5 mr-2" />
+                  Importer Information
+                </CardTitle>
+                <CardDescription>Importer of record details</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="importerOfRecord"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Importer of Record Number *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="IRS/EIN/SSN/CBP number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="importerName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Importer Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Company name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="importerAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Importer Address *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Street address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="importerCity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>City *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="City" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="importerState"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>State *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select state" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {US_STATES.map((state) => (
+                              <SelectItem key={state} value={state}>{state}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="importerZip"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ZIP Code *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ZIP code" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Consignee Information */}
+            <Card className="bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200">
+              <CardHeader>
+                <CardTitle className="text-cyan-700 flex items-center">
+                  <Building2 className="w-5 h-5 mr-2" />
+                  Consignee Information
+                </CardTitle>
+                <CardDescription>US consignee details</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="consigneeNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Consignee Number *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="IRS/EIN/SSN/CBP number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="consigneeName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Consignee Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Company name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="consigneeAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Consignee Address *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Street address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="consigneeCity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>City *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="City" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="consigneeState"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>State *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select state" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {US_STATES.map((state) => (
+                              <SelectItem key={state} value={state}>{state}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="consigneeZip"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ZIP Code *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ZIP code" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* +2 Additional Elements */}
+            <Card className="bg-gradient-to-r from-slate-50 to-gray-50 border-slate-200">
+              <CardHeader>
+                <CardTitle className="text-slate-700 flex items-center">
+                  <Building2 className="w-5 h-5 mr-2" />
+                  +2 Additional Elements
+                </CardTitle>
+                <CardDescription>Booking party information required for ISF</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="bookingPartyName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Booking Party Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Booking party company name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bookingPartyAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Booking Party Address *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Booking party address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bookingPartyCity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Booking Party City *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="City" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bookingPartyCountry"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Booking Party Country *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Country" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </CardContent>
             </Card>
 

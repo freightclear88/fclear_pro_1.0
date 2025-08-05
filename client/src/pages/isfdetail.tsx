@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { Copy, FileText, Ship, Calendar, MapPin, Building2, CheckCircle, Clock, AlertCircle, DollarSign, Package, Globe } from "lucide-react";
+import { Copy, FileText, Ship, Calendar, MapPin, Building2, CheckCircle, Clock, AlertCircle, DollarSign, Package, Globe, Download, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { IsfFiling } from "@shared/schema";
+import type { IsfFiling, Document } from "@shared/schema";
 
 export default function IsfDetail() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +18,12 @@ export default function IsfDetail() {
   // Fetch ISF filing details
   const { data: isfFiling, isLoading, error } = useQuery<IsfFiling>({
     queryKey: [`/api/isf/filings/${id}`],
+    enabled: !!id,
+  });
+
+  // Fetch documents associated with this ISF filing
+  const { data: documents = [] } = useQuery<Document[]>({
+    queryKey: [`/api/documents/isf/${id}`],
     enabled: !!id,
   });
 
@@ -298,6 +304,67 @@ export default function IsfDetail() {
           </CardContent>
         </Card>
 
+        {/* Associated Documents */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Associated Documents
+            </CardTitle>
+            <CardDescription>
+              Documents submitted with this ISF filing
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {documents.length > 0 ? (
+              <div className="space-y-4">
+                {documents.map((doc) => (
+                  <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <p className="font-medium text-sm">{doc.fileName}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {doc.documentType} • {(doc.fileSize / 1024).toFixed(1)} KB • {new Date(doc.uploadDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-300"
+                        onClick={() => window.open(`/api/documents/${doc.id}/view`, '_blank')}
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-300"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = `/api/documents/${doc.id}/download`;
+                          link.download = doc.fileName;
+                          link.click();
+                        }}
+                      >
+                        <Download className="w-4 h-4 mr-1" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No documents associated with this ISF filing</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
       </div>
     </div>
