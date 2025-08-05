@@ -4893,14 +4893,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         containerNumbers: req.body.containerNumbers || null,
         portOfEntry: req.body.portOfEntry || null,
         foreignPortOfLading: req.body.foreignPortOfLading || null,
-        estimatedArrivalDate: req.body.estimatedArrivalDate || null,
-        estimatedDepartureDate: req.body.estimatedDepartureDate || null,
+        estimatedArrivalDate: req.body.estimatedArrivalDate ? new Date(req.body.estimatedArrivalDate) : null,
+        estimatedDepartureDate: req.body.estimatedDepartureDate ? new Date(req.body.estimatedDepartureDate) : null,
         mblScacCode: req.body.mblScacCode || null,
         hblScacCode: req.body.hblScacCode || null,
         amsNumber: req.body.amsNumber || null,
-        foreignPortOfUnlading: req.body.foreignPortOfUnlading || null,
-        
-        submittedAt: new Date()
+        foreignPortOfUnlading: req.body.foreignPortOfUnlading || null
       };
 
       console.log('Creating ISF filing with data:', isfData);

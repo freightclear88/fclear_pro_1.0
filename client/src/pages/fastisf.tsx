@@ -299,6 +299,11 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           cargoDescription: 'commodityDescription',
           htsCode: 'htsusNumber',
           
+          // SCAC Code mappings - CRITICAL FIX
+          scacCode: 'mblScacCode',
+          mblScacCode: 'mblScacCode',
+          hblScacCode: 'hblScacCode',
+          
           // Additional critical ISF field mappings
           consigneeName: 'consigneeName',
           consigneeAddress: 'consigneeAddress',
