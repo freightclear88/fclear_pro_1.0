@@ -181,29 +181,6 @@ export default function IsfDetail() {
           </CardContent>
         </Card>
 
-        {/* Importer Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Importer Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableBody>
-                <CopyableField label="Importer of Record" value={isfFiling.importerOfRecord} />
-                <CopyableField label="Importer Name" value={isfFiling.importerName} />
-                <CopyableField label="Importer Address" value={isfFiling.importerAddress} />
-                <CopyableField label="City" value={isfFiling.importerCity} />
-                <CopyableField label="State" value={isfFiling.importerState} />
-                <CopyableField label="ZIP Code" value={isfFiling.importerZip} />
-                <CopyableField label="Country" value={isfFiling.importerCountry} />
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
         {/* Consignee Information */}
         <Card>
           <CardHeader>
