@@ -261,9 +261,14 @@ export class AIDocumentProcessor {
             role: "user",
             content: `Extract comprehensive shipping data from this ${documentType}. Pay special attention to:
 1. AMS numbers - they may appear as "AMS NO: 123456", "AMS# 789012", "MANIFEST NO 345678", or similar patterns. Extract the exact number/code after these labels.
-2. Consolidator information - THIS IS CRITICAL: Look specifically for "CONSOLIDATOR NAME" field - this is a standard ISF document field. Also look for any company mentioned as CONSOLIDATOR, CONTAINER STUFFER, STUFFER, CFS, or who consolidated/stuffed the container. This is often a logistics company that's DIFFERENT from the shipper (manufacturer/exporter). The consolidator handles multiple shipments into one container.
-3. If you see field labels like "Consolidator Name:", "Consolidator:", "Container Stuffer:", "Stuffer:", "CFS:", extract the company name and address that follows.
-4. The consolidator may be listed in a separate section from shipper/consignee information.
+2. Consolidator information - THIS IS CRITICAL FOR ISF DOCUMENTS: 
+   - Look SPECIFICALLY for a field labeled "CONSOLIDATOR NAME" or "Consolidator Name:" - this is a mandatory ISF field
+   - Also search for "CONSOLIDATOR", "CONTAINER STUFFER", "STUFFER", "CFS OPERATOR" 
+   - The consolidator is the COMPANY that consolidated/stuffed the container - NOT the shipper/manufacturer
+   - In ISF documents, this field is separate from shipper information
+   - Extract only the COMPANY NAME, not addresses or locations
+3. Do NOT confuse consolidator with shipper - they are different companies with different roles
+4. If this is an ISF document, prioritize finding the consolidator name field over all other information
 
 Document content:\n\n${pdfText.substring(0, 4000)}`
           }

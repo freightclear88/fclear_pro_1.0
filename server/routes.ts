@@ -5337,14 +5337,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔍 DOCUMENT TYPE ANALYSIS:');
       allExtractedData.forEach((docData, index) => {
         console.log(`  Document ${index + 1}: ${docData.fileName} (${docData.documentType})`);
-        if (docData.data.consolidatorName) {
-          console.log(`    ✓ Has consolidatorName: ${docData.data.consolidatorName}`);
-        }
-        if (docData.data.consolidatorStufferInfo) {
-          console.log(`    ✓ Has consolidatorStufferInfo: ${docData.data.consolidatorStufferInfo}`);
-        }
-        if (docData.data.consolidator) {
-          console.log(`    ✓ Has consolidator: ${docData.data.consolidator}`);
+        console.log(`    ALL EXTRACTED FIELDS:`, Object.keys(docData.data).filter(key => docData.data[key] !== null && docData.data[key] !== undefined && docData.data[key] !== ''));
+        
+        // Show consolidator-related fields specifically
+        const consolidatorFields = ['consolidatorName', 'consolidatorStufferInfo', 'consolidator', 'containerStuffer', 'stufferName', 'cfsOperator'];
+        consolidatorFields.forEach(field => {
+          if (docData.data[field]) {
+            console.log(`    ✓ ${field}: ${docData.data[field]}`);
+          }
+        });
+        
+        // Show if this document has shipper info (to see if we're confusing it)
+        if (docData.data.shipperName) {
+          console.log(`    📦 shipperName: ${docData.data.shipperName}`);
         }
       });
 
