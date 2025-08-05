@@ -4601,15 +4601,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Convert date strings to Date objects for database compatibility
       const updateData = { ...req.body };
-      if (updateData.estimatedArrivalDate && typeof updateData.estimatedArrivalDate === 'string') {
-        updateData.estimatedArrivalDate = new Date(updateData.estimatedArrivalDate);
-      }
-      if (updateData.invoiceDate && typeof updateData.invoiceDate === 'string') {
-        updateData.invoiceDate = new Date(updateData.invoiceDate);
-      }
+      
+      // Handle all possible date fields
+      const dateFields = ['estimatedArrivalDate', 'invoiceDate', 'filingDate', 'submittedAt', 'createdAt', 'updatedAt'];
+      dateFields.forEach(field => {
+        if (updateData[field] && typeof updateData[field] === 'string' && updateData[field].trim() !== '') {
+          const date = new Date(updateData[field]);
+          if (!isNaN(date.getTime())) {
+            updateData[field] = date;
+          } else {
+            delete updateData[field]; // Remove invalid dates
+          }
+        } else if (updateData[field] === '') {
+          updateData[field] = null; // Convert empty strings to null
+        }
+      });
+      
+      // Handle numeric fields
       if (updateData.invoiceValue && typeof updateData.invoiceValue === 'string') {
-        updateData.invoiceValue = parseFloat(updateData.invoiceValue);
+        const numValue = parseFloat(updateData.invoiceValue);
+        updateData.invoiceValue = isNaN(numValue) ? null : numValue;
       }
+      
+      // Remove undefined values to prevent database errors
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined) {
+          delete updateData[key];
+        }
+      });
 
       // Update the filing with new data
       const updatedFiling = await storage.updateIsfFiling(parseInt(id), updateData);
@@ -4934,11 +4953,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('ISF filing created successfully:', isfFiling);
 
+      // Save uploaded documents to database with ISF filing ID
+      const files = req.files as Express.Multer.File[];
+      if (files && files.length > 0) {
+        console.log(`Saving ${files.length} documents to database with ISF filing ID: ${isfFiling.id}`);
+        
+        for (const file of files) {
+          try {
+            const documentData = {
+              shipmentId: null, // ISF documents are not linked to shipments
+              userId,
+              fileName: file.filename,
+              originalName: file.originalname,
+              fileType: file.mimetype,
+              fileSize: file.size,
+              category: 'isf_document',
+              status: 'processed',
+              filePath: file.path,
+              isfFilingId: isfFiling.id, // Link to ISF filing
+              extractedData: {},
+            };
+            
+            await storage.createDocument(documentData);
+            console.log(`Document ${file.originalname} saved to database with ISF filing ID: ${isfFiling.id}`);
+          } catch (docError) {
+            console.error(`Error saving document ${file.originalname}:`, docError);
+          }
+        }
+      }
+
       res.json({
         success: true,
         isfFiling,
         id: isfFiling.id,
         isfNumber: isfFiling.isfNumber,
+        documentsUploaded: files ? files.length : 0,
         message: `ISF filing ${isfNumber} created successfully. Status: ${isfFiling.status}`,
       });
 
