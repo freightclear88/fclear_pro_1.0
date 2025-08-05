@@ -50,8 +50,8 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
   
   // ISF-specific fields that should ALWAYS be prioritized from ISF documents
   const isfSpecificFields = [
-    'consolidatorStufferInfo', 'consolidatorInformation', 'consolidator',
-    'containerStuffer', 'stufferName', 'cfsOperator', 'cfsFacility',
+    'consolidatorStufferInfo', 'consolidatorInformation', 'consolidator', 'consolidatorName', 
+    'consolidatorStufferName', 'consolidatorAddress', 'containerStuffer', 'stufferName', 'cfsOperator', 'cfsFacility',
     'amsNumber', 'amsNo', 'amsReference',
     'manifestNumber', 'manufacturerInformation', 'manufacturerName', 'manufacturerAddress',
     'buyerInformation', 'sellerInformation', 'shipToPartyInformation'
@@ -5323,6 +5323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('  manifestNumber:', consolidatedData.manifestNumber);
       
       console.log('🔍 CONSOLIDATOR DEBUG:');
+      console.log('  consolidatorName (ISF specific):', consolidatedData.consolidatorName);
       console.log('  consolidatorStufferInfo:', consolidatedData.consolidatorStufferInfo);
       console.log('  consolidatorInformation:', consolidatedData.consolidatorInformation);
       console.log('  consolidator:', consolidatedData.consolidator);
@@ -5336,6 +5337,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔍 DOCUMENT TYPE ANALYSIS:');
       allExtractedData.forEach((docData, index) => {
         console.log(`  Document ${index + 1}: ${docData.fileName} (${docData.documentType})`);
+        if (docData.data.consolidatorName) {
+          console.log(`    ✓ Has consolidatorName: ${docData.data.consolidatorName}`);
+        }
         if (docData.data.consolidatorStufferInfo) {
           console.log(`    ✓ Has consolidatorStufferInfo: ${docData.data.consolidatorStufferInfo}`);
         }
@@ -5424,11 +5428,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                   null,
         
         // Consolidator information - ISF requirement (Field #8)
-        consolidatorStufferInfo: consolidatedData.consolidatorStufferInfo || 
+        consolidatorStufferInfo: consolidatedData.consolidatorName ||
+                                consolidatedData.consolidatorStufferName ||
+                                consolidatedData.consolidatorStufferInfo || 
                                 consolidatedData.consolidatorInformation || 
                                 consolidatedData.consolidator ||
                                 consolidatedData.containerStuffer ||
                                 consolidatedData.stufferName ||
+                                consolidatedData.cfsOperator ||
                                 // Check container stuffing location as potential consolidator info
                                 (consolidatedData.containerStuffingLocation && !consolidatedData.containerStuffingLocation.includes('CFS/CFS') ? 
                                  `CONTAINER STUFFER: ${consolidatedData.containerStuffingLocation}` : null) ||
