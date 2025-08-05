@@ -36,6 +36,93 @@ export default function IsfDetail() {
     });
   };
 
+  const copyAllData = () => {
+    if (!isfFiling) return;
+
+    const formatDate = (date: Date | string | null) => {
+      if (!date) return "";
+      return new Date(date).toLocaleDateString();
+    };
+
+    const formatField = (label: string, value: string | null | undefined) => {
+      if (!value) return "";
+      return `${label}: ${value}\n`;
+    };
+
+    let allData = `=== ISF FILING DATA ===\n\n`;
+    
+    // Filing Information
+    allData += `FILING INFORMATION:\n`;
+    allData += formatField("ISF Number", isfFiling.isfNumber);
+    allData += formatField("Status", isfFiling.status);
+    allData += formatField("Filing Date", isfFiling.filingDate ? formatDate(isfFiling.filingDate) : null);
+    allData += formatField("Submitted At", isfFiling.submittedAt ? new Date(isfFiling.submittedAt).toLocaleString() : null);
+    allData += `\n`;
+
+    // Consignee Information
+    allData += `CONSIGNEE INFORMATION:\n`;
+    allData += formatField("Consignee", isfFiling.consignee);
+    allData += formatField("Consignee Address", isfFiling.consigneeAddress);
+    allData += formatField("City", isfFiling.consigneeCity);
+    allData += formatField("State", isfFiling.consigneeState);
+    allData += formatField("ZIP Code", isfFiling.consigneeZip);
+    allData += formatField("Country", isfFiling.consigneeCountry);
+    allData += `\n`;
+
+    // ISF 10 Required Elements
+    allData += `ISF 10 REQUIRED ELEMENTS:\n`;
+    allData += formatField("1. Seller Information", isfFiling.sellerInformation);
+    allData += formatField("2. Buyer Information", isfFiling.buyerInformation);
+    allData += formatField("3. Importer of Record Number", isfFiling.importerOfRecord);
+    allData += formatField("4. Consignee", isfFiling.consignee);
+    allData += formatField("5. Manufacturer Information", isfFiling.manufacturerInformation);
+    allData += formatField("6. Ship to Party Information", isfFiling.shipToPartyInformation);
+    allData += formatField("7. Country of Origin", isfFiling.countryOfOrigin);
+    allData += formatField("8. HTSUS Number", isfFiling.htsusNumber);
+    allData += formatField("8. Commodity Description", isfFiling.commodityDescription);
+    allData += formatField("9. Container Stuffing Location", isfFiling.containerStuffingLocation);
+    allData += formatField("10. Consolidator/Stuffer Info", isfFiling.consolidatorStufferInfo);
+    allData += `\n`;
+
+    // Shipment Details
+    allData += `SHIPMENT DETAILS:\n`;
+    allData += formatField("Bill of Lading", isfFiling.billOfLading);
+    allData += formatField("Vessel Name", isfFiling.vesselName);
+    allData += formatField("Voyage Number", isfFiling.voyageNumber);
+    allData += formatField("Container Numbers", isfFiling.containerNumbers);
+    allData += formatField("Foreign Port of Lading", isfFiling.foreignPortOfUnlading);
+    allData += formatField("Port of Entry", isfFiling.portOfEntry);
+    allData += formatField("Estimated Arrival Date", isfFiling.estimatedArrivalDate ? formatDate(isfFiling.estimatedArrivalDate) : null);
+    allData += formatField("MBL SCAC Code", isfFiling.mblScacCode);
+    allData += formatField("HBL SCAC Code", isfFiling.hblScacCode);
+    allData += formatField("AMS Number", isfFiling.amsNumber);
+    allData += `\n`;
+
+    // Associated Documents
+    if (documents.length > 0) {
+      allData += `ASSOCIATED DOCUMENTS:\n`;
+      documents.forEach((doc, index) => {
+        allData += `${index + 1}. ${doc.fileName}\n`;
+        allData += `   Category: ${doc.category?.replace(/_/g, ' ').replace(/\b\w/g, (letter: string) => letter.toUpperCase()) || 'N/A'}\n`;
+        allData += `   Size: ${(doc.fileSize / 1024).toFixed(1)} KB\n`;
+        allData += `   Date: ${new Date(doc.createdAt || doc.uploadDate).toLocaleDateString()}\n`;
+      });
+    }
+
+    navigator.clipboard.writeText(allData).then(() => {
+      toast({
+        title: "All data copied to clipboard",
+        description: "Complete ISF filing data has been copied successfully",
+      });
+    }).catch(() => {
+      toast({
+        title: "Copy failed",
+        description: "Unable to copy data to clipboard",
+        variant: "destructive",
+      });
+    });
+  };
+
   // Reusable component for copyable fields
   const CopyableField = ({ 
     label, 
@@ -320,6 +407,18 @@ export default function IsfDetail() {
             )}
           </CardContent>
         </Card>
+
+        {/* Copy All Data Button */}
+        <div className="flex justify-center pt-6">
+          <Button
+            onClick={() => copyAllData()}
+            className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white px-8 py-3"
+            size="lg"
+          >
+            <Copy className="w-5 h-5 mr-2" />
+            Copy All Data
+          </Button>
+        </div>
 
       </div>
     </div>
