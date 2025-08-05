@@ -259,19 +259,26 @@ export class AIDocumentProcessor {
           },
           {
             role: "user",
-            content: `Extract comprehensive shipping data from this ${documentType}. Pay special attention to:
-1. AMS numbers - they may appear as "AMS NO: 123456", "AMS# 789012", "MANIFEST NO 345678", or similar patterns. Extract the exact number/code after these labels.
-2. Consolidator information - THIS IS CRITICAL FOR ISF DOCUMENTS: 
-   - Look SPECIFICALLY for a field labeled "CONSOLIDATOR NAME" or "Consolidator Name:" - this is a mandatory ISF field
-   - Also search for "CONSOLIDATOR", "CONTAINER STUFFER", "STUFFER", "CFS OPERATOR" 
-   - The consolidator is the COMPANY that consolidated/stuffed the container - NOT the shipper/manufacturer
-   - In ISF documents, this field is often at the bottom or in a separate section from shipper information
-   - Extract the exact company name that appears after these field labels
-   - Extract only the COMPANY NAME, not addresses or locations
-3. Do NOT confuse consolidator with shipper - they are different companies with different roles
-4. If this is an ISF document, prioritize finding the consolidator name field over all other information
+            content: `Extract comprehensive shipping data from this ${documentType}. 
 
-Document content:\n\n${pdfText.substring(0, 6000)}`
+${documentType === 'isf_information_sheet' ? 'THIS IS AN ISF DOCUMENT - Pay special attention to ISF-specific fields:' : ''}
+
+Key extraction priorities:
+1. AMS numbers - they may appear as "AMS NO: 123456", "AMS# 789012", "MANIFEST NO 345678", or similar patterns
+2. For ISF documents, look carefully throughout the entire document for these mandatory fields:
+   - CONSOLIDATOR NAME / CONSOLIDATOR / CONTAINER STUFFER - this is a separate company from the shipper
+   - MANUFACTURER information 
+   - CONTAINER STUFFING LOCATION - the physical location where stuffing occurred
+   - Look at ALL sections of the document, including headers, footers, and separate information blocks
+3. Distinguish between different company roles:
+   - SHIPPER = the company exporting/sending goods
+   - CONSOLIDATOR = the company that consolidated/stuffed the container (often a logistics company)
+   - MANUFACTURER = the company that made the goods
+4. Extract field values exactly as they appear after field labels, including full company names and addresses
+
+Read through the ENTIRE document content carefully:
+
+${pdfText.substring(0, 8000)}`
           }
         ],
         response_format: { type: "json_object" },

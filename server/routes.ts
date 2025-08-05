@@ -5295,6 +5295,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Now use the consolidateMultiDocumentData system with properly extracted data
       const consolidatedData = consolidateMultiDocumentData(allExtractedData);
       
+      // Prioritize ISF document data for critical fields like consolidator
+      const isfDocuments = allExtractedData.filter(doc => doc.documentType === 'isf_information_sheet');
+      if (isfDocuments.length > 0) {
+        console.log('🔍 ISF DOCUMENT PRIORITIZATION - Found ISF documents, checking consolidator fields...');
+        for (const isfDoc of isfDocuments) {
+          const consolidatorFields = ['consolidatorName', 'consolidatorStufferInfo', 'consolidator', 'containerStuffer', 'stufferName', 'cfsOperator'];
+          for (const field of consolidatorFields) {
+            if (isfDoc.data[field] && !consolidatedData[field]) {
+              console.log(`🎯 PRIORITIZING ISF: Using ${field} from ISF document: ${isfDoc.data[field]}`);
+              consolidatedData[field] = isfDoc.data[field];
+            }
+          }
+        }
+      }
+      
       console.log('Consolidated ISF form data:', consolidatedData);
 
       // Debug logging for ISF field mapping - ALL FIELDS
