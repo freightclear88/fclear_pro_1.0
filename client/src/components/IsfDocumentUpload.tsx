@@ -310,12 +310,12 @@ export default function IsfDocumentUpload({
                     <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
                     <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                   </div>
-                  <div className="flex-shrink-0 w-48">
+                  <div className="flex-shrink-0 w-64">
                     <Select
                       value={file.documentType}
                       onValueChange={(value) => updateFileDocumentType(index, value)}
                     >
-                      <SelectTrigger className="h-8 text-xs">
+                      <SelectTrigger className="h-8 text-xs w-full">
                         <SelectValue placeholder="Select document type" />
                       </SelectTrigger>
                       <SelectContent>
