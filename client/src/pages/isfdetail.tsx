@@ -127,9 +127,9 @@ export default function IsfDetail() {
             <p className="text-gray-600 mt-1">ISF Number: {isfFiling.isfNumber}</p>
           </div>
           <div className="flex items-center gap-3">
-            <Badge className={`${getStatusColor(isfFiling.status)} flex items-center gap-1`}>
-              {getStatusIcon(isfFiling.status)}
-              {isfFiling.status.toUpperCase()}
+            <Badge className={`${getStatusColor(isfFiling.status || 'draft')} flex items-center gap-1`}>
+              {getStatusIcon(isfFiling.status || 'draft')}
+              {(isfFiling.status || 'draft').toUpperCase()}
             </Badge>
             <Button
               variant="outline"
@@ -155,7 +155,7 @@ export default function IsfDetail() {
                 <CopyableField label="Status" value={isfFiling.status} />
                 <CopyableField label="Filing Date" value={isfFiling.filingDate ? new Date(isfFiling.filingDate).toLocaleDateString() : null} />
                 <CopyableField label="Submitted At" value={isfFiling.submittedAt ? new Date(isfFiling.submittedAt).toLocaleString() : null} />
-                <CopyableField label="Filing Fee" value={isfFiling.filingFee ? `$${isfFiling.filingFee.toFixed(2)}` : null} />
+                <CopyableField label="Filing Fee" value={isfFiling.paymentAmount ? `$${isfFiling.paymentAmount}` : null} />
               </TableBody>
             </Table>
           </CardContent>
@@ -251,9 +251,8 @@ export default function IsfDetail() {
                 <CopyableField label="Voyage Number" value={isfFiling.voyageNumber} />
                 <CopyableField label="Container Numbers" value={isfFiling.containerNumbers} />
                 <CopyableField label="Port of Entry" value={isfFiling.portOfEntry} />
-                <CopyableField label="Foreign Port of Loading" value={isfFiling.foreignPortOfLading} />
-                <CopyableField label="Estimated Arrival Date" value={isfFiling.estimatedArrivalDate} />
-                <CopyableField label="Estimated Departure Date" value={isfFiling.estimatedDepartureDate} />
+                <CopyableField label="Foreign Port of Loading" value={isfFiling.foreignPortOfUnlading} />
+                <CopyableField label="Estimated Arrival Date" value={isfFiling.estimatedArrivalDate ? new Date(isfFiling.estimatedArrivalDate).toLocaleDateString() : null} />
                 <CopyableField label="MBL SCAC Code" value={isfFiling.mblScacCode} />
                 <CopyableField label="HBL SCAC Code" value={isfFiling.hblScacCode} />
                 <CopyableField label="AMS Number" value={isfFiling.amsNumber} />
@@ -287,7 +286,7 @@ export default function IsfDetail() {
         </Card>
 
         {/* Payment Information */}
-        {isfFiling.filingFee && (
+        {isfFiling.paymentAmount && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -298,10 +297,9 @@ export default function IsfDetail() {
             <CardContent>
               <Table>
                 <TableBody>
-                  <CopyableField label="Filing Fee" value={`$${isfFiling.filingFee.toFixed(2)}`} className="font-bold text-green-600" />
-                  <CopyableField label="Payment Method" value={isfFiling.paymentMethod} />
+                  <CopyableField label="Filing Fee" value={`$${isfFiling.paymentAmount}`} className="font-bold text-green-600" />
                   <CopyableField label="Payment Status" value={isfFiling.paymentStatus} />
-                  <CopyableField label="Transaction ID" value={isfFiling.transactionId} />
+                  <CopyableField label="Transaction ID" value={isfFiling.paymentTransactionId} />
                 </TableBody>
               </Table>
             </CardContent>
