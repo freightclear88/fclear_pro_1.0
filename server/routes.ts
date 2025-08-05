@@ -5307,31 +5307,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               consolidatedData[field] = isfDoc.data[field];
             }
           }
-          
-          // CRITICAL FIX: In ISF documents, sometimes the AI extracts the consolidator as "shipperName"
-          // This happens when the consolidator company name appears in the shipper section of ISF documents
-          // We need to check if the shipperName from ISF should actually be the consolidator
-          if (isfDoc.data.shipperName && !consolidatedData.consolidatorStufferInfo) {
-            const shipperName = isfDoc.data.shipperName;
-            // Look for patterns that indicate this "shipper" is actually a consolidator
-            const consolidatorIndicators = [
-              /BRANCH/i,           // Companies with "BRANCH" are often consolidators
-              /FREIGHT/i,          // Freight companies are often consolidators
-              /LOGISTICS/i,        // Logistics companies are often consolidators
-              /CONSOLIDAT/i,       // Contains "consolidat" in name
-              /CHINA.*COAST/i      // Specific pattern for China Coast Freight
-            ];
-            
-            const isLikelyConsolidator = consolidatorIndicators.some(pattern => 
-              pattern.test(shipperName)
-            );
-            
-            if (isLikelyConsolidator) {
-              console.log(`🎯 CRITICAL FIX: ISF shipperName "${shipperName}" appears to be consolidator, using as consolidatorStufferInfo`);
-              consolidatedData.consolidatorStufferInfo = shipperName;
-              consolidatedData.consolidatorName = shipperName;
-            }
-          }
         }
       }
       
