@@ -5327,6 +5327,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('  consolidator:', consolidatedData.consolidator);
       console.log('  containerStuffer:', consolidatedData.containerStuffer);
       console.log('  stufferName:', consolidatedData.stufferName);
+      console.log('  shipperName (for comparison):', consolidatedData.shipperName);
+      
+      console.log('🔍 DOCUMENT TYPE ANALYSIS:');
+      allExtractedData.forEach((docData, index) => {
+        console.log(`  Document ${index + 1}: ${docData.fileName} (${docData.documentType})`);
+        if (docData.data.consolidatorStufferInfo) {
+          console.log(`    ✓ Has consolidatorStufferInfo: ${docData.data.consolidatorStufferInfo}`);
+        }
+        if (docData.data.consolidator) {
+          console.log(`    ✓ Has consolidator: ${docData.data.consolidator}`);
+        }
+      });
 
       // Map consolidated data to ISF form fields using the exact same field mappings
       const isfFormData = {
@@ -5413,7 +5425,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                 consolidatedData.consolidator ||
                                 consolidatedData.containerStuffer ||
                                 consolidatedData.stufferName ||
-                                consolidatedData.shipperName ||
+                                // Only use shipper as absolute last resort and mark it clearly
+                                (consolidatedData.shipperName ? `[FROM SHIPPER - VERIFY]: ${consolidatedData.shipperName}` : null) ||
                                 null,
         consolidatorInformation: consolidatedData.consolidatorInformation || null,
         consolidator: consolidatedData.consolidator || null
