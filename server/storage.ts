@@ -125,6 +125,7 @@ export interface IStorage {
   createIsfFiling(filing: InsertIsfFiling): Promise<IsfFiling>;
   updateIsfFiling(id: number, filing: Partial<InsertIsfFiling>): Promise<IsfFiling>;
   generateIsfNumber(): Promise<string>;
+  getDocumentsByIsfId(isfId: number): Promise<Document[]>;
 
   // Agent assignment operations
   assignAgentToUser(assignment: InsertAgentAssignment): Promise<AgentAssignment>;

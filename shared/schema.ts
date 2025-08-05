@@ -241,6 +241,7 @@ export const shipments = pgTable("shipments", {
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
   shipmentId: integer("shipment_id").references(() => shipments.id, { onDelete: "cascade" }),
+  isfFilingId: integer("isf_filing_id").references(() => isfFilings.id, { onDelete: "cascade" }),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   fileName: varchar("file_name").notNull(),
   originalName: varchar("original_name").notNull(),
