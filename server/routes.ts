@@ -4670,16 +4670,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
-      // Handle numeric fields
-      if (updateData.invoiceValue && typeof updateData.invoiceValue === 'string') {
-        const numValue = parseFloat(updateData.invoiceValue);
-        updateData.invoiceValue = isNaN(numValue) ? null : numValue;
-      }
+      // Handle all numeric fields that might be empty strings
+      const numericFields = [
+        'invoiceValue', 'filingFee', 'paymentAmount', 'numberOfPackages', 
+        'grossWeight', 'volume', 'invoiceValue'
+      ];
       
-      // Remove undefined values to prevent database errors
+      numericFields.forEach(field => {
+        if (updateData[field] !== undefined) {
+          if (updateData[field] === '' || updateData[field] === null) {
+            updateData[field] = null;
+          } else if (typeof updateData[field] === 'string') {
+            const numValue = parseFloat(updateData[field]);
+            updateData[field] = isNaN(numValue) ? null : numValue;
+          }
+        }
+      });
+      
+      // Convert empty strings to null for all fields to prevent database errors
       Object.keys(updateData).forEach(key => {
         if (updateData[key] === undefined) {
           delete updateData[key];
+        } else if (updateData[key] === '') {
+          updateData[key] = null;
         }
       });
 
