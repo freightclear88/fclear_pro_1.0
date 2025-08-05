@@ -242,12 +242,12 @@ export class AIDocumentProcessor {
               "amsNo": "AMS number if found with 'AMS NO' label",
               "amsReference": "AMS reference number if found",
               "manifestNumber": "Manifest number if found separately",
-              "consolidatorStufferInfo": "CRITICAL: The COMPANY NAME of the consolidator/container stuffer - look for 'CONSOLIDATOR NAME', 'CONSOLIDATOR', 'CONTAINER STUFFER', 'STUFFER', 'CFS OPERATOR' - extract only the COMPANY NAME, not the address or location. This is the business entity that consolidated/stuffed the container - THIS IS DIFFERENT FROM SHIPPER and DIFFERENT FROM CONTAINER STUFFING LOCATION",
-              "consolidator": "consolidator company name if found separately - look for 'CONSOLIDATOR NAME' specifically - NOT the shipper",
-              "consolidatorName": "CRITICAL: Look specifically for 'CONSOLIDATOR NAME', 'CONSOLIDATOR:', 'CONSOLIDATOR NAME:', or 'CONSOLIDATOR/STUFFER NAME' fields in ISF documents - extract only the COMPANY NAME, not the location or address",
-              "consolidatorStufferName": "Look for 'CONSOLIDATOR/STUFFER NAME' field specifically",
+              "consolidatorStufferInfo": "CRITICAL: The COMPANY NAME of the consolidator/container stuffer - In ISF documents, this is often found at the BOTTOM of the document or in separate sections. Look for 'CONSOLIDATOR NAME', 'CONSOLIDATOR', 'CONTAINER STUFFER', 'STUFFER', 'CFS OPERATOR'. Companies like 'CHINA COAST FREIGHT CO., LTD' are typically consolidators, NOT shippers. Extract only the COMPANY NAME, not the address or location. This is the business entity that consolidated/stuffed the container - THIS IS DIFFERENT FROM SHIPPER and DIFFERENT FROM CONTAINER STUFFING LOCATION",
+              "consolidator": "consolidator company name if found separately - In ISF documents, look at the ENTIRE document including bottom sections. Companies with 'BRANCH' in their name are often consolidators",
+              "consolidatorName": "CRITICAL: Look specifically for 'CONSOLIDATOR NAME', 'CONSOLIDATOR:', 'CONSOLIDATOR NAME:', or 'CONSOLIDATOR/STUFFER NAME' fields in ISF documents. Also check the BOTTOM portions of ISF documents where consolidator information is commonly placed. Extract only the COMPANY NAME, not the location or address",
+              "consolidatorStufferName": "Look for 'CONSOLIDATOR/STUFFER NAME' field specifically - check entire document including footer areas",
               "consolidatorAddress": "Look for consolidator address information",
-              "consolidatorInformation": "complete consolidator information with address if found - NOT the shipper information",
+              "consolidatorInformation": "complete consolidator information with address if found - In ISF documents, this is often different from the main shipper and may appear in separate sections or at document bottom",
               "containerStuffer": "container stuffer company information if found - separate from shipper",
               "stufferName": "stuffer company name if found",
               "cfsOperator": "CFS (Container Freight Station) operator name if found",
@@ -300,23 +300,62 @@ ${pdfText.substring(0, 8000)}`
         stuffingLocation: extractedData.stuffingLocation
       });
       
-      // Enhanced consolidator name extraction with generic pattern matching fallback
+      // Enhanced consolidator name extraction with comprehensive pattern matching
       if (!extractedData.consolidatorName && !extractedData.consolidatorStufferInfo && pdfText && documentType === 'isf_information_sheet') {
         console.log('🔍 PATTERN MATCHING: Searching for consolidator patterns in ISF document...');
+        console.log('🔍 FULL PDF TEXT LENGTH:', pdfText.length);
+        console.log('🔍 LAST 500 CHARACTERS OF PDF:', pdfText.slice(-500));
+        
         const consolidatorPatterns = [
+          // Standard patterns
           /CONSOLIDATOR\s*NAME[^:]*:?\s*([^\n\r]+)/i,
           /CONSOLIDATOR[^:]*:?\s*([^\n\r]+)/i,
           /CONTAINER\s*STUFFER[^:]*:?\s*([^\n\r]+)/i,
-          /CFS\s*OPERATOR[^:]*:?\s*([^\n\r]+)/i
+          /CFS\s*OPERATOR[^:]*:?\s*([^\n\r]+)/i,
+          // More specific patterns for ISF documents
+          /CONSOLIDATOR\/STUFFER[^:]*:?\s*([^\n\r]+)/i,
+          /CONSOLIDATOR\s*\/\s*STUFFER[^:]*:?\s*([^\n\r]+)/i,
+          /CONSOLIDATOR\s*INFORMATION[^:]*:?\s*([^\n\r]+)/i,
+          // Pattern to find company names at the bottom of documents
+          /([A-Z][A-Z\s&,.-]+(?:CO\.|LTD|LIMITED|INC|CORP|COMPANY)[^\n\r]*)\s*$/im,
+          // Look for specific consolidator text patterns
+          /CHINA\s+COAST\s+FREIGHT[^\n\r]*/i,
+          // Catch consolidator after specific field labels
+          /(?:CONSOLIDATOR|STUFFER)[\s:]+([A-Z][A-Z\s&,.-]+(?:CO\.|LTD|LIMITED|INC|CORP|COMPANY)[^\n\r]*)/i
         ];
         
         for (const pattern of consolidatorPatterns) {
           const match = pdfText.match(pattern);
           if (match && match[1]) {
             const consolidatorName = match[1].trim();
-            if (consolidatorName && consolidatorName.length > 3) {
+            // More lenient validation - accept any meaningful text
+            if (consolidatorName && consolidatorName.length > 5 && 
+                !consolidatorName.toLowerCase().includes('container stuffing location') &&
+                !consolidatorName.toLowerCase().includes('port of') &&
+                consolidatorName.match(/[A-Z]/)) {
               console.log(`🎯 PATTERN FOUND: ${consolidatorName}`);
               extractedData.consolidatorName = consolidatorName;
+              break;
+            }
+          }
+        }
+        
+        // If still not found, try to find it in the last portion of the document
+        if (!extractedData.consolidatorName) {
+          console.log('🔍 SEARCHING LAST 1000 CHARACTERS FOR CONSOLIDATOR...');
+          const lastChars = pdfText.slice(-1000);
+          const lines = lastChars.split(/[\n\r]+/);
+          
+          for (const line of lines.reverse()) { // Start from the end
+            const trimmedLine = line.trim();
+            // Look for company names with common business suffixes
+            if (trimmedLine.match(/[A-Z][A-Z\s&,.-]*(?:CO\.|LTD|LIMITED|INC|CORP|COMPANY)/i) &&
+                trimmedLine.length > 10 && trimmedLine.length < 100 &&
+                !trimmedLine.toLowerCase().includes('container stuffing') &&
+                !trimmedLine.toLowerCase().includes('location') &&
+                !trimmedLine.toLowerCase().includes('port')) {
+              console.log(`🎯 FOUND CONSOLIDATOR AT DOCUMENT END: ${trimmedLine}`);
+              extractedData.consolidatorName = trimmedLine;
               break;
             }
           }
