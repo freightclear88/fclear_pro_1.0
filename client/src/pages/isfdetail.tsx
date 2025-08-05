@@ -1,19 +1,21 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { Copy, FileText, Ship, Calendar, MapPin, Building2, CheckCircle, Clock, AlertCircle, DollarSign, Package, Globe, Download, Eye } from "lucide-react";
+import { Copy, FileText, Ship, Calendar, MapPin, Building2, CheckCircle, Clock, AlertCircle, DollarSign, Package, Globe, Download, Eye, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { IsfFiling, Document } from "@shared/schema";
 
 export default function IsfDetail() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fetch ISF filing details
   const { data: isfFiling, isLoading, error } = useQuery<IsfFiling>({
@@ -25,6 +27,31 @@ export default function IsfDetail() {
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: [`/api/documents/isf/${id}`],
     enabled: !!id,
+  });
+
+  // Convert ISF to Shipment mutation
+  const convertToShipmentMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", `/api/isf/filings/${id}/convert-to-shipment`);
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Conversion Successful",
+        description: `ISF filing converted to shipment ${data.shipment.shipmentId}. ${data.documentsLinked} document(s) linked.`,
+      });
+      // Refresh queries
+      queryClient.invalidateQueries({ queryKey: ['/api/shipments'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/isf/filings/${id}`] });
+      // Navigate to the new shipment
+      setLocation(`/shipments/detail/${data.shipmentId}`);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Conversion Failed",
+        description: error.message || "Failed to convert ISF filing to shipment",
+        variant: "destructive",
+      });
+    },
   });
 
   const copyToClipboard = (text: string, fieldName: string) => {
@@ -239,6 +266,21 @@ export default function IsfDetail() {
               {getStatusIcon(isfFiling.status || 'draft')}
               {(isfFiling.status || 'draft').toUpperCase()}
             </Badge>
+            <Button
+              onClick={() => convertToShipmentMutation.mutate()}
+              disabled={convertToShipmentMutation.isPending}
+              className="bg-freight-blue hover:bg-freight-blue/90 text-white"
+            >
+              {convertToShipmentMutation.isPending ? (
+                <>Converting...</>
+              ) : (
+                <>
+                  <Ship className="h-4 w-4 mr-2" />
+                  Convert to Shipment
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </>
+              )}
+            </Button>
             <Button
               variant="outline"
               onClick={() => setLocation("/fastisf")}

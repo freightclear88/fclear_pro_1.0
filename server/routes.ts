@@ -5155,6 +5155,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Convert ISF Filing to Shipment
+  app.post('/api/isf/filings/:id/convert-to-shipment', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = getUserId(req);
+      
+      // Get the ISF filing
+      const isfFiling = await storage.getIsfFilingById(parseInt(id));
+      if (!isfFiling) {
+        return res.status(404).json({ message: "ISF filing not found" });
+      }
+
+      // Check if user owns this filing or is admin/agent
+      const user = await storage.getUser(userId);
+      if (isfFiling.userId !== userId && !user?.isAdmin && !user?.isAgent) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Generate a unique shipment ID
+      const timestamp = Date.now().toString().slice(-6);
+      const shipmentId = `${isfFiling.portOfEntry || 'SEA'}-${timestamp}`;
+
+      // Map ISF data to shipment structure
+      const shipmentData: InsertShipment = {
+        shipmentId,
+        userId: isfFiling.userId,
+        
+        // Transport and status
+        transportMode: 'ocean', // ISF is primarily for ocean shipments
+        status: 'pending',
+        
+        // Location mapping
+        portOfLoading: isfFiling.foreignPortOfUnlading, // Foreign port
+        portOfDischarge: isfFiling.portOfEntry, // US port of entry
+        destinationPort: isfFiling.portOfEntry,
+        
+        // Party information mapping  
+        shipperName: isfFiling.manufacturerInformation?.split('\n')[0] || null,
+        shipperAddress: isfFiling.manufacturerInformation || null,
+        shipperCountry: isfFiling.countryOfOrigin,
+        
+        consigneeName: isfFiling.consigneeName,
+        consigneeAddress: `${isfFiling.consigneeAddress}\n${isfFiling.consigneeCity}, ${isfFiling.consigneeState} ${isfFiling.consigneeZip}`,
+        consigneeCity: isfFiling.consigneeCity,
+        consigneeState: isfFiling.consigneeState,
+        consigneeZipCode: isfFiling.consigneeZip,
+        consigneeCountry: isfFiling.consigneeCountry,
+        
+        // Booking and transport details
+        bookingNumber: isfFiling.billOfLading,
+        billOfLadingNumber: isfFiling.billOfLading,
+        vesselAndVoyage: isfFiling.vesselName && isfFiling.voyageNumber ? 
+          `${isfFiling.vesselName}/${isfFiling.voyageNumber}` : isfFiling.vesselName,
+        containerNumber: Array.isArray(isfFiling.containerNumbers) ? 
+          isfFiling.containerNumbers[0] : isfFiling.containerNumbers,
+        containerNumbers: Array.isArray(isfFiling.containerNumbers) ? 
+          isfFiling.containerNumbers : [isfFiling.containerNumbers].filter(Boolean),
+        
+        // Cargo information
+        cargoDescription: isfFiling.commodityDescription,
+        hsCode: isfFiling.htsusNumber,
+        
+        // Dates
+        eta: isfFiling.estimatedArrivalDate,
+        
+        // Additional ISF-specific data in notes
+        notes: `Converted from ISF Filing ${isfFiling.isfNumber}\n\n` +
+               `Original ISF Data:\n` +
+               `- Importer: ${isfFiling.importerName}\n` +
+               `- Manufacturer: ${isfFiling.manufacturerInformation}\n` +
+               `- Container Stuffing Location: ${isfFiling.containerStuffingLocation}\n` +
+               `- Consolidator Info: ${isfFiling.consolidatorStufferInfo}\n` +
+               (isfFiling.buyerInformation ? `- Buyer: ${isfFiling.buyerInformation}\n` : '') +
+               (isfFiling.sellerInformation ? `- Seller: ${isfFiling.sellerInformation}\n` : ''),
+        
+        // Invoice information if available
+        totalValue: isfFiling.invoiceValue ? parseFloat(isfFiling.invoiceValue.toString()) : null,
+        currency: isfFiling.currency || 'USD',
+        
+        // Source tracking
+        sourceSystem: 'isf_conversion',
+        referenceNumber: isfFiling.isfNumber,
+        
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      // Create the shipment
+      const newShipment = await storage.createShipment(shipmentData);
+
+      // Get ISF documents and link them to the new shipment
+      const isfDocuments = await storage.getDocumentsByIsfId(parseInt(id));
+      let documentsLinked = 0;
+
+      for (const doc of isfDocuments) {
+        try {
+          await storage.updateDocument(doc.id, {
+            shipmentId: newShipment.id,
+            category: doc.category === 'isf_document' ? 'bill_of_lading' : doc.category
+          });
+          documentsLinked++;
+        } catch (docError) {
+          console.error(`Error linking document ${doc.id} to shipment:`, docError);
+        }
+      }
+
+      // Update ISF filing to mark it as converted
+      await storage.updateIsfFiling(parseInt(id), {
+        notes: (isfFiling.notes || '') + `\n\nConverted to Shipment ${shipmentId} on ${new Date().toISOString()}`
+      });
+
+      res.json({
+        success: true,
+        shipment: newShipment,
+        shipmentId: newShipment.id,
+        documentsLinked,
+        message: `ISF filing ${isfFiling.isfNumber} successfully converted to shipment ${shipmentId}. ${documentsLinked} document(s) linked.`
+      });
+
+    } catch (error) {
+      console.error("Error converting ISF filing to shipment:", error);
+      res.status(500).json({ 
+        message: "Failed to convert ISF filing to shipment",
+        error: error.message 
+      });
+    }
+  });
+
   // All ISF routes now use the consolidated document processing system from shipment creation
   
   // Airline Tracking Routes
