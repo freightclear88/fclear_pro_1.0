@@ -5007,7 +5007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Extract data using the same AI processor as shipment creation
-          const extractedData = await extractShipmentDataFromDocument(file.path, documentType);
+          const extractedData = await aiDocProcessor.extractShipmentData(file.path, documentType);
           
           allExtractedData.push({
             documentType,
