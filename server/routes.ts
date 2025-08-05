@@ -933,6 +933,59 @@ const upload = multer({
   },
 });
 
+// Configure multer for ISF document uploads with organized folders
+const isfUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      // Create ISF-specific folder structure
+      const isfFolder = path.join(uploadDir, "isf-documents");
+      const timestamp = Date.now().toString().slice(-6);
+      const isfNumber = `ISF-${timestamp}`;
+      const isfDir = path.join(isfFolder, isfNumber);
+      
+      // Create directories if they don't exist
+      if (!fs.existsSync(isfFolder)) {
+        fs.mkdirSync(isfFolder, { recursive: true });
+      }
+      if (!fs.existsSync(isfDir)) {
+        fs.mkdirSync(isfDir, { recursive: true });
+      }
+      
+      // Store the ISF directory path in req for later use
+      (req as any).isfDirectory = isfDir;
+      (req as any).isfNumber = isfNumber;
+      
+      cb(null, isfDir);
+    },
+    filename: (req, file, cb) => {
+      // Use original filename with timestamp to avoid conflicts
+      const timestamp = Date.now();
+      const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+      cb(null, `${timestamp}_${sanitizedName}`);
+    }
+  }),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /pdf|jpg|jpeg|png|doc|docx|xls|xlsx|xml/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype) ||
+                    file.mimetype === 'application/vnd.ms-excel' ||
+                    file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                    file.mimetype === 'application/msword' ||
+                    file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                    file.mimetype === 'application/xml' ||
+                    file.mimetype === 'text/xml';
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error("Only PDF, JPG, JPEG, PNG, DOC, DOCX, XLS, XLSX, and XML files are allowed"));
+    }
+  },
+});
+
 // Helper function to get user ID in both development and production modes
 function getUserId(req: any): string {
   // Get from authenticated user
@@ -4706,8 +4759,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Multi-document ISF scan route using the same system as shipment document upload
-  app.post('/api/isf/scan-documents', requireSubscription, upload.array('isfDocuments', 10), async (req: any, res) => {
+  // Multi-document ISF scan route using organized folder structure  
+  app.post('/api/isf/scan-documents', requireSubscription, isfUpload.array('isfDocuments', 10), async (req: any, res) => {
     try {
       const files = req.files as Express.Multer.File[];
       if (!files || files.length === 0) {
@@ -4881,16 +4934,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ISF filing creation route
-  app.post('/api/isf/create', requireSubscription, upload.array('isfDocuments', 10), async (req: any, res) => {
+  // ISF filing creation route with organized document folders
+  app.post('/api/isf/create', requireSubscription, isfUpload.array('isfDocuments', 10), async (req: any, res) => {
     try {
       const userId = getUserId(req);
       console.log('Creating ISF filing for user:', userId);
       console.log('Request body:', req.body);
       
-      // Generate ISF number
-      const timestamp = Date.now().toString().slice(-6);
-      const isfNumber = `ISF-${timestamp}`;
+      // Use ISF number from multer configuration if available, otherwise generate one
+      const isfNumber = req.isfNumber || `ISF-${Date.now().toString().slice(-6)}`;
 
       // Prepare ISF filing data with default values for required fields
       const isfData = {
@@ -4953,10 +5005,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('ISF filing created successfully:', isfFiling);
 
-      // Save uploaded documents to database with ISF filing ID
+      // Save uploaded documents to database with ISF filing ID in organized folder structure
       const files = req.files as Express.Multer.File[];
+      let documentsUploaded = 0;
+      
       if (files && files.length > 0) {
         console.log(`Saving ${files.length} documents to database with ISF filing ID: ${isfFiling.id}`);
+        console.log(`Documents organized in folder: ${req.isfDirectory || 'standard uploads'}`);
         
         for (const file of files) {
           try {
@@ -4969,13 +5024,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               fileSize: file.size,
               category: 'isf_document',
               status: 'processed',
-              filePath: file.path,
+              filePath: file.path, // This will be the organized path
               isfFilingId: isfFiling.id, // Link to ISF filing
               extractedData: {},
             };
             
             await storage.createDocument(documentData);
-            console.log(`Document ${file.originalname} saved to database with ISF filing ID: ${isfFiling.id}`);
+            documentsUploaded++;
+            console.log(`Document ${file.originalname} saved to organized folder: ${file.path}`);
           } catch (docError) {
             console.error(`Error saving document ${file.originalname}:`, docError);
           }
@@ -4987,8 +5043,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isfFiling,
         id: isfFiling.id,
         isfNumber: isfFiling.isfNumber,
-        documentsUploaded: files ? files.length : 0,
-        message: `ISF filing ${isfNumber} created successfully. Status: ${isfFiling.status}`,
+        documentsUploaded,
+        documentsFolder: req.isfDirectory ? path.basename(req.isfDirectory) : null,
+        message: `ISF filing ${isfNumber} created successfully. ${documentsUploaded} document(s) organized in dedicated folder. Status: ${isfFiling.status}`,
       });
 
     } catch (error) {
