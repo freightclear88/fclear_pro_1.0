@@ -46,12 +46,12 @@ export default function IsfDetail() {
       <TableRow>
         <TableCell className="font-medium w-1/3">{label}</TableCell>
         <TableCell className={`font-mono ${className}`}>
-          <div className="flex items-center justify-between group">
+          <div className="flex items-center justify-between group hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 -mx-2 px-2 py-1 rounded">
             <span className="break-all">{value}</span>
             <Button
               variant="ghost"
               size="sm"
-              className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-2 shrink-0 hover:bg-blue-50 hover:text-blue-600"
+              className="invisible group-hover:visible transition-all duration-200 ml-2 shrink-0 hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-300"
               onClick={() => copyToClipboard(value, label)}
             >
               <Copy className="h-4 w-4" />
