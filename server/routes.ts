@@ -51,7 +51,8 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
   // ISF-specific fields that should ALWAYS be prioritized from ISF documents
   const isfSpecificFields = [
     'consolidatorStufferInfo', 'consolidatorInformation', 'consolidator',
-    'containerStuffer', 'stufferName', 'amsNumber', 'amsNo', 'amsReference',
+    'containerStuffer', 'stufferName', 'cfsOperator', 'cfsFacility',
+    'amsNumber', 'amsNo', 'amsReference',
     'manifestNumber', 'manufacturerInformation', 'manufacturerName', 'manufacturerAddress',
     'buyerInformation', 'sellerInformation', 'shipToPartyInformation'
   ];
@@ -5327,6 +5328,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('  consolidator:', consolidatedData.consolidator);
       console.log('  containerStuffer:', consolidatedData.containerStuffer);
       console.log('  stufferName:', consolidatedData.stufferName);
+      console.log('  cfsOperator:', consolidatedData.cfsOperator);
+      console.log('  cfsFacility:', consolidatedData.cfsFacility);
+      console.log('  containerStuffingLocation:', consolidatedData.containerStuffingLocation);
       console.log('  shipperName (for comparison):', consolidatedData.shipperName);
       
       console.log('🔍 DOCUMENT TYPE ANALYSIS:');
@@ -5425,6 +5429,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                 consolidatedData.consolidator ||
                                 consolidatedData.containerStuffer ||
                                 consolidatedData.stufferName ||
+                                // Check container stuffing location as potential consolidator info
+                                (consolidatedData.containerStuffingLocation && !consolidatedData.containerStuffingLocation.includes('CFS/CFS') ? 
+                                 `CONTAINER STUFFER: ${consolidatedData.containerStuffingLocation}` : null) ||
                                 // Only use shipper as absolute last resort and mark it clearly
                                 (consolidatedData.shipperName ? `[FROM SHIPPER - VERIFY]: ${consolidatedData.shipperName}` : null) ||
                                 null,

@@ -242,11 +242,13 @@ export class AIDocumentProcessor {
               "amsNo": "AMS number if found with 'AMS NO' label",
               "amsReference": "AMS reference number if found",
               "manifestNumber": "Manifest number if found separately",
-              "consolidatorStufferInfo": "CRITICAL: Complete consolidator/container stuffer information - look for 'CONSOLIDATOR', 'CONTAINER STUFFER', 'STUFFER', 'CFS', 'CONSOLIDATOR/STUFFER' sections with company name and address - THIS IS DIFFERENT FROM SHIPPER",
+              "consolidatorStufferInfo": "CRITICAL: Complete consolidator/container stuffer information - look for ANY of these patterns: 'CONSOLIDATOR', 'CONTAINER STUFFER', 'STUFFER', 'CFS', 'CONSOLIDATOR/STUFFER', 'CONSOLIDATION', 'CONSOLIDATE', or sections that mention who consolidated/stuffed the container. This is typically a different company from the shipper who prepared the goods for containerization - THIS IS DIFFERENT FROM SHIPPER",
               "consolidator": "consolidator company name if found separately - NOT the shipper",
               "consolidatorInformation": "complete consolidator information with address if found - NOT the shipper information",
               "containerStuffer": "container stuffer company information if found - separate from shipper",
               "stufferName": "stuffer company name if found",
+              "cfsOperator": "CFS (Container Freight Station) operator name if found",
+              "cfsFacility": "CFS facility information if found",
               "containerStuffingLocation": "EXACT container stuffing location from ISF form - look for fields labeled: 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'Consolidator Location', 'CFS Location', 'Place where container was stuffed' - extract the EXACT location value, not just 'CFS/CFS'",
               "containerStuffing": "any container stuffing related information if found",
               "stuffingLocation": "stuffing location if found"
@@ -256,7 +258,9 @@ export class AIDocumentProcessor {
             role: "user",
             content: `Extract comprehensive shipping data from this ${documentType}. Pay special attention to:
 1. AMS numbers - they may appear as "AMS NO: 123456", "AMS# 789012", "MANIFEST NO 345678", or similar patterns. Extract the exact number/code after these labels.
-2. Consolidator information - look for "CONSOLIDATOR", "CONTAINER STUFFER", or "STUFFER" sections that contain company names and addresses DIFFERENT from the shipper information. The consolidator is NOT the same as the shipper.
+2. Consolidator information - THIS IS CRITICAL: Look for any company mentioned as CONSOLIDATOR, CONTAINER STUFFER, STUFFER, CFS, or who consolidated/stuffed the container. This is often a logistics company that's DIFFERENT from the shipper (manufacturer/exporter). The consolidator handles multiple shipments into one container.
+3. If you see field labels like "Consolidator:", "Container Stuffer:", "Stuffer:", "CFS:", extract the company name and address that follows.
+4. The consolidator may be listed in a separate section from shipper/consignee information.
 
 Document content:\n\n${pdfText.substring(0, 4000)}`
           }
