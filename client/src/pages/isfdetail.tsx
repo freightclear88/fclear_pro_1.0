@@ -51,7 +51,7 @@ export default function IsfDetail() {
             <Button
               variant="ghost"
               size="sm"
-              className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0"
+              className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-2 shrink-0 hover:bg-blue-50 hover:text-blue-600"
               onClick={() => copyToClipboard(value, label)}
             >
               <Copy className="h-4 w-4" />
@@ -65,17 +65,17 @@ export default function IsfDetail() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'submitted':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'paid':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'processed':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       case 'completed':
-        return 'bg-emerald-100 text-emerald-800';
+        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
       case 'rejected':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   };
 
@@ -166,11 +166,10 @@ export default function IsfDetail() {
           <CardContent>
             <Table>
               <TableBody>
-                <CopyableField label="ISF Number" value={isfFiling.isfNumber} className="font-bold text-blue-600" />
+                <CopyableField label="ISF Number" value={isfFiling.isfNumber} className="font-bold text-blue-600 dark:text-blue-400" />
                 <CopyableField label="Status" value={isfFiling.status} />
                 <CopyableField label="Filing Date" value={isfFiling.filingDate ? new Date(isfFiling.filingDate).toLocaleDateString() : null} />
                 <CopyableField label="Submitted At" value={isfFiling.submittedAt ? new Date(isfFiling.submittedAt).toLocaleString() : null} />
-                <CopyableField label="Filing Fee" value={isfFiling.paymentAmount ? `$${isfFiling.paymentAmount}` : null} />
               </TableBody>
             </Table>
           </CardContent>
@@ -299,46 +298,7 @@ export default function IsfDetail() {
           </CardContent>
         </Card>
 
-        {/* Commercial Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              Commercial Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableBody>
-                <CopyableField label="Invoice Number" value={isfFiling.invoiceNumber} />
-                <CopyableField label="Invoice Date" value={isfFiling.invoiceDate ? new Date(isfFiling.invoiceDate).toLocaleDateString() : null} />
-                <CopyableField label="Invoice Value" value={isfFiling.invoiceValue ? `${isfFiling.currency || 'USD'} ${isfFiling.invoiceValue}` : null} />
-                <CopyableField label="Terms" value={isfFiling.terms} />
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
 
-        {/* Payment Information */}
-        {isfFiling.paymentAmount && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Payment Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableBody>
-                  <CopyableField label="Filing Fee" value={`$${isfFiling.paymentAmount}`} className="font-bold text-green-600" />
-                  <CopyableField label="Payment Status" value={isfFiling.paymentStatus} />
-                  <CopyableField label="Transaction ID" value={isfFiling.paymentTransactionId} />
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );
