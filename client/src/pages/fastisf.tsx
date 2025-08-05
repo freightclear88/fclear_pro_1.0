@@ -248,6 +248,27 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           combinedFields.buyerInformation = `${data.consigneeName}\n${data.consigneeAddress}`;
         }
         
+        // Handle ship-to party (usually same as consignee)
+        if (rawConsolidated.notifyPartyName) {
+          if (rawConsolidated.notifyPartyName.toLowerCase().includes('same as consignee') && combinedFields.buyerInformation) {
+            combinedFields.shipToPartyInformation = combinedFields.buyerInformation;
+          } else {
+            combinedFields.shipToPartyInformation = rawConsolidated.notifyPartyName;
+          }
+        }
+        
+        // Handle consolidator information (required for ISF)
+        if (rawConsolidated.freightPaymentTerms && rawConsolidated.shipperName) {
+          combinedFields.consolidatorStufferInfo = `Consolidator: ${rawConsolidated.shipperName}\nTerms: ${rawConsolidated.freightPaymentTerms}`;
+        } else if (rawConsolidated.shipperName) {
+          combinedFields.consolidatorStufferInfo = rawConsolidated.shipperName;
+        }
+        
+        // Handle manufacturer information with fallback to country of origin
+        if (!data.manufacturerInformation && rawConsolidated.countryOfOrigin) {
+          combinedFields.manufacturerInformation = `Manufactured in: ${rawConsolidated.countryOfOrigin}`;
+        }
+        
         // Map vessel and voyage information
         if (rawConsolidated.vesselAndVoyage) {
           const vesselParts = rawConsolidated.vesselAndVoyage.split(' ');
@@ -277,6 +298,19 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           etd: 'estimatedDepartureDate',
           cargoDescription: 'commodityDescription',
           htsCode: 'htsusNumber',
+          
+          // Additional critical ISF field mappings
+          consigneeName: 'consigneeName',
+          consigneeAddress: 'consigneeAddress',
+          shipperName: 'importerName', // Alternative mapping if importer not available
+          shipperAddress: 'importerAddress', // Alternative mapping
+          vesselAndVoyage: 'vesselName', // Will be split by combinedFields logic
+          
+          // Manufacturing information
+          manufacturerCountry: 'countryOfOrigin',
+          
+          // Missing critical ISF mappings
+          notifyPartyName: 'shipToPartyInformation', // Map notify party to ship-to party
           
           // From combined fields
           ...Object.keys(combinedFields).reduce((acc, key) => {
