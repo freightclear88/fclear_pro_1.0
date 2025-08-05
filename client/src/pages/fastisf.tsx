@@ -305,28 +305,57 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         }
         
         // Enhanced consolidator information extraction (CRITICAL for ISF field #8)
+        console.log('🔍 CONSOLIDATOR DEBUG:');
+        console.log('  consolidatorName (ISF specific):', rawConsolidated.consolidatorName);
+        console.log('  consolidatorStufferInfo:', rawConsolidated.consolidatorStufferInfo);
+        console.log('  consolidatorInformation:', rawConsolidated.consolidatorInformation);
+        console.log('  consolidator:', rawConsolidated.consolidator);
+        console.log('  containerStuffer:', rawConsolidated.containerStuffer);
+        console.log('  stufferName:', rawConsolidated.stufferName);
+        console.log('  cfsOperator:', rawConsolidated.cfsOperator);
+        console.log('  cfsFacility:', rawConsolidated.cfsFacility);
+        console.log('  containerStuffingLocation:', rawConsolidated.containerStuffingLocation);
+        console.log('  shipperName (for comparison):', rawConsolidated.shipperName);
+        
         const consolidatorParts: string[] = [];
         
-        // Priority order for consolidator info
-        if (rawConsolidated.consolidatorStufferInfo || data.consolidatorStufferInfo) {
-          consolidatorParts.push(rawConsolidated.consolidatorStufferInfo || data.consolidatorStufferInfo);
-        } else if (rawConsolidated.consolidatorInformation || data.consolidatorInformation) {
-          consolidatorParts.push(rawConsolidated.consolidatorInformation || data.consolidatorInformation);
-        } else if (rawConsolidated.consolidator || data.consolidator) {
-          consolidatorParts.push(rawConsolidated.consolidator || data.consolidator);
-        } else if (rawConsolidated.containerStuffer || data.containerStuffer) {
-          consolidatorParts.push(rawConsolidated.containerStuffer || data.containerStuffer);
-        } else if (rawConsolidated.stufferName || data.stufferName) {
-          consolidatorParts.push(rawConsolidated.stufferName || data.stufferName);
+        // CRITICAL: Priority order for consolidator info - prioritize ISF document data
+        // First, check for ISF-specific consolidator fields from ISF documents
+        if (rawConsolidated.consolidatorName) {
+          consolidatorParts.push(rawConsolidated.consolidatorName);
+          console.log('✅ Using consolidatorName from ISF document:', rawConsolidated.consolidatorName);
+        } else if (rawConsolidated.consolidatorStufferInfo) {
+          consolidatorParts.push(rawConsolidated.consolidatorStufferInfo);
+          console.log('✅ Using consolidatorStufferInfo:', rawConsolidated.consolidatorStufferInfo);
+        } else if (rawConsolidated.consolidatorInformation) {
+          consolidatorParts.push(rawConsolidated.consolidatorInformation);
+          console.log('✅ Using consolidatorInformation:', rawConsolidated.consolidatorInformation);
+        } else if (rawConsolidated.consolidator) {
+          consolidatorParts.push(rawConsolidated.consolidator);
+          console.log('✅ Using consolidator field:', rawConsolidated.consolidator);
+        } else if (rawConsolidated.containerStuffer) {
+          consolidatorParts.push(rawConsolidated.containerStuffer);
+          console.log('✅ Using containerStuffer:', rawConsolidated.containerStuffer);
+        } else if (rawConsolidated.stufferName) {
+          consolidatorParts.push(rawConsolidated.stufferName);
+          console.log('✅ Using stufferName:', rawConsolidated.stufferName);
+        } else if (rawConsolidated.cfsOperator) {
+          consolidatorParts.push(rawConsolidated.cfsOperator);
+          console.log('✅ Using cfsOperator:', rawConsolidated.cfsOperator);
+        } else if (rawConsolidated.cfsFacility) {
+          consolidatorParts.push(rawConsolidated.cfsFacility);
+          console.log('✅ Using cfsFacility:', rawConsolidated.cfsFacility);
         } else {
-          // Fallback: use shipper name only (no freight terms in consolidator field)
-          if (rawConsolidated.shipperName) {
-            consolidatorParts.push(rawConsolidated.shipperName);
-          }
+          // CRITICAL CHANGE: Do NOT use shipper name as fallback for consolidator
+          // Leave consolidator field empty if no specific consolidator information is found
+          console.log('❌ No consolidator information found in documents - leaving empty (do not use shipper name)');
         }
         
         if (consolidatorParts.length > 0) {
           combinedFields.consolidatorStufferInfo = consolidatorParts.join('\n');
+          console.log('🎯 FINAL consolidatorStufferInfo:', combinedFields.consolidatorStufferInfo);
+        } else {
+          console.log('🚫 No consolidator information extracted - field will remain empty');
         }
         
         // Enhanced AMS number extraction

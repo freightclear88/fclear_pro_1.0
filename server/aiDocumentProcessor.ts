@@ -97,10 +97,13 @@ interface ExtractedShipmentData {
   // AMS and consolidator fields - CRITICAL for ISF
   amsNumber?: string;
   consolidator?: string;
+  consolidatorName?: string;
   consolidatorInformation?: string;
   consolidatorStufferInfo?: string;
   containerStuffer?: string;
   stufferName?: string;
+  cfsOperator?: string;
+  cfsFacility?: string;
 }
 
 export class AIDocumentProcessor {
@@ -300,24 +303,76 @@ ${pdfText.substring(0, 8000)}`
         stuffingLocation: extractedData.stuffingLocation
       });
       
-      // Enhanced consolidator name extraction with generic pattern matching fallback
+      // Enhanced consolidator name extraction with comprehensive pattern matching for ISF documents
       if (!extractedData.consolidatorName && !extractedData.consolidatorStufferInfo && pdfText && documentType === 'isf_information_sheet') {
         console.log('🔍 PATTERN MATCHING: Searching for consolidator patterns in ISF document...');
         const consolidatorPatterns = [
+          // Direct consolidator field patterns
           /CONSOLIDATOR\s*NAME[^:]*:?\s*([^\n\r]+)/i,
+          /CONSOLIDATOR\s*INFORMATION[^:]*:?\s*([^\n\r]+)/i,
           /CONSOLIDATOR[^:]*:?\s*([^\n\r]+)/i,
           /CONTAINER\s*STUFFER[^:]*:?\s*([^\n\r]+)/i,
-          /CFS\s*OPERATOR[^:]*:?\s*([^\n\r]+)/i
+          /CFS\s*OPERATOR[^:]*:?\s*([^\n\r]+)/i,
+          /CFS\s*NAME[^:]*:?\s*([^\n\r]+)/i,
+          /STUFFING\s*COMPANY[^:]*:?\s*([^\n\r]+)/i,
+          /CONSOLIDATION\s*FACILITY[^:]*:?\s*([^\n\r]+)/i,
+          // Alternative patterns with field numbers (ISF field #8)
+          /(?:FIELD\s*#?8|8\.|8\))[^:]*CONSOLIDATOR[^:]*:?\s*([^\n\r]+)/i,
+          /(?:FIELD\s*#?8|8\.|8\))[^:]*:?\s*([^\n\r]+)/i,
+          // Company patterns in consolidator context
+          /(?:CONSOLIDATOR|STUFFER|CFS)[^:]*:?\s*([A-Z][^,\n\r]*(?:CO\.|LTD|INC|CORP|LLC|LIMITED)[^,\n\r]*)/i,
+          // Look for companies mentioned near stuffing location
+          /(?:STUFFING|CONSOLIDATION)[^:]*LOCATION[^:]*:?[^,\n\r]*,?\s*([A-Z][^,\n\r]*(?:CO\.|LTD|INC|CORP|LLC|LIMITED)[^,\n\r]*)/i
         ];
         
         for (const pattern of consolidatorPatterns) {
           const match = pdfText.match(pattern);
           if (match && match[1]) {
             const consolidatorName = match[1].trim();
-            if (consolidatorName && consolidatorName.length > 3) {
-              console.log(`🎯 PATTERN FOUND: ${consolidatorName}`);
-              extractedData.consolidatorName = consolidatorName;
+            // Clean up the extracted name
+            const cleanName = consolidatorName
+              .replace(/^\s*[-,]\s*/, '') // Remove leading dashes/commas
+              .replace(/\s*[-,]\s*$/, '') // Remove trailing dashes/commas  
+              .trim();
+            
+            if (cleanName && cleanName.length > 5 && !cleanName.toLowerCase().includes('same as') && !cleanName.toLowerCase().includes('see above')) {
+              console.log(`🎯 CONSOLIDATOR PATTERN FOUND: ${cleanName}`);
+              extractedData.consolidatorName = cleanName;
+              extractedData.consolidatorStufferInfo = cleanName;
               break;
+            }
+          }
+        }
+        
+        // If still no consolidator found, try to find companies mentioned in the document footer or separate sections
+        if (!extractedData.consolidatorName) {
+          console.log('🔍 SEARCHING: Looking for company names in document footer/separate sections...');
+          const companyPatterns = [
+            /([A-Z][A-Z\s&,-]*(?:CO\.|LTD|INC|CORP|LLC|LIMITED|LOGISTICS|FREIGHT)[A-Z\s&,-]*)/gi
+          ];
+          
+          const foundCompanies = new Set<string>();
+          for (const pattern of companyPatterns) {
+            let match;
+            while ((match = pattern.exec(pdfText)) !== null) {
+              const company = match[1].trim();
+              if (company.length > 8 && company.length < 80) {
+                foundCompanies.add(company);
+              }
+            }
+          }
+          
+          // Convert to array and take first reasonable company that's not a shipper/consignee pattern
+          const companies = Array.from(foundCompanies);
+          if (companies.length > 0) {
+            // Prefer companies with freight/logistics in name for consolidators
+            const logisticsCompany = companies.find(c => 
+              /logistics|freight|forwarding|consolidat|cfs/i.test(c)
+            );
+            if (logisticsCompany) {
+              console.log(`🎯 LOGISTICS COMPANY FOUND as consolidator: ${logisticsCompany}`);
+              extractedData.consolidatorName = logisticsCompany;
+              extractedData.consolidatorStufferInfo = logisticsCompany;
             }
           }
         }
@@ -387,7 +442,7 @@ ${pdfText.substring(0, 8000)}`
         messages: [
           {
             role: "system",
-            content: `You are a shipping document expert. Extract comprehensive data from Bills of Lading, commercial invoices, and packing lists. Return JSON with ALL found values using exact field names:
+            content: `You are a shipping document expert specializing in ISF (Importer Security Filing) and Bills of Lading. Extract comprehensive data with special attention to ISF-specific fields. Return JSON with ALL found values using exact field names:
 
             {
               "billOfLadingNumber": "B/L number if found",
@@ -445,8 +500,18 @@ ${pdfText.substring(0, 8000)}`
               "etd": "ETD if found",
               "containerStuffingLocation": "EXACT container stuffing location from ISF form - look for fields labeled: 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'Consolidator Location', 'CFS Location', 'Place where container was stuffed' - extract the EXACT location value, not just 'CFS/CFS'",
               "containerStuffing": "any container stuffing related information if found",
-              "stuffingLocation": "stuffing location if found"
+              "stuffingLocation": "stuffing location if found",
+              "consolidatorName": "ISF CRITICAL: Consolidator/Container Stuffer company name - look for labels: 'Consolidator Name', 'Container Stuffer', 'CFS Operator', 'Consolidator Information', 'Consolidator/Stuffer'. This is DIFFERENT from shipper - extract the company that consolidated/stuffed the container",
+              "consolidatorStufferInfo": "ISF CRITICAL: Complete consolidator information including name and address - specifically the entity that stuffed/consolidated the container",
+              "consolidatorInformation": "ISF field: Consolidator details",
+              "consolidator": "ISF field: Consolidator company"
             }
+
+            CRITICAL ISF EXTRACTION RULES:
+            1. For ISF documents: Consolidator ≠ Shipper. Look specifically for consolidator/stuffer company names
+            2. Container stuffing location should be the physical address where goods were stuffed
+            3. Consolidator is the company that consolidated/stuffed the container (often freight forwarder/CFS operator)
+            4. Pay special attention to company names that appear multiple times or in consolidator-specific sections
 
             Only include fields where you find actual values. Do not include fields with null, "not found", "N/A", etc.`
           },
@@ -693,7 +758,17 @@ ${pdfText.substring(0, 8000)}`
       'grossweight': 'weight',
       'packages': 'numberOfPackages',
       'commodity': 'cargoDescription',
-      'booking': 'bookingNumber'
+      'booking': 'bookingNumber',
+      // ISF consolidator field mappings
+      'consolidator': 'consolidatorName',
+      'consolidatorname': 'consolidatorName',
+      'consolidatorinformation': 'consolidatorInformation',
+      'containerstuffer': 'containerStuffer',
+      'cfsoperator': 'cfsOperator',
+      'cfsfacility': 'cfsFacility',
+      'stuffername': 'stufferName',
+      'amsnumber': 'amsNumber',
+      'amsno': 'amsNumber'
     };
     
     if (fieldMappings[key]) {
