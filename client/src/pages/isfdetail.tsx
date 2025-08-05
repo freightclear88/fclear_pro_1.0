@@ -193,7 +193,6 @@ export default function IsfDetail() {
             <Table>
               <TableBody>
                 <CopyableField label="Consignee" value={isfFiling.consignee} />
-                <CopyableField label="Consignee Name" value={isfFiling.consigneeName} />
                 <CopyableField label="Consignee Address" value={isfFiling.consigneeAddress} />
                 <CopyableField label="City" value={isfFiling.consigneeCity} />
                 <CopyableField label="State" value={isfFiling.consigneeState} />
@@ -255,30 +254,6 @@ export default function IsfDetail() {
                 <CopyableField label="MBL SCAC Code" value={isfFiling.mblScacCode} />
                 <CopyableField label="HBL SCAC Code" value={isfFiling.hblScacCode} />
                 <CopyableField label="AMS Number" value={isfFiling.amsNumber} />
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {/* +2 Additional Elements */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              +2 Additional Elements
-            </CardTitle>
-            <CardDescription>
-              Additional data elements required for complete ISF filing
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableBody>
-                <CopyableField label="Booking Party Name" value={isfFiling.bookingPartyName} />
-                <CopyableField label="Booking Party Address" value={isfFiling.bookingPartyAddress} />
-                <CopyableField label="Booking Party City" value={isfFiling.bookingPartyCity} />
-                <CopyableField label="Booking Party Country" value={isfFiling.bookingPartyCountry} />
-                <CopyableField label="Foreign Port of Unlading" value={isfFiling.foreignPortOfUnlading} />
               </TableBody>
             </Table>
           </CardContent>
