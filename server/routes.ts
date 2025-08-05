@@ -5060,6 +5060,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `${consolidatedData.manufacturerName}\n${consolidatedData.manufacturerAddress}` : 
           consolidatedData.manufacturerName || 
           consolidatedData.manufacture || 
+          (consolidatedData.shipperName && consolidatedData.countryOfOrigin ? 
+            `${consolidatedData.shipperName}\nCountry: ${consolidatedData.countryOfOrigin}` : null) ||
           consolidatedData.manufacturerCountry || 
           null,
         sellerInformation: consolidatedData.sellerName && consolidatedData.sellerAddress ? 
@@ -5090,9 +5092,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         volume: consolidatedData.volume || null,
         
         // SCAC and AMS information - Critical for ISF filing with enhanced field mapping
-        scacCode: consolidatedData.scacCode || null,
-        mblScacCode: consolidatedData.mblScacCode || null,
-        hblScacCode: consolidatedData.hblScacCode || null,
+        scacCode: consolidatedData.scacCode || 
+                 (consolidatedData.billOfLadingNumber && consolidatedData.billOfLadingNumber.length >= 4 ? 
+                   consolidatedData.billOfLadingNumber.substring(0, 4).toUpperCase() : null) || 
+                 null,
+        mblScacCode: consolidatedData.mblScacCode || 
+                    (consolidatedData.billOfLadingNumber && consolidatedData.billOfLadingNumber.length >= 4 ? 
+                      consolidatedData.billOfLadingNumber.substring(0, 4).toUpperCase() : null) || 
+                    null,
+        hblScacCode: consolidatedData.hblScacCode || 
+                    (consolidatedData.billOfLadingNumber && consolidatedData.billOfLadingNumber.length >= 4 ? 
+                      consolidatedData.billOfLadingNumber.substring(0, 4).toUpperCase() : null) || 
+                    null,
         amsNumber: consolidatedData.amsNumber || 
                   consolidatedData['ams b/l#'] || 
                   consolidatedData.amsBl || 
