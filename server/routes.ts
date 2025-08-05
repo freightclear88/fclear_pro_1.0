@@ -5278,6 +5278,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('  manufacturerCountry:', consolidatedData.manufacturerCountry);
       console.log('  manufacture:', consolidatedData.manufacture);
       console.log('  countryOfOrigin:', consolidatedData.countryOfOrigin);
+      
+      console.log('🔍 AMS NUMBER DEBUG:');
+      console.log('  amsNumber:', consolidatedData.amsNumber);
+      console.log('  amsNo:', consolidatedData.amsNo);
+      console.log('  ams number:', consolidatedData['ams number']);
+      console.log('  ams no:', consolidatedData['ams no']);
+      console.log('  amsReference:', consolidatedData.amsReference);
+      console.log('  manifestNumber:', consolidatedData.manifestNumber);
+      
+      console.log('🔍 CONSOLIDATOR DEBUG:');
+      console.log('  consolidatorStufferInfo:', consolidatedData.consolidatorStufferInfo);
+      console.log('  consolidatorInformation:', consolidatedData.consolidatorInformation);
+      console.log('  consolidator:', consolidatedData.consolidator);
+      console.log('  containerStuffer:', consolidatedData.containerStuffer);
+      console.log('  stufferName:', consolidatedData.stufferName);
 
       // Map consolidated data to ISF form fields using the exact same field mappings
       const isfFormData = {
@@ -5339,6 +5354,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       consolidatedData.billOfLadingNumber.substring(0, 4).toUpperCase() : null) || 
                     null,
         amsNumber: consolidatedData.amsNumber || 
+                  consolidatedData.amsNo ||
+                  consolidatedData['ams number'] ||
+                  consolidatedData['ams no'] ||
+                  consolidatedData.amsReference ||
+                  consolidatedData.manifestNumber ||
                   consolidatedData['ams b/l#'] || 
                   consolidatedData.amsBl || 
                   consolidatedData['ams bl'] ||
@@ -5353,7 +5373,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                   consolidatedData.placeOfReceipt ||
                                   null,
         
-        // Consolidator information - ISF requirement
+        // Consolidator information - ISF requirement (Field #8)
+        consolidatorStufferInfo: consolidatedData.consolidatorStufferInfo || 
+                                consolidatedData.consolidatorInformation || 
+                                consolidatedData.consolidator ||
+                                consolidatedData.containerStuffer ||
+                                consolidatedData.stufferName ||
+                                (consolidatedData.shipperName && consolidatedData.freightPaymentTerms ? 
+                                  `Consolidator: ${consolidatedData.shipperName}\nTerms: ${consolidatedData.freightPaymentTerms}` : null) ||
+                                consolidatedData.shipperName ||
+                                null,
         consolidatorInformation: consolidatedData.consolidatorInformation || null,
         consolidator: consolidatedData.consolidator || null
       };
