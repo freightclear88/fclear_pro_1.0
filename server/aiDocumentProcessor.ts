@@ -238,7 +238,10 @@ export class AIDocumentProcessor {
               "scacCode": "SCAC code if found",
               "mblScacCode": "MBL SCAC code if found",
               "hblScacCode": "HBL SCAC code if found",
-              "amsNumber": "CRITICAL: AMS filing number - look for 'AMS', 'AMS NO', 'AMS NUMBER', 'MANIFEST NUMBER', 'AMS REFERENCE' fields - extract the exact number/code",
+              "amsNumber": "CRITICAL: AMS filing number - look for ANY of these patterns: 'AMS', 'AMS NO', 'AMS NUMBER', 'AMS NO.', 'AMS #', 'AMS REF', 'AMS REFERENCE', 'MANIFEST NUMBER', 'MANIFEST NO', 'MANIFEST #', 'AMS B/L', 'AMS BL', 'AMS FILING', followed by a number or alphanumeric code - extract the EXACT number/code only",
+              "amsNo": "AMS number if found with 'AMS NO' label",
+              "amsReference": "AMS reference number if found",
+              "manifestNumber": "Manifest number if found separately",
               "consolidatorStufferInfo": "CRITICAL: Complete consolidator/container stuffer information - look for 'CONSOLIDATOR', 'CONTAINER STUFFER', 'STUFFER', 'CFS', sections with company name and address",
               "consolidator": "consolidator company name if found separately",
               "consolidatorInformation": "complete consolidator information with address if found",
@@ -251,7 +254,7 @@ export class AIDocumentProcessor {
           },
           {
             role: "user",
-            content: `Extract comprehensive shipping data from this ${documentType}:\n\n${pdfText.substring(0, 4000)}`
+            content: `Extract comprehensive shipping data from this ${documentType}. Pay special attention to AMS numbers - they may appear as "AMS NO: 123456", "AMS# 789012", "MANIFEST NO 345678", or similar patterns. Extract the exact number/code after these labels:\n\n${pdfText.substring(0, 4000)}`
           }
         ],
         response_format: { type: "json_object" },
@@ -272,6 +275,27 @@ export class AIDocumentProcessor {
         containerStuffing: extractedData.containerStuffing,
         stuffingLocation: extractedData.stuffingLocation
       });
+      
+      // Enhanced AMS number extraction with pattern matching fallback
+      if (!extractedData.amsNumber && pdfText) {
+        const amsPatterns = [
+          /AMS\s*(?:NO\.?|NUMBER|#)\s*:?\s*([A-Z0-9\-]+)/i,
+          /AMS\s*:?\s*([A-Z0-9\-]{6,})/i,
+          /MANIFEST\s*(?:NO\.?|NUMBER|#)\s*:?\s*([A-Z0-9\-]+)/i,
+          /AMS\s*B\/L\s*(?:NO\.?|#)?\s*:?\s*([A-Z0-9\-]+)/i,
+          /AMS\s*BL\s*(?:NO\.?|#)?\s*:?\s*([A-Z0-9\-]+)/i,
+          /AMS\s*REF(?:ERENCE)?\s*:?\s*([A-Z0-9\-]+)/i
+        ];
+        
+        for (const pattern of amsPatterns) {
+          const match = pdfText.match(pattern);
+          if (match && match[1]) {
+            extractedData.amsNumber = match[1].trim();
+            console.log(`🎯 AMS NUMBER FOUND via pattern matching: ${extractedData.amsNumber}`);
+            break;
+          }
+        }
+      }
       
       // Validate and clean the extracted data
       return this.validateAndCleanData(extractedData);
