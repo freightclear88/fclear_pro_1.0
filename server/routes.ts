@@ -5379,8 +5379,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                 consolidatedData.consolidator ||
                                 consolidatedData.containerStuffer ||
                                 consolidatedData.stufferName ||
-                                (consolidatedData.shipperName && consolidatedData.freightPaymentTerms ? 
-                                  `Consolidator: ${consolidatedData.shipperName}\nTerms: ${consolidatedData.freightPaymentTerms}` : null) ||
                                 consolidatedData.shipperName ||
                                 null,
         consolidatorInformation: consolidatedData.consolidatorInformation || null,

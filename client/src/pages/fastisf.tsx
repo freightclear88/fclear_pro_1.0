@@ -319,11 +319,8 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         } else if (rawConsolidated.stufferName || data.stufferName) {
           consolidatorParts.push(rawConsolidated.stufferName || data.stufferName);
         } else {
-          // Fallback: build from shipper + freight terms
-          if (rawConsolidated.shipperName && rawConsolidated.freightPaymentTerms) {
-            consolidatorParts.push(`Consolidator: ${rawConsolidated.shipperName}`);
-            consolidatorParts.push(`Terms: ${rawConsolidated.freightPaymentTerms}`);
-          } else if (rawConsolidated.shipperName) {
+          // Fallback: use shipper name only (no freight terms in consolidator field)
+          if (rawConsolidated.shipperName) {
             consolidatorParts.push(rawConsolidated.shipperName);
           }
         }
