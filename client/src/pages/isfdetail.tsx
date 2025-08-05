@@ -325,7 +325,7 @@ export default function IsfDetail() {
                       <div>
                         <p className="font-medium text-sm">{doc.fileName}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {doc.documentType} • {(doc.fileSize / 1024).toFixed(1)} KB • {new Date(doc.uploadDate).toLocaleDateString()}
+                          {doc.category?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} • {(doc.fileSize / 1024).toFixed(1)} KB • {new Date(doc.createdAt || doc.uploadDate).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
