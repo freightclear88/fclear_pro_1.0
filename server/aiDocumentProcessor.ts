@@ -304,6 +304,23 @@ ${pdfText.substring(0, 8000)}`
       });
       
       // Enhanced consolidator name extraction with comprehensive pattern matching for ISF documents
+      console.log(`🔍 DOCUMENT ANALYSIS: Processing ${documentType} document`);
+      console.log(`📄 Document text length: ${pdfText?.length || 0} characters`);
+      console.log(`🔍 Current extracted consolidator data:`, {
+        consolidatorName: extractedData.consolidatorName,
+        consolidatorStufferInfo: extractedData.consolidatorStufferInfo,
+        consolidatorInformation: extractedData.consolidatorInformation,
+        consolidator: extractedData.consolidator,
+        containerStuffer: extractedData.containerStuffer,
+        stufferName: extractedData.stufferName
+      });
+      
+      // Show preview of document text for ISF documents
+      if (pdfText && documentType === 'isf_information_sheet') {
+        console.log(`📋 DOCUMENT PREVIEW (first 500 chars):`, pdfText.substring(0, 500));
+        console.log(`📋 DOCUMENT PREVIEW (last 300 chars):`, pdfText.substring(Math.max(0, pdfText.length - 300)));
+      }
+      
       if (!extractedData.consolidatorName && !extractedData.consolidatorStufferInfo && pdfText && documentType === 'isf_information_sheet') {
         console.log('🔍 PATTERN MATCHING: Searching for consolidator patterns in ISF document...');
         const consolidatorPatterns = [
@@ -344,36 +361,87 @@ ${pdfText.substring(0, 8000)}`
           }
         }
         
-        // If still no consolidator found, try to find companies mentioned in the document footer or separate sections
+        // If still no consolidator found, perform comprehensive document scan
         if (!extractedData.consolidatorName) {
-          console.log('🔍 SEARCHING: Looking for company names in document footer/separate sections...');
-          const companyPatterns = [
-            /([A-Z][A-Z\s&,-]*(?:CO\.|LTD|INC|CORP|LLC|LIMITED|LOGISTICS|FREIGHT)[A-Z\s&,-]*)/gi
+          console.log('🔍 COMPREHENSIVE SCAN: Analyzing entire ISF document for consolidator information...');
+          
+          // Look for consolidator information in sections and subsections
+          const sectionPatterns = [
+            // Section-based patterns
+            /(?:SECTION\s*[0-9]+|FIELD\s*[0-9]+|ELEMENT\s*[0-9]+)[^:]*CONSOLIDATOR[^:]*:?\s*([^\n\r]+)/gi,
+            /(?:8\.|8\)|\(8\)|EIGHT\.)[^:]*([A-Z][^\n\r]*(?:CO\.|LTD|INC|CORP|LLC|LIMITED)[^\n\r]*)/gi,
+            // Container stuffing context
+            /(?:WHERE|LOCATION|PLACE)[^:]*(?:STUFF|CONSOLID|PACK)[^:]*:?\s*([^\n\r]+)/gi,
+            /(?:STUFF|CONSOLID|PACK)[^:]*(?:WHERE|LOCATION|PLACE)[^:]*:?\s*([^\n\r]+)/gi,
+            // Company identification in context
+            /(?:BY|DONE BY|PERFORMED BY|STUFFED BY)[^:]*:?\s*([A-Z][^\n\r]*(?:CO\.|LTD|INC|CORP|LLC|LIMITED)[^\n\r]*)/gi,
+            // Footer and signature areas
+            /(?:PREPARED BY|COMPLETED BY|SUBMITTED BY)[^:]*:?\s*([A-Z][^\n\r]*(?:CO\.|LTD|INC|CORP|LLC|LIMITED)[^\n\r]*)/gi
           ];
           
-          const foundCompanies = new Set<string>();
-          for (const pattern of companyPatterns) {
+          const foundConsolidators = new Set<string>();
+          
+          for (const pattern of sectionPatterns) {
             let match;
             while ((match = pattern.exec(pdfText)) !== null) {
-              const company = match[1].trim();
-              if (company.length > 8 && company.length < 80) {
-                foundCompanies.add(company);
+              const consolidator = match[1]?.trim();
+              if (consolidator && consolidator.length > 8 && consolidator.length < 100) {
+                // Clean up the extracted consolidator name
+                const cleanConsolidator = consolidator
+                  .replace(/^\s*[-,\.\:]\s*/, '')
+                  .replace(/\s*[-,\.\:]\s*$/, '')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                
+                if (cleanConsolidator && 
+                    !cleanConsolidator.toLowerCase().includes('same as') && 
+                    !cleanConsolidator.toLowerCase().includes('see above') &&
+                    !cleanConsolidator.toLowerCase().includes('n/a') &&
+                    !cleanConsolidator.toLowerCase().includes('not applicable')) {
+                  foundConsolidators.add(cleanConsolidator);
+                }
               }
             }
           }
           
-          // Convert to array and take first reasonable company that's not a shipper/consignee pattern
-          const companies = Array.from(foundCompanies);
-          if (companies.length > 0) {
-            // Prefer companies with freight/logistics in name for consolidators
-            const logisticsCompany = companies.find(c => 
+          // Also look for company names in general context with freight/logistics keywords
+          const companyPatterns = [
+            /([A-Z][A-Z\s&,-]*(?:LOGISTICS|FREIGHT|FORWARDING|CONSOLIDAT|CFS)[A-Z\s&,-]*(?:CO\.|LTD|INC|CORP|LLC|LIMITED)[A-Z\s&,-]*)/gi,
+            /([A-Z][A-Z\s&,-]*(?:CO\.|LTD|INC|CORP|LLC|LIMITED)[A-Z\s&,-]*(?:LOGISTICS|FREIGHT|FORWARDING|CONSOLIDAT|CFS)[A-Z\s&,-]*)/gi,
+            // Look for companies mentioned near key ISF terms
+            /(?:CONSOLIDATOR|STUFFER|CFS)[^:]*(?:NAME|COMPANY)[^:]*:?\s*([A-Z][^\n\r]*(?:CO\.|LTD|INC|CORP|LLC|LIMITED)[^\n\r]*)/gi
+          ];
+          
+          for (const pattern of companyPatterns) {
+            let match;
+            while ((match = pattern.exec(pdfText)) !== null) {
+              const company = match[1]?.trim();
+              if (company && company.length > 8 && company.length < 100) {
+                foundConsolidators.add(company);
+              }
+            }
+          }
+          
+          // Convert to array and prioritize
+          const consolidators = Array.from(foundConsolidators);
+          console.log(`🔍 Found ${consolidators.length} potential consolidators:`, consolidators);
+          
+          if (consolidators.length > 0) {
+            // Prioritize companies with logistics/freight keywords
+            let selectedConsolidator = consolidators.find(c => 
               /logistics|freight|forwarding|consolidat|cfs/i.test(c)
             );
-            if (logisticsCompany) {
-              console.log(`🎯 LOGISTICS COMPANY FOUND as consolidator: ${logisticsCompany}`);
-              extractedData.consolidatorName = logisticsCompany;
-              extractedData.consolidatorStufferInfo = logisticsCompany;
+            
+            // If no logistics company, take the first reasonable one
+            if (!selectedConsolidator) {
+              selectedConsolidator = consolidators[0];
             }
+            
+            console.log(`🎯 SELECTED CONSOLIDATOR: ${selectedConsolidator}`);
+            extractedData.consolidatorName = selectedConsolidator;
+            extractedData.consolidatorStufferInfo = selectedConsolidator;
+          } else {
+            console.log('❌ No consolidator companies found in comprehensive scan');
           }
         }
       }
@@ -517,12 +585,12 @@ ${pdfText.substring(0, 8000)}`
           },
           {
             role: "user",
-            content: `Extract all shipping data from this document:\n\n${fullText.substring(0, 4000)}`
+            content: `Extract all shipping data from this COMPLETE document text. Pay special attention to consolidator information throughout the entire document:\n\n${fullText}`
           }
         ],
         response_format: { type: "json_object" },
         temperature: 0.1,
-        max_tokens: 2000
+        max_tokens: 8000
       });
 
       const result = completion.choices[0].message.content;
@@ -629,7 +697,7 @@ ${pdfText.substring(0, 8000)}`
             content: [
               {
                 type: "text",
-                text: "Analyze this PDF document and extract all text content. Focus on shipping information like vessel names, container numbers, B/L numbers, company names, addresses, ports, dates, cargo details, etc. Return the raw text as it appears in the document."
+                text: "Analyze this COMPLETE PDF document and extract all text content from every page and section. Focus on shipping information like vessel names, container numbers, B/L numbers, company names, addresses, ports, dates, cargo details, etc. Pay special attention to consolidator/container stuffer information, ISF field #8 data, and company names throughout the entire document including headers, footers, and signature areas. Return the raw text exactly as it appears in the document."
               },
               {
                 type: "image_url", 
@@ -640,7 +708,7 @@ ${pdfText.substring(0, 8000)}`
             ]
           }
         ],
-        max_tokens: 4000
+        max_tokens: 8000
       });
 
       const extractedText = completion.choices[0].message.content || '';
