@@ -51,7 +51,7 @@ export default function IsfDetail() {
             <Button
               variant="ghost"
               size="sm"
-              className="invisible group-hover:visible transition-all duration-200 ml-2 shrink-0 hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-300"
+              className="ml-2 shrink-0 hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-300 text-gray-500 hover:text-blue-600"
               onClick={() => copyToClipboard(value, label)}
             >
               <Copy className="h-4 w-4" />
