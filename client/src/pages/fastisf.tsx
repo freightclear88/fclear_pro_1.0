@@ -33,8 +33,8 @@ const isfFormSchema = z.object({
   // 3. Importer of Record Number (IRS/EIN/SSN/CBP number)
   importerOfRecord: z.string().min(1, "Importer of Record Number is required"),
 
-  // 4. Consignee Number (IRS/EIN/SSN/CBP number) 
-  consigneeNumber: z.string().min(1, "Consignee Number is required"),
+  // 4. Consignee (Entity receiving the goods)
+  consignee: z.string().min(1, "Consignee information is required"),
 
   // 5. Manufacturer/Supplier (Last entity that manufactured/assembled the goods)
   manufacturerInformation: z.string().min(1, "Manufacturer/Supplier information is required"),
@@ -152,7 +152,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       consigneeState: "",
       consigneeZip: "",
       consigneeCountry: "US",
-      consigneeNumber: "",
+      consignee: "",
       
       // Shipping Information (will be populated from document scan)
       vesselName: "",
@@ -305,8 +305,9 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           hblScacCode: 'hblScacCode',
           
           // Additional critical ISF field mappings
-          consigneeName: 'consigneeName',
-          consigneeAddress: 'consigneeAddress',
+          consigneeName: 'consignee', // Map consignee name to the new consignee field
+          consigneeAddress: 'consignee', // Map consignee address to the new consignee field
+          consigneeInformation: 'consignee', // Direct mapping for consignee info
           shipperName: 'importerName', // Alternative mapping if importer not available
           shipperAddress: 'importerAddress', // Alternative mapping
           vesselAndVoyage: 'vesselName', // Will be split by combinedFields logic
@@ -515,24 +516,28 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
             </CardContent>
           </Card>
 
-          {/* 4. Consignee Number */}
+          {/* 4. Consignee */}
           <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
             <CardHeader>
               <CardTitle className="text-green-700 flex items-center">
-                <FileText className="w-5 h-5 mr-2" />
-                4. Consignee Number
+                <Building2 className="w-5 h-5 mr-2" />
+                4. Consignee
               </CardTitle>
-              <CardDescription>IRS number, EIN, SSN, or CBP-assigned number of US consignee</CardDescription>
+              <CardDescription>Entity receiving the goods in the United States</CardDescription>
             </CardHeader>
             <CardContent>
               <FormField
                 control={form.control}
-                name="consigneeNumber"
+                name="consignee"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Consignee Number *</FormLabel>
+                    <FormLabel>Consignee Information *</FormLabel>
                     <FormControl>
-                      <Input placeholder="EIN, IRS Number, SSN, or CBP-assigned number" {...field} />
+                      <Textarea 
+                        placeholder="Company Name&#10;Street Address&#10;City, State ZIP&#10;USA"
+                        className="min-h-24"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

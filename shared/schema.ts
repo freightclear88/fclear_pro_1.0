@@ -408,8 +408,8 @@ export const isfFilings = pgTable("isf_filings", {
   importerZip: varchar("importer_zip").notNull(),
   importerCountry: varchar("importer_country").notNull().default("US"),
   
-  // 2. Consignee Number(s)
-  consigneeNumber: varchar("consignee_number").notNull(),
+  // 2. Consignee Information
+  consignee: text("consignee").notNull(),
   consigneeName: varchar("consignee_name").notNull(),
   consigneeAddress: text("consignee_address").notNull(),
   consigneeCity: varchar("consignee_city").notNull(),

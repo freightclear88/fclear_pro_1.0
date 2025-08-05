@@ -215,7 +215,7 @@ export default function IsfDetail() {
           <CardContent>
             <Table>
               <TableBody>
-                <CopyableField label="Consignee Number" value={isfFiling.consigneeNumber} />
+                <CopyableField label="Consignee" value={isfFiling.consignee} />
                 <CopyableField label="Consignee Name" value={isfFiling.consigneeName} />
                 <CopyableField label="Consignee Address" value={isfFiling.consigneeAddress} />
                 <CopyableField label="City" value={isfFiling.consigneeCity} />
@@ -244,7 +244,7 @@ export default function IsfDetail() {
                 <CopyableField label="1. Seller Information" value={isfFiling.sellerInformation} />
                 <CopyableField label="2. Buyer Information" value={isfFiling.buyerInformation} />
                 <CopyableField label="3. Importer of Record Number" value={isfFiling.importerOfRecord} />
-                <CopyableField label="4. Consignee Number" value={isfFiling.consigneeNumber} />
+                <CopyableField label="4. Consignee" value={isfFiling.consignee} />
                 <CopyableField label="5. Manufacturer Information" value={isfFiling.manufacturerInformation} />
                 <CopyableField label="6. Ship to Party Information" value={isfFiling.shipToPartyInformation} />
                 <CopyableField label="7. Country of Origin" value={isfFiling.countryOfOrigin} />

@@ -4735,7 +4735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate required fields are not TBD
       const requiredFields = [
-        'importerOfRecord', 'importerName', 'consigneeName', 'consigneeNumber',
+        'importerOfRecord', 'importerName', 'consigneeName', 'consignee',
         'manufacturerName', 'manufacturerCountry', 'shipToPartyName', 
         'countryOfOrigin', 'htsusNumber', 'commodityDescription',
         'containerStuffingLocation', 'bookingPartyName', 'portOfEntry', 'foreignPortOfUnlading'
@@ -4973,7 +4973,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         importerZip: req.body.importerZip || '00000',
         importerCountry: req.body.importerCountry || 'US',
         
-        consigneeNumber: req.body.consigneeNumber || 'TO BE PROVIDED',
+        consignee: req.body.consignee || 'TO BE PROVIDED',
         consigneeName: req.body.consigneeName || 'TO BE PROVIDED',
         consigneeAddress: req.body.consigneeAddress || 'TO BE PROVIDED',
         consigneeCity: req.body.consigneeCity || 'TO BE PROVIDED',

@@ -23,6 +23,7 @@ Key Features Requested:
 - Visual route map implementation on shipment details with FreightClear blue-green gradient, stars for origin/destination, transport mode indicators, and journey progress tracking (August 2025)
 - Enhanced admin POA management with document viewing capability before validation - admins can now view user POA documents in-browser before approving or rejecting (August 2025)
 - Comprehensive Descartes OneView XML integration with support for OneView Standard, UN/EDIFACT, and Cargo XML formats for seamless freight management platform connectivity (August 2025)
+- Updated ISF form field #4 from "Consignee Number" to "Consignee" with multi-line text area to better capture complete consignee information including company name, address, and contact details (August 2025)
 
 ## System Architecture
 The application follows a modern full-stack architecture with clear separation between frontend and backend components, featuring enhanced multi-document processing capabilities for comprehensive shipment creation and comprehensive XML-based shipment data management.
