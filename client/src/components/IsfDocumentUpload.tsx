@@ -174,9 +174,9 @@ export default function IsfDocumentUpload({
   const getPriorityBadge = (priority: number) => {
     switch (priority) {
       case 1:
-        return <Badge variant="destructive" className="text-xs">Required</Badge>;
+        return <Badge variant="default" className="text-xs">Priority</Badge>;
       case 2:
-        return <Badge variant="default" className="text-xs">Recommended</Badge>;
+        return <Badge variant="secondary" className="text-xs">Recommended</Badge>;
       case 3:
         return <Badge variant="secondary" className="text-xs">Helpful</Badge>;
       default:
