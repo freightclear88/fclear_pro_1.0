@@ -5270,13 +5270,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`✅ ISF ${isfFiling.isfNumber} successfully converted to shipment ${shipmentId} (ID: ${newShipment.id})`);
       
-      res.json({
+      const responseData = {
         success: true,
         shipment: newShipment,
         shipmentId: newShipment.id,
         documentsLinked,
         message: `ISF filing ${isfFiling.isfNumber} successfully converted to shipment ${shipmentId}. ${documentsLinked} document(s) linked.`
-      });
+      };
+      
+      console.log("📤 Sending conversion response:", JSON.stringify(responseData, null, 2));
+      res.json(responseData);
 
     } catch (error) {
       console.error("❌ Error converting ISF filing to shipment:", error);

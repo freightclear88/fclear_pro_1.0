@@ -32,13 +32,25 @@ export default function IsfDetail() {
   // Convert ISF to Shipment mutation
   const convertToShipmentMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/isf/filings/${id}/convert-to-shipment`);
-      const data = await response.json();
-      console.log("Parsed conversion response:", data);
-      return data;
+      try {
+        const response = await apiRequest("POST", `/api/isf/filings/${id}/convert-to-shipment`);
+        console.log("Response status:", response.status);
+        console.log("Response headers:", response.headers);
+        const data = await response.json();
+        console.log("📥 Parsed conversion response:", data);
+        console.log("Data type:", typeof data);
+        console.log("Data keys:", Object.keys(data || {}));
+        return data;
+      } catch (error) {
+        console.error("Error in mutationFn:", error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
-      console.log("Conversion successful:", data);
+      console.log("🎉 Conversion success handler called with:", data);
+      console.log("Success check:", data?.success);
+      console.log("Shipment check:", data?.shipment);
+      console.log("Shipment keys:", data?.shipment ? Object.keys(data.shipment) : 'no shipment');
       
       if (data?.success && data?.shipment) {
         toast({
@@ -55,10 +67,12 @@ export default function IsfDetail() {
           setLocation(`/shipments/detail/${data.shipment.id}`);
         }, 1000);
       } else {
-        console.error("Invalid response structure:", data);
+        console.error("❌ Invalid response structure:", data);
+        console.error("Success value:", data?.success);
+        console.error("Shipment value:", data?.shipment);
         toast({
           title: "Conversion Error",
-          description: "Invalid response from server",
+          description: `Invalid response from server. Success: ${data?.success}, HasShipment: ${!!data?.shipment}`,
           variant: "destructive",
         });
       }
