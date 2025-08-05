@@ -244,7 +244,7 @@ export class AIDocumentProcessor {
               "manifestNumber": "Manifest number if found separately",
               "consolidatorStufferInfo": "CRITICAL: The COMPANY NAME of the consolidator/container stuffer - look for 'CONSOLIDATOR NAME', 'CONSOLIDATOR', 'CONTAINER STUFFER', 'STUFFER', 'CFS OPERATOR' - extract only the COMPANY NAME, not the address or location. This is the business entity that consolidated/stuffed the container - THIS IS DIFFERENT FROM SHIPPER and DIFFERENT FROM CONTAINER STUFFING LOCATION",
               "consolidator": "consolidator company name if found separately - look for 'CONSOLIDATOR NAME' specifically - NOT the shipper",
-              "consolidatorName": "CRITICAL: Look specifically for 'CONSOLIDATOR NAME', 'CONSOLIDATOR:', 'CONSOLIDATOR NAME:', or 'CONSOLIDATOR/STUFFER NAME' fields in ISF documents. Also look for company names like 'CHINA COAST FREIGHT CO.' or similar freight/logistics companies that appear separate from shipper information - extract only the COMPANY NAME, not the location or address",
+              "consolidatorName": "CRITICAL: Look specifically for 'CONSOLIDATOR NAME', 'CONSOLIDATOR:', 'CONSOLIDATOR NAME:', or 'CONSOLIDATOR/STUFFER NAME' fields in ISF documents - extract only the COMPANY NAME, not the location or address",
               "consolidatorStufferName": "Look for 'CONSOLIDATOR/STUFFER NAME' field specifically",
               "consolidatorAddress": "Look for consolidator address information",
               "consolidatorInformation": "complete consolidator information with address if found - NOT the shipper information",
@@ -264,9 +264,9 @@ export class AIDocumentProcessor {
 2. Consolidator information - THIS IS CRITICAL FOR ISF DOCUMENTS: 
    - Look SPECIFICALLY for a field labeled "CONSOLIDATOR NAME" or "Consolidator Name:" - this is a mandatory ISF field
    - Also search for "CONSOLIDATOR", "CONTAINER STUFFER", "STUFFER", "CFS OPERATOR" 
-   - Look for freight/logistics companies like "CHINA COAST FREIGHT", "FREIGHT CO.", "LOGISTICS CO." that appear in consolidator sections
    - The consolidator is the COMPANY that consolidated/stuffed the container - NOT the shipper/manufacturer
    - In ISF documents, this field is often at the bottom or in a separate section from shipper information
+   - Extract the exact company name that appears after these field labels
    - Extract only the COMPANY NAME, not addresses or locations
 3. Do NOT confuse consolidator with shipper - they are different companies with different roles
 4. If this is an ISF document, prioritize finding the consolidator name field over all other information
@@ -293,23 +293,23 @@ Document content:\n\n${pdfText.substring(0, 6000)}`
         stuffingLocation: extractedData.stuffingLocation
       });
       
-      // Enhanced consolidator name extraction with pattern matching fallback
+      // Enhanced consolidator name extraction with generic pattern matching fallback
       if (!extractedData.consolidatorName && !extractedData.consolidatorStufferInfo && pdfText && documentType === 'isf_information_sheet') {
         console.log('🔍 PATTERN MATCHING: Searching for consolidator patterns in ISF document...');
         const consolidatorPatterns = [
-          /CONSOLIDATOR[^:]*:?\s*([^\n\r]+(?:FREIGHT|LOGISTICS|SHIPPING|CARGO|CFS)[^\n\r]*)/i,
-          /CHINA\s+COAST\s+FREIGHT[^\n\r]*/i,
           /CONSOLIDATOR\s*NAME[^:]*:?\s*([^\n\r]+)/i,
-          /CONTAINER\s*STUFFER[^:]*:?\s*([^\n\r]+)/i
+          /CONSOLIDATOR[^:]*:?\s*([^\n\r]+)/i,
+          /CONTAINER\s*STUFFER[^:]*:?\s*([^\n\r]+)/i,
+          /CFS\s*OPERATOR[^:]*:?\s*([^\n\r]+)/i
         ];
         
         for (const pattern of consolidatorPatterns) {
           const match = pdfText.match(pattern);
-          if (match) {
-            const consolidatorName = match[1] || match[0];
-            if (consolidatorName && consolidatorName.trim().length > 3) {
-              console.log(`🎯 PATTERN FOUND: ${consolidatorName.trim()}`);
-              extractedData.consolidatorName = consolidatorName.trim();
+          if (match && match[1]) {
+            const consolidatorName = match[1].trim();
+            if (consolidatorName && consolidatorName.length > 3) {
+              console.log(`🎯 PATTERN FOUND: ${consolidatorName}`);
+              extractedData.consolidatorName = consolidatorName;
               break;
             }
           }
