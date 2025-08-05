@@ -17,7 +17,7 @@ export default function IsfDetail() {
 
   // Fetch ISF filing details
   const { data: isfFiling, isLoading, error } = useQuery<IsfFiling>({
-    queryKey: ["/api/isf/filings", id],
+    queryKey: [`/api/isf/filings/${id}`],
     enabled: !!id,
   });
 
