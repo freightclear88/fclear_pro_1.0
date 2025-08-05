@@ -1017,11 +1017,6 @@ function IsfFilingsList() {
                           </Button>
                         </Link>
                       )}
-                      {filing.paymentStatus === "pending" && (
-                        <Button size="sm" className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600">
-                          Pay Now
-                        </Button>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { Copy, FileText, Ship, Calendar, MapPin, Building2, CheckCircle, Clock, AlertCircle, DollarSign } from "lucide-react";
+import { Copy, FileText, Ship, Calendar, MapPin, Building2, CheckCircle, Clock, AlertCircle, DollarSign, Package, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { IsfFiling } from "@shared/schema";
 
@@ -28,6 +28,38 @@ export default function IsfDetail() {
         description: `${fieldName} copied successfully`,
       });
     });
+  };
+
+  // Reusable component for copyable fields
+  const CopyableField = ({ 
+    label, 
+    value, 
+    className = "" 
+  }: { 
+    label: string; 
+    value: string | null | undefined; 
+    className?: string;
+  }) => {
+    if (!value) return null;
+    
+    return (
+      <TableRow>
+        <TableCell className="font-medium w-1/3">{label}</TableCell>
+        <TableCell className={`font-mono ${className}`}>
+          <div className="flex items-center justify-between group">
+            <span className="break-all">{value}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0"
+              onClick={() => copyToClipboard(value, label)}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+        </TableCell>
+      </TableRow>
+    );
   };
 
   const getStatusColor = (status: string) => {
@@ -82,40 +114,23 @@ export default function IsfDetail() {
   if (error || !isfFiling) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto text-center">
-          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">ISF Filing Not Found</h1>
-          <p className="text-gray-600 mb-4">The ISF filing you're looking for doesn't exist or you don't have permission to view it.</p>
-          <Button onClick={() => setLocation("/fastisf")}>
-            Back to Fast ISF
-          </Button>
+        <div className="max-w-6xl mx-auto">
+          <Card>
+            <CardContent className="flex items-center justify-center p-8">
+              <div className="text-center">
+                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                <h2 className="text-xl font-semibold mb-2">ISF Filing Not Found</h2>
+                <p className="text-gray-600 mb-4">The requested ISF filing could not be found.</p>
+                <Button onClick={() => setLocation("/fastisf")}>
+                  Back to Fast ISF
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
-
-  const CopyableField = ({ label, value, className = "" }: { label: string; value: string | null | undefined; className?: string }) => {
-    if (!value) return null;
-    
-    return (
-      <TableRow>
-        <TableCell className="font-medium w-1/3">{label}</TableCell>
-        <TableCell className={`font-mono text-sm ${className}`}>
-          <div className="flex items-center justify-between group">
-            <span className="break-all">{value}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => copyToClipboard(value, label)}
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-        </TableCell>
-      </TableRow>
-    );
-  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -207,7 +222,7 @@ export default function IsfDetail() {
           </CardContent>
         </Card>
 
-        {/* ISF 10 Required Elements */}
+        {/* 10 Required Elements */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -215,21 +230,21 @@ export default function IsfDetail() {
               ISF 10 Required Elements
             </CardTitle>
             <CardDescription>
-              The 10 mandatory data elements required by CBP for ISF filing
+              10 mandatory data elements required for ISF filing
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableBody>
-                <CopyableField label="Manufacturer Information" value={isfFiling.manufacturerInformation} />
-                <CopyableField label="Ship-to Party Information" value={isfFiling.shipToPartyInformation} />
-                <CopyableField label="Country of Origin" value={isfFiling.countryOfOrigin} />
-                <CopyableField label="HTSUS Number" value={isfFiling.htsusNumber} />
-                <CopyableField label="Commodity Description" value={isfFiling.commodityDescription} />
-                <CopyableField label="Container Stuffing Location" value={isfFiling.containerStuffingLocation} />
-                <CopyableField label="Consolidator/Stuffer Information" value={isfFiling.consolidatorStufferInfo} />
-                <CopyableField label="Buyer Information" value={isfFiling.buyerInformation} />
-                <CopyableField label="Seller Information" value={isfFiling.sellerInformation} />
+                <CopyableField label="3. Manufacturer Information" value={isfFiling.manufacturerInformation} />
+                <CopyableField label="4. Ship to Party Information" value={isfFiling.shipToPartyInformation} />
+                <CopyableField label="5. Country of Origin" value={isfFiling.countryOfOrigin} />
+                <CopyableField label="6. HTSUS Number" value={isfFiling.htsusNumber} />
+                <CopyableField label="6. Commodity Description" value={isfFiling.commodityDescription} />
+                <CopyableField label="7. Container Stuffing Location" value={isfFiling.containerStuffingLocation} />
+                <CopyableField label="8. Consolidator/Stuffer Info" value={isfFiling.consolidatorStufferInfo} />
+                <CopyableField label="9. Buyer Information" value={isfFiling.buyerInformation} />
+                <CopyableField label="10. Seller Information" value={isfFiling.sellerInformation} />
               </TableBody>
             </Table>
           </CardContent>
@@ -239,7 +254,7 @@ export default function IsfDetail() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Ship className="h-5 w-5" />
+              <Package className="h-5 w-5" />
               Shipment Details
             </CardTitle>
           </CardHeader>
@@ -251,7 +266,6 @@ export default function IsfDetail() {
                 <CopyableField label="Voyage Number" value={isfFiling.voyageNumber} />
                 <CopyableField label="Container Numbers" value={isfFiling.containerNumbers} />
                 <CopyableField label="Port of Entry" value={isfFiling.portOfEntry} />
-                <CopyableField label="Foreign Port of Loading" value={isfFiling.foreignPortOfUnlading} />
                 <CopyableField label="Estimated Arrival Date" value={isfFiling.estimatedArrivalDate ? new Date(isfFiling.estimatedArrivalDate).toLocaleDateString() : null} />
                 <CopyableField label="MBL SCAC Code" value={isfFiling.mblScacCode} />
                 <CopyableField label="HBL SCAC Code" value={isfFiling.hblScacCode} />
@@ -280,6 +294,26 @@ export default function IsfDetail() {
                 <CopyableField label="Booking Party City" value={isfFiling.bookingPartyCity} />
                 <CopyableField label="Booking Party Country" value={isfFiling.bookingPartyCountry} />
                 <CopyableField label="Foreign Port of Unlading" value={isfFiling.foreignPortOfUnlading} />
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Commercial Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Commercial Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableBody>
+                <CopyableField label="Invoice Number" value={isfFiling.invoiceNumber} />
+                <CopyableField label="Invoice Date" value={isfFiling.invoiceDate ? new Date(isfFiling.invoiceDate).toLocaleDateString() : null} />
+                <CopyableField label="Invoice Value" value={isfFiling.invoiceValue ? `${isfFiling.currency || 'USD'} ${isfFiling.invoiceValue}` : null} />
+                <CopyableField label="Terms" value={isfFiling.terms} />
               </TableBody>
             </Table>
           </CardContent>
