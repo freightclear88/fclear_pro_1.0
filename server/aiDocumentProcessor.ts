@@ -93,6 +93,14 @@ interface ExtractedShipmentData {
   containerStuffingLocation?: string;
   containerStuffing?: string;
   stuffingLocation?: string;
+  
+  // AMS and consolidator fields - CRITICAL for ISF
+  amsNumber?: string;
+  consolidator?: string;
+  consolidatorInformation?: string;
+  consolidatorStufferInfo?: string;
+  containerStuffer?: string;
+  stufferName?: string;
 }
 
 export class AIDocumentProcessor {
@@ -230,8 +238,12 @@ export class AIDocumentProcessor {
               "scacCode": "SCAC code if found",
               "mblScacCode": "MBL SCAC code if found",
               "hblScacCode": "HBL SCAC code if found",
-              "amsNumber": "AMS filing number if found",
-              "consolidatorStufferInfo": "consolidator/container stuffer information if found",
+              "amsNumber": "CRITICAL: AMS filing number - look for 'AMS', 'AMS NO', 'AMS NUMBER', 'MANIFEST NUMBER', 'AMS REFERENCE' fields - extract the exact number/code",
+              "consolidatorStufferInfo": "CRITICAL: Complete consolidator/container stuffer information - look for 'CONSOLIDATOR', 'CONTAINER STUFFER', 'STUFFER', 'CFS', sections with company name and address",
+              "consolidator": "consolidator company name if found separately",
+              "consolidatorInformation": "complete consolidator information with address if found",
+              "containerStuffer": "container stuffer company information if found",
+              "stufferName": "stuffer company name if found",
               "containerStuffingLocation": "EXACT container stuffing location from ISF form - look for fields labeled: 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'Consolidator Location', 'CFS Location', 'Place where container was stuffed' - extract the EXACT location value, not just 'CFS/CFS'",
               "containerStuffing": "any container stuffing related information if found",
               "stuffingLocation": "stuffing location if found"

@@ -304,11 +304,37 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           }
         }
         
-        // Handle consolidator information (required for ISF)
-        if (rawConsolidated.freightPaymentTerms && rawConsolidated.shipperName) {
-          combinedFields.consolidatorStufferInfo = `Consolidator: ${rawConsolidated.shipperName}\nTerms: ${rawConsolidated.freightPaymentTerms}`;
-        } else if (rawConsolidated.shipperName) {
-          combinedFields.consolidatorStufferInfo = rawConsolidated.shipperName;
+        // Enhanced consolidator information extraction (CRITICAL for ISF field #8)
+        const consolidatorParts: string[] = [];
+        
+        // Priority order for consolidator info
+        if (rawConsolidated.consolidatorStufferInfo || data.consolidatorStufferInfo) {
+          consolidatorParts.push(rawConsolidated.consolidatorStufferInfo || data.consolidatorStufferInfo);
+        } else if (rawConsolidated.consolidatorInformation || data.consolidatorInformation) {
+          consolidatorParts.push(rawConsolidated.consolidatorInformation || data.consolidatorInformation);
+        } else if (rawConsolidated.consolidator || data.consolidator) {
+          consolidatorParts.push(rawConsolidated.consolidator || data.consolidator);
+        } else if (rawConsolidated.containerStuffer || data.containerStuffer) {
+          consolidatorParts.push(rawConsolidated.containerStuffer || data.containerStuffer);
+        } else if (rawConsolidated.stufferName || data.stufferName) {
+          consolidatorParts.push(rawConsolidated.stufferName || data.stufferName);
+        } else {
+          // Fallback: build from shipper + freight terms
+          if (rawConsolidated.shipperName && rawConsolidated.freightPaymentTerms) {
+            consolidatorParts.push(`Consolidator: ${rawConsolidated.shipperName}`);
+            consolidatorParts.push(`Terms: ${rawConsolidated.freightPaymentTerms}`);
+          } else if (rawConsolidated.shipperName) {
+            consolidatorParts.push(rawConsolidated.shipperName);
+          }
+        }
+        
+        if (consolidatorParts.length > 0) {
+          combinedFields.consolidatorStufferInfo = consolidatorParts.join('\n');
+        }
+        
+        // Enhanced AMS number extraction
+        if (rawConsolidated.amsNumber || data.amsNumber) {
+          combinedFields.amsNumber = rawConsolidated.amsNumber || data.amsNumber;
         }
         
         // Handle manufacturer information with fallback to country of origin
@@ -374,6 +400,24 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           
           // Missing critical ISF mappings
           notifyPartyName: 'shipToPartyInformation', // Map notify party to ship-to party
+          
+          // AMS Number field mappings - CRITICAL
+          amsNumber: 'amsNumber',
+          amsNo: 'amsNumber',
+          'ams number': 'amsNumber',
+          'ams no': 'amsNumber',
+          amsReference: 'amsNumber',
+          manifestNumber: 'amsNumber',
+          
+          // Consolidator/Container Stuffer mappings - CRITICAL for ISF field #8
+          consolidatorInformation: 'consolidatorStufferInfo',
+          consolidatorInfo: 'consolidatorStufferInfo',
+          consolidator: 'consolidatorStufferInfo',
+          containerStuffer: 'consolidatorStufferInfo',
+          'consolidator information': 'consolidatorStufferInfo',
+          'container stuffer': 'consolidatorStufferInfo',
+          stufferName: 'consolidatorStufferInfo',
+          stufferInformation: 'consolidatorStufferInfo',
           
           // From combined fields
           ...Object.keys(combinedFields).reduce((acc, key) => {
