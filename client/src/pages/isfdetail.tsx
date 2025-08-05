@@ -249,9 +249,8 @@ export default function IsfDetail() {
                 <CopyableField label="Vessel Name" value={isfFiling.vesselName} />
                 <CopyableField label="Voyage Number" value={isfFiling.voyageNumber} />
                 <CopyableField label="Container Numbers" value={isfFiling.containerNumbers} />
-                <CopyableField label="Foreign Port of Lading" value={isfFiling.foreignPortOfLading} />
+                <CopyableField label="Foreign Port of Lading" value={isfFiling.foreignPortOfUnlading} />
                 <CopyableField label="Port of Entry" value={isfFiling.portOfEntry} />
-                <CopyableField label="Estimated Departure Date" value={isfFiling.estimatedDepartureDate ? new Date(isfFiling.estimatedDepartureDate).toLocaleDateString() : null} />
                 <CopyableField label="Estimated Arrival Date" value={isfFiling.estimatedArrivalDate ? new Date(isfFiling.estimatedArrivalDate).toLocaleDateString() : null} />
                 <CopyableField label="MBL SCAC Code" value={isfFiling.mblScacCode} />
                 <CopyableField label="HBL SCAC Code" value={isfFiling.hblScacCode} />
@@ -285,30 +284,6 @@ export default function IsfDetail() {
           </CardContent>
         </Card>
 
-        {/* Commercial Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              Commercial Information
-            </CardTitle>
-            <CardDescription>
-              Invoice and commercial details
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableBody>
-                <CopyableField label="Invoice Number" value={isfFiling.invoiceNumber} />
-                <CopyableField label="Invoice Date" value={isfFiling.invoiceDate ? new Date(isfFiling.invoiceDate).toLocaleDateString() : null} />
-                <CopyableField label="Invoice Value" value={isfFiling.invoiceValue ? `${isfFiling.currency || 'USD'} ${isfFiling.invoiceValue}` : null} />
-                <CopyableField label="Currency" value={isfFiling.currency} />
-                <CopyableField label="Terms" value={isfFiling.terms} />
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
         {/* Associated Documents */}
         <Card>
           <CardHeader>
@@ -330,7 +305,7 @@ export default function IsfDetail() {
                       <div>
                         <p className="font-medium text-sm">{doc.fileName}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {doc.category?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} • {(doc.fileSize / 1024).toFixed(1)} KB • {new Date(doc.createdAt || doc.uploadDate).toLocaleDateString()}
+                          {doc.category?.replace(/_/g, ' ').replace(/\b\w/g, (letter: string) => letter.toUpperCase())} • {(doc.fileSize / 1024).toFixed(1)} KB • {new Date(doc.createdAt || doc.uploadDate).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
