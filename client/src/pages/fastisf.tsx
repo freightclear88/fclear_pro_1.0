@@ -1198,6 +1198,9 @@ export default function FastIsf() {
                 <DialogTitle className="text-2xl text-teal-700">
                   Create New ISF 10+2 Filing
                 </DialogTitle>
+                <p className="text-gray-600 mt-2">
+                  Dynamically create a new ISF Filing from existing documents or enter manually
+                </p>
               </DialogHeader>
               <IsfFilingForm onSuccess={handleFormSuccess} />
             </DialogContent>
