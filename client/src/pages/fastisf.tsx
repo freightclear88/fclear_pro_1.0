@@ -1109,7 +1109,7 @@ function IsfFilingsList() {
             <TableHeader>
               <TableRow>
                 <TableHead>ISF Number</TableHead>
-                <TableHead>Importer</TableHead>
+                <TableHead>Consignee</TableHead>
                 <TableHead>Port of Entry</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
@@ -1119,7 +1119,7 @@ function IsfFilingsList() {
               {(filings as IsfFiling[]).map((filing) => (
                 <TableRow key={filing.id}>
                   <TableCell className="font-medium">{filing.isfNumber}</TableCell>
-                  <TableCell>{filing.importerName}</TableCell>
+                  <TableCell>{filing.consignee}</TableCell>
                   <TableCell>{filing.portOfEntry}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(filing.status)} variant="secondary">
