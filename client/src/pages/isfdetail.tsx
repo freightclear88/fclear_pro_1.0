@@ -32,26 +32,11 @@ export default function IsfDetail() {
   // Convert ISF to Shipment mutation
   const convertToShipmentMutation = useMutation({
     mutationFn: async () => {
-      try {
-        const response = await apiRequest("POST", `/api/isf/filings/${id}/convert-to-shipment`);
-        console.log("Response status:", response.status);
-        console.log("Response headers:", response.headers);
-        const data = await response.json();
-        console.log("📥 Parsed conversion response:", data);
-        console.log("Data type:", typeof data);
-        console.log("Data keys:", Object.keys(data || {}));
-        return data;
-      } catch (error) {
-        console.error("Error in mutationFn:", error);
-        throw error;
-      }
+      const response = await apiRequest("POST", `/api/isf/filings/${id}/convert-to-shipment`);
+      const data = await response.json();
+      return data;
     },
     onSuccess: (data) => {
-      console.log("🎉 Conversion success handler called with:", data);
-      console.log("Success check:", data?.success);
-      console.log("Shipment check:", data?.shipment);
-      console.log("Shipment keys:", data?.shipment ? Object.keys(data.shipment) : 'no shipment');
-      
       if (data?.success && data?.shipment) {
         toast({
           title: "Conversion Successful",
@@ -62,17 +47,14 @@ export default function IsfDetail() {
         queryClient.invalidateQueries({ queryKey: ['/api/shipments'] });
         queryClient.invalidateQueries({ queryKey: [`/api/isf/filings/${id}`] });
         
-        // Navigate to the new shipment
+        // Navigate to shipments page 
         setTimeout(() => {
-          setLocation(`/shipments/detail/${data.shipment.id}`);
-        }, 1000);
+          setLocation(`/shipments`);
+        }, 1500);
       } else {
-        console.error("❌ Invalid response structure:", data);
-        console.error("Success value:", data?.success);
-        console.error("Shipment value:", data?.shipment);
         toast({
-          title: "Conversion Error",
-          description: `Invalid response from server. Success: ${data?.success}, HasShipment: ${!!data?.shipment}`,
+          title: "Conversion Error", 
+          description: "Invalid response from server",
           variant: "destructive",
         });
       }
