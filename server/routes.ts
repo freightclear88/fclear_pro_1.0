@@ -4983,8 +4983,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No documents uploaded for ISF form filling' });
       }
 
-      // Use the exact same consolidateMultiDocumentData system as shipment creation
-      const consolidatedData = await consolidateMultiDocumentData(req.files);
+      // Process each document through the extraction pipeline first
+      const allExtractedData = [];
+      
+      for (const file of req.files) {
+        try {
+          console.log(`Processing ISF document: ${file.originalname}`);
+          
+          // Determine document type (prioritize ISF documents)
+          let documentType = 'other';
+          const fileName = file.originalname.toLowerCase();
+          
+          if (fileName.includes('isf') || fileName.includes('information sheet')) {
+            documentType = 'isf_information_sheet';
+          } else if (fileName.includes('bill') && fileName.includes('lading')) {
+            documentType = 'bill_of_lading';
+          } else if (fileName.includes('invoice')) {
+            documentType = 'commercial_invoice';
+          } else if (fileName.includes('packing')) {
+            documentType = 'packing_list';
+          } else if (fileName.includes('arrival')) {
+            documentType = 'arrival_notice';
+          }
+          
+          // Extract data using the same AI processor as shipment creation
+          const extractedData = await extractShipmentDataFromDocument(file.path, documentType);
+          
+          allExtractedData.push({
+            documentType,
+            fileName: file.originalname,
+            data: extractedData
+          });
+          
+          console.log(`Extracted ${Object.keys(extractedData || {}).length} fields from ${file.originalname}`);
+          
+        } catch (error) {
+          console.error(`Error processing ISF document ${file.originalname}:`, error);
+          // Continue with other documents even if one fails
+        }
+      }
+      
+      // Now use the consolidateMultiDocumentData system with properly extracted data
+      const consolidatedData = consolidateMultiDocumentData(allExtractedData);
       
       console.log('Consolidated ISF form data:', consolidatedData);
 
