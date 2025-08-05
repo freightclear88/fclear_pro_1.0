@@ -324,7 +324,6 @@ export default function IsfDocumentUpload({
                             <div className="flex items-center space-x-2">
                               <docType.icon className="w-3 h-3" />
                               <span>{docType.label}</span>
-                              {getPriorityBadge(docType.priority)}
                             </div>
                           </SelectItem>
                         ))}
