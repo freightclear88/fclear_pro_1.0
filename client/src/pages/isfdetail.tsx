@@ -241,15 +241,17 @@ export default function IsfDetail() {
           <CardContent>
             <Table>
               <TableBody>
-                <CopyableField label="3. Manufacturer Information" value={isfFiling.manufacturerInformation} />
-                <CopyableField label="4. Ship to Party Information" value={isfFiling.shipToPartyInformation} />
-                <CopyableField label="5. Country of Origin" value={isfFiling.countryOfOrigin} />
-                <CopyableField label="6. HTSUS Number" value={isfFiling.htsusNumber} />
-                <CopyableField label="6. Commodity Description" value={isfFiling.commodityDescription} />
-                <CopyableField label="7. Container Stuffing Location" value={isfFiling.containerStuffingLocation} />
-                <CopyableField label="8. Consolidator/Stuffer Info" value={isfFiling.consolidatorStufferInfo} />
-                <CopyableField label="9. Buyer Information" value={isfFiling.buyerInformation} />
-                <CopyableField label="10. Seller Information" value={isfFiling.sellerInformation} />
+                <CopyableField label="1. Seller Information" value={isfFiling.sellerInformation} />
+                <CopyableField label="2. Buyer Information" value={isfFiling.buyerInformation} />
+                <CopyableField label="3. Importer of Record Number" value={isfFiling.importerOfRecord} />
+                <CopyableField label="4. Consignee Number" value={isfFiling.consigneeNumber} />
+                <CopyableField label="5. Manufacturer Information" value={isfFiling.manufacturerInformation} />
+                <CopyableField label="6. Ship to Party Information" value={isfFiling.shipToPartyInformation} />
+                <CopyableField label="7. Country of Origin" value={isfFiling.countryOfOrigin} />
+                <CopyableField label="8. HTSUS Number" value={isfFiling.htsusNumber} />
+                <CopyableField label="8. Commodity Description" value={isfFiling.commodityDescription} />
+                <CopyableField label="9. Container Stuffing Location" value={isfFiling.containerStuffingLocation} />
+                <CopyableField label="10. Consolidator/Stuffer Info" value={isfFiling.consolidatorStufferInfo} />
               </TableBody>
             </Table>
           </CardContent>
@@ -270,7 +272,9 @@ export default function IsfDetail() {
                 <CopyableField label="Vessel Name" value={isfFiling.vesselName} />
                 <CopyableField label="Voyage Number" value={isfFiling.voyageNumber} />
                 <CopyableField label="Container Numbers" value={isfFiling.containerNumbers} />
+                <CopyableField label="Foreign Port of Lading" value={isfFiling.foreignPortOfLading} />
                 <CopyableField label="Port of Entry" value={isfFiling.portOfEntry} />
+                <CopyableField label="Estimated Departure Date" value={isfFiling.estimatedDepartureDate ? new Date(isfFiling.estimatedDepartureDate).toLocaleDateString() : null} />
                 <CopyableField label="Estimated Arrival Date" value={isfFiling.estimatedArrivalDate ? new Date(isfFiling.estimatedArrivalDate).toLocaleDateString() : null} />
                 <CopyableField label="MBL SCAC Code" value={isfFiling.mblScacCode} />
                 <CopyableField label="HBL SCAC Code" value={isfFiling.hblScacCode} />
@@ -299,6 +303,30 @@ export default function IsfDetail() {
                 <CopyableField label="Booking Party City" value={isfFiling.bookingPartyCity} />
                 <CopyableField label="Booking Party Country" value={isfFiling.bookingPartyCountry} />
                 <CopyableField label="Foreign Port of Unlading" value={isfFiling.foreignPortOfUnlading} />
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Commercial Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Commercial Information
+            </CardTitle>
+            <CardDescription>
+              Invoice and commercial details
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableBody>
+                <CopyableField label="Invoice Number" value={isfFiling.invoiceNumber} />
+                <CopyableField label="Invoice Date" value={isfFiling.invoiceDate ? new Date(isfFiling.invoiceDate).toLocaleDateString() : null} />
+                <CopyableField label="Invoice Value" value={isfFiling.invoiceValue ? `${isfFiling.currency || 'USD'} ${isfFiling.invoiceValue}` : null} />
+                <CopyableField label="Currency" value={isfFiling.currency} />
+                <CopyableField label="Terms" value={isfFiling.terms} />
               </TableBody>
             </Table>
           </CardContent>
