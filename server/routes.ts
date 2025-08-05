@@ -4836,6 +4836,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ISF filing creation route
+  app.post('/api/isf/create', requireSubscription, upload.array('isfDocuments', 10), async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      console.log('Creating ISF filing for user:', userId);
+      console.log('Request body:', req.body);
+      
+      // Generate ISF number
+      const timestamp = Date.now().toString().slice(-6);
+      const isfNumber = `ISF-${timestamp}`;
+
+      // Prepare ISF filing data with default values for required fields
+      const isfData = {
+        userId,
+        isfNumber,
+        status: 'draft',
+        filingFee: 35.00,
+        
+        // Required fields with defaults
+        importerOfRecord: req.body.importerOfRecord || 'TO BE PROVIDED',
+        importerName: req.body.importerName || req.body.consigneeName || 'TO BE PROVIDED',
+        importerAddress: req.body.importerAddress || req.body.consigneeAddress || 'TO BE PROVIDED',
+        importerCity: req.body.importerCity || 'TO BE PROVIDED',
+        importerState: req.body.importerState || 'N/A',
+        importerZip: req.body.importerZip || '00000',
+        importerCountry: req.body.importerCountry || 'US',
+        
+        consigneeNumber: req.body.consigneeNumber || 'TO BE PROVIDED',
+        consigneeName: req.body.consigneeName || 'TO BE PROVIDED',
+        consigneeAddress: req.body.consigneeAddress || 'TO BE PROVIDED',
+        consigneeCity: req.body.consigneeCity || 'TO BE PROVIDED',
+        consigneeState: req.body.consigneeState || 'N/A',
+        consigneeZip: req.body.consigneeZip || '00000',
+        consigneeCountry: req.body.consigneeCountry || 'US',
+        
+        manufacturerInformation: req.body.manufacturerInformation || 'TO BE PROVIDED',
+        shipToPartyInformation: req.body.shipToPartyInformation || 'TO BE PROVIDED',
+        countryOfOrigin: req.body.countryOfOrigin || 'TO BE PROVIDED',
+        htsusNumber: req.body.htsusNumber || '0000000000',
+        commodityDescription: req.body.commodityDescription || 'TO BE PROVIDED',
+        containerStuffingLocation: req.body.containerStuffingLocation || 'TO BE PROVIDED',
+        consolidatorStufferInfo: req.body.consolidatorStufferInfo || 'TO BE PROVIDED',
+        
+        bookingPartyName: req.body.bookingPartyName || req.body.importerName || 'TO BE PROVIDED',
+        bookingPartyAddress: req.body.bookingPartyAddress || req.body.importerAddress || 'TO BE PROVIDED',
+        bookingPartyCity: req.body.bookingPartyCity || req.body.importerCity || 'TO BE PROVIDED',
+        bookingPartyCountry: req.body.bookingPartyCountry || req.body.importerCountry || 'US',
+        
+        // Optional fields
+        buyerInformation: req.body.buyerInformation || null,
+        sellerInformation: req.body.sellerInformation || null,
+        billOfLading: req.body.billOfLading || null,
+        vesselName: req.body.vesselName || null,
+        voyageNumber: req.body.voyageNumber || null,
+        containerNumbers: req.body.containerNumbers || null,
+        portOfEntry: req.body.portOfEntry || null,
+        foreignPortOfLading: req.body.foreignPortOfLading || null,
+        estimatedArrivalDate: req.body.estimatedArrivalDate || null,
+        estimatedDepartureDate: req.body.estimatedDepartureDate || null,
+        mblScacCode: req.body.mblScacCode || null,
+        hblScacCode: req.body.hblScacCode || null,
+        amsNumber: req.body.amsNumber || null,
+        foreignPortOfUnlading: req.body.foreignPortOfUnlading || null,
+        
+        submittedAt: new Date()
+      };
+
+      console.log('Creating ISF filing with data:', isfData);
+
+      // Create ISF filing record
+      const isfFiling = await storage.createIsfFiling(isfData);
+
+      console.log('ISF filing created successfully:', isfFiling);
+
+      res.json({
+        success: true,
+        isfFiling,
+        id: isfFiling.id,
+        isfNumber: isfFiling.isfNumber,
+        message: `ISF filing ${isfNumber} created successfully. Status: ${isfFiling.status}`,
+      });
+
+    } catch (error) {
+      console.error("Error creating ISF filing:", error);
+      res.status(500).json({ 
+        message: "Failed to create ISF filing", 
+        error: error.message 
+      });
+    }
+  });
+
   // Enhanced ISF filing submission route
   app.post('/api/isf/submit', requireSubscription, async (req: any, res) => {
     try {

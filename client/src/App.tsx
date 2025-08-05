@@ -23,7 +23,7 @@ import Payments from "@/pages/payments";
 import Chat from "@/pages/chat";
 import FastIsf from "@/pages/fastisf";
 import IsfEdit from "@/pages/isf-edit";
-import IsfDetail from "@/pages/isf-detail";
+import IsfDetail from "@/pages/isfdetail";
 import XmlManagement from "@/pages/XmlManagement";
 
 import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle, FileText, Menu, X, Upload, Settings } from "lucide-react";
