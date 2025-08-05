@@ -1112,8 +1112,6 @@ function IsfFilingsList() {
                 <TableHead>Importer</TableHead>
                 <TableHead>Port of Entry</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Filing Date</TableHead>
-                <TableHead>Amount</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -1131,10 +1129,6 @@ function IsfFilingsList() {
                       </div>
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    {filing.filingDate ? new Date(filing.filingDate).toLocaleDateString() : "Draft"}
-                  </TableCell>
-                  <TableCell>${filing.paymentAmount || "35.00"}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Link href={`/isf/detail/${filing.id}`}>
