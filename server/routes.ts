@@ -6,7 +6,7 @@ import ApiContracts from 'authorizenet/lib/apicontracts.js';
 import ApiControllers from 'authorizenet/lib/apicontrollers.js';
 import SDKConstants from 'authorizenet/lib/constants.js';
 import puppeteer from 'puppeteer';
-import { insertShipmentSchema, insertDocumentSchema } from "@shared/schema";
+import { insertShipmentSchema, insertDocumentSchema, type InsertShipment } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -5196,8 +5196,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         shipperAddress: isfFiling.manufacturerInformation || null,
         shipperCountry: isfFiling.countryOfOrigin,
         
-        consigneeName: isfFiling.consigneeName,
-        consigneeAddress: `${isfFiling.consigneeAddress}\n${isfFiling.consigneeCity}, ${isfFiling.consigneeState} ${isfFiling.consigneeZip}`,
+        consigneeName: isfFiling.consignee || isfFiling.consigneeName,
+        consigneeAddress: isfFiling.consigneeAddress ? 
+          `${isfFiling.consigneeAddress}${isfFiling.consigneeCity ? '\n' + isfFiling.consigneeCity : ''}${isfFiling.consigneeState ? ', ' + isfFiling.consigneeState : ''}${isfFiling.consigneeZip ? ' ' + isfFiling.consigneeZip : ''}` 
+          : null,
         consigneeCity: isfFiling.consigneeCity,
         consigneeState: isfFiling.consigneeState,
         consigneeZipCode: isfFiling.consigneeZip,
@@ -5266,6 +5268,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         notes: (isfFiling.notes || '') + `\n\nConverted to Shipment ${shipmentId} on ${new Date().toISOString()}`
       });
 
+      console.log(`✅ ISF ${isfFiling.isfNumber} successfully converted to shipment ${shipmentId} (ID: ${newShipment.id})`);
+      
       res.json({
         success: true,
         shipment: newShipment,
@@ -5275,10 +5279,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
     } catch (error) {
-      console.error("Error converting ISF filing to shipment:", error);
+      console.error("❌ Error converting ISF filing to shipment:", error);
       res.status(500).json({ 
         message: "Failed to convert ISF filing to shipment",
-        error: error.message 
+        error: error.message || error.toString(),
+        details: error.stack
       });
     }
   });

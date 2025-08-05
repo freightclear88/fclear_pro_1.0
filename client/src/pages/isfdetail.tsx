@@ -32,9 +32,12 @@ export default function IsfDetail() {
   // Convert ISF to Shipment mutation
   const convertToShipmentMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", `/api/isf/filings/${id}/convert-to-shipment`);
+      const response = await apiRequest("POST", `/api/isf/filings/${id}/convert-to-shipment`);
+      console.log("Conversion response:", response);
+      return response;
     },
     onSuccess: (data) => {
+      console.log("Conversion successful:", data);
       toast({
         title: "Conversion Successful",
         description: `ISF filing converted to shipment ${data.shipment.shipmentId}. ${data.documentsLinked} document(s) linked.`,
@@ -42,10 +45,13 @@ export default function IsfDetail() {
       // Refresh queries
       queryClient.invalidateQueries({ queryKey: ['/api/shipments'] });
       queryClient.invalidateQueries({ queryKey: [`/api/isf/filings/${id}`] });
-      // Navigate to the new shipment
-      setLocation(`/shipments/detail/${data.shipmentId}`);
+      // Navigate to the new shipment (use numeric ID)
+      setTimeout(() => {
+        setLocation(`/shipments/detail/${data.shipment.id}`);
+      }, 1000); // Small delay to allow queries to refresh
     },
     onError: (error: any) => {
+      console.error("Conversion error:", error);
       toast({
         title: "Conversion Failed",
         description: error.message || "Failed to convert ISF filing to shipment",
