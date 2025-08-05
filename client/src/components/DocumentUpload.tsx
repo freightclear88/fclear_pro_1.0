@@ -318,7 +318,7 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
                         
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                           <div className="space-y-1">
-                            <Label className="text-xs font-medium text-gray-700">Document Type *</Label>
+                            <Label className="text-xs font-medium text-gray-700">Document Type</Label>
                             <Select 
                               value={file.documentType || ""} 
                               onValueChange={(value) => updateFileType(index, value)}

@@ -129,7 +129,7 @@ export default function CreateShipmentDialog({ trigger }: CreateShipmentDialogPr
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="shipmentId">Shipment ID *</Label>
+              <Label htmlFor="shipmentId">Shipment ID</Label>
               <Input
                 id="shipmentId"
                 {...register("shipmentId")}
@@ -141,7 +141,7 @@ export default function CreateShipmentDialog({ trigger }: CreateShipmentDialogPr
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="transportMode">Transport Mode *</Label>
+              <Label htmlFor="transportMode">Transport Mode</Label>
               <Select value={watch("transportMode")} onValueChange={(value) => setValue("transportMode", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select transport mode" />
