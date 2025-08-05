@@ -228,44 +228,71 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         // Apply the extracted data directly to the form fields
         const data = result.isfFormData;
         
-        // Set form values using the pre-mapped data from backend
-        Object.entries(data).forEach(([key, value]) => {
+        // First, process the raw consolidated data to create proper ISF field values
+        const rawConsolidated = result.consolidatedData || {};
+        
+        // Smart field combination and mapping
+        const combinedFields: Record<string, string> = {};
+        
+        // Combine seller information (shipper from B/L)
+        if (rawConsolidated.shipperName && rawConsolidated.shipperAddress) {
+          combinedFields.sellerInformation = `${rawConsolidated.shipperName}\n${rawConsolidated.shipperAddress}`;
+        } else if (rawConsolidated.shipperName) {
+          combinedFields.sellerInformation = rawConsolidated.shipperName;
+        }
+        
+        // Combine buyer information (consignee from B/L)
+        if (rawConsolidated.consigneeName && rawConsolidated.consigneeAddress) {
+          combinedFields.buyerInformation = `${rawConsolidated.consigneeName}\n${rawConsolidated.consigneeAddress}`;
+        } else if (data.consigneeName && data.consigneeAddress) {
+          combinedFields.buyerInformation = `${data.consigneeName}\n${data.consigneeAddress}`;
+        }
+        
+        // Map vessel and voyage information
+        if (rawConsolidated.vesselAndVoyage) {
+          const vesselParts = rawConsolidated.vesselAndVoyage.split(' ');
+          if (vesselParts.length > 1) {
+            combinedFields.vesselName = vesselParts.slice(0, -1).join(' ');
+            combinedFields.voyageNumber = vesselParts[vesselParts.length - 1];
+          } else {
+            combinedFields.vesselName = rawConsolidated.vesselAndVoyage;
+          }
+        }
+        
+        // Enhanced field mapping
+        const fieldMappings: Record<string, string> = {
+          // Direct ISF field mappings
+          importerName: 'importerName',
+          importerAddress: 'importerAddress',
+          manufacturerInformation: 'manufacturerInformation',
+          countryOfOrigin: 'countryOfOrigin',
+          containerStuffingLocation: 'containerStuffingLocation',
+          
+          // From consolidated B/L data
+          billOfLadingNumber: 'billOfLading',
+          containerNumber: 'containerNumbers',
+          portOfLoading: 'foreignPortOfLading',
+          portOfDischarge: 'portOfEntry',
+          eta: 'estimatedArrivalDate',
+          etd: 'estimatedDepartureDate',
+          cargoDescription: 'commodityDescription',
+          htsCode: 'htsusNumber',
+          
+          // From combined fields
+          ...Object.keys(combinedFields).reduce((acc, key) => {
+            acc[key] = key;
+            return acc;
+          }, {} as Record<string, string>)
+        };
+        
+        // Set form values from both extracted data and combined fields
+        const allData = { ...data, ...combinedFields, ...rawConsolidated };
+        
+        Object.entries(allData).forEach(([key, value]) => {
           if (value && typeof value === 'string' && value.trim() !== '') {
-            // Map backend field names to form field names
-            const formFieldMap: Record<string, string> = {
-              // Direct field mappings
-              importerName: 'importerName',
-              importerAddress: 'importerAddress', 
-              consigneeName: 'consigneeName',
-              consigneeAddress: 'consigneeAddress',
-              manufacturerInformation: 'manufacturerInformation',
-              sellerInformation: 'sellerInformation',
-              buyerInformation: 'buyerInformation',
-              shipToPartyInformation: 'shipToPartyInformation',
-              billOfLading: 'billOfLading',
-              vesselName: 'vesselName',
-              voyageNumber: 'voyageNumber',
-              containerNumbers: 'containerNumbers',
-              portOfEntry: 'portOfEntry',
-              foreignPortOfLading: 'foreignPortOfLading',
-              estimatedArrivalDate: 'estimatedArrivalDate',
-              estimatedDepartureDate: 'estimatedDepartureDate',
-              commodityDescription: 'commodityDescription',
-              htsusNumber: 'htsusNumber',
-              countryOfOrigin: 'countryOfOrigin',
-              scacCode: 'mblScacCode',
-              mblScacCode: 'mblScacCode',
-              hblScacCode: 'hblScacCode',
-              amsNumber: 'amsNumber',
-              containerStuffingLocation: 'containerStuffingLocation',
-              consolidatorInformation: 'consolidatorStufferInfo',
-              consolidator: 'consolidatorStufferInfo'
-            };
+            const formField = fieldMappings[key];
             
-            const formField = formFieldMap[key] || key;
-            
-            // Set the form value with proper validation
-            if (form.setValue && typeof form.setValue === 'function') {
+            if (formField && form.setValue && typeof form.setValue === 'function') {
               try {
                 form.setValue(formField as any, value, { 
                   shouldValidate: false, 

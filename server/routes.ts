@@ -5123,6 +5123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         isfFormData,
+        consolidatedData, // Include raw consolidated data for frontend field mapping
         extractionSummary: {
           documentsProcessed: req.files.length,
           fieldsExtracted: Object.keys(isfFormData).filter(key => isfFormData[key]).length,
