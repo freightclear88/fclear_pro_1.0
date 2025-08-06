@@ -5528,6 +5528,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ).forEach(key => {
         console.log(`  ${key}: ${consolidatedData[key]}`);
       });
+      
+      console.log('🔍 CURRENT CONTAINER STUFFING LOCATION VALUE:');
+      console.log(`  Final containerStuffingLocation: "${consolidatedData.containerStuffingLocation}"`);
+      console.log('🔍 USER EXPECTS: A different container stuffing location - need to check what the correct location should be from ISF sheet');
       console.log('🔍 MANUFACTURER DEBUG:');
       console.log('  manufacturerName:', consolidatedData.manufacturerName);
       console.log('  manufacturerAddress:', consolidatedData.manufacturerAddress);
@@ -5605,7 +5609,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         countryOfOrigin: consolidatedData.countryOfOrigin || consolidatedData.manufacturerCountry || null,
         manufacturerInformation: (() => {
           // Priority-based manufacturer information building
-          if (consolidatedData.manufacturerName && consolidatedData.manufacturerAddress) {
+          if (consolidatedData.manufacturerInformation) {
+            return consolidatedData.manufacturerInformation;
+          } else if (consolidatedData.manufacturerName && consolidatedData.manufacturerAddress) {
             return `${consolidatedData.manufacturerName}\n${consolidatedData.manufacturerAddress}`;
           } else if (consolidatedData.manufacturerName && consolidatedData.manufacturerCountry) {
             return `${consolidatedData.manufacturerName}\nCountry: ${consolidatedData.manufacturerCountry}`;
@@ -5614,9 +5620,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else if (consolidatedData.manufacture) {
             return consolidatedData.manufacture;
           } else if (consolidatedData.shipperName && consolidatedData.countryOfOrigin && 
-                     consolidatedData.shipperName !== consolidatedData.consolidatorName) {
-            // Only use shipper as manufacturer if it's different from consolidator
-            return `${consolidatedData.shipperName}\nCountry: ${consolidatedData.countryOfOrigin}`;
+                     consolidatedData.shipperName !== consolidatedData.consolidatorName &&
+                     !consolidatedData.shipperName.toLowerCase().includes('logistics') &&
+                     !consolidatedData.shipperName.toLowerCase().includes('freight')) {
+            // Use shipper as manufacturer only if it's NOT a logistics company and different from consolidator
+            return `${consolidatedData.shipperName}\n${consolidatedData.shipperAddress || ''}\nCountry: ${consolidatedData.countryOfOrigin}`.replace(/\n+/g, '\n').trim();
           } else if (consolidatedData.manufacturerCountry) {
             return `Country: ${consolidatedData.manufacturerCountry}`;
           }
@@ -5630,9 +5638,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else if (consolidatedData.sellerName) {
             return consolidatedData.sellerName;
           } else if (consolidatedData.shipperName && consolidatedData.shipperAddress && 
-                     consolidatedData.shipperName !== consolidatedData.consolidatorName) {
-            // Use shipper as seller if different from consolidator
+                     consolidatedData.shipperName !== consolidatedData.consolidatorName &&
+                     !consolidatedData.shipperName.toLowerCase().includes('logistics') &&
+                     !consolidatedData.shipperName.toLowerCase().includes('freight')) {
+            // Use actual shipper (manufacturer/seller) as seller, not logistics companies
             return `${consolidatedData.shipperName}\n${consolidatedData.shipperAddress}`;
+          } else {
+            // Look at shipper information from different documents
+            // From BL document: shipper might be actual manufacturer/seller
+            // From ISF document: focus on consolidator as logistics handler
+            const blShipper = consolidatedData.shipperName;
+            const isfShipper = consolidatedData.consolidatorName;
+            
+            if (blShipper && blShipper !== isfShipper && consolidatedData.shipperAddress &&
+                !blShipper.toLowerCase().includes('logistics') &&
+                !blShipper.toLowerCase().includes('freight')) {
+              // BL shipper is likely the actual seller if different from ISF consolidator
+              return `${blShipper}\n${consolidatedData.shipperAddress}`;
+            }
           }
           return null;
         })(),
@@ -5650,11 +5673,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return null;
         })(),
         shipToPartyInformation: (() => {
-          if (consolidatedData.shipToPartyInformation) {
+          if (consolidatedData.shipToPartyInformation && 
+              consolidatedData.shipToPartyInformation.toLowerCase() !== 'same as consignee') {
             return consolidatedData.shipToPartyInformation;
           } else if (consolidatedData.shipToPartyName && consolidatedData.shipToPartyAddress) {
             return `${consolidatedData.shipToPartyName}\n${consolidatedData.shipToPartyAddress}`;
-          } else if (consolidatedData.shipToPartyName) {
+          } else if (consolidatedData.shipToPartyName && 
+                     consolidatedData.shipToPartyName.toLowerCase() !== 'same as consignee') {
             return consolidatedData.shipToPartyName;
           } else if (consolidatedData.consigneeName && consolidatedData.consigneeAddress) {
             // Default to consignee as ship-to party

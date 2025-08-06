@@ -480,6 +480,10 @@ ${pdfText.substring(0, 8000)}`
             // Clean up multi-line content
             location = location.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
             
+            console.log(`🔍 TESTING PATTERN: ${pattern.source}`);
+            console.log(`🔍 RAW MATCH: "${match[1]}"`);
+            console.log(`🔍 CLEANED LOCATION: "${location}"`);
+            
             // Validate the location - ensure it's not just a company name or generic term
             if (location && location.length > 5 && 
                 !location.toLowerCase().includes('same as') && 
