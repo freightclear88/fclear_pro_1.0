@@ -5510,12 +5510,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Prioritize ISF document data for critical fields like consolidator
       const isfDocuments = allExtractedData.filter(doc => doc.documentType === 'isf_information_sheet');
       if (isfDocuments.length > 0) {
-        console.log('🔍 ISF DOCUMENT PRIORITIZATION - Found ISF documents, checking consolidator fields...');
+        console.log('🔍 ISF DOCUMENT PRIORITIZATION - Found ISF documents, forcing ISF values for critical fields...');
         for (const isfDoc of isfDocuments) {
-          const consolidatorFields = ['consolidatorName', 'consolidatorStufferInfo', 'consolidator', 'containerStuffer', 'stufferName', 'cfsOperator'];
-          for (const field of consolidatorFields) {
+          // Critical fields that should ALWAYS use ISF values when available
+          const criticalFields = ['consolidatorStufferInfo', 'containerStuffingLocation', 'sellerInformation', 'manufacturerInformation'];
+          
+          for (const field of criticalFields) {
+            if (isfDoc.data[field]) {
+              console.log(`🎯 FORCE ISF PRIORITY: Overriding ${field} with ISF value: ${isfDoc.data[field]}`);
+              consolidatedData[field] = isfDoc.data[field];
+            }
+          }
+          
+          // Other consolidator fields use normal priority (only if missing)
+          const otherConsolidatorFields = ['consolidatorName', 'consolidator', 'containerStuffer', 'stufferName', 'cfsOperator'];
+          for (const field of otherConsolidatorFields) {
             if (isfDoc.data[field] && !consolidatedData[field]) {
-              console.log(`🎯 PRIORITIZING ISF: Using ${field} from ISF document: ${isfDoc.data[field]}`);
+              console.log(`🎯 NORMAL ISF PRIORITY: Using ${field} from ISF document: ${isfDoc.data[field]}`);
               consolidatedData[field] = isfDoc.data[field];
             }
           }
