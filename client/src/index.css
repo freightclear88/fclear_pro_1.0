@@ -250,29 +250,41 @@
       max-width: 100% !important;
     }
     
-    /* Mobile sidebar improvements */
-    .lg\\:hidden [data-sidebar] {
+    /* Mobile sidebar improvements - force proper flexbox layout */
+    .lg\\:hidden [data-sidebar], .lg\\:hidden .sidebar, 
+    .lg\\:hidden [class*="sidebar"] {
       height: 100vh !important;
       display: flex !important;
       flex-direction: column !important;
     }
     
-    /* Sidebar content on mobile should be scrollable */
-    .lg\\:hidden [data-sidebar-content] {
+    /* Sidebar content should take remaining space */
+    .lg\\:hidden [data-sidebar-content],
+    .lg\\:hidden [class*="sidebar-content"] {
       flex: 1 !important;
       overflow-y: auto !important;
-      padding-bottom: 6rem !important;
+      min-height: 0 !important;
     }
     
-    /* Profile footer should not overlap navigation */
-    .lg\\:hidden [data-sidebar-footer] {
-      position: fixed !important;
-      bottom: 0 !important;
-      left: 0 !important;
-      width: 16rem !important;
-      z-index: 30 !important;
-      background: rgba(255, 255, 255, 0.95) !important;
-      backdrop-filter: blur(10px) !important;
+    /* Footer stays at bottom naturally with flexbox */
+    .lg\\:hidden [data-sidebar-footer],
+    .lg\\:hidden [class*="sidebar-footer"] {
+      flex-shrink: 0 !important;
+      margin-top: auto !important;
+    }
+    
+    /* Ensure mobile sidebar containers use flexbox */
+    @media (max-width: 1023px) {
+      .fixed.z-50.transition-transform {
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      
+      .fixed.z-50.transition-transform > * {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
+      }
     }
     
     /* Ensure main content doesn't overflow */
