@@ -4905,6 +4905,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🎯 ISF CONSOLIDATED DATA:`, JSON.stringify(consolidatedData, null, 2));
       console.log(`🎯 ISF CONSOLIDATED FIELDS COUNT:`, Object.keys(consolidatedData).length);
+      
+      // Enhanced debug logging after mapping
+      console.log('📋 MAPPED ISF FIELD VALUES:');
+      console.log('Set importerName:', consolidatedData.importerName || consolidatedData.consigneeName);
+      console.log('Set importerAddress:', consolidatedData.importerAddress || consolidatedData.consigneeAddress);
+      console.log('Set consignee:', consolidatedData.consigneeName);
+      console.log('Set consignee:', consolidatedData.consigneeAddress);
+      
+      // Manufacturer mapping debug
+      let mappedManufacturer = null;
+      if (consolidatedData.manufacturerName && consolidatedData.manufacturerAddress) {
+        mappedManufacturer = `${consolidatedData.manufacturerName}\n${consolidatedData.manufacturerAddress}`;
+      } else if (consolidatedData.manufacturerName && consolidatedData.manufacturerCountry) {
+        mappedManufacturer = `${consolidatedData.manufacturerName}\nCountry: ${consolidatedData.manufacturerCountry}`;
+      } else if (consolidatedData.manufacturerName) {
+        mappedManufacturer = consolidatedData.manufacturerName;
+      } else if (consolidatedData.manufacture) {
+        mappedManufacturer = consolidatedData.manufacture;
+      } else if (consolidatedData.shipperName && consolidatedData.countryOfOrigin && 
+                 consolidatedData.shipperName !== consolidatedData.consolidatorName) {
+        mappedManufacturer = `${consolidatedData.shipperName}\nCountry: ${consolidatedData.countryOfOrigin}`;
+      } else if (consolidatedData.manufacturerCountry) {
+        mappedManufacturer = `Country: ${consolidatedData.manufacturerCountry}`;
+      }
+      console.log('Set manufacturerInformation:', mappedManufacturer);
+      
+      // Seller mapping debug
+      let mappedSeller = null;
+      if (consolidatedData.sellerInformation) {
+        mappedSeller = consolidatedData.sellerInformation;
+      } else if (consolidatedData.sellerName && consolidatedData.sellerAddress) {
+        mappedSeller = `${consolidatedData.sellerName}\n${consolidatedData.sellerAddress}`;
+      } else if (consolidatedData.sellerName) {
+        mappedSeller = consolidatedData.sellerName;
+      } else if (consolidatedData.shipperName && consolidatedData.shipperAddress && 
+                 consolidatedData.shipperName !== consolidatedData.consolidatorName) {
+        mappedSeller = `${consolidatedData.shipperName}\n${consolidatedData.shipperAddress}`;
+      }
+      console.log('Set sellerInformation:', mappedSeller);
+      
+      // Buyer mapping debug
+      let mappedBuyer = null;
+      if (consolidatedData.buyerInformation) {
+        mappedBuyer = consolidatedData.buyerInformation;
+      } else if (consolidatedData.buyerName && consolidatedData.buyerAddress) {
+        mappedBuyer = `${consolidatedData.buyerName}\n${consolidatedData.buyerAddress}`;
+      } else if (consolidatedData.buyerName) {
+        mappedBuyer = consolidatedData.buyerName;
+      } else if (consolidatedData.consigneeName && consolidatedData.consigneeAddress) {
+        mappedBuyer = `${consolidatedData.consigneeName}\n${consolidatedData.consigneeAddress}`;
+      }
+      console.log('Set buyerInformation:', mappedBuyer);
+      
+      // Ship-to mapping debug
+      let mappedShipTo = null;
+      if (consolidatedData.shipToPartyInformation) {
+        mappedShipTo = consolidatedData.shipToPartyInformation;
+      } else if (consolidatedData.shipToPartyName && consolidatedData.shipToPartyAddress) {
+        mappedShipTo = `${consolidatedData.shipToPartyName}\n${consolidatedData.shipToPartyAddress}`;
+      } else if (consolidatedData.shipToPartyName) {
+        mappedShipTo = consolidatedData.shipToPartyName;
+      } else if (consolidatedData.consigneeName && consolidatedData.consigneeAddress) {
+        mappedShipTo = `${consolidatedData.consigneeName}\n${consolidatedData.consigneeAddress}`;
+      }
+      console.log('Set shipToPartyInformation:', mappedShipTo);
 
       res.json({
         success: true,
@@ -5470,6 +5535,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('  amsReference:', consolidatedData.amsReference);
       console.log('  manifestNumber:', consolidatedData.manifestNumber);
       
+      console.log('🔍 MANUFACTURER DEBUG:');
+      console.log('  manufacturerName:', consolidatedData.manufacturerName);
+      console.log('  manufacturerAddress:', consolidatedData.manufacturerAddress);
+      console.log('  manufacturerCountry:', consolidatedData.manufacturerCountry);
+      console.log('  manufacture:', consolidatedData.manufacture);
+      console.log('  countryOfOrigin:', consolidatedData.countryOfOrigin);
+      
+      console.log('🔍 SELLER/BUYER/SHIP-TO DEBUG:');
+      console.log('  sellerName:', consolidatedData.sellerName);
+      console.log('  sellerAddress:', consolidatedData.sellerAddress);
+      console.log('  sellerInformation:', consolidatedData.sellerInformation);
+      console.log('  buyerName:', consolidatedData.buyerName);
+      console.log('  buyerAddress:', consolidatedData.buyerAddress);
+      console.log('  buyerInformation:', consolidatedData.buyerInformation);
+      console.log('  shipToPartyName:', consolidatedData.shipToPartyName);
+      console.log('  shipToPartyAddress:', consolidatedData.shipToPartyAddress);
+      console.log('  shipToPartyInformation:', consolidatedData.shipToPartyInformation);
+      
       console.log('🔍 CONSOLIDATOR DEBUG:');
       console.log('  consolidatorName (ISF specific):', consolidatedData.consolidatorName);
       console.log('  consolidatorStufferInfo:', consolidatedData.consolidatorStufferInfo);
@@ -5511,24 +5594,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Manufacturer and party information - Enhanced mappings with ISF-specific fields
         manufacturerCountry: consolidatedData.manufacturerCountry || consolidatedData.countryOfOrigin || null,
-        countryOfOrigin: consolidatedData.countryOfOrigin || null,
-        manufacturerInformation: consolidatedData.manufacturerName && consolidatedData.manufacturerAddress ? 
-          `${consolidatedData.manufacturerName}\n${consolidatedData.manufacturerAddress}` : 
-          consolidatedData.manufacturerName || 
-          consolidatedData.manufacture || 
-          (consolidatedData.shipperName && consolidatedData.countryOfOrigin ? 
-            `${consolidatedData.shipperName}\nCountry: ${consolidatedData.countryOfOrigin}` : null) ||
-          consolidatedData.manufacturerCountry || 
-          null,
-        sellerInformation: consolidatedData.sellerName && consolidatedData.sellerAddress ? 
-          `${consolidatedData.sellerName}\n${consolidatedData.sellerAddress}` : 
-          consolidatedData.sellerName || null,
-        buyerInformation: consolidatedData.buyerName && consolidatedData.buyerAddress ? 
-          `${consolidatedData.buyerName}\n${consolidatedData.buyerAddress}` : 
-          consolidatedData.buyerName || null,
-        shipToPartyInformation: consolidatedData.shipToPartyName && consolidatedData.shipToPartyAddress ? 
-          `${consolidatedData.shipToPartyName}\n${consolidatedData.shipToPartyAddress}` : 
-          consolidatedData.shipToPartyName || null,
+        countryOfOrigin: consolidatedData.countryOfOrigin || consolidatedData.manufacturerCountry || null,
+        manufacturerInformation: (() => {
+          // Priority-based manufacturer information building
+          if (consolidatedData.manufacturerName && consolidatedData.manufacturerAddress) {
+            return `${consolidatedData.manufacturerName}\n${consolidatedData.manufacturerAddress}`;
+          } else if (consolidatedData.manufacturerName && consolidatedData.manufacturerCountry) {
+            return `${consolidatedData.manufacturerName}\nCountry: ${consolidatedData.manufacturerCountry}`;
+          } else if (consolidatedData.manufacturerName) {
+            return consolidatedData.manufacturerName;
+          } else if (consolidatedData.manufacture) {
+            return consolidatedData.manufacture;
+          } else if (consolidatedData.shipperName && consolidatedData.countryOfOrigin && 
+                     consolidatedData.shipperName !== consolidatedData.consolidatorName) {
+            // Only use shipper as manufacturer if it's different from consolidator
+            return `${consolidatedData.shipperName}\nCountry: ${consolidatedData.countryOfOrigin}`;
+          } else if (consolidatedData.manufacturerCountry) {
+            return `Country: ${consolidatedData.manufacturerCountry}`;
+          }
+          return null;
+        })(),
+        sellerInformation: (() => {
+          if (consolidatedData.sellerInformation) {
+            return consolidatedData.sellerInformation;
+          } else if (consolidatedData.sellerName && consolidatedData.sellerAddress) {
+            return `${consolidatedData.sellerName}\n${consolidatedData.sellerAddress}`;
+          } else if (consolidatedData.sellerName) {
+            return consolidatedData.sellerName;
+          } else if (consolidatedData.shipperName && consolidatedData.shipperAddress && 
+                     consolidatedData.shipperName !== consolidatedData.consolidatorName) {
+            // Use shipper as seller if different from consolidator
+            return `${consolidatedData.shipperName}\n${consolidatedData.shipperAddress}`;
+          }
+          return null;
+        })(),
+        buyerInformation: (() => {
+          if (consolidatedData.buyerInformation) {
+            return consolidatedData.buyerInformation;
+          } else if (consolidatedData.buyerName && consolidatedData.buyerAddress) {
+            return `${consolidatedData.buyerName}\n${consolidatedData.buyerAddress}`;
+          } else if (consolidatedData.buyerName) {
+            return consolidatedData.buyerName;
+          } else if (consolidatedData.consigneeName && consolidatedData.consigneeAddress) {
+            // Use consignee as buyer if no explicit buyer
+            return `${consolidatedData.consigneeName}\n${consolidatedData.consigneeAddress}`;
+          }
+          return null;
+        })(),
+        shipToPartyInformation: (() => {
+          if (consolidatedData.shipToPartyInformation) {
+            return consolidatedData.shipToPartyInformation;
+          } else if (consolidatedData.shipToPartyName && consolidatedData.shipToPartyAddress) {
+            return `${consolidatedData.shipToPartyName}\n${consolidatedData.shipToPartyAddress}`;
+          } else if (consolidatedData.shipToPartyName) {
+            return consolidatedData.shipToPartyName;
+          } else if (consolidatedData.consigneeName && consolidatedData.consigneeAddress) {
+            // Default to consignee as ship-to party
+            return `${consolidatedData.consigneeName}\n${consolidatedData.consigneeAddress}`;
+          }
+          return null;
+        })(),
         
         // Shipping and logistics information - Key ISF fields
         billOfLading: consolidatedData.billOfLading || null,
@@ -5598,9 +5723,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('ISF form data mapped from consolidated extraction:', isfFormData);
       
       // Debug the specific problematic fields
-      console.log('🎯 FINAL ISF FIELD VALUES:');
-      console.log('  Final containerStuffingLocation:', isfFormData.containerStuffingLocation);
+      console.log('🎯 FINAL MAPPED ISF FIELD VALUES:');
+      console.log('  Final importerName:', isfFormData.importerName);
+      console.log('  Final importerAddress:', isfFormData.importerAddress);
+      console.log('  Final consigneeName:', isfFormData.consigneeName);
+      console.log('  Final consigneeAddress:', isfFormData.consigneeAddress);
       console.log('  Final manufacturerInformation:', isfFormData.manufacturerInformation);
+      console.log('  Final sellerInformation:', isfFormData.sellerInformation);
+      console.log('  Final buyerInformation:', isfFormData.buyerInformation);
+      console.log('  Final shipToPartyInformation:', isfFormData.shipToPartyInformation);
+      console.log('  Final containerStuffingLocation:', isfFormData.containerStuffingLocation);
+      console.log('  Final consolidatorStufferInfo:', isfFormData.consolidatorStufferInfo);
+      console.log('  Final countryOfOrigin:', isfFormData.countryOfOrigin);
+      console.log('  Final manufacturerCountry:', isfFormData.manufacturerCountry);
 
       res.json({
         success: true,
