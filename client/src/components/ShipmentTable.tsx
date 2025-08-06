@@ -290,7 +290,7 @@ Weight: ${shipment?.weight || "N/A"}
                     <Folder className="w-4 h-4 text-freight-blue" />
                   </div>
                   
-                  <div className="flex-1 grid grid-cols-2 lg:grid-cols-6 gap-2 lg:gap-4">
+                  <div className="flex-1 grid grid-cols-2 lg:grid-cols-7 gap-2 lg:gap-4">
                     {/* Shipment ID & Transport Mode */}
                     <div>
                       <div className="font-medium text-freight-dark flex items-center space-x-2">
@@ -353,10 +353,16 @@ Weight: ${shipment?.weight || "N/A"}
                       </div>
                     </div>
 
-                    {/* Route */}
+                    {/* Origin */}
                     <div>
-                      <div className="text-sm font-medium">{shipment?.portOfLoading || 'Unknown'}</div>
-                      <div className="text-xs text-gray-500">→ {shipment?.portOfDischarge || 'Unknown'}</div>
+                      <div className="text-sm font-medium">{shipment?.portOfLoading || shipment?.originPort || 'N/A'}</div>
+                      <div className="text-xs text-gray-500">Origin</div>
+                    </div>
+
+                    {/* Destination */}
+                    <div>
+                      <div className="text-sm font-medium">{shipment?.portOfDischarge || shipment?.destinationPort || 'N/A'}</div>
+                      <div className="text-xs text-gray-500">Destination</div>
                     </div>
 
                     {/* Vessel/Aircraft */}
