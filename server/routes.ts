@@ -5688,29 +5688,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('  sellerName:', consolidatedData.sellerName);
           console.log('  sellerAddress:', consolidatedData.sellerAddress);
           console.log('  manufacturerName:', consolidatedData.manufacturerName);
+          console.log('  manufacturerAddress:', consolidatedData.manufacturerAddress);
           console.log('  shipperName:', consolidatedData.shipperName);
           console.log('  consolidatorName:', consolidatedData.consolidatorName);
           
-          if (consolidatedData.sellerInformation && !consolidatedData.sellerInformation.toLowerCase().includes('logistics')) {
+          // CRITICAL FIX: Prioritize manufacturer as seller (they are typically the actual seller)
+          if (consolidatedData.manufacturerName && consolidatedData.manufacturerAddress &&
+              !consolidatedData.manufacturerName.toLowerCase().includes('logistics') &&
+              !consolidatedData.manufacturerName.toLowerCase().includes('forwarding') &&
+              !consolidatedData.manufacturerName.toLowerCase().includes('freight')) {
+            const result = `${consolidatedData.manufacturerName}\n${consolidatedData.manufacturerAddress}`;
+            console.log('✅ Using manufacturerName + manufacturerAddress as seller (non-logistics):', result);
+            return result;
+          } else if (consolidatedData.manufacturerName && 
+                     !consolidatedData.manufacturerName.toLowerCase().includes('logistics') &&
+                     !consolidatedData.manufacturerName.toLowerCase().includes('forwarding') &&
+                     !consolidatedData.manufacturerName.toLowerCase().includes('freight')) {
+            console.log('✅ Using manufacturerName only as seller (non-logistics):', consolidatedData.manufacturerName);
+            return consolidatedData.manufacturerName;
+          } else if (consolidatedData.sellerInformation && 
+                     !consolidatedData.sellerInformation.toLowerCase().includes('logistics') &&
+                     !consolidatedData.sellerInformation.toLowerCase().includes('forwarding') &&
+                     !consolidatedData.sellerInformation.toLowerCase().includes('freight')) {
             console.log('✅ Using direct sellerInformation (non-logistics)');
             return consolidatedData.sellerInformation;
           } else if (consolidatedData.sellerName && consolidatedData.sellerAddress && 
-                     !consolidatedData.sellerName.toLowerCase().includes('logistics')) {
+                     !consolidatedData.sellerName.toLowerCase().includes('logistics') &&
+                     !consolidatedData.sellerName.toLowerCase().includes('forwarding') &&
+                     !consolidatedData.sellerName.toLowerCase().includes('freight')) {
             const result = `${consolidatedData.sellerName}\n${consolidatedData.sellerAddress}`;
             console.log('✅ Using sellerName + sellerAddress (non-logistics):', result);
             return result;
-          } else if (consolidatedData.sellerName && !consolidatedData.sellerName.toLowerCase().includes('logistics')) {
+          } else if (consolidatedData.sellerName && 
+                     !consolidatedData.sellerName.toLowerCase().includes('logistics') &&
+                     !consolidatedData.sellerName.toLowerCase().includes('forwarding') &&
+                     !consolidatedData.sellerName.toLowerCase().includes('freight')) {
             console.log('✅ Using sellerName only (non-logistics):', consolidatedData.sellerName);
             return consolidatedData.sellerName;
-          } else if (consolidatedData.manufacturerName && consolidatedData.manufacturerAddress &&
-                     consolidatedData.manufacturerName !== consolidatedData.consolidatorName) {
-            // If manufacturer is available and different from consolidator, use as seller
-            const result = `${consolidatedData.manufacturerName}\n${consolidatedData.manufacturerAddress}`;
-            console.log('✅ Using manufacturer as seller:', result);
-            return result;
           } else if (consolidatedData.shipperName && consolidatedData.shipperAddress && 
                      consolidatedData.shipperName !== consolidatedData.consolidatorName &&
                      !consolidatedData.shipperName.toLowerCase().includes('logistics') &&
+                     !consolidatedData.shipperName.toLowerCase().includes('forwarding') &&
                      !consolidatedData.shipperName.toLowerCase().includes('freight')) {
             // Use actual shipper (manufacturer/seller) as seller, not logistics companies
             const result = `${consolidatedData.shipperName}\n${consolidatedData.shipperAddress}`;
@@ -5725,6 +5743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (blShipper && blShipper !== isfShipper && consolidatedData.shipperAddress &&
                 !blShipper.toLowerCase().includes('logistics') &&
+                !blShipper.toLowerCase().includes('forwarding') &&
                 !blShipper.toLowerCase().includes('freight')) {
               // BL shipper is likely the actual seller if different from ISF consolidator
               const result = `${blShipper}\n${consolidatedData.shipperAddress}`;

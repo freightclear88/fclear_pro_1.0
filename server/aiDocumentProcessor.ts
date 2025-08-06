@@ -220,9 +220,9 @@ export class AIDocumentProcessor {
               "manufacturerInformation": "CRITICAL for ISF: Complete manufacturer information including name and address of the actual goods manufacturer",
               "buyerName": "Buyer/purchaser company name if found - the entity purchasing the goods",
               "buyerAddress": "Buyer complete address if found", 
-              "sellerName": "CRITICAL for ISF: Seller company name - look for 'SELLER', 'VENDOR', 'SUPPLIER' fields. This is who is SELLING the goods to the buyer, often different from shipper/exporter",
-              "sellerAddress": "CRITICAL for ISF: Seller complete address - the business address of the selling entity",
-              "sellerInformation": "CRITICAL for ISF: Complete seller information including name and address of the entity selling the goods",
+              "sellerName": "CRITICAL for ISF: Seller company name - look for 'SELLER', 'VENDOR', 'SUPPLIER' fields. This is who is SELLING the goods to the buyer, often the manufacturer or actual producer. EXCLUDE logistics companies, freight forwarders, and consolidators even if they appear as shippers",
+              "sellerAddress": "CRITICAL for ISF: Seller complete address - the business address of the selling entity (NOT logistics company)",
+              "sellerInformation": "CRITICAL for ISF: Complete seller information including name and address of the entity selling the goods. Must be the actual seller/manufacturer, NOT freight forwarders, logistics companies, or consolidators",
               "notifyPartyName": "notify party name if found",
               "notifyPartyAddress": "notify party address if found",
               "shipToPartyName": "ship-to party name if found",
@@ -510,48 +510,89 @@ ${pdfText.substring(0, 8000)}`
             
             // Extract only geographic location from stuffing location field
             // Look for city, country patterns and filter out company names
+            console.log(`🔍 RAW LOCATION BEFORE PROCESSING: "${location}"`);
+            
             if (location.includes('\n')) {
               const lines = location.split('\n');
+              console.log(`🔍 LINES TO PROCESS:`, lines);
               
               // Look for geographic location patterns (city, country)
+              let foundGeoLocation = false;
+              
               for (const line of lines) {
+                const cleanLine = line.trim();
+                console.log(`🔍 PROCESSING LINE: "${cleanLine}"`);
+                
                 // Skip company lines
-                if (/(Co\.|Ltd|Inc|Corp|Company|LOGISTICS|FORWARDING|FREIGHT|SHIPPING)/i.test(line)) {
+                if (/(Co\.|Ltd|Inc|Corp|Company|LOGISTICS|FORWARDING|FREIGHT|SHIPPING)/i.test(cleanLine)) {
+                  console.log(`❌ SKIPPING COMPANY LINE: "${cleanLine}"`);
                   continue;
                 }
                 
-                // Look for geographic patterns
+                // Look for geographic patterns - enhanced to capture complete addresses
                 const geoPatterns = [
-                  /^([A-Z][A-Za-z\s]+,\s*[A-Z][A-Za-z\s]+)$/i, // City, Country
-                  /(BUSAN|QINGDAO|SHANGHAI|SHENZHEN|NINGBO|TIANJIN|DALIAN|XIAMEN|GUANGZHOU|YANTIAN|SEOUL|INCHEON),?\s*([A-Z][A-Za-z\s]*)/i, // Major ports
-                  /^([A-Z][A-Za-z\s]{3,}),?\s+(CHINA|KOREA|SOUTH KOREA|REP\. OF KOREA|JAPAN|TAIWAN|SINGAPORE|MALAYSIA|THAILAND|VIETNAM|INDONESIA)$/i // City, Country
+                  // Complete address patterns with multiple components
+                  /^([A-Z][A-Za-z\s\-,\.]+(?:CITY|DISTRICT|PROVINCE|STATE|COUNTY)),?\s*([A-Z][A-Za-z\s\-\.]+(?:CHINA|KOREA|SOUTH KOREA|REP\. OF KOREA|JAPAN|TAIWAN|SINGAPORE|MALAYSIA|THAILAND|VIETNAM|INDONESIA))$/i,
+                  
+                  // City-State-Country patterns common in Asian addresses
+                  /^([A-Z][A-Za-z\s\-]+(?:SI|GU|DO|CITY|DISTRICT|PROVINCE)),?\s*([A-Z][A-Za-z\s\-]+(?:DO|PROVINCE)),?\s*([A-Z][A-Za-z\s\-\.]*(?:KOREA|CHINA|JAPAN))$/i,
+                  
+                  // Major port cities with country
+                  /(BUSAN|QINGDAO|SHANGHAI|SHENZHEN|NINGBO|TIANJIN|DALIAN|XIAMEN|GUANGZHOU|YANTIAN|SEOUL|INCHEON|POHANG),?\s*([A-Z][A-Za-z\s\-,]*)/i,
+                  
+                  // General city, country pattern
+                  /^([A-Z][A-Za-z\s\-]{3,}),?\s*(CHINA|KOREA|SOUTH KOREA|REP\. OF KOREA|JAPAN|TAIWAN|SINGAPORE|MALAYSIA|THAILAND|VIETNAM|INDONESIA)$/i,
+                  
+                  // Just the city if it's a known port/major city
+                  /^(BUSAN|QINGDAO|SHANGHAI|SHENZHEN|NINGBO|TIANJIN|DALIAN|XIAMEN|GUANGZHOU|YANTIAN|SEOUL|INCHEON|POHANG[\s\-]*[A-Z]*[I]*[\s\-]*[A-Z]*[A-Z]*)$/i
                 ];
                 
                 for (const pattern of geoPatterns) {
-                  const match = line.match(pattern);
+                  const match = cleanLine.match(pattern);
                   if (match) {
+                    // Take the full matched line for complete geographic information
                     location = match[0].trim();
-                    console.log(`🌍 GEOGRAPHIC LOCATION EXTRACTED: ${location}`);
+                    console.log(`🌍 GEOGRAPHIC LOCATION EXTRACTED: "${location}"`);
+                    foundGeoLocation = true;
                     break;
                   }
                 }
                 
-                if (location !== line) {
-                  break; // Found geographic location
+                if (foundGeoLocation) {
+                  break;
+                }
+              }
+              
+              // If no geographic pattern found, try to find the most geographic-looking line
+              if (!foundGeoLocation) {
+                console.log(`🔍 NO PATTERN MATCH - LOOKING FOR GEOGRAPHIC CLUES...`);
+                for (const line of lines) {
+                  const cleanLine = line.trim();
+                  // Skip obvious company lines
+                  if (/(Co\.|Ltd|Inc|Corp|Company|LOGISTICS|FORWARDING|FREIGHT|SHIPPING)/i.test(cleanLine)) {
+                    continue;
+                  }
+                  // Look for lines with geographic indicators
+                  if (/(CITY|DISTRICT|PROVINCE|STATE|COUNTY|SI|GU|DO|KOREA|CHINA|JAPAN)/i.test(cleanLine) && cleanLine.length > 5) {
+                    location = cleanLine;
+                    console.log(`🌍 GEOGRAPHIC LINE SELECTED: "${location}"`);
+                    break;
+                  }
                 }
               }
             } else {
               // Single line - try to extract geographic part
               const geoPatterns = [
-                /([A-Z][A-Za-z\s]+,\s*[A-Z][A-Za-z\s]+)$/i, // City, Country at end
-                /(BUSAN|QINGDAO|SHANGHAI|SHENZHEN|NINGBO|TIANJIN|DALIAN|XIAMEN|GUANGZHOU|YANTIAN|SEOUL|INCHEON),?\s*([A-Z][A-Za-z\s]*)/i // Major ports
+                /([A-Z][A-Za-z\s\-,]+(?:CITY|DISTRICT|PROVINCE|STATE|COUNTY|SI|GU|DO)),?\s*([A-Z][A-Za-z\s\-\.]*(?:KOREA|CHINA|JAPAN))$/i, // Complete address
+                /(BUSAN|QINGDAO|SHANGHAI|SHENZHEN|NINGBO|TIANJIN|DALIAN|XIAMEN|GUANGZHOU|YANTIAN|SEOUL|INCHEON|POHANG[\s\-]*[A-Z]*[I]*),?\s*([A-Z][A-Za-z\s\-]*)/i, // Major ports
+                /([A-Z][A-Za-z\s\-]+,\s*[A-Z][A-Za-z\s\-]+)$/i // City, Country at end
               ];
               
               for (const pattern of geoPatterns) {
                 const match = location.match(pattern);
                 if (match) {
                   location = match[0].trim();
-                  console.log(`🌍 GEOGRAPHIC LOCATION EXTRACTED: ${location}`);
+                  console.log(`🌍 GEOGRAPHIC LOCATION EXTRACTED FROM SINGLE LINE: "${location}"`);
                   break;
                 }
               }
