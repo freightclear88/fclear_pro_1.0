@@ -455,36 +455,54 @@ ${pdfText.substring(0, 8000)}`
         console.log('🔍 PATTERN MATCHING: Searching for Container Stuffing Location in ISF document...');
         console.log('📄 PDF TEXT SAMPLE (first 2000 chars):', pdfText.substring(0, 2000));
         const stuffingLocationPatterns = [
-          // Primary patterns - exact ISF field names
+          // Multi-line patterns to capture company name + address (like POSCO FUTURE M)
+          /Container\s*Stuffing\s*Location\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
+          /CONTAINER\s*STUFFING\s*LOCATION\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
+          
+          // Single line patterns - exact ISF field names
           /Container\s*Stuffing\s*Location\s*:\s*([^\n\r]+)/i,
           /CONTAINER\s*STUFFING\s*LOCATION\s*:\s*([^\n\r]+)/i,
           
           // Alternative patterns commonly used
-          /STUFFING\s*LOCATION\s*:\s*([^\n\r]+)/i,
-          /PLACE\s*OF\s*STUFFING\s*:\s*([^\n\r]+)/i,
-          /CFS\s*LOCATION\s*:\s*([^\n\r]+)/i,
-          /WHERE\s*STUFFED\s*:\s*([^\n\r]+)/i,
-          /STUFFED\s*AT\s*:\s*([^\n\r]+)/i,
-          /CONSOLIDATION\s*LOCATION\s*:\s*([^\n\r]+)/i,
-          /Container\s*Stuffer\s*Location\s*:\s*([^\n\r]+)/i,
+          /STUFFING\s*LOCATION\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
+          /PLACE\s*OF\s*STUFFING\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
+          /CFS\s*LOCATION\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
+          /WHERE\s*STUFFED\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
+          /STUFFED\s*AT\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
+          /CONSOLIDATION\s*LOCATION\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
+          /Container\s*Stuffer\s*Location\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
           
-          // Multi-line patterns for more complex formatting
-          /Container\s*Stuffing\s*Location[\s\n\r]*:[\s\n\r]*([^\n\r]+(?:\n[^\n\r:]+)*)/i,
-          /CONTAINER\s*STUFFING\s*LOCATION[\s\n\r]*:[\s\n\r]*([^\n\r]+(?:\n[^\n\r:]+)*)/i
+          // Patterns specifically for POSCO format (company name followed by address lines)
+          /Container\s*Stuffing\s*Location\s*:[\s\n\r]*([A-Z][^\n\r]*(?:Co\.|Ltd|INC|CORP)[\s\n\r]+[^\n\r]+[\s\n\r]+[^\n\r]+)/i,
+          /CONTAINER\s*STUFFING\s*LOCATION\s*:[\s\n\r]*([A-Z][^\n\r]*(?:Co\.|Ltd|INC|CORP)[\s\n\r]+[^\n\r]+[\s\n\r]+[^\n\r]+)/i
         ];
         
         for (const pattern of stuffingLocationPatterns) {
           const match = pdfText.match(pattern);
           if (match && match[1]) {
             let location = match[1].trim();
-            // Clean up multi-line content
-            location = location.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
             
             console.log(`🔍 TESTING PATTERN: ${pattern.source}`);
             console.log(`🔍 RAW MATCH: "${match[1]}"`);
+            
+            // For multi-line addresses, preserve line breaks but clean up formatting
+            if (location.includes('\n') || location.includes('\r')) {
+              // Keep line breaks for addresses but clean up extra whitespace
+              location = location
+                .replace(/\r\n/g, '\n')
+                .replace(/\r/g, '\n')
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .join('\n');
+            } else {
+              // Single line - just clean up whitespace
+              location = location.replace(/\s+/g, ' ').trim();
+            }
+            
             console.log(`🔍 CLEANED LOCATION: "${location}"`);
             
-            // Validate the location - ensure it's not just a company name or generic term
+            // Validate the location - ensure it's not just a generic term
             if (location && location.length > 5 && 
                 !location.toLowerCase().includes('same as') && 
                 location !== 'CFS/CFS' &&
@@ -639,7 +657,7 @@ ${pdfText.substring(0, 8000)}`
               "onBoardDate": "on board date if found",
               "eta": "ETA if found",
               "etd": "ETD if found",
-              "containerStuffingLocation": "EXACT container stuffing location from ISF form - look for fields labeled: 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'Consolidator Location', 'CFS Location', 'Place where container was stuffed' - extract the EXACT location value, not just 'CFS/CFS'",
+              "containerStuffingLocation": "CRITICAL: Extract the COMPLETE container stuffing location from ISF form. Look for fields labeled: 'Container Stuffing Location:', 'CONTAINER STUFFING LOCATION:', 'Stuffing Location:', 'Place of Stuffing:', 'CFS Location:'. This should include the FULL COMPANY NAME and COMPLETE ADDRESS with street, city, province/state, postal code, and country. For example: 'POSCO FUTURE M Co.,Ltd\\n110, SINHANG-RO, NAM-GU, POHANG-SI,\\nGYEONGSANGBUK-DO, 37918, REP. OF KOREA'. DO NOT use generic terms like 'CFS/CFS' or port names. Extract the specific manufacturing facility or CFS location.",
               "containerStuffing": "any container stuffing related information if found",
               "stuffingLocation": "stuffing location if found",
               "consolidatorName": "ISF CRITICAL: Consolidator/Container Stuffer company name - look for labels: 'Consolidator Name', 'Container Stuffer', 'CFS Operator', 'Consolidator Information', 'Consolidator/Stuffer'. This is DIFFERENT from shipper - extract the company that consolidated/stuffed the container",
