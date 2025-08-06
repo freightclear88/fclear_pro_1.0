@@ -5904,6 +5904,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('ISF form data mapped from consolidated extraction:', isfFormData);
       
+      // CRITICAL FIX: Apply ISF prioritization AFTER form mapping to prevent overwrites
+      if (isfDocuments.length > 0) {
+        console.log('🎯 FINAL ISF OVERRIDE: Applying ISF document values to final form data...');
+        for (const isfDoc of isfDocuments) {
+          // Force override critical fields from ISF documents
+          if (isfDoc.data.consolidatorStufferInfo) {
+            console.log(`🎯 FINAL ISF OVERRIDE: consolidatorStufferInfo: "${isfDoc.data.consolidatorStufferInfo}"`);
+            isfFormData.consolidatorStufferInfo = isfDoc.data.consolidatorStufferInfo;
+          }
+          if (isfDoc.data.containerStuffingLocation) {
+            console.log(`🎯 FINAL ISF OVERRIDE: containerStuffingLocation: "${isfDoc.data.containerStuffingLocation}"`);
+            isfFormData.containerStuffingLocation = isfDoc.data.containerStuffingLocation;
+          }
+          if (isfDoc.data.sellerInformation) {
+            console.log(`🎯 FINAL ISF OVERRIDE: sellerInformation: "${isfDoc.data.sellerInformation}"`);
+            isfFormData.sellerInformation = isfDoc.data.sellerInformation;
+          }
+          if (isfDoc.data.manufacturerInformation) {
+            console.log(`🎯 FINAL ISF OVERRIDE: manufacturerInformation: "${isfDoc.data.manufacturerInformation}"`);
+            isfFormData.manufacturerInformation = isfDoc.data.manufacturerInformation;
+          }
+        }
+      }
+      
       // Debug the specific problematic fields
       console.log('🎯 FINAL MAPPED ISF FIELD VALUES:');
       console.log('  Final importerName:', isfFormData.importerName);
