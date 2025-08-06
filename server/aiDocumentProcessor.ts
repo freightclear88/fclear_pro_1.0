@@ -1061,56 +1061,42 @@ ${pdfText.substring(0, 8000)}`
           }
         }
         
-        // Enhanced seller validation - ensure we're not picking up logistics companies as sellers
-        if (extractedData.sellerInformation && extractedData.consolidatorStufferInfo) {
-          const seller = extractedData.sellerInformation.toLowerCase();
-          const consolidator = extractedData.consolidatorStufferInfo.toLowerCase();
-          
-          // Check if seller looks like a logistics company
-          const logisticsTerms = ['logistics', 'freight', 'forwarding', 'shipping', 'cargo', 'express', 'transport'];
-          const sellerIsLogistics = logisticsTerms.some(term => seller.includes(term));
-          
-          if (sellerIsLogistics && !consolidator.includes('logistics')) {
-            console.log('⚠️ SWAPPING SELLER/CONSOLIDATOR: Seller appears to be logistics company');
-            // Swap them
-            const temp = extractedData.sellerInformation;
-            extractedData.sellerInformation = extractedData.consolidatorStufferInfo;
-            extractedData.consolidatorStufferInfo = temp;
-            extractedData.sellerName = extractedData.sellerInformation.split(/\n|,/)[0].trim();
-          }
+        // COMPREHENSIVE ISF PATTERN SCANNING: Scan entire document for ISF-specific patterns
+        console.log('🔍 COMPREHENSIVE ISF SCANNING: Analyzing entire document for ISF field patterns...');
+        
+        const isfPatternExtraction = this.extractISFPatterns(pdfText);
+        
+        // Override extracted data with ISF-specific patterns if found
+        if (isfPatternExtraction.seller) {
+          console.log(`🎯 ISF PATTERN SELLER FOUND: ${isfPatternExtraction.seller}`);
+          extractedData.sellerInformation = isfPatternExtraction.seller;
+          extractedData.sellerName = isfPatternExtraction.seller.split(/\n|,/)[0].trim();
         }
         
-        // If seller still looks like logistics, try to find the actual seller
-        if (!extractedData.sellerInformation || extractedData.sellerInformation.toLowerCase().includes('logistics')) {
-          console.log('🔍 ENHANCED SELLER SEARCH: Looking for non-logistics seller...');
-          
-          // Look for seller patterns that are NOT logistics companies
-          const sellerPatterns = [
-            /SELLER\s*:\s*([^\n\r]+)/i,
-            /VENDOR\s*:\s*([^\n\r]+)/i,
-            /SUPPLIER\s*:\s*([^\n\r]+)/i,
-            /MANUFACTURER\s*:\s*([^\n\r]+)/i,
-            /TRADING\s+COMPANY\s*:\s*([^\n\r]+)/i
-          ];
-          
-          for (const pattern of sellerPatterns) {
-            const match = pdfText.match(pattern);
-            if (match && match[1]) {
-              let seller = match[1].trim();
-              seller = seller.replace(/\s+/g, ' ').trim();
-              
-              // Exclude logistics companies
-              const isLogistics = ['logistics', 'freight', 'forwarding', 'shipping', 'cargo', 'express']
-                .some(term => seller.toLowerCase().includes(term));
-              
-              if (seller.length > 3 && !isLogistics && seller !== extractedData.shipperName) {
-                console.log(`🎯 NON-LOGISTICS SELLER FOUND: ${seller}`);
-                extractedData.sellerName = seller;
-                extractedData.sellerInformation = seller;
-                break;
-              }
-            }
-          }
+        if (isfPatternExtraction.manufacturer) {
+          console.log(`🎯 ISF PATTERN MANUFACTURER FOUND: ${isfPatternExtraction.manufacturer}`);
+          extractedData.manufacturerInformation = isfPatternExtraction.manufacturer;
+          extractedData.manufacturerName = isfPatternExtraction.manufacturer.split(/\n|,/)[0].trim();
+        }
+        
+        if (isfPatternExtraction.consolidator) {
+          console.log(`🎯 ISF PATTERN CONSOLIDATOR FOUND: ${isfPatternExtraction.consolidator}`);
+          extractedData.consolidatorStufferInfo = isfPatternExtraction.consolidator;
+        }
+        
+        if (isfPatternExtraction.buyer) {
+          console.log(`🎯 ISF PATTERN BUYER FOUND: ${isfPatternExtraction.buyer}`);
+          extractedData.buyerInformation = isfPatternExtraction.buyer;
+        }
+        
+        if (isfPatternExtraction.shipToParty) {
+          console.log(`🎯 ISF PATTERN SHIP-TO FOUND: ${isfPatternExtraction.shipToParty}`);
+          extractedData.shipToPartyInformation = isfPatternExtraction.shipToParty;
+        }
+        
+        if (isfPatternExtraction.containerStuffingLocation) {
+          console.log(`🎯 ISF PATTERN STUFFING LOCATION FOUND: ${isfPatternExtraction.containerStuffingLocation}`);
+          extractedData.containerStuffingLocation = isfPatternExtraction.containerStuffingLocation;
         }
       }
 
@@ -1121,6 +1107,92 @@ ${pdfText.substring(0, 8000)}`
       console.error('AI document processing failed:', error);
       throw error;
     }
+  }
+
+  /**
+   * Extract ISF-specific patterns from document text by scanning for field indicators
+   */
+  private extractISFPatterns(text: string): {
+    seller?: string;
+    manufacturer?: string;
+    consolidator?: string;
+    buyer?: string;
+    shipToParty?: string;
+    containerStuffingLocation?: string;
+  } {
+    const result: any = {};
+    
+    // Comprehensive ISF field patterns - scan entire document
+    const patterns = {
+      seller: [
+        // Numbered ISF fields
+        /(?:^|\n)\s*(?:2\.?\s*)?Seller\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:3\.|Buyer|$))/i,
+        /(?:^|\n)\s*(?:2\.?\s*)?Seller[:\s]+([\s\S]*?)(?=\n\s*(?:3\.|Buyer|$))/i,
+        // General seller patterns
+        /Seller\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Vendor\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Supplier\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+      ],
+      
+      manufacturer: [
+        /(?:^|\n)\s*(?:1\.?\s*)?Manufacturer[/\s]*Supplier\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:2\.|Seller|$))/i,
+        /(?:^|\n)\s*(?:1\.?\s*)?Manufacturer[:\s]+([\s\S]*?)(?=\n\s*(?:2\.|Seller|$))/i,
+        /Manufacturer\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Produced\s+by\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+      ],
+      
+      consolidator: [
+        /(?:^|\n)\s*(?:6\.?\s*)?Consolidator[/'s]*\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:7\.|$))/i,
+        /(?:^|\n)\s*(?:6\.?\s*)?Consolidator[:\s]+([\s\S]*?)(?=\n\s*(?:7\.|$))/i,
+        /Container\s+Stuffer[/\s]*Consolidator\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Freight\s+Forwarder\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Consolidator\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+      ],
+      
+      buyer: [
+        /(?:^|\n)\s*(?:3\.?\s*)?Buyer\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:4\.|Ship.*to|$))/i,
+        /(?:^|\n)\s*(?:3\.?\s*)?Buyer[:\s]+([\s\S]*?)(?=\n\s*(?:4\.|Ship.*to|$))/i,
+        /Buyer\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Importer\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+      ],
+      
+      shipToParty: [
+        /(?:^|\n)\s*(?:4\.?\s*)?Ship[-\s]*to\s+Party\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:5\.|Container|$))/i,
+        /(?:^|\n)\s*(?:4\.?\s*)?Ship[-\s]*to[:\s]+([\s\S]*?)(?=\n\s*(?:5\.|Container|$))/i,
+        /Ship\s*to\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Consignee\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+      ],
+      
+      containerStuffingLocation: [
+        /(?:^|\n)\s*(?:5\.?\s*)?Container\s+Stuffing\s+Location[:\s]*([\s\S]*?)(?=\n\s*(?:6\.|Consolidator|$))/i,
+        /Container\s+Stuffing\s+Location\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Stuffing\s+Location\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Place\s+of\s+Stuffing\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+      ]
+    };
+    
+    // Extract each field using patterns
+    for (const [field, fieldPatterns] of Object.entries(patterns)) {
+      for (const pattern of fieldPatterns) {
+        const match = text.match(pattern);
+        if (match && match[1]) {
+          let extracted = match[1].trim();
+          
+          // Clean up the extracted text
+          extracted = extracted.replace(/\s+/g, ' ').trim();
+          extracted = extracted.replace(/\n\s*\n/g, '\n').trim();
+          
+          // Only use if it has meaningful content
+          if (extracted.length > 5 && !extracted.toLowerCase().includes('to be provided') && !extracted.toLowerCase().includes('tbd')) {
+            result[field] = extracted;
+            console.log(`📋 ISF PATTERN MATCHED ${field.toUpperCase()}: ${extracted.substring(0, 100)}...`);
+            break; // Use first valid match
+          }
+        }
+      }
+    }
+    
+    return result;
   }
 
   /**
