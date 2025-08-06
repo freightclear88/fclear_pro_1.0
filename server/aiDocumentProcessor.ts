@@ -264,6 +264,7 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
         
         if (this.hasSignificantData(azureResult)) {
           console.log('Azure extraction successful, using Azure data');
+          console.log(`🔍 AZURE DOCUMENT TYPE CHECK: "${documentType}"`);
           
           // For ISF documents, enhance Azure results with ISF-specific extraction
           const isISFDocument = documentType === 'isf_information_sheet' || documentType === 'isf information sheet' || documentType.toLowerCase().includes('isf');
@@ -272,9 +273,13 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
           
           if (isISFDocument) {
             console.log('🎯 ISF DOCUMENT DETECTED: Enhancing Azure results with ISF-specific extraction...');
+            console.log('🔍 AZURE RESULT BEFORE ENHANCEMENT:', Object.keys(azureResult || {}));
             const enhancedResult = await this.enhanceWithISFExtraction(filePath, azureResult, documentType);
             console.log('🎯 ISF ENHANCEMENT COMPLETE: Returning enhanced results');
+            console.log('🔍 ENHANCED RESULT FIELDS:', Object.keys(enhancedResult || {}));
             return enhancedResult;
+          } else {
+            console.log('🔍 NOT AN ISF DOCUMENT: Returning Azure result without enhancement');
           }
           
           return azureResult;
