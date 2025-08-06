@@ -130,6 +130,7 @@ export class AIDocumentProcessor {
    * Extract structured data from PDF document using Azure + AI
    */
   async extractShipmentData(filePath: string, documentType: string): Promise<ExtractedShipmentData> {
+    console.log(`🚀 EXTRACTION START: Document type "${documentType}" at ${filePath}`);
     try {
       // Try Azure Document Intelligence first (better for structured documents)
       try {
