@@ -400,26 +400,26 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
 CRITICAL INSTRUCTIONS FOR ISF DOCUMENT STRUCTURE:
 - ISF documents have NUMBERED FIELDS (1, 2, 3, 4, 5, 6, etc.)
 - Field 1: Manufacturer/Supplier Name & Address 
-- Field 2: Seller Name & Address (EXTRACT EXACTLY - this is different from consolidator!)
+- Field 2: Seller Name & Address (distinct from consolidator)
 - Field 3: Buyer Name & Address
 - Field 4: Ship to Party Name & Address  
 - Field 5: Container Stuffing Location
 - Field 6: Consolidator's Name & Address (logistics company)
 - Extract the COMPLETE text that appears after each numbered field label
 - For multi-line addresses, capture ALL lines, not just the first one
-- NEVER confuse Seller (field 2) with Consolidator (field 6) - they are different companies!
+- Seller and Consolidator are different companies - extract each from their respective numbered fields
 
 Required JSON structure with these exact field names:
 {
-  "manufacturerInformation": "Complete text from field 1 - Manufacturer/Supplier Name & Address",
-  "sellerInformation": "Complete text from field 2 - Seller Name & Address (NOT the consolidator!)",
-  "buyerInformation": "Complete text from field 3 - Buyer Name & Address", 
-  "shipToPartyInformation": "Complete text from field 4 - Ship to Party Name & Address",
-  "containerStuffingLocation": "Complete address from field 5 - Container Stuffing Location",
-  "consolidatorStufferInfo": "Complete text from field 6 - Consolidator's Name & Address",
+  "manufacturerInformation": "Complete text from field 1",
+  "sellerInformation": "Complete text from field 2", 
+  "buyerInformation": "Complete text from field 3", 
+  "shipToPartyInformation": "Complete text from field 4",
+  "containerStuffingLocation": "Complete address from field 5",
+  "consolidatorStufferInfo": "Complete text from field 6",
   "hblScacCode": "4-letter House SCAC code",
   "mblScacCode": "4-letter Master SCAC code",
-  "countryOfOrigin": "Country from field 9 - Country of Origin"
+  "countryOfOrigin": "Country from field 9"
 }
 
 If a field label is not found or has no data, use null. Extract ONLY the exact text that appears after each numbered field in the ISF document.`
