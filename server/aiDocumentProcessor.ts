@@ -1063,8 +1063,10 @@ ${pdfText.substring(0, 8000)}`
         
         // COMPREHENSIVE ISF PATTERN SCANNING: Scan entire document for ISF-specific patterns
         console.log('🔍 COMPREHENSIVE ISF SCANNING: Analyzing entire document for ISF field patterns...');
+        console.log('📄 DOCUMENT TEXT SAMPLE:', pdfText.substring(0, 500));
         
         const isfPatternExtraction = this.extractISFPatterns(pdfText);
+        console.log('🔍 ISF PATTERN RESULTS:', JSON.stringify(isfPatternExtraction, null, 2));
         
         // Override extracted data with ISF-specific patterns if found
         if (isfPatternExtraction.seller) {
@@ -1173,10 +1175,12 @@ ${pdfText.substring(0, 8000)}`
     
     // Extract each field using patterns
     for (const [field, fieldPatterns] of Object.entries(patterns)) {
+      console.log(`🔍 Searching for ${field} patterns...`);
       for (const pattern of fieldPatterns) {
         const match = text.match(pattern);
         if (match && match[1]) {
           let extracted = match[1].trim();
+          console.log(`✅ Raw match found for ${field}: ${extracted.substring(0, 100)}...`);
           
           // Clean up the extracted text
           extracted = extracted.replace(/\s+/g, ' ').trim();
@@ -1187,7 +1191,11 @@ ${pdfText.substring(0, 8000)}`
             result[field] = extracted;
             console.log(`📋 ISF PATTERN MATCHED ${field.toUpperCase()}: ${extracted.substring(0, 100)}...`);
             break; // Use first valid match
+          } else {
+            console.log(`❌ Rejected ${field} match: too short or placeholder`);
           }
+        } else {
+          console.log(`❌ No match for ${field} pattern: ${pattern.toString().substring(0, 50)}...`);
         }
       }
     }
