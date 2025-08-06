@@ -4856,8 +4856,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Use the same aiDocumentProcessor system as shipment creation
           console.log(`Processing document with aiDocumentProcessor: ${file.originalname} (${documentCategory})`);
+          console.log(`🎯 ISF ROUTE: Calling extractShipmentData with path="${tempDocument.filePath}" and type="${documentCategory}"`);
           
           const extractedData = await aiDocumentProcessor.extractShipmentData(tempDocument.filePath, documentCategory);
+          console.log(`🎯 ISF ROUTE: extractShipmentData returned:`, extractedData ? Object.keys(extractedData) : 'null');
           
           if (extractedData && Object.keys(extractedData).length > 0) {
             console.log(`Successfully extracted ${Object.keys(extractedData).length} fields from ${file.originalname}`);
