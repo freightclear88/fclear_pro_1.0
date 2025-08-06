@@ -74,7 +74,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       
       {/* Sidebar */}
       <div className={cn(
-        "w-64 glass-effect shadow-lg border-r border-white/20 fixed h-full z-30 transition-transform duration-300 ease-in-out",
+        "w-64 glass-effect shadow-lg border-r border-white/20 fixed h-full z-50 transition-transform duration-300 ease-in-out",
         "lg:translate-x-0", // Always visible on large screens
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full" // Hidden/shown on mobile
       )}>
