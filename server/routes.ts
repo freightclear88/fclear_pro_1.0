@@ -5520,6 +5520,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('  container stuffing location:', consolidatedData['container stuffing location']);
       console.log('  portOfLoading:', consolidatedData.portOfLoading);
       console.log('  placeOfReceipt:', consolidatedData.placeOfReceipt);
+      console.log('🔍 ALL EXTRACTED FIELDS WITH "STUFF" OR "LOCATION":');
+      Object.keys(consolidatedData).filter(key => 
+        key.toLowerCase().includes('stuff') || 
+        key.toLowerCase().includes('location') || 
+        key.toLowerCase().includes('place')
+      ).forEach(key => {
+        console.log(`  ${key}: ${consolidatedData[key]}`);
+      });
       console.log('🔍 MANUFACTURER DEBUG:');
       console.log('  manufacturerName:', consolidatedData.manufacturerName);
       console.log('  manufacturerAddress:', consolidatedData.manufacturerAddress);
@@ -5697,13 +5705,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   null,
         
         // Container stuffing location - Key ISF requirement with enhanced field mapping
+        // Priority order: specific ISF field first, then generic variations, avoid using ports as fallback
         containerStuffingLocation: consolidatedData.containerStuffingLocation || 
+                                  consolidatedData['container stuffing location'] ||
                                   consolidatedData['stuffing location'] || 
                                   consolidatedData.stuffingLocation ||
-                                  consolidatedData['container stuffing location'] ||
-                                  consolidatedData.portOfLoading ||
-                                  consolidatedData.placeOfReceipt ||
-                                  null,
+                                  consolidatedData.placeOfStuffing ||
+                                  consolidatedData['place of stuffing'] ||
+                                  consolidatedData.cfsLocation ||
+                                  consolidatedData['cfs location'] ||
+                                  null, // Remove port fallbacks as they're different from stuffing location
         
         // Consolidator information - ISF requirement (Field #8)
         consolidatorStufferInfo: consolidatedData.consolidatorName ||

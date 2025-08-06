@@ -453,25 +453,63 @@ ${pdfText.substring(0, 8000)}`
       // Enhanced Container Stuffing Location extraction for ISF documents
       if ((!extractedData.containerStuffingLocation || extractedData.containerStuffingLocation === 'CFS/CFS') && pdfText && documentType === 'isf_information_sheet') {
         console.log('🔍 PATTERN MATCHING: Searching for Container Stuffing Location in ISF document...');
+        console.log('📄 PDF TEXT SAMPLE (first 2000 chars):', pdfText.substring(0, 2000));
         const stuffingLocationPatterns = [
+          // Primary patterns - exact ISF field names
+          /Container\s*Stuffing\s*Location\s*:\s*([^\n\r]+)/i,
           /CONTAINER\s*STUFFING\s*LOCATION\s*:\s*([^\n\r]+)/i,
+          
+          // Alternative patterns commonly used
           /STUFFING\s*LOCATION\s*:\s*([^\n\r]+)/i,
           /PLACE\s*OF\s*STUFFING\s*:\s*([^\n\r]+)/i,
           /CFS\s*LOCATION\s*:\s*([^\n\r]+)/i,
           /WHERE\s*STUFFED\s*:\s*([^\n\r]+)/i,
           /STUFFED\s*AT\s*:\s*([^\n\r]+)/i,
-          /CONSOLIDATION\s*LOCATION\s*:\s*([^\n\r]+)/i
+          /CONSOLIDATION\s*LOCATION\s*:\s*([^\n\r]+)/i,
+          /Container\s*Stuffer\s*Location\s*:\s*([^\n\r]+)/i,
+          
+          // Multi-line patterns for more complex formatting
+          /Container\s*Stuffing\s*Location[\s\n\r]*:[\s\n\r]*([^\n\r]+(?:\n[^\n\r:]+)*)/i,
+          /CONTAINER\s*STUFFING\s*LOCATION[\s\n\r]*:[\s\n\r]*([^\n\r]+(?:\n[^\n\r:]+)*)/i
         ];
         
         for (const pattern of stuffingLocationPatterns) {
           const match = pdfText.match(pattern);
           if (match && match[1]) {
-            const location = match[1].trim();
-            // Clean up and validate the location
-            if (location && location.length > 3 && !location.toLowerCase().includes('same as') && location !== 'CFS/CFS') {
+            let location = match[1].trim();
+            // Clean up multi-line content
+            location = location.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+            
+            // Validate the location - ensure it's not just a company name or generic term
+            if (location && location.length > 5 && 
+                !location.toLowerCase().includes('same as') && 
+                location !== 'CFS/CFS' &&
+                !location.toLowerCase().includes('to be advised') &&
+                !location.toLowerCase().includes('tba') &&
+                !location.toLowerCase().includes('n/a')) {
               console.log(`🎯 CONTAINER STUFFING LOCATION FOUND: ${location}`);
               extractedData.containerStuffingLocation = location;
               break;
+            }
+          }
+        }
+        
+        // If still not found, try searching for complete address patterns near stuffing location
+        if (!extractedData.containerStuffingLocation) {
+          const addressPatterns = [
+            /Container\s*Stuffing\s*Location.*?([^,\n]+,\s*[^,\n]+,\s*[^,\n]+)/is,
+            /CONTAINER\s*STUFFING\s*LOCATION.*?([^,\n]+,\s*[^,\n]+,\s*[^,\n]+)/is
+          ];
+          
+          for (const pattern of addressPatterns) {
+            const match = pdfText.match(pattern);
+            if (match && match[1]) {
+              const location = match[1].trim();
+              if (location.length > 10) {
+                console.log(`🎯 CONTAINER STUFFING LOCATION (ADDRESS PATTERN): ${location}`);
+                extractedData.containerStuffingLocation = location;
+                break;
+              }
             }
           }
         }
