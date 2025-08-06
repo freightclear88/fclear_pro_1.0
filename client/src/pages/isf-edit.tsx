@@ -635,6 +635,32 @@ export default function IsfEdit() {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="mblScacCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Master SCAC Code (MBL SCAC)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Master Bill of Lading SCAC code" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="hblScacCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>House SCAC Code (HBL SCAC)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="House Bill of Lading SCAC code" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </CardContent>
             </Card>
