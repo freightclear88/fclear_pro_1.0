@@ -109,6 +109,117 @@ interface ExtractedShipmentData {
 export class AIDocumentProcessor {
   
   /**
+   * Enhance Azure results with ISF-specific extraction for ISF documents
+   */
+  async enhanceWithISFExtraction(filePath: string, azureResult: any, documentType: string): Promise<any> {
+    try {
+      console.log('🎯 STARTING ISF-SPECIFIC ENHANCEMENT...');
+      
+      // Extract PDF text for ISF processing
+      let pdfText = '';
+      try {
+        pdfText = await this.extractPDFText(filePath);
+        console.log(`🔍 Extracted ${pdfText.length} characters for ISF analysis`);
+      } catch (error) {
+        console.log('PDF text extraction failed for ISF enhancement');
+        return azureResult;
+      }
+
+      console.log(`📄 PDF Text Preview (first 500 chars): ${pdfText.substring(0, 500)}`);
+      
+      // Run ISF-specific extraction
+      const isfCompletion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert ISF (Importer Security Filing) document processor. Extract data from ISF Information Sheets by reading the field labels and their corresponding values exactly as written. 
+
+CRITICAL INSTRUCTIONS:
+- Find each field label and extract the COMPLETE text that appears after or below it
+- For multi-line addresses, capture ALL lines, not just the first one
+- Never use placeholder text like "Same as Consignee" - extract the actual data written
+- For SCAC codes, extract the exact 4-letter code shown
+
+Required JSON structure with these exact field names:
+{
+  "containerStuffingLocation": "Complete address from Container Stuffing Location field (all lines)",
+  "shipToParty": "Complete company name and address from Ship To Party field (NOT 'Same as Consignee')",
+  "hblScacCode": "4-letter code from HBL SCAC field",
+  "mblScacCode": "4-letter code from MBL SCAC field", 
+  "seller": "Complete seller company name and address (actual manufacturer/seller, NOT logistics)",
+  "manufacturer": "Complete manufacturer company name and address",
+  "consignee": "Complete consignee company name and address"
+}
+
+If a field label is not found or has no data, use null. Extract ONLY the exact text that appears in the document.`
+          },
+          {
+            role: "user", 
+            content: `Extract ISF field data from this document text. Pay attention to field labels and extract the complete text that appears after each label:\n\n${pdfText}`
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1
+      });
+
+      let isfData: any = {};
+      try {
+        isfData = JSON.parse(isfCompletion.choices[0].message.content || '{}');
+        console.log('🎯 ISF-SPECIFIC EXTRACTION RESULT:', isfData);
+        
+        // Merge ISF-specific data with Azure results (ISF data takes priority)
+        const enhancedResult = { ...azureResult };
+        
+        if (isfData.containerStuffingLocation) {
+          enhancedResult.containerStuffingLocation = isfData.containerStuffingLocation;
+          console.log(`🎯 ISF Override - Container Stuffing Location: ${isfData.containerStuffingLocation}`);
+        }
+        
+        if (isfData.shipToParty && !isfData.shipToParty.toLowerCase().includes('same as consignee')) {
+          enhancedResult.shipToPartyInformation = isfData.shipToParty;
+          console.log(`🎯 ISF Override - Ship To Party: ${isfData.shipToParty}`);
+        }
+        
+        if (isfData.hblScacCode) {
+          enhancedResult.hblScacCode = isfData.hblScacCode;
+          console.log(`🎯 ISF Override - HBL SCAC Code: ${isfData.hblScacCode}`);
+        }
+        
+        if (isfData.mblScacCode) {
+          enhancedResult.mblScacCode = isfData.mblScacCode;
+          console.log(`🎯 ISF Override - MBL SCAC Code: ${isfData.mblScacCode}`);
+        }
+        
+        if (isfData.seller) {
+          enhancedResult.sellerInformation = isfData.seller;
+          enhancedResult.sellerName = isfData.seller.split('\n')[0];
+          enhancedResult.sellerAddress = isfData.seller.split('\n').slice(1).join('\n');
+          console.log(`🎯 ISF Override - Seller: ${isfData.seller}`);
+        }
+        
+        if (isfData.manufacturer) {
+          enhancedResult.manufacturerInformation = isfData.manufacturer;
+          enhancedResult.manufacturerName = isfData.manufacturer.split('\n')[0];
+          enhancedResult.manufacturerAddress = isfData.manufacturer.split('\n').slice(1).join('\n');
+          console.log(`🎯 ISF Override - Manufacturer: ${isfData.manufacturer}`);
+        }
+        
+        console.log('✅ ISF ENHANCEMENT COMPLETE');
+        return enhancedResult;
+        
+      } catch (parseError) {
+        console.error('Failed to parse ISF extraction JSON:', parseError);
+        return azureResult;
+      }
+      
+    } catch (error) {
+      console.error('ISF enhancement failed:', error);
+      return azureResult;
+    }
+  }
+
+  /**
    * Test OpenAI connection
    */
   async testConnection(): Promise<boolean> {
@@ -139,6 +250,15 @@ export class AIDocumentProcessor {
         
         if (this.hasSignificantData(azureResult)) {
           console.log('Azure extraction successful, using Azure data');
+          
+          // For ISF documents, enhance Azure results with ISF-specific extraction
+          const isISFDocument = documentType === 'isf_information_sheet' || documentType === 'isf information sheet' || documentType.toLowerCase().includes('isf');
+          if (isISFDocument) {
+            console.log('🎯 ISF DOCUMENT DETECTED: Enhancing Azure results with ISF-specific extraction...');
+            const enhancedResult = await this.enhanceWithISFExtraction(filePath, azureResult, documentType);
+            return enhancedResult;
+          }
+          
           return azureResult;
         } else {
           console.log('Azure extraction yielded minimal data, trying OpenAI enhancement...');
