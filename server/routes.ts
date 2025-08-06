@@ -5472,9 +5472,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           console.log(`📄 Document ${file.originalname} classified as: ${documentType}`);
+          console.log(`🎯 CALLING extractShipmentData with documentType: "${documentType}"`);
           
           // Extract data using the same AI processor as shipment creation
           const extractedData = await aiDocProcessor.extractShipmentData(file.path, documentType);
+          console.log(`🎯 EXTRACTION COMPLETE for ${file.originalname}`);
           
           allExtractedData.push({
             documentType,
