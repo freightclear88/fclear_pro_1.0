@@ -1115,7 +1115,7 @@ ${pdfText.substring(0, 8000)}`
   /**
    * Extract ISF-specific patterns from document text by scanning for field indicators
    */
-  private extractISFPatterns(text: string): {
+  public extractISFPatterns(text: string): {
     seller?: string;
     manufacturer?: string;
     consolidator?: string;

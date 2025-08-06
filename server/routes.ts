@@ -5487,6 +5487,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`🎯 ISF FILL-FORM: EXTRACTION COMPLETE for ${file.originalname}`);
           console.log(`🎯 ISF FILL-FORM: Extracted data keys:`, extractedData ? Object.keys(extractedData) : 'null');
           
+          // FORCE ISF PATTERN EXTRACTION for every document in ISF form processing
+          console.log('🔍 FORCING ISF PATTERN EXTRACTION for ISF form document...');
+          try {
+            const fs = require('fs');
+            let documentText = '';
+            
+            // Try to read as text first, if it fails, extract text from PDF
+            try {
+              documentText = fs.readFileSync(file.path, 'utf8');
+            } catch {
+              // For PDF files, use PDF extraction
+              if (file.mimetype === 'application/pdf') {
+                const pdfParse = require('pdf-parse');
+                const pdfBuffer = fs.readFileSync(file.path);
+                const pdfData = await pdfParse(pdfBuffer);
+                documentText = pdfData.text;
+              }
+            }
+            
+            if (documentText && documentText.length > 50) {
+              console.log('📄 DOCUMENT TEXT SAMPLE for ISF pattern extraction:', documentText.substring(0, 500));
+              
+              // Use the aiDocumentProcessor's extractISFPatterns method directly
+              const isfPatterns = aiDocumentProcessor.extractISFPatterns(documentText);
+              console.log('🎯 FORCED ISF PATTERNS RESULT:', JSON.stringify(isfPatterns, null, 2));
+              
+              // Override extracted data with ISF patterns if found
+              if (isfPatterns.seller) {
+                console.log(`🎯 OVERRIDING SELLER with ISF pattern: ${isfPatterns.seller}`);
+                extractedData.sellerInformation = isfPatterns.seller;
+                extractedData.sellerName = isfPatterns.seller.split(/\n|,/)[0].trim();
+              }
+              if (isfPatterns.manufacturer) {
+                console.log(`🎯 OVERRIDING MANUFACTURER with ISF pattern: ${isfPatterns.manufacturer}`);
+                extractedData.manufacturerInformation = isfPatterns.manufacturer;
+                extractedData.manufacturerName = isfPatterns.manufacturer.split(/\n|,/)[0].trim();
+              }
+              if (isfPatterns.consolidator) {
+                console.log(`🎯 OVERRIDING CONSOLIDATOR with ISF pattern: ${isfPatterns.consolidator}`);
+                extractedData.consolidatorStufferInfo = isfPatterns.consolidator;
+              }
+              if (isfPatterns.buyer) {
+                console.log(`🎯 OVERRIDING BUYER with ISF pattern: ${isfPatterns.buyer}`);
+                extractedData.buyerInformation = isfPatterns.buyer;
+              }
+              if (isfPatterns.shipToParty) {
+                console.log(`🎯 OVERRIDING SHIP-TO with ISF pattern: ${isfPatterns.shipToParty}`);
+                extractedData.shipToPartyInformation = isfPatterns.shipToParty;
+              }
+              if (isfPatterns.containerStuffingLocation) {
+                console.log(`🎯 OVERRIDING STUFFING LOCATION with ISF pattern: ${isfPatterns.containerStuffingLocation}`);
+                extractedData.containerStuffingLocation = isfPatterns.containerStuffingLocation;
+              }
+            } else {
+              console.log('❌ Could not extract text from document for ISF pattern matching');
+            }
+          } catch (patternError) {
+            console.error('Error in forced ISF pattern extraction:', patternError);
+          }
+          
           if (extractedData && Object.keys(extractedData).length > 0) {
             allExtractedData.push({
               documentType,
