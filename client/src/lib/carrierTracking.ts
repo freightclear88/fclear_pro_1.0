@@ -55,7 +55,7 @@ export const OCEAN_CARRIERS: CarrierInfo[] = [
   {
     name: "Ocean Network Express (ONE)",
     scacCode: "ONEY",
-    trackingUrl: "https://ecomm.one-line.com/one-ecom/manage-shipment/track-trace",
+    trackingUrl: "https://ecomm.one-line.com/one-ecom",
     blPattern: /^(ONEY|ONE)\w{7,15}$/,
     containerPrefixes: ["ONEU", "NYKU", "TTNU"]
   },
@@ -242,7 +242,7 @@ export function generateTrackingUrl(blNumber: string): string | null {
     case 'EGLV':
       return `https://www.evergreen-line.com/emodal/stTrace/stTrace.do?param1=${cleanBL}`;
     case 'ONEY':
-      return `https://ecomm.one-line.com/one-ecom/manage-shipment/track-trace/${cleanBL}`;
+      return `https://ecomm.one-line.com/one-ecom`;
     case 'YMLU':
       return `https://www.yangming.com/e-service/Track_Trace/track_trace_cargo_tracking.aspx?BLNo=${cleanBL}`;
     case 'HLCU':
@@ -283,7 +283,7 @@ export function generateContainerTrackingUrl(containerNumber: string): string | 
     case 'EGLV':
       return `https://www.evergreen-line.com/emodal/stTrace/stTrace.do?param1=${cleanContainer}`;
     case 'ONEY':
-      return `https://ecomm.one-line.com/one-ecom/manage-shipment/track-trace/${cleanContainer}`;
+      return `https://ecomm.one-line.com/one-ecom`;
     case 'YMLU':
       return `https://www.yangming.com/e-service/Track_Trace/track_trace_cargo_tracking.aspx?BLNo=${cleanContainer}`;
     case 'HLCU':
