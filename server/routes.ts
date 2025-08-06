@@ -4807,14 +4807,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Multi-document ISF scan route using organized folder structure  
   app.post('/api/isf/scan-documents', requireSubscription, isfUpload.array('isfDocuments', 10), async (req: any, res) => {
+    console.log('🎯 ISF SCAN-DOCUMENTS ROUTE HIT: Starting ISF document processing...');
     try {
       const files = req.files as Express.Multer.File[];
+      console.log(`🎯 ISF ROUTE: Received ${files?.length || 0} files`);
       if (!files || files.length === 0) {
+        console.log('🎯 ISF ROUTE: No files uploaded, returning error');
         return res.status(400).json({ error: "No documents uploaded" });
       }
 
       const userId = getUserId(req);
-      console.log(`Processing ${files.length} ISF documents using shipment creation system`);
+      console.log(`🎯 ISF ROUTE: Processing ${files.length} ISF documents for user ${userId} using shipment creation system`);
       
       const allExtractedData: any[] = [];
       const uploadedDocuments: any[] = [];
