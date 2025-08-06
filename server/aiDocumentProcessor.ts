@@ -455,26 +455,22 @@ ${pdfText.substring(0, 8000)}`
         console.log('🔍 PATTERN MATCHING: Searching for Container Stuffing Location in ISF document...');
         console.log('📄 PDF TEXT SAMPLE (first 2000 chars):', pdfText.substring(0, 2000));
         const stuffingLocationPatterns = [
-          // Multi-line patterns to capture company name + address (like POSCO FUTURE M)
-          /Container\s*Stuffing\s*Location\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
-          /CONTAINER\s*STUFFING\s*LOCATION\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
+          // Primary exact field patterns - capture until next field or double line break
+          /Container\s*Stuffing\s*Location\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
+          /CONTAINER\s*STUFFING\s*LOCATION\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
           
-          // Single line patterns - exact ISF field names
+          // Alternative patterns - capture until next field
+          /STUFFING\s*LOCATION\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
+          /PLACE\s*OF\s*STUFFING\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
+          /CFS\s*LOCATION\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
+          /WHERE\s*STUFFED\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
+          /STUFFED\s*AT\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
+          /CONSOLIDATION\s*LOCATION\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
+          /Container\s*Stuffer\s*Location\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
+          
+          // Fallback patterns for simpler cases
           /Container\s*Stuffing\s*Location\s*:\s*([^\n\r]+)/i,
-          /CONTAINER\s*STUFFING\s*LOCATION\s*:\s*([^\n\r]+)/i,
-          
-          // Alternative patterns commonly used
-          /STUFFING\s*LOCATION\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
-          /PLACE\s*OF\s*STUFFING\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
-          /CFS\s*LOCATION\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
-          /WHERE\s*STUFFED\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
-          /STUFFED\s*AT\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
-          /CONSOLIDATION\s*LOCATION\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
-          /Container\s*Stuffer\s*Location\s*:\s*([^\n\r]+(?:\s*\n\s*[^\n\r:]+)*)/i,
-          
-          // Patterns specifically for POSCO format (company name followed by address lines)
-          /Container\s*Stuffing\s*Location\s*:[\s\n\r]*([A-Z][^\n\r]*(?:Co\.|Ltd|INC|CORP)[\s\n\r]+[^\n\r]+[\s\n\r]+[^\n\r]+)/i,
-          /CONTAINER\s*STUFFING\s*LOCATION\s*:[\s\n\r]*([A-Z][^\n\r]*(?:Co\.|Ltd|INC|CORP)[\s\n\r]+[^\n\r]+[\s\n\r]+[^\n\r]+)/i
+          /CONTAINER\s*STUFFING\s*LOCATION\s*:\s*([^\n\r]+)/i
         ];
         
         for (const pattern of stuffingLocationPatterns) {
@@ -498,6 +494,45 @@ ${pdfText.substring(0, 8000)}`
             } else {
               // Single line - just clean up whitespace
               location = location.replace(/\s+/g, ' ').trim();
+            }
+            
+            // Clean up multiple companies/addresses - look for primary stuffing location
+            // If multiple companies are listed, try to identify the primary one
+            if (location.includes('\n') && location.split('\n').length > 3) {
+              const lines = location.split('\n');
+              let bestMatch = '';
+              let bestScore = 0;
+              
+              // Look for lines that contain company identifiers
+              for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                let score = 0;
+                
+                // Increase score for company identifiers
+                if (/(Co\.|Ltd|Inc|Corp|Company)/i.test(line)) score += 3;
+                // Increase score for manufacturing-related companies (stuffing locations are often manufacturers)
+                if (/(STEEL|METAL|MFG|MANUFACTURING|FACTORY|MILL|PLANT|WORKS|INDUSTRIAL)/i.test(line)) score += 2;
+                // Decrease score for logistics companies (they're usually consolidators, not actual stuffing locations)
+                if (/(LOGISTICS|FORWARDING|FREIGHT|SHIPPING|CARGO|EXPRESS|TRANSPORT)/i.test(line)) score -= 2;
+                
+                if (score > bestScore) {
+                  bestScore = score;
+                  bestMatch = line;
+                  
+                  // If we found a good company, include the next 2-3 lines as address
+                  const addressLines = [line];
+                  for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
+                    if (!/(Co\.|Ltd|Inc|Corp)/i.test(lines[j])) {
+                      addressLines.push(lines[j]);
+                    } else {
+                      break; // Stop if we hit another company
+                    }
+                  }
+                  if (addressLines.length > 1) {
+                    location = addressLines.join('\n');
+                  }
+                }
+              }
             }
             
             console.log(`🔍 CLEANED LOCATION: "${location}"`);
@@ -657,7 +692,7 @@ ${pdfText.substring(0, 8000)}`
               "onBoardDate": "on board date if found",
               "eta": "ETA if found",
               "etd": "ETD if found",
-              "containerStuffingLocation": "CRITICAL: Extract the COMPLETE container stuffing location from ISF form. Look for fields labeled: 'Container Stuffing Location:', 'CONTAINER STUFFING LOCATION:', 'Stuffing Location:', 'Place of Stuffing:', 'CFS Location:'. This should include the FULL COMPANY NAME and COMPLETE ADDRESS with street, city, province/state, postal code, and country. For example: 'POSCO FUTURE M Co.,Ltd\\n110, SINHANG-RO, NAM-GU, POHANG-SI,\\nGYEONGSANGBUK-DO, 37918, REP. OF KOREA'. DO NOT use generic terms like 'CFS/CFS' or port names. Extract the specific manufacturing facility or CFS location.",
+              "containerStuffingLocation": "CRITICAL: Extract ONLY the specific container stuffing location from ISF form. Look for fields labeled: 'Container Stuffing Location:', 'CONTAINER STUFFING LOCATION:', 'Stuffing Location:', 'Place of Stuffing:', 'CFS Location:'. Extract the SINGLE most specific location - typically a company name with complete address including street, city, province/state, postal code, and country. DO NOT concatenate multiple companies or addresses. DO NOT use generic terms like 'CFS/CFS' or port names. Extract only the primary stuffing facility location.",
               "containerStuffing": "any container stuffing related information if found",
               "stuffingLocation": "stuffing location if found",
               "consolidatorName": "ISF CRITICAL: Consolidator/Container Stuffer company name - look for labels: 'Consolidator Name', 'Container Stuffer', 'CFS Operator', 'Consolidator Information', 'Consolidator/Stuffer'. This is DIFFERENT from shipper - extract the company that consolidated/stuffed the container",
