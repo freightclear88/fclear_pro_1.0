@@ -176,6 +176,60 @@ export class AIDocumentProcessor {
 
       console.log(`Sending ${pdfText.length} characters to AI for analysis`);
 
+      // Enhanced ISF-specific extraction for ISF Information Sheets
+      if (documentType === 'isf_information_sheet') {
+        console.log('🎯 SPECIALIZED ISF EXTRACTION: Processing ISF Information Sheet with targeted field extraction');
+        
+        const isfCompletion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: `You are an expert ISF (Importer Security Filing) document processor. Extract data from ISF Information Sheets by reading the field labels and their corresponding values exactly as written. 
+
+CRITICAL: This is an ISF Information Sheet with specific mandatory fields. Read each field label and extract the EXACT text that appears after or below it.
+
+Look for these EXACT ISF field labels and extract the complete text that follows:
+
+1. CONTAINER STUFFING LOCATION: Extract the complete address (usually 3+ lines) that appears below this label
+2. SHIP TO PARTY: Extract the complete company name and address that appears below this label (NOT "Same as Consignee")  
+3. HBL SCAC CODE: Extract the 4-letter code that appears after this label
+4. MBL SCAC CODE: Extract the 4-letter code that appears after this label
+5. SELLER: Extract the actual seller/manufacturer company name and address (NOT logistics companies)
+6. MANUFACTURER: Extract the manufacturer company name and address
+7. CONSIGNEE: Extract the consignee company name and address
+
+Return ONLY valid JSON with the exact text found:`
+            },
+            {
+              role: "user", 
+              content: `Extract ISF field data from this document text. Pay attention to field labels and extract the complete text that appears after each label:\n\n${pdfText}`
+            }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.1
+        });
+
+        let isfData: any = {};
+        try {
+          isfData = JSON.parse(isfCompletion.choices[0].message.content || '{}');
+          console.log('🎯 ISF-SPECIFIC EXTRACTION RESULT:', isfData);
+          
+          // Process ISF-specific data and merge with main extraction
+          if (isfData) {
+            console.log('🔧 Processing ISF-specific field data...');
+            
+            // Store ISF data for later merging
+            (global as any).isfSpecificData = isfData;
+          }
+        } catch (error) {
+          console.error('Failed to parse ISF extraction JSON:', error);
+        }
+
+        // Use standard extraction as fallback
+        console.log('🔄 Running standard extraction as backup...');
+      }
+
       // Use OpenAI to extract comprehensive shipping data
       const completion = await openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -677,6 +731,51 @@ ${pdfText.substring(0, 8000)}`
             break;
           }
         }
+      }
+
+      // Merge ISF-specific extraction data if available
+      if (documentType === 'isf_information_sheet' && (global as any).isfSpecificData) {
+        const isfData = (global as any).isfSpecificData;
+        console.log('🔗 MERGING ISF-SPECIFIC DATA with standard extraction...');
+        
+        // Override with ISF-specific data where available
+        if (isfData.containerStuffingLocation) {
+          extractedData.containerStuffingLocation = isfData.containerStuffingLocation;
+          console.log(`🎯 ISF Override - Container Stuffing Location: ${isfData.containerStuffingLocation}`);
+        }
+        
+        if (isfData.shipToParty && isfData.shipToParty.toLowerCase() !== 'same as consignee') {
+          extractedData.shipToPartyInformation = isfData.shipToParty;
+          console.log(`🎯 ISF Override - Ship To Party: ${isfData.shipToParty}`);
+        }
+        
+        if (isfData.hblScacCode) {
+          extractedData.hblScacCode = isfData.hblScacCode;
+          console.log(`🎯 ISF Override - HBL SCAC Code: ${isfData.hblScacCode}`);
+        }
+        
+        if (isfData.mblScacCode) {
+          extractedData.mblScacCode = isfData.mblScacCode;
+          console.log(`🎯 ISF Override - MBL SCAC Code: ${isfData.mblScacCode}`);
+        }
+        
+        if (isfData.seller) {
+          extractedData.sellerInformation = isfData.seller;
+          console.log(`🎯 ISF Override - Seller: ${isfData.seller}`);
+        }
+        
+        if (isfData.manufacturer) {
+          extractedData.manufacturerInformation = isfData.manufacturer;
+          console.log(`🎯 ISF Override - Manufacturer: ${isfData.manufacturer}`);
+        }
+        
+        if (isfData.consignee) {
+          extractedData.consigneeInformation = isfData.consignee;
+          console.log(`🎯 ISF Override - Consignee: ${isfData.consignee}`);
+        }
+        
+        // Clear the global ISF data after use
+        delete (global as any).isfSpecificData;
       }
       
       // Enhanced post-processing for manufacturer and seller extraction
