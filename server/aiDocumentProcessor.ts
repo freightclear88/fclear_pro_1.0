@@ -360,6 +360,11 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
         
         console.log(`Pattern checks - Container Stuffing: ${hasContainerStuffing}, Ship To Party: ${hasShipToParty}, HBL SCAC: ${hasHblScac}, MBL SCAC: ${hasMblScac}`);
         
+        // Show a sample of the PDF text to understand what OpenAI is working with
+        console.log('🔍 PDF TEXT SAMPLE FOR ISF EXTRACTION (first 3000 chars):');
+        console.log(pdfText.substring(0, 3000));
+        console.log('🔍 END PDF TEXT SAMPLE');
+        
         const isfCompletion = await openai.chat.completions.create({
           model: "gpt-4o",
           messages: [
@@ -399,6 +404,14 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
         try {
           isfData = JSON.parse(isfCompletion.choices[0].message.content || '{}');
           console.log('🎯 ISF-SPECIFIC EXTRACTION RESULT:', isfData);
+          console.log('🔍 ISF EXTRACTION DETAILS:');
+          console.log(`  containerStuffingLocation: "${isfData.containerStuffingLocation}"`);
+          console.log(`  shipToParty: "${isfData.shipToParty}"`);
+          console.log(`  hblScacCode: "${isfData.hblScacCode}"`);
+          console.log(`  mblScacCode: "${isfData.mblScacCode}"`);
+          console.log(`  seller: "${isfData.seller}"`);
+          console.log(`  manufacturer: "${isfData.manufacturer}"`);
+          console.log(`  consignee: "${isfData.consignee}"`);
           
           // Process ISF-specific data and merge with main extraction
           if (isfData) {
