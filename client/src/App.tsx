@@ -50,9 +50,9 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen gradient-secondary">
+    <div className="flex min-h-screen gradient-secondary max-w-full overflow-x-hidden">
       {/* Flowing Wave Background */}
-      <div className="wave-background"></div>
+      <div className="wave-background max-w-full"></div>
       
       {/* Mobile Menu Button */}
       <div className="lg:hidden fixed top-4 left-4 z-50">
@@ -196,9 +196,11 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-64 ml-0">
-        <div className="min-h-screen p-4 lg:p-8 pt-16 lg:pt-8">
-          {children}
+      <div className="flex-1 lg:ml-64 ml-0 max-w-full overflow-x-hidden">
+        <div className="min-h-screen p-4 lg:p-8 pt-16 lg:pt-8 max-w-full overflow-x-hidden">
+          <div className="max-w-full overflow-x-hidden w-full">
+            {children}
+          </div>
         </div>
       </div>
     </div>
