@@ -177,9 +177,10 @@ export class AIDocumentProcessor {
       console.log(`Sending ${pdfText.length} characters to AI for analysis`);
 
       // Enhanced ISF-specific extraction for ISF Information Sheets
-      console.log(`🔍 DOCUMENT TYPE CHECK: "${documentType}" - ISF extraction triggered: ${documentType === 'isf_information_sheet'}`);
+      const isISFDocument = documentType === 'isf_information_sheet' || documentType === 'isf information sheet' || documentType.toLowerCase().includes('isf');
+      console.log(`🔍 DOCUMENT TYPE CHECK: "${documentType}" - ISF extraction triggered: ${isISFDocument}`);
       
-      if (documentType === 'isf_information_sheet') {
+      if (isISFDocument) {
         console.log('🎯 SPECIALIZED ISF EXTRACTION: Processing ISF Information Sheet with targeted field extraction');
         console.log(`📄 PDF Text Preview (first 500 chars): ${pdfText.substring(0, 500)}`);
         
@@ -648,7 +649,7 @@ ${pdfText.substring(0, 8000)}`
       }
 
       // Enhanced Ship-To Party extraction for ISF documents
-      if ((!extractedData.shipToPartyInformation || extractedData.shipToPartyInformation?.toLowerCase().includes('same as consignee')) && pdfText && documentType === 'isf_information_sheet') {
+      if ((!extractedData.shipToPartyInformation || extractedData.shipToPartyInformation?.toLowerCase().includes('same as consignee')) && pdfText && isISFDocument) {
         console.log('🔍 PATTERN MATCHING: Searching for Ship-To Party information in ISF document...');
         
         const shipToPatterns = [
@@ -683,7 +684,7 @@ ${pdfText.substring(0, 8000)}`
       }
 
       // Enhanced SCAC code extraction for ISF documents
-      if ((!extractedData.hblScacCode || !extractedData.mblScacCode) && pdfText && documentType === 'isf_information_sheet') {
+      if ((!extractedData.hblScacCode || !extractedData.mblScacCode) && pdfText && isISFDocument) {
         console.log('🔍 PATTERN MATCHING: Searching for SCAC codes in ISF document...');
         
         // HBL SCAC patterns
@@ -751,7 +752,7 @@ ${pdfText.substring(0, 8000)}`
       }
 
       // Merge ISF-specific extraction data if available
-      if (documentType === 'isf_information_sheet' && (global as any).isfSpecificData) {
+      if (isISFDocument && (global as any).isfSpecificData) {
         const isfData = (global as any).isfSpecificData;
         console.log('🔗 MERGING ISF-SPECIFIC DATA with standard extraction...');
         
@@ -796,7 +797,7 @@ ${pdfText.substring(0, 8000)}`
       }
       
       // Enhanced post-processing for manufacturer and seller extraction
-      if (pdfText && documentType === 'isf_information_sheet') {
+      if (pdfText && isISFDocument) {
         console.log('🔍 POST-PROCESSING: Enhancing manufacturer and seller extraction...');
         
         // Try to extract manufacturer from cargo description if not already found
