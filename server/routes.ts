@@ -5478,19 +5478,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           console.log(`📄 Document ${file.originalname} classified as: ${documentType}`);
-          console.log(`🎯 CALLING extractShipmentData with documentType: "${documentType}"`);
+          console.log(`🎯 ISF FILL-FORM: CALLING extractShipmentData with documentType: "${documentType}"`);
           
           // Extract data using the same AI processor as shipment creation
+          // This will automatically trigger ISF enhancement for ISF documents
           const extractedData = await aiDocProcessor.extractShipmentData(file.path, documentType);
-          console.log(`🎯 EXTRACTION COMPLETE for ${file.originalname}`);
+          console.log(`🎯 ISF FILL-FORM: EXTRACTION COMPLETE for ${file.originalname}`);
+          console.log(`🎯 ISF FILL-FORM: Extracted data keys:`, extractedData ? Object.keys(extractedData) : 'null');
           
-          allExtractedData.push({
-            documentType,
-            fileName: file.originalname,
-            data: extractedData
-          });
-          
-          console.log(`Extracted ${Object.keys(extractedData || {}).length} fields from ${file.originalname}`);
+          if (extractedData && Object.keys(extractedData).length > 0) {
+            allExtractedData.push({
+              documentType,
+              fileName: file.originalname,
+              data: extractedData
+            });
+            
+            console.log(`✅ ISF FILL-FORM: Successfully extracted ${Object.keys(extractedData).length} fields from ${file.originalname}`);
+          } else {
+            console.log(`⚠️ ISF FILL-FORM: No meaningful data extracted from ${file.originalname}`);
+          }
           
         } catch (error) {
           console.error(`Error processing ISF document ${file.originalname}:`, error);
