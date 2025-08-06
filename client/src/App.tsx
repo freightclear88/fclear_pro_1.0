@@ -98,7 +98,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="mt-6">
+          <SidebarContent className="mt-6 pb-24 overflow-y-auto">
             <div className="space-y-2">
               {navigation.map((item) => {
                 const Icon = item.icon;
@@ -170,7 +170,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
             </div>
           </SidebarContent>
 
-          <SidebarFooter className="absolute bottom-0 w-full p-4 border-t border-white/20 glass-effect">
+          <SidebarFooter className="absolute bottom-0 w-full p-4 border-t border-white/20 glass-effect z-20">
             <div className="flex items-center space-x-3">
               <Avatar className="w-10 h-10">
                 <AvatarImage 
