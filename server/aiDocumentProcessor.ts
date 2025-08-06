@@ -1017,7 +1017,8 @@ ${pdfText.substring(0, 8000)}`
       }
       
       // Enhanced post-processing for manufacturer and seller extraction
-      if (pdfText && isISFDocument) {
+      // ALWAYS run ISF pattern extraction for ISF form submissions
+      if (pdfText) {
         console.log('🔍 POST-PROCESSING: Enhancing manufacturer and seller extraction...');
         
         // Try to extract manufacturer from cargo description if not already found
