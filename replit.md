@@ -26,6 +26,7 @@ Key Features Requested:
 - Updated ISF form field #4 from "Consignee Number" to "Consignee" with multi-line text area to better capture complete consignee information including company name, address, and contact details (August 2025)
 - ISF Filing to Shipment conversion functionality with automatic ocean transport mode assignment - ISF filings always convert to ocean shipments as ISF is specifically required for maritime imports to the USA (August 2025)
 - Enhanced MBL/HBL SCAC code field labeling for improved clarity - MBL SCAC code is labeled as "Master SCAC Code (MBL SCAC)" and HBL SCAC code as "House SCAC Code (HBL SCAC)" throughout the system including ISF forms, document extraction, and database schemas (August 2025)
+- Universal ISF data extraction enhancements with improved manufacturer/seller identification and geographic location extraction - system now universally distinguishes between logistics companies and actual manufacturers/sellers, extracts only geographic locations for container stuffing (not company addresses), and applies intelligent field mapping logic for all future ISF document submissions (August 2025)
 
 ## System Architecture
 The application follows a modern full-stack architecture with clear separation between frontend and backend components, featuring enhanced multi-document processing capabilities for comprehensive shipment creation and comprehensive XML-based shipment data management.
