@@ -5769,18 +5769,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return null;
         })(),
         shipToPartyInformation: (() => {
+          // First priority: Check for extracted ship-to party information that's not placeholder text
           if (consolidatedData.shipToPartyInformation && 
-              consolidatedData.shipToPartyInformation.toLowerCase() !== 'same as consignee') {
+              !/(same\s*as\s*consignee|see\s*above|as\s*above|ditto|to\s*be\s*provided)/i.test(consolidatedData.shipToPartyInformation)) {
+            console.log('🎯 Using extracted shipToPartyInformation:', consolidatedData.shipToPartyInformation);
             return consolidatedData.shipToPartyInformation;
-          } else if (consolidatedData.shipToPartyName && consolidatedData.shipToPartyAddress) {
-            return `${consolidatedData.shipToPartyName}\n${consolidatedData.shipToPartyAddress}`;
-          } else if (consolidatedData.shipToPartyName && 
-                     consolidatedData.shipToPartyName.toLowerCase() !== 'same as consignee') {
+          } 
+          
+          // Second priority: Combine ship-to party name and address if available
+          if (consolidatedData.shipToPartyName && consolidatedData.shipToPartyAddress && 
+              !/(same\s*as\s*consignee|see\s*above|as\s*above|ditto)/i.test(consolidatedData.shipToPartyName)) {
+            const combined = `${consolidatedData.shipToPartyName}\n${consolidatedData.shipToPartyAddress}`;
+            console.log('🎯 Using combined shipToPartyName + Address:', combined);
+            return combined;
+          } 
+          
+          // Third priority: Just ship-to party name if it's not placeholder text
+          if (consolidatedData.shipToPartyName && 
+              !/(same\s*as\s*consignee|see\s*above|as\s*above|ditto|to\s*be\s*provided)/i.test(consolidatedData.shipToPartyName)) {
+            console.log('🎯 Using shipToPartyName only:', consolidatedData.shipToPartyName);
             return consolidatedData.shipToPartyName;
-          } else if (consolidatedData.consigneeName && consolidatedData.consigneeAddress) {
-            // Default to consignee as ship-to party
+          }
+          
+          // Fallback: Use consignee information only if no ship-to party data was found
+          if (consolidatedData.consigneeName && consolidatedData.consigneeAddress) {
+            console.log('🔄 Fallback to consignee as ship-to party');
             return `${consolidatedData.consigneeName}\n${consolidatedData.consigneeAddress}`;
           }
+          
           return null;
         })(),
         

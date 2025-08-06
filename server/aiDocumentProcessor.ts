@@ -225,8 +225,9 @@ export class AIDocumentProcessor {
               "sellerInformation": "CRITICAL for ISF: Complete seller information including name and address of the entity selling the goods. Must be the actual seller/manufacturer, NOT freight forwarders, logistics companies, or consolidators",
               "notifyPartyName": "notify party name if found",
               "notifyPartyAddress": "notify party address if found",
-              "shipToPartyName": "ship-to party name if found",
-              "shipToPartyAddress": "ship-to party address if found",
+              "shipToPartyName": "CRITICAL for ISF: Ship-to party name - look for 'SHIP TO PARTY', 'SHIP TO', 'SHIP-TO PARTY', 'SHIPMENT TO' fields. Extract the EXACT company name written in the document, NOT 'Same as Consignee' or similar generic text",
+              "shipToPartyAddress": "CRITICAL for ISF: Ship-to party complete address - extract the EXACT address written under ship-to party section, NOT 'Same as Consignee'",
+              "shipToPartyInformation": "CRITICAL for ISF: Complete ship-to party information including name and address - look for 'SHIP TO PARTY', 'SHIP TO', 'SHIP-TO PARTY' sections. Extract the ACTUAL data written in the document, never use placeholder text like 'Same as Consignee'",
               "cargoDescription": "detailed cargo/commodity description if found",
               "htsCode": "HTS/HS tariff classification code if found",
               "countryOfOrigin": "country where goods originated/were made if found",
@@ -568,6 +569,41 @@ ${pdfText.substring(0, 8000)}`
               if (location.length > 10) {
                 console.log(`🎯 CONTAINER STUFFING LOCATION (ADDRESS PATTERN): ${location}`);
                 extractedData.containerStuffingLocation = location;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      // Enhanced Ship-To Party extraction for ISF documents
+      if ((!extractedData.shipToPartyInformation || extractedData.shipToPartyInformation?.toLowerCase().includes('same as consignee')) && pdfText && documentType === 'isf_information_sheet') {
+        console.log('🔍 PATTERN MATCHING: Searching for Ship-To Party information in ISF document...');
+        
+        const shipToPatterns = [
+          // Enhanced patterns to capture complete ship-to party information
+          /SHIP\s*TO\s*PARTY\s*:\s*((?:[^\n\r]+(?:\n\r?|\r\n?)?){1,5})(?=\n\s*\d+\.|$|\n\s*[A-Z][A-Za-z\s]*:)/is,
+          /SHIP\s*TO\s*:\s*((?:[^\n\r]+(?:\n\r?|\r\n?)?){1,5})(?=\n\s*\d+\.|$|\n\s*[A-Z][A-Za-z\s]*:)/is,
+          /SHIP-TO\s*PARTY\s*:\s*((?:[^\n\r]+(?:\n\r?|\r\n?)?){1,5})(?=\n\s*\d+\.|$|\n\s*[A-Z][A-Za-z\s]*:)/is,
+          /SHIPMENT\s*TO\s*:\s*((?:[^\n\r]+(?:\n\r?|\r\n?)?){1,5})(?=\n\s*\d+\.|$|\n\s*[A-Z][A-Za-z\s]*:)/is,
+          /DELIVER\s*TO\s*:\s*((?:[^\n\r]+(?:\n\r?|\r\n?)?){1,5})(?=\n\s*\d+\.|$|\n\s*[A-Z][A-Za-z\s]*:)/is
+        ];
+        
+        for (const pattern of shipToPatterns) {
+          const match = pdfText.match(pattern);
+          if (match && match[1]) {
+            let shipToInfo = match[1].trim();
+            
+            // Filter out generic placeholder text
+            if (!/(same\s*as\s*consignee|see\s*above|as\s*above|ditto)/i.test(shipToInfo)) {
+              // Clean up the data but preserve structure
+              const lines = shipToInfo.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0 && !/(^SHIP\s*TO|^DELIVER\s*TO)/i.test(line));
+              
+              if (lines.length > 0) {
+                extractedData.shipToPartyInformation = lines.join('\n');
+                console.log(`🎯 SHIP-TO PARTY INFORMATION FOUND: ${extractedData.shipToPartyInformation}`);
                 break;
               }
             }
