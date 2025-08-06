@@ -253,6 +253,8 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
           
           // For ISF documents, enhance Azure results with ISF-specific extraction
           const isISFDocument = documentType === 'isf_information_sheet' || documentType === 'isf information sheet' || documentType.toLowerCase().includes('isf');
+          console.log(`🔍 ISF CHECK: documentType="${documentType}", isISFDocument=${isISFDocument}`);
+          
           if (isISFDocument) {
             console.log('🎯 ISF DOCUMENT DETECTED: Enhancing Azure results with ISF-specific extraction...');
             const enhancedResult = await this.enhanceWithISFExtraction(filePath, azureResult, documentType);
