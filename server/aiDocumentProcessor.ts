@@ -426,7 +426,15 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
             },
             {
               role: "user", 
-              content: `Extract ISF field data from this document text. Pay attention to field labels and extract the complete text that appears after each label:\n\n${pdfText}`
+              content: `Extract ISF field data from this document text. Focus ONLY on the NUMBERED fields (1., 2., 3., 4., 5., 6., etc.) and ignore any other company information that appears elsewhere in the document:
+
+CRITICAL: Look for these exact patterns:
+- "1.Manufacturer" or "1. Manufacturer" → extract for manufacturerInformation
+- "2.Seller" or "2. Seller" → extract for sellerInformation  
+- "6.Consolidator" or "6. Consolidator" → extract for consolidatorStufferInfo
+
+Document text:
+${pdfText}`
             }
           ],
           response_format: { type: "json_object" },
@@ -1054,27 +1062,55 @@ ${pdfText.substring(0, 8000)}`
           }
         }
         
-        // Try to extract seller information if not already found (often different from shipper in ISF)
-        if (!extractedData.sellerName && !extractedData.sellerInformation) {
-          // Look for seller patterns in the document
-          const sellerPatterns = [
-            /SELLER\s*:\s*([^\n\r]+)/i,
-            /VENDOR\s*:\s*([^\n\r]+)/i,
-            /SOLD BY\s*:\s*([^\n\r]+)/i,
-            /SUPPLIER\s*:\s*([^\n\r]+)/i
+        // CRITICAL ISF FIX: Extract seller from numbered field 2 specifically
+        if ((!extractedData.sellerName && !extractedData.sellerInformation) || extractedData.sellerInformation?.includes('DAEWOO LOGISTICS')) {
+          console.log('🔍 ISF SELLER EXTRACTION: Looking for numbered field 2 seller information...');
+          
+          // Look for ISF numbered field patterns specifically
+          const isfSellerPatterns = [
+            /2\.\s*Seller\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*3\.|$)/i,
+            /2\s*Seller\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*3\.|$)/i,
+            /2\.\s*Seller[:\s]*([\s\S]*?)(?=\n\s*3\.|$)/i,
+            /2\s*Seller[:\s]*([\s\S]*?)(?=\n\s*3\.|$)/i
           ];
           
-          for (const pattern of sellerPatterns) {
+          for (const pattern of isfSellerPatterns) {
             const match = pdfText.match(pattern);
             if (match && match[1]) {
               let seller = match[1].trim();
-              seller = seller.replace(/\s+/g, ' ').trim();
+              // Clean up the seller information
+              seller = seller.replace(/\n+/g, '\n').replace(/\s+/g, ' ').trim();
               
-              if (seller.length > 3 && seller !== extractedData.shipperName) {
-                console.log(`🎯 SELLER EXTRACTED: ${seller}`);
-                extractedData.sellerName = seller;
+              if (seller.length > 10 && !seller.toLowerCase().includes('to be provided')) {
+                console.log(`🎯 ISF FIELD 2 SELLER EXTRACTED: ${seller}`);
+                extractedData.sellerName = seller.split(/\n|,/)[0].trim(); // First line/part is usually the company name
                 extractedData.sellerInformation = seller;
                 break;
+              }
+            }
+          }
+          
+          // Fallback to general patterns if numbered field not found
+          if (!extractedData.sellerInformation) {
+            const sellerPatterns = [
+              /SELLER\s*:\s*([^\n\r]+)/i,
+              /VENDOR\s*:\s*([^\n\r]+)/i,
+              /SOLD BY\s*:\s*([^\n\r]+)/i,
+              /SUPPLIER\s*:\s*([^\n\r]+)/i
+            ];
+            
+            for (const pattern of sellerPatterns) {
+              const match = pdfText.match(pattern);
+              if (match && match[1]) {
+                let seller = match[1].trim();
+                seller = seller.replace(/\s+/g, ' ').trim();
+                
+                if (seller.length > 3 && seller !== extractedData.shipperName) {
+                  console.log(`🎯 FALLBACK SELLER EXTRACTED: ${seller}`);
+                  extractedData.sellerName = seller;
+                  extractedData.sellerInformation = seller;
+                  break;
+                }
               }
             }
           }
