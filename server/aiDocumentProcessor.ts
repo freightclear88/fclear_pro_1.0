@@ -397,41 +397,40 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
               role: "system",
               content: `You are an expert ISF (Importer Security Filing) document processor. Extract data from ISF Information Sheets by reading the NUMBERED field labels and their corresponding values exactly as written. 
 
-CRITICAL INSTRUCTIONS FOR ISF DOCUMENT STRUCTURE:
-- ISF documents have NUMBERED FIELDS (1, 2, 3, 4, 5, 6, etc.)
-- Field 1: Manufacturer/Supplier Name & Address 
-- Field 2: Seller Name & Address (distinct from consolidator)
-- Field 3: Buyer Name & Address
-- Field 4: Ship to Party Name & Address  
-- Field 5: Container Stuffing Location
-- Field 6: Consolidator's Name & Address (logistics company)
-- Extract the COMPLETE text that appears after each numbered field label
-- For multi-line addresses, capture ALL lines, not just the first one
-- Seller and Consolidator are different companies - extract each from their respective numbered fields
+CRITICAL INSTRUCTIONS FOR ISF DOCUMENT EXTRACTION:
+- Seller = The actual company that sold the goods (often the manufacturer or trading company)
+- Consolidator = The logistics/freight forwarding company that consolidated the shipment
+- These are DIFFERENT companies - identify them by their business type and context
+- Look for seller information near manufacturer, supplier, or vendor sections
+- Look for consolidator information near freight forwarder, logistics, or consolidation sections
+- Extract complete addresses including all address lines
+- Distinguish between actual manufacturers/sellers vs logistics service providers
 
 Required JSON structure with these exact field names:
 {
-  "manufacturerInformation": "Complete text from field 1",
-  "sellerInformation": "Complete text from field 2", 
-  "buyerInformation": "Complete text from field 3", 
-  "shipToPartyInformation": "Complete text from field 4",
-  "containerStuffingLocation": "Complete address from field 5",
-  "consolidatorStufferInfo": "Complete text from field 6",
+  "manufacturerInformation": "Complete manufacturer/supplier information",
+  "sellerInformation": "Complete seller information (actual seller of goods, NOT logistics company)", 
+  "buyerInformation": "Complete buyer information", 
+  "shipToPartyInformation": "Complete ship-to party information",
+  "containerStuffingLocation": "Complete container stuffing address",
+  "consolidatorStufferInfo": "Complete consolidator/freight forwarder information",
   "hblScacCode": "4-letter House SCAC code",
   "mblScacCode": "4-letter Master SCAC code",
-  "countryOfOrigin": "Country from field 9"
+  "countryOfOrigin": "Country of origin"
 }
 
 If a field label is not found or has no data, use null. Extract ONLY the exact text that appears after each numbered field in the ISF document.`
             },
             {
               role: "user", 
-              content: `Extract ISF field data from this document text. Focus ONLY on the NUMBERED fields (1., 2., 3., 4., 5., 6., etc.) and ignore any other company information that appears elsewhere in the document:
+              content: `Extract ISF field data from this document text. Identify companies by their business type:
 
-CRITICAL: Look for these exact patterns:
-- "1.Manufacturer" or "1. Manufacturer" → extract for manufacturerInformation
-- "2.Seller" or "2. Seller" → extract for sellerInformation  
-- "6.Consolidator" or "6. Consolidator" → extract for consolidatorStufferInfo
+CRITICAL: Distinguish between business types:
+- Seller = Manufacturing, trading, or supplier company (actual seller of goods)
+- Consolidator = Logistics, freight forwarding, or shipping company (consolidation service provider)
+
+Look for seller information near: manufacturer, supplier, vendor, trading company sections
+Look for consolidator information near: freight forwarder, logistics, consolidation, shipping agent sections
 
 Document text:
 ${pdfText}`
@@ -1062,55 +1061,53 @@ ${pdfText.substring(0, 8000)}`
           }
         }
         
-        // CRITICAL ISF FIX: Extract seller from numbered field 2 specifically
-        if ((!extractedData.sellerName && !extractedData.sellerInformation) || extractedData.sellerInformation?.includes('DAEWOO LOGISTICS')) {
-          console.log('🔍 ISF SELLER EXTRACTION: Looking for numbered field 2 seller information...');
+        // Enhanced seller validation - ensure we're not picking up logistics companies as sellers
+        if (extractedData.sellerInformation && extractedData.consolidatorStufferInfo) {
+          const seller = extractedData.sellerInformation.toLowerCase();
+          const consolidator = extractedData.consolidatorStufferInfo.toLowerCase();
           
-          // Look for ISF numbered field patterns specifically
-          const isfSellerPatterns = [
-            /2\.\s*Seller\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*3\.|$)/i,
-            /2\s*Seller\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*3\.|$)/i,
-            /2\.\s*Seller[:\s]*([\s\S]*?)(?=\n\s*3\.|$)/i,
-            /2\s*Seller[:\s]*([\s\S]*?)(?=\n\s*3\.|$)/i
+          // Check if seller looks like a logistics company
+          const logisticsTerms = ['logistics', 'freight', 'forwarding', 'shipping', 'cargo', 'express', 'transport'];
+          const sellerIsLogistics = logisticsTerms.some(term => seller.includes(term));
+          
+          if (sellerIsLogistics && !consolidator.includes('logistics')) {
+            console.log('⚠️ SWAPPING SELLER/CONSOLIDATOR: Seller appears to be logistics company');
+            // Swap them
+            const temp = extractedData.sellerInformation;
+            extractedData.sellerInformation = extractedData.consolidatorStufferInfo;
+            extractedData.consolidatorStufferInfo = temp;
+            extractedData.sellerName = extractedData.sellerInformation.split(/\n|,/)[0].trim();
+          }
+        }
+        
+        // If seller still looks like logistics, try to find the actual seller
+        if (!extractedData.sellerInformation || extractedData.sellerInformation.toLowerCase().includes('logistics')) {
+          console.log('🔍 ENHANCED SELLER SEARCH: Looking for non-logistics seller...');
+          
+          // Look for seller patterns that are NOT logistics companies
+          const sellerPatterns = [
+            /SELLER\s*:\s*([^\n\r]+)/i,
+            /VENDOR\s*:\s*([^\n\r]+)/i,
+            /SUPPLIER\s*:\s*([^\n\r]+)/i,
+            /MANUFACTURER\s*:\s*([^\n\r]+)/i,
+            /TRADING\s+COMPANY\s*:\s*([^\n\r]+)/i
           ];
           
-          for (const pattern of isfSellerPatterns) {
+          for (const pattern of sellerPatterns) {
             const match = pdfText.match(pattern);
             if (match && match[1]) {
               let seller = match[1].trim();
-              // Clean up the seller information
-              seller = seller.replace(/\n+/g, '\n').replace(/\s+/g, ' ').trim();
+              seller = seller.replace(/\s+/g, ' ').trim();
               
-              if (seller.length > 10 && !seller.toLowerCase().includes('to be provided')) {
-                console.log(`🎯 ISF FIELD 2 SELLER EXTRACTED: ${seller}`);
-                extractedData.sellerName = seller.split(/\n|,/)[0].trim(); // First line/part is usually the company name
+              // Exclude logistics companies
+              const isLogistics = ['logistics', 'freight', 'forwarding', 'shipping', 'cargo', 'express']
+                .some(term => seller.toLowerCase().includes(term));
+              
+              if (seller.length > 3 && !isLogistics && seller !== extractedData.shipperName) {
+                console.log(`🎯 NON-LOGISTICS SELLER FOUND: ${seller}`);
+                extractedData.sellerName = seller;
                 extractedData.sellerInformation = seller;
                 break;
-              }
-            }
-          }
-          
-          // Fallback to general patterns if numbered field not found
-          if (!extractedData.sellerInformation) {
-            const sellerPatterns = [
-              /SELLER\s*:\s*([^\n\r]+)/i,
-              /VENDOR\s*:\s*([^\n\r]+)/i,
-              /SOLD BY\s*:\s*([^\n\r]+)/i,
-              /SUPPLIER\s*:\s*([^\n\r]+)/i
-            ];
-            
-            for (const pattern of sellerPatterns) {
-              const match = pdfText.match(pattern);
-              if (match && match[1]) {
-                let seller = match[1].trim();
-                seller = seller.replace(/\s+/g, ' ').trim();
-                
-                if (seller.length > 3 && seller !== extractedData.shipperName) {
-                  console.log(`🎯 FALLBACK SELLER EXTRACTED: ${seller}`);
-                  extractedData.sellerName = seller;
-                  extractedData.sellerInformation = seller;
-                  break;
-                }
               }
             }
           }
