@@ -4838,6 +4838,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         console.log(`Document ${file.originalname} identified as category: ${documentCategory}`);
+        console.log(`🎯 ISF ROUTE DEBUG: About to call processDocument with category: "${documentCategory}"`);
 
         // Create temporary document record for processing (won't be saved to DB)
         const tempDocument = {
@@ -4856,7 +4857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Use the same aiDocumentProcessor system as shipment creation
           console.log(`Processing document with aiDocumentProcessor: ${file.originalname} (${documentCategory})`);
           
-          const extractedData = await aiDocumentProcessor.processDocument(tempDocument);
+          const extractedData = await aiDocumentProcessor.extractShipmentData(tempDocument.filePath, documentCategory);
           
           if (extractedData && Object.keys(extractedData).length > 0) {
             console.log(`Successfully extracted ${Object.keys(extractedData).length} fields from ${file.originalname}`);
