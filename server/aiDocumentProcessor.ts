@@ -240,9 +240,9 @@ export class AIDocumentProcessor {
               "etd": "estimated time of departure date if found",
               "onBoardDate": "on board date if found",
               "bookingNumber": "booking reference number if found",
-              "scacCode": "SCAC code if found",
-              "mblScacCode": "Master SCAC code (MBL SCAC) if found - the SCAC code for the Master Bill of Lading",
-              "hblScacCode": "House SCAC code (HBL SCAC) if found - the SCAC code for the House Bill of Lading",
+              "scacCode": "SCAC code if found - look for 'SCAC', 'SCAC CODE', or 4-letter carrier codes",
+              "mblScacCode": "Master SCAC code (MBL SCAC) if found - look for 'MBL SCAC', 'MASTER SCAC', 'M/BL SCAC' - the SCAC code for the Master Bill of Lading",
+              "hblScacCode": "House SCAC code (HBL SCAC) if found - look for 'HBL SCAC', 'HOUSE SCAC', 'H/BL SCAC' - the SCAC code for the House Bill of Lading",
               "amsNumber": "CRITICAL: AMS filing number - look for ANY of these patterns: 'AMS', 'AMS NO', 'AMS NUMBER', 'AMS NO.', 'AMS #', 'AMS REF', 'AMS REFERENCE', 'MANIFEST NUMBER', 'MANIFEST NO', 'MANIFEST #', 'AMS B/L', 'AMS BL', 'AMS FILING', followed by a number or alphanumeric code - extract the EXACT number/code only",
               "amsNo": "AMS number if found with 'AMS NO' label",
               "amsReference": "AMS reference number if found",
@@ -467,18 +467,19 @@ ${pdfText.substring(0, 8000)}`
         console.log('🔍 PATTERN MATCHING: Searching for Container Stuffing Location in ISF document...');
         console.log('📄 PDF TEXT SAMPLE (first 2000 chars):', pdfText.substring(0, 2000));
         const stuffingLocationPatterns = [
-          // Primary exact field patterns - capture until next field or double line break
-          /Container\s*Stuffing\s*Location\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
-          /CONTAINER\s*STUFFING\s*LOCATION\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
+          // Enhanced patterns to capture complete multi-line addresses after ISF field labels
+          // Capture everything until the next ISF field (which typically starts with a number and colon)
+          /Container\s*Stuffing\s*Location\s*:\s*((?:[^\n\r]+(?:\n\r?|\r\n?)?){1,5})(?=\n\s*\d+\.|$|\n\s*[A-Z][A-Za-z\s]*:)/is,
+          /CONTAINER\s*STUFFING\s*LOCATION\s*:\s*((?:[^\n\r]+(?:\n\r?|\r\n?)?){1,5})(?=\n\s*\d+\.|$|\n\s*[A-Z][A-Za-z\s]*:)/is,
           
-          // Alternative patterns - capture until next field
-          /STUFFING\s*LOCATION\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
-          /PLACE\s*OF\s*STUFFING\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
-          /CFS\s*LOCATION\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
-          /WHERE\s*STUFFED\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
-          /STUFFED\s*AT\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
-          /CONSOLIDATION\s*LOCATION\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
-          /Container\s*Stuffer\s*Location\s*:\s*([^:]+?)(?=\n\s*[A-Z][^:]*:|$)/i,
+          // Alternative patterns for different field formats
+          /STUFFING\s*LOCATION\s*:\s*((?:[^\n\r]+(?:\n\r?|\r\n?)?){1,5})(?=\n\s*\d+\.|$|\n\s*[A-Z][A-Za-z\s]*:)/is,
+          /PLACE\s*OF\s*STUFFING\s*:\s*((?:[^\n\r]+(?:\n\r?|\r\n?)?){1,5})(?=\n\s*\d+\.|$|\n\s*[A-Z][A-Za-z\s]*:)/is,
+          /CFS\s*LOCATION\s*:\s*((?:[^\n\r]+(?:\n\r?|\r\n?)?){1,5})(?=\n\s*\d+\.|$|\n\s*[A-Z][A-Za-z\s]*:)/is,
+          /WHERE\s*STUFFED\s*:\s*((?:[^\n\r]+(?:\n\r?|\r\n?)?){1,5})(?=\n\s*\d+\.|$|\n\s*[A-Z][A-Za-z\s]*:)/is,
+          /STUFFED\s*AT\s*:\s*((?:[^\n\r]+(?:\n\r?|\r\n?)?){1,5})(?=\n\s*\d+\.|$|\n\s*[A-Z][A-Za-z\s]*:)/is,
+          /CONSOLIDATION\s*LOCATION\s*:\s*((?:[^\n\r]+(?:\n\r?|\r\n?)?){1,5})(?=\n\s*\d+\.|$|\n\s*[A-Z][A-Za-z\s]*:)/is,
+          /Container\s*Stuffer\s*Location\s*:\s*((?:[^\n\r]+(?:\n\r?|\r\n?)?){1,5})(?=\n\s*\d+\.|$|\n\s*[A-Z][A-Za-z\s]*:)/is,
           
           // Fallback patterns for simpler cases
           /Container\s*Stuffing\s*Location\s*:\s*([^\n\r]+)/i,
@@ -508,94 +509,33 @@ ${pdfText.substring(0, 8000)}`
               location = location.replace(/\s+/g, ' ').trim();
             }
             
-            // Extract only geographic location from stuffing location field
-            // Look for city, country patterns and filter out company names
+            // CRITICAL FIX: For ISF documents, preserve the complete multi-line address
+            // The user needs the full 3-line container stuffing location as shown on the ISF form
             console.log(`🔍 RAW LOCATION BEFORE PROCESSING: "${location}"`);
             
+            // For ISF documents, we should preserve the complete address structure
+            // Clean up whitespace but keep the full multi-line format
             if (location.includes('\n')) {
               const lines = location.split('\n');
-              console.log(`🔍 LINES TO PROCESS:`, lines);
+              console.log(`🔍 PROCESSING ${lines.length} LINES FOR COMPLETE ADDRESS:`, lines);
               
-              // Look for geographic location patterns (city, country)
-              let foundGeoLocation = false;
+              // Clean each line but preserve the structure
+              const cleanedLines = lines
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .filter(line => {
+                  // Remove lines that are just labels or empty content
+                  return !/(^Container\s*Stuffing|^CONTAINER\s*STUFFING|^Stuffing\s*Location|^STUFFING\s*LOCATION|^\s*:?\s*$)/i.test(line);
+                });
               
-              for (const line of lines) {
-                const cleanLine = line.trim();
-                console.log(`🔍 PROCESSING LINE: "${cleanLine}"`);
-                
-                // Skip company lines
-                if (/(Co\.|Ltd|Inc|Corp|Company|LOGISTICS|FORWARDING|FREIGHT|SHIPPING)/i.test(cleanLine)) {
-                  console.log(`❌ SKIPPING COMPANY LINE: "${cleanLine}"`);
-                  continue;
-                }
-                
-                // Look for geographic patterns - enhanced to capture complete addresses
-                const geoPatterns = [
-                  // Complete address patterns with multiple components
-                  /^([A-Z][A-Za-z\s\-,\.]+(?:CITY|DISTRICT|PROVINCE|STATE|COUNTY)),?\s*([A-Z][A-Za-z\s\-\.]+(?:CHINA|KOREA|SOUTH KOREA|REP\. OF KOREA|JAPAN|TAIWAN|SINGAPORE|MALAYSIA|THAILAND|VIETNAM|INDONESIA))$/i,
-                  
-                  // City-State-Country patterns common in Asian addresses
-                  /^([A-Z][A-Za-z\s\-]+(?:SI|GU|DO|CITY|DISTRICT|PROVINCE)),?\s*([A-Z][A-Za-z\s\-]+(?:DO|PROVINCE)),?\s*([A-Z][A-Za-z\s\-\.]*(?:KOREA|CHINA|JAPAN))$/i,
-                  
-                  // Major port cities with country
-                  /(BUSAN|QINGDAO|SHANGHAI|SHENZHEN|NINGBO|TIANJIN|DALIAN|XIAMEN|GUANGZHOU|YANTIAN|SEOUL|INCHEON|POHANG),?\s*([A-Z][A-Za-z\s\-,]*)/i,
-                  
-                  // General city, country pattern
-                  /^([A-Z][A-Za-z\s\-]{3,}),?\s*(CHINA|KOREA|SOUTH KOREA|REP\. OF KOREA|JAPAN|TAIWAN|SINGAPORE|MALAYSIA|THAILAND|VIETNAM|INDONESIA)$/i,
-                  
-                  // Just the city if it's a known port/major city
-                  /^(BUSAN|QINGDAO|SHANGHAI|SHENZHEN|NINGBO|TIANJIN|DALIAN|XIAMEN|GUANGZHOU|YANTIAN|SEOUL|INCHEON|POHANG[\s\-]*[A-Z]*[I]*[\s\-]*[A-Z]*[A-Z]*)$/i
-                ];
-                
-                for (const pattern of geoPatterns) {
-                  const match = cleanLine.match(pattern);
-                  if (match) {
-                    // Take the full matched line for complete geographic information
-                    location = match[0].trim();
-                    console.log(`🌍 GEOGRAPHIC LOCATION EXTRACTED: "${location}"`);
-                    foundGeoLocation = true;
-                    break;
-                  }
-                }
-                
-                if (foundGeoLocation) {
-                  break;
-                }
-              }
-              
-              // If no geographic pattern found, try to find the most geographic-looking line
-              if (!foundGeoLocation) {
-                console.log(`🔍 NO PATTERN MATCH - LOOKING FOR GEOGRAPHIC CLUES...`);
-                for (const line of lines) {
-                  const cleanLine = line.trim();
-                  // Skip obvious company lines
-                  if (/(Co\.|Ltd|Inc|Corp|Company|LOGISTICS|FORWARDING|FREIGHT|SHIPPING)/i.test(cleanLine)) {
-                    continue;
-                  }
-                  // Look for lines with geographic indicators
-                  if (/(CITY|DISTRICT|PROVINCE|STATE|COUNTY|SI|GU|DO|KOREA|CHINA|JAPAN)/i.test(cleanLine) && cleanLine.length > 5) {
-                    location = cleanLine;
-                    console.log(`🌍 GEOGRAPHIC LINE SELECTED: "${location}"`);
-                    break;
-                  }
-                }
+              if (cleanedLines.length > 0) {
+                location = cleanedLines.join('\n');
+                console.log(`🎯 COMPLETE CONTAINER STUFFING LOCATION (${cleanedLines.length} lines):`, location);
               }
             } else {
-              // Single line - try to extract geographic part
-              const geoPatterns = [
-                /([A-Z][A-Za-z\s\-,]+(?:CITY|DISTRICT|PROVINCE|STATE|COUNTY|SI|GU|DO)),?\s*([A-Z][A-Za-z\s\-\.]*(?:KOREA|CHINA|JAPAN))$/i, // Complete address
-                /(BUSAN|QINGDAO|SHANGHAI|SHENZHEN|NINGBO|TIANJIN|DALIAN|XIAMEN|GUANGZHOU|YANTIAN|SEOUL|INCHEON|POHANG[\s\-]*[A-Z]*[I]*),?\s*([A-Z][A-Za-z\s\-]*)/i, // Major ports
-                /([A-Z][A-Za-z\s\-]+,\s*[A-Z][A-Za-z\s\-]+)$/i // City, Country at end
-              ];
-              
-              for (const pattern of geoPatterns) {
-                const match = location.match(pattern);
-                if (match) {
-                  location = match[0].trim();
-                  console.log(`🌍 GEOGRAPHIC LOCATION EXTRACTED FROM SINGLE LINE: "${location}"`);
-                  break;
-                }
-              }
+              // Single line - just clean up whitespace but preserve content
+              location = location.replace(/\s+/g, ' ').trim();
+              console.log(`🎯 SINGLE LINE CONTAINER STUFFING LOCATION: "${location}"`);
             }
             
             console.log(`🔍 CLEANED LOCATION: "${location}"`);
@@ -630,6 +570,53 @@ ${pdfText.substring(0, 8000)}`
                 extractedData.containerStuffingLocation = location;
                 break;
               }
+            }
+          }
+        }
+      }
+
+      // Enhanced SCAC code extraction for ISF documents
+      if ((!extractedData.hblScacCode || !extractedData.mblScacCode) && pdfText && documentType === 'isf_information_sheet') {
+        console.log('🔍 PATTERN MATCHING: Searching for SCAC codes in ISF document...');
+        
+        // HBL SCAC patterns
+        const hblScacPatterns = [
+          /HBL\s*SCAC\s*CODE?\s*:?\s*([A-Z]{4})/i,
+          /H\/BL\s*SCAC\s*:?\s*([A-Z]{4})/i,
+          /HOUSE\s*SCAC\s*:?\s*([A-Z]{4})/i,
+          /HBL\s*SCAC\s*:?\s*([A-Z]{4})/i,
+          /H\s*B\s*L\s*SCAC\s*:?\s*([A-Z]{4})/i
+        ];
+        
+        // MBL SCAC patterns
+        const mblScacPatterns = [
+          /MBL\s*SCAC\s*CODE?\s*:?\s*([A-Z]{4})/i,
+          /M\/BL\s*SCAC\s*:?\s*([A-Z]{4})/i,
+          /MASTER\s*SCAC\s*:?\s*([A-Z]{4})/i,
+          /MBL\s*SCAC\s*:?\s*([A-Z]{4})/i,
+          /M\s*B\s*L\s*SCAC\s*:?\s*([A-Z]{4})/i
+        ];
+        
+        // Extract HBL SCAC
+        if (!extractedData.hblScacCode) {
+          for (const pattern of hblScacPatterns) {
+            const match = pdfText.match(pattern);
+            if (match && match[1]) {
+              extractedData.hblScacCode = match[1].toUpperCase();
+              console.log(`🎯 HBL SCAC CODE FOUND: ${extractedData.hblScacCode}`);
+              break;
+            }
+          }
+        }
+        
+        // Extract MBL SCAC
+        if (!extractedData.mblScacCode) {
+          for (const pattern of mblScacPatterns) {
+            const match = pdfText.match(pattern);
+            if (match && match[1]) {
+              extractedData.mblScacCode = match[1].toUpperCase();
+              console.log(`🎯 MBL SCAC CODE FOUND: ${extractedData.mblScacCode}`);
+              break;
             }
           }
         }
