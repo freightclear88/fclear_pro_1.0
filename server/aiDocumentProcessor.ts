@@ -291,6 +291,23 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
         } else {
           console.log('Azure extraction yielded minimal data, trying OpenAI enhancement...');
           console.log('🔍 AZURE FAILED SIGNIFICANCE TEST - falling back to OpenAI');
+          
+          // For ISF documents, still try to enhance even if Azure extraction failed
+          const isISFDocument = documentType === 'isf_information_sheet' || documentType === 'isf information sheet' || documentType.toLowerCase().includes('isf');
+          console.log(`🔍 ISF CHECK DURING FALLBACK: documentType="${documentType}", isISFDocument=${isISFDocument}`);
+          
+          if (isISFDocument) {
+            console.log('🎯 ISF DOCUMENT DETECTED DURING FALLBACK: Will enhance OpenAI results with ISF-specific extraction...');
+            // Get basic OpenAI extraction first
+            const openaiResult = await this.extractComprehensiveData(await this.extractPDFText(filePath));
+            console.log('🔍 OPENAI RESULT BEFORE ISF ENHANCEMENT:', Object.keys(openaiResult || {}));
+            
+            // Then enhance with ISF-specific logic
+            const enhancedResult = await this.enhanceWithISFExtraction(filePath, openaiResult, documentType);
+            console.log('🎯 ISF ENHANCEMENT COMPLETE FROM FALLBACK: Returning enhanced results');
+            console.log('🔍 ENHANCED RESULT FIELDS FROM FALLBACK:', Object.keys(enhancedResult || {}));
+            return enhancedResult;
+          }
         }
       } catch (azureError: any) {
         console.log('Azure processing failed, falling back to OpenAI:', azureError.message);
@@ -1448,12 +1465,17 @@ ${pdfText.substring(0, 8000)}`
   private hasSignificantData(data: ExtractedShipmentData): boolean {
     const significantFields = [
       'billOfLadingNumber', 'airWaybillNumber', 'vesselAndVoyage', 'containerNumber', 
-      'shipperName', 'consigneeName', 'portOfLoading', 'portOfDischarge'
+      'shipperName', 'consigneeName', 'portOfLoading', 'portOfDischarge',
+      // Add ISF-specific fields that Azure might extract
+      'manufacturerName', 'manufacturerInformation', 'consolidatorName', 'consolidatorStufferInfo',
+      'containerStuffingLocation', 'sellerName', 'sellerInformation'
     ];
     
     const foundFields = significantFields.filter(field => 
       (data as any)[field] && String((data as any)[field]).trim().length > 2
     );
+    
+    console.log(`🔍 SIGNIFICANCE CHECK: Found ${foundFields.length} significant fields:`, foundFields);
     
     return foundFields.length >= 2;
   }
