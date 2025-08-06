@@ -262,7 +262,12 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
         console.log('Using Azure Document Intelligence for document processing...');
         const azureResult = await this.extractWithAzure(filePath);
         
-        if (this.hasSignificantData(azureResult)) {
+        console.log('🔍 AZURE EXTRACTION RESULT:', Object.keys(azureResult || {}));
+        console.log('🔍 AZURE SIGNIFICANT DATA CHECK...');
+        const hasSignificant = this.hasSignificantData(azureResult);
+        console.log(`🔍 AZURE SIGNIFICANT DATA: ${hasSignificant}`);
+        
+        if (hasSignificant) {
           console.log('Azure extraction successful, using Azure data');
           console.log(`🔍 AZURE DOCUMENT TYPE CHECK: "${documentType}"`);
           
@@ -285,6 +290,7 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
           return azureResult;
         } else {
           console.log('Azure extraction yielded minimal data, trying OpenAI enhancement...');
+          console.log('🔍 AZURE FAILED SIGNIFICANCE TEST - falling back to OpenAI');
         }
       } catch (azureError: any) {
         console.log('Azure processing failed, falling back to OpenAI:', azureError.message);
