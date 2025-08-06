@@ -5918,9 +5918,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isfFormData.containerStuffingLocation = isfDoc.data.containerStuffingLocation;
           }
           
-          // For seller information, DON'T override - use the enhanced seller logic from consolidation
-          // The ISF document might have logistics company as seller, but we want the actual manufacturer
-          console.log(`🎯 FINAL ISF OVERRIDE: KEEPING enhanced sellerInformation (not overriding): "${isfFormData.sellerInformation}"`);
+          // Apply seller information directly from ISF document as submitted
+          if (isfDoc.data.sellerInformation) {
+            console.log(`🎯 FINAL ISF OVERRIDE: sellerInformation: "${isfDoc.data.sellerInformation}"`);
+            isfFormData.sellerInformation = isfDoc.data.sellerInformation;
+          }
           
           if (isfDoc.data.manufacturerInformation) {
             console.log(`🎯 FINAL ISF OVERRIDE: manufacturerInformation: "${isfDoc.data.manufacturerInformation}"`);

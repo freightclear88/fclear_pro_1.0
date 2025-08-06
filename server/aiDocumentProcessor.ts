@@ -205,25 +205,19 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
           console.log(`🎯 ISF Override - MBL SCAC Code: ${isfData.mblScacCode}`);
         }
         
-        // For ISF documents, the "seller" field often contains logistics company
-        // We should use the manufacturer as the actual seller
+        // Use the actual seller information from the ISF document as provided
+        if (isfData.seller) {
+          enhancedResult.sellerInformation = isfData.seller;
+          enhancedResult.sellerName = isfData.seller.split('\n')[0];
+          enhancedResult.sellerAddress = isfData.seller.split('\n').slice(1).join('\n');
+          console.log(`🎯 ISF Override - Seller (as provided in ISF): ${isfData.seller}`);
+        }
+        
         if (isfData.manufacturer) {
           enhancedResult.manufacturerInformation = isfData.manufacturer;
           enhancedResult.manufacturerName = isfData.manufacturer.split('\n')[0];
           enhancedResult.manufacturerAddress = isfData.manufacturer.split('\n').slice(1).join('\n');
           console.log(`🎯 ISF Override - Manufacturer: ${isfData.manufacturer}`);
-          
-          // For ISF, use manufacturer as seller (actual goods seller)
-          enhancedResult.sellerInformation = isfData.manufacturer;
-          enhancedResult.sellerName = isfData.manufacturer.split('\n')[0];
-          enhancedResult.sellerAddress = isfData.manufacturer.split('\n').slice(1).join('\n');
-          console.log(`🎯 ISF Override - Using Manufacturer as Seller: ${isfData.manufacturer}`);
-        }
-        
-        // Store the original seller field as consolidator information if different from manufacturer
-        if (isfData.seller && isfData.seller !== isfData.manufacturer) {
-          enhancedResult.consolidatorStufferInfo = isfData.seller;
-          console.log(`🎯 ISF Override - Original Seller as Consolidator: ${isfData.seller}`);
         }
         
         console.log('✅ ISF ENHANCEMENT COMPLETE');
