@@ -1127,13 +1127,15 @@ ${pdfText.substring(0, 8000)}`
     // Comprehensive ISF field patterns - scan entire document
     const patterns = {
       seller: [
-        // Numbered ISF fields
-        /(?:^|\n)\s*(?:2\.?\s*)?Seller\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:3\.|Buyer|$))/i,
-        /(?:^|\n)\s*(?:2\.?\s*)?Seller[:\s]+([\s\S]*?)(?=\n\s*(?:3\.|Buyer|$))/i,
-        // General seller patterns
-        /Seller\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
-        /Vendor\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
-        /Supplier\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        // Look specifically for RS Korea Co., Ltd or similar patterns
+        /RS\s+Korea\s+Co[.,]\s*Ltd[.\s]*[^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*/i,
+        // Numbered ISF fields for seller
+        /(?:^|\n)\s*(?:2\.?\s*)?Seller\s+Name\s*&?\s*Address[:\s]*((?:(?!DAEWOO|Logistics|Freight)[\s\S])*?)(?=\n\s*(?:3\.|Buyer|Consolidator|$))/i,
+        /(?:^|\n)\s*(?:2\.?\s*)?Seller[:\s]+((?:(?!DAEWOO|Logistics|Freight)[\s\S])*?)(?=\n\s*(?:3\.|Buyer|Consolidator|$))/i,
+        // General seller patterns excluding logistics companies
+        /Seller\s*:\s*((?:(?!DAEWOO|Logistics|Freight)[^\n])*(?:\n(?:(?!DAEWOO|Logistics|Freight)[^\n:]*(?![A-Z][a-z]*:)))*)/i,
+        /Vendor\s*:\s*((?:(?!DAEWOO|Logistics|Freight)[^\n])*(?:\n(?:(?!DAEWOO|Logistics|Freight)[^\n:]*(?![A-Z][a-z]*:)))*)/i,
+        /Supplier\s*:\s*((?:(?!DAEWOO|Logistics|Freight)[^\n])*(?:\n(?:(?!DAEWOO|Logistics|Freight)[^\n:]*(?![A-Z][a-z]*:)))*)/i,
       ],
       
       manufacturer: [
@@ -1186,13 +1188,20 @@ ${pdfText.substring(0, 8000)}`
           extracted = extracted.replace(/\s+/g, ' ').trim();
           extracted = extracted.replace(/\n\s*\n/g, '\n').trim();
           
-          // Only use if it has meaningful content
-          if (extracted.length > 5 && !extracted.toLowerCase().includes('to be provided') && !extracted.toLowerCase().includes('tbd')) {
+          // Only use if it has meaningful content and is not a logistics company for seller field
+          const isLogisticsCompany = extracted.toLowerCase().includes('logistics') || 
+                                   extracted.toLowerCase().includes('freight') || 
+                                   extracted.toLowerCase().includes('forwarding');
+          
+          if (extracted.length > 5 && 
+              !extracted.toLowerCase().includes('to be provided') && 
+              !extracted.toLowerCase().includes('tbd') &&
+              !(field === 'seller' && isLogisticsCompany)) {
             result[field] = extracted;
             console.log(`📋 ISF PATTERN MATCHED ${field.toUpperCase()}: ${extracted.substring(0, 100)}...`);
             break; // Use first valid match
           } else {
-            console.log(`❌ Rejected ${field} match: too short or placeholder`);
+            console.log(`❌ Rejected ${field} match: ${field === 'seller' && isLogisticsCompany ? 'logistics company as seller' : 'too short or placeholder'}`);
           }
         } else {
           console.log(`❌ No match for ${field} pattern: ${pattern.toString().substring(0, 50)}...`);
