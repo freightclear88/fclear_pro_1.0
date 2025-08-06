@@ -179,8 +179,10 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
 
       let isfData: any = {};
       try {
-        isfData = JSON.parse(isfCompletion.choices[0].message.content || '{}');
-        console.log('🎯 ISF-SPECIFIC EXTRACTION RESULT:', isfData);
+        const rawResponse = isfCompletion.choices[0].message.content || '{}';
+        console.log('🎯 RAW ISF EXTRACTION RESPONSE:', rawResponse);
+        isfData = JSON.parse(rawResponse);
+        console.log('🎯 PARSED ISF-SPECIFIC EXTRACTION RESULT:', JSON.stringify(isfData, null, 2));
         
         // Merge ISF-specific data with Azure results (ISF data takes priority)
         const enhancedResult = { ...azureResult };
