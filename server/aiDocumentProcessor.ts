@@ -255,7 +255,7 @@ export class AIDocumentProcessor {
               "stufferName": "stuffer company name if found",
               "cfsOperator": "CFS (Container Freight Station) operator name if found",
               "cfsFacility": "CFS facility information if found",
-              "containerStuffingLocation": "EXACT container stuffing location from ISF form - look for fields labeled: 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'CFS Location', 'Place where container was stuffed' - extract the EXACT LOCATION/ADDRESS where stuffing occurred, NOT the company name - this is SEPARATE from consolidator name",
+              "containerStuffingLocation": "EXACT container stuffing location from ISF form - look for fields labeled: 'Container Stuffing Location:', 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'CFS Location', 'Place where container was stuffed' - extract the EXACT LOCATION/ADDRESS where stuffing occurred (e.g. 'BUSAN, SOUTH KOREA'), NOT the company name - this is SEPARATE from consolidator name",
               "containerStuffing": "any container stuffing related information if found",
               "stuffingLocation": "stuffing location if found"
             }`
@@ -324,6 +324,10 @@ ${pdfText.substring(0, 8000)}`
       if (!extractedData.consolidatorName && !extractedData.consolidatorStufferInfo && pdfText && documentType === 'isf_information_sheet') {
         console.log('🔍 PATTERN MATCHING: Searching for consolidator patterns in ISF document...');
         const consolidatorPatterns = [
+          // Exact patterns from ISF Information Sheet format
+          /CONTAINER\s*STUFFER\/CONSOLIDATOR\s*:\s*([^\n\r]+)/i,
+          /CONTAINER\s*STUFFER\s*\/\s*CONSOLIDATOR\s*:\s*([^\n\r]+)/i,
+          /CONSOLIDATOR\s*\/\s*STUFFER\s*:\s*([^\n\r]+)/i,
           // Direct consolidator field patterns
           /CONSOLIDATOR\s*NAME[^:]*:?\s*([^\n\r]+)/i,
           /CONSOLIDATOR\s*INFORMATION[^:]*:?\s*([^\n\r]+)/i,
@@ -442,6 +446,33 @@ ${pdfText.substring(0, 8000)}`
             extractedData.consolidatorStufferInfo = selectedConsolidator;
           } else {
             console.log('❌ No consolidator companies found in comprehensive scan');
+          }
+        }
+      }
+
+      // Enhanced Container Stuffing Location extraction for ISF documents
+      if ((!extractedData.containerStuffingLocation || extractedData.containerStuffingLocation === 'CFS/CFS') && pdfText && documentType === 'isf_information_sheet') {
+        console.log('🔍 PATTERN MATCHING: Searching for Container Stuffing Location in ISF document...');
+        const stuffingLocationPatterns = [
+          /CONTAINER\s*STUFFING\s*LOCATION\s*:\s*([^\n\r]+)/i,
+          /STUFFING\s*LOCATION\s*:\s*([^\n\r]+)/i,
+          /PLACE\s*OF\s*STUFFING\s*:\s*([^\n\r]+)/i,
+          /CFS\s*LOCATION\s*:\s*([^\n\r]+)/i,
+          /WHERE\s*STUFFED\s*:\s*([^\n\r]+)/i,
+          /STUFFED\s*AT\s*:\s*([^\n\r]+)/i,
+          /CONSOLIDATION\s*LOCATION\s*:\s*([^\n\r]+)/i
+        ];
+        
+        for (const pattern of stuffingLocationPatterns) {
+          const match = pdfText.match(pattern);
+          if (match && match[1]) {
+            const location = match[1].trim();
+            // Clean up and validate the location
+            if (location && location.length > 3 && !location.toLowerCase().includes('same as') && location !== 'CFS/CFS') {
+              console.log(`🎯 CONTAINER STUFFING LOCATION FOUND: ${location}`);
+              extractedData.containerStuffingLocation = location;
+              break;
+            }
           }
         }
       }
@@ -577,9 +608,14 @@ ${pdfText.substring(0, 8000)}`
 
             CRITICAL ISF EXTRACTION RULES:
             1. For ISF documents: Consolidator ≠ Shipper. Look specifically for consolidator/stuffer company names
-            2. Container stuffing location should be the physical address where goods were stuffed
+            2. Container stuffing location should be the EXACT physical address where goods were stuffed
             3. Consolidator is the company that consolidated/stuffed the container (often freight forwarder/CFS operator)
             4. Pay special attention to company names that appear multiple times or in consolidator-specific sections
+            5. Look for exact field labels: "Container Stuffer/Consolidator", "Consolidator Information", "Container Stuffing Location"
+            6. If you see "Container Stuffer/Consolidator:" followed by a company name, use that EXACT value for consolidatorName
+            7. If you see "Container Stuffing Location:" followed by a location, use that EXACT value for containerStuffingLocation
+            8. Do NOT use shipper information for consolidator fields - these are distinct entities
+            9. Look throughout the entire document for these specific ISF field labels before falling back to general extraction
 
             Only include fields where you find actual values. Do not include fields with null, "not found", "N/A", etc.`
           },
