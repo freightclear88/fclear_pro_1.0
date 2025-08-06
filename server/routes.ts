@@ -5726,67 +5726,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('  shipperName:', consolidatedData.shipperName);
           console.log('  consolidatorName:', consolidatedData.consolidatorName);
           
-          // CRITICAL FIX: Prioritize manufacturer as seller (they are typically the actual seller)
-          if (consolidatedData.manufacturerName && consolidatedData.manufacturerAddress &&
-              !consolidatedData.manufacturerName.toLowerCase().includes('logistics') &&
-              !consolidatedData.manufacturerName.toLowerCase().includes('forwarding') &&
-              !consolidatedData.manufacturerName.toLowerCase().includes('freight')) {
-            const result = `${consolidatedData.manufacturerName}\n${consolidatedData.manufacturerAddress}`;
-            console.log('✅ Using manufacturerName + manufacturerAddress as seller (non-logistics):', result);
-            return result;
-          } else if (consolidatedData.manufacturerName && 
-                     !consolidatedData.manufacturerName.toLowerCase().includes('logistics') &&
-                     !consolidatedData.manufacturerName.toLowerCase().includes('forwarding') &&
-                     !consolidatedData.manufacturerName.toLowerCase().includes('freight')) {
-            console.log('✅ Using manufacturerName only as seller (non-logistics):', consolidatedData.manufacturerName);
-            return consolidatedData.manufacturerName;
-          } else if (consolidatedData.sellerInformation && 
-                     !consolidatedData.sellerInformation.toLowerCase().includes('logistics') &&
-                     !consolidatedData.sellerInformation.toLowerCase().includes('forwarding') &&
-                     !consolidatedData.sellerInformation.toLowerCase().includes('freight')) {
-            console.log('✅ Using direct sellerInformation (non-logistics)');
+          // CRITICAL FIX FOR ISF: Prioritize original seller data exactly as extracted - do NOT filter logistics companies
+          if (consolidatedData.sellerInformation) {
+            console.log('✅ Using direct sellerInformation as extracted from ISF document:', consolidatedData.sellerInformation);
             return consolidatedData.sellerInformation;
-          } else if (consolidatedData.sellerName && consolidatedData.sellerAddress && 
-                     !consolidatedData.sellerName.toLowerCase().includes('logistics') &&
-                     !consolidatedData.sellerName.toLowerCase().includes('forwarding') &&
-                     !consolidatedData.sellerName.toLowerCase().includes('freight')) {
+          } else if (consolidatedData.sellerName && consolidatedData.sellerAddress) {
             const result = `${consolidatedData.sellerName}\n${consolidatedData.sellerAddress}`;
-            console.log('✅ Using sellerName + sellerAddress (non-logistics):', result);
+            console.log('✅ Using sellerName + sellerAddress as extracted:', result);
             return result;
-          } else if (consolidatedData.sellerName && 
-                     !consolidatedData.sellerName.toLowerCase().includes('logistics') &&
-                     !consolidatedData.sellerName.toLowerCase().includes('forwarding') &&
-                     !consolidatedData.sellerName.toLowerCase().includes('freight')) {
-            console.log('✅ Using sellerName only (non-logistics):', consolidatedData.sellerName);
+          } else if (consolidatedData.sellerName) {
+            console.log('✅ Using sellerName as extracted:', consolidatedData.sellerName);
             return consolidatedData.sellerName;
-          } else if (consolidatedData.shipperName && consolidatedData.shipperAddress && 
-                     consolidatedData.shipperName !== consolidatedData.consolidatorName &&
-                     !consolidatedData.shipperName.toLowerCase().includes('logistics') &&
-                     !consolidatedData.shipperName.toLowerCase().includes('forwarding') &&
-                     !consolidatedData.shipperName.toLowerCase().includes('freight')) {
-            // Use actual shipper (manufacturer/seller) as seller, not logistics companies
-            const result = `${consolidatedData.shipperName}\n${consolidatedData.shipperAddress}`;
-            console.log('✅ Using shipper as seller (non-logistics):', result);
+          } else if (consolidatedData.manufacturerName && consolidatedData.manufacturerAddress) {
+            // Only fallback to manufacturer if no seller data was found at all
+            const result = `${consolidatedData.manufacturerName}\n${consolidatedData.manufacturerAddress}`;
+            console.log('✅ Fallback: Using manufacturerName + manufacturerAddress as seller:', result);
             return result;
-          } else {
-            // Look at shipper information from different documents
-            // From BL document: shipper might be actual manufacturer/seller
-            // From ISF document: focus on consolidator as logistics handler
-            const blShipper = consolidatedData.shipperName;
-            const isfShipper = consolidatedData.consolidatorName;
-            
-            if (blShipper && blShipper !== isfShipper && consolidatedData.shipperAddress &&
-                !blShipper.toLowerCase().includes('logistics') &&
-                !blShipper.toLowerCase().includes('forwarding') &&
-                !blShipper.toLowerCase().includes('freight')) {
-              // BL shipper is likely the actual seller if different from ISF consolidator
-              const result = `${blShipper}\n${consolidatedData.shipperAddress}`;
-              console.log('✅ Using BL shipper as seller (different from ISF consolidator):', result);
-              return result;
-            }
+          } else if (consolidatedData.manufacturerName) {
+            console.log('✅ Fallback: Using manufacturerName only as seller:', consolidatedData.manufacturerName);
+            return consolidatedData.manufacturerName;
           }
           
-          console.log('❌ No valid seller information found (avoiding logistics companies)');
+          console.log('❌ No seller or manufacturer information found');
           return null;
         })(),
         buyerInformation: (() => {
