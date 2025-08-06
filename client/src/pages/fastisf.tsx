@@ -1047,35 +1047,7 @@ function IsfFilingsList() {
     retry: false,
   });
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case "paid":
-        return <DollarSign className="w-4 h-4 text-blue-500" />;
-      case "submitted":
-        return <FileText className="w-4 h-4 text-orange-500" />;
-      case "draft":
-        return <Clock className="w-4 h-4 text-gray-500" />;
-      default:
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
-    }
-  };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "paid":
-        return "bg-blue-100 text-blue-800";
-      case "submitted":
-        return "bg-orange-100 text-orange-800";
-      case "draft":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-red-100 text-red-800";
-    }
-  };
 
   if (isLoading) {
     return (
@@ -1094,7 +1066,7 @@ function IsfFilingsList() {
           My ISF Filings
         </CardTitle>
         <CardDescription>
-          Track the status of your ISF 10+2 filings
+          View and manage your ISF 10+2 filings
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -1111,7 +1083,7 @@ function IsfFilingsList() {
                 <TableHead>ISF Number</TableHead>
                 <TableHead>Consignee</TableHead>
                 <TableHead>Port of Entry</TableHead>
-                <TableHead>Status</TableHead>
+
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -1121,14 +1093,7 @@ function IsfFilingsList() {
                   <TableCell className="font-medium">{filing.isfNumber}</TableCell>
                   <TableCell>{filing.consignee}</TableCell>
                   <TableCell>{filing.portOfEntry}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(filing.status)} variant="secondary">
-                      <div className="flex items-center gap-1">
-                        {getStatusIcon(filing.status)}
-                        {filing.status}
-                      </div>
-                    </Badge>
-                  </TableCell>
+
                   <TableCell>
                     <div className="flex gap-2">
                       <Link href={`/isf/detail/${filing.id}`}>
