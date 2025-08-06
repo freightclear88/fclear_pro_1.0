@@ -257,7 +257,7 @@ export class AIDocumentProcessor {
               "stufferName": "stuffer company name if found",
               "cfsOperator": "CFS (Container Freight Station) operator name if found",
               "cfsFacility": "CFS facility information if found",
-              "containerStuffingLocation": "CRITICAL: ONLY the physical location/address where container stuffing occurred - look for 'Container Stuffing Location:', 'CONTAINER STUFFING LOCATION', 'Stuffing Location', 'Place of Stuffing', 'CFS Location'. Extract ONLY the geographic location (city, port, country) like 'BUSAN, SOUTH KOREA' or 'QINGDAO, CHINA'. DO NOT extract company names or business addresses - this field is for the PHYSICAL LOCATION where stuffing happened, NOT who did the stuffing",
+              "containerStuffingLocation": "CRITICAL: ONLY the physical location/address where container stuffing occurred - look for 'Container Stuffing Location:', 'CONTAINER STUFFING LOCATION', 'Stuffing Location', 'Place of Stuffing', 'CFS Location'. Extract ONLY the geographic location (city, port, country). DO NOT extract company names or business addresses - this field is for the PHYSICAL LOCATION where stuffing happened, NOT who did the stuffing",
               "containerStuffing": "any container stuffing related information if found",
               "stuffingLocation": "stuffing location if found"
             }`
@@ -523,8 +523,7 @@ ${pdfText.substring(0, 8000)}`
                 // Look for geographic patterns
                 const geoPatterns = [
                   /^([A-Z][A-Za-z\s]+,\s*[A-Z][A-Za-z\s]+)$/i, // City, Country
-                  /(BUSAN|QINGDAO|SHANGHAI|SHENZHEN|NINGBO|TIANJIN|DALIAN|XIAMEN|GUANGZHOU|YANTIAN|SEOUL|INCHEON),?\s*([A-Z][A-Za-z\s]*)/i, // Major ports
-                  /^([A-Z][A-Za-z\s]{3,}),?\s+(CHINA|KOREA|SOUTH KOREA|REP\. OF KOREA|JAPAN|TAIWAN|SINGAPORE|MALAYSIA|THAILAND|VIETNAM|INDONESIA)$/i // City, Country
+                  /^([A-Z][A-Za-z\s]{3,}),?\s+([A-Z][A-Za-z\s]{3,})$/i // City, Country (generic pattern)
                 ];
                 
                 for (const pattern of geoPatterns) {
@@ -544,7 +543,7 @@ ${pdfText.substring(0, 8000)}`
               // Single line - try to extract geographic part
               const geoPatterns = [
                 /([A-Z][A-Za-z\s]+,\s*[A-Z][A-Za-z\s]+)$/i, // City, Country at end
-                /(BUSAN|QINGDAO|SHANGHAI|SHENZHEN|NINGBO|TIANJIN|DALIAN|XIAMEN|GUANGZHOU|YANTIAN|SEOUL|INCHEON),?\s*([A-Z][A-Za-z\s]*)/i // Major ports
+                /^([A-Z][A-Za-z\s]{3,}),?\s+([A-Z][A-Za-z\s]{3,})$/i // Generic City, Country pattern
               ];
               
               for (const pattern of geoPatterns) {
@@ -628,7 +627,7 @@ ${pdfText.substring(0, 8000)}`
           // Look for manufacturer names in cargo descriptions
           const manufacturerPatterns = [
             /^([A-Z][A-Za-z\s&]+(?:Co\.|Ltd|Inc|Corp|Company))/i, // Company name at start of cargo description
-            /(\b[A-Z][A-Za-z\s&]+(?:FUTURE|STEEL|METAL|MILL|WORKS)\b[A-Za-z\s]*(?:Co\.|Ltd|Inc|Corp|Company)?)/i, // Manufacturing companies
+            /(\b[A-Z][A-Za-z\s&]+(?:MFG|MANUFACTURING|FACTORY|MILL|WORKS|INDUSTRIAL)\b[A-Za-z\s]*(?:Co\.|Ltd|Inc|Corp|Company)?)/i, // Manufacturing companies
             /MANUFACTURED BY\s+([A-Z][^\n\r]+)/i,
             /MADE BY\s+([A-Z][^\n\r]+)/i,
             /PRODUCED BY\s+([A-Z][^\n\r]+)/i
