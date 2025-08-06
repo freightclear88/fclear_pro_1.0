@@ -5608,26 +5608,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
         manufacturerCountry: consolidatedData.manufacturerCountry || consolidatedData.countryOfOrigin || null,
         countryOfOrigin: consolidatedData.countryOfOrigin || consolidatedData.manufacturerCountry || null,
         manufacturerInformation: (() => {
+          console.log('🏭 BUILDING MANUFACTURER INFORMATION:');
+          console.log('  manufacturerInformation:', consolidatedData.manufacturerInformation);
+          console.log('  manufacturerName:', consolidatedData.manufacturerName);
+          console.log('  manufacturerAddress:', consolidatedData.manufacturerAddress);
+          console.log('  manufacturerCountry:', consolidatedData.manufacturerCountry);
+          console.log('  cargoDescription:', consolidatedData.cargoDescription);
+          
           // Priority-based manufacturer information building
           if (consolidatedData.manufacturerInformation) {
+            console.log('✅ Using direct manufacturerInformation');
             return consolidatedData.manufacturerInformation;
           } else if (consolidatedData.manufacturerName && consolidatedData.manufacturerAddress) {
-            return `${consolidatedData.manufacturerName}\n${consolidatedData.manufacturerAddress}`;
+            const result = `${consolidatedData.manufacturerName}\n${consolidatedData.manufacturerAddress}`;
+            console.log('✅ Using manufacturerName + manufacturerAddress:', result);
+            return result;
           } else if (consolidatedData.manufacturerName && consolidatedData.manufacturerCountry) {
-            return `${consolidatedData.manufacturerName}\nCountry: ${consolidatedData.manufacturerCountry}`;
+            const result = `${consolidatedData.manufacturerName}\nCountry: ${consolidatedData.manufacturerCountry}`;
+            console.log('✅ Using manufacturerName + manufacturerCountry:', result);
+            return result;
           } else if (consolidatedData.manufacturerName) {
+            console.log('✅ Using manufacturerName only:', consolidatedData.manufacturerName);
             return consolidatedData.manufacturerName;
           } else if (consolidatedData.manufacture) {
+            console.log('✅ Using manufacture field:', consolidatedData.manufacture);
             return consolidatedData.manufacture;
-          } else if (consolidatedData.shipperName && consolidatedData.countryOfOrigin && 
-                     consolidatedData.shipperName !== consolidatedData.consolidatorName &&
-                     !consolidatedData.shipperName.toLowerCase().includes('logistics') &&
-                     !consolidatedData.shipperName.toLowerCase().includes('freight')) {
-            // Use shipper as manufacturer only if it's NOT a logistics company and different from consolidator
-            return `${consolidatedData.shipperName}\n${consolidatedData.shipperAddress || ''}\nCountry: ${consolidatedData.countryOfOrigin}`.replace(/\n+/g, '\n').trim();
-          } else if (consolidatedData.manufacturerCountry) {
-            return `Country: ${consolidatedData.manufacturerCountry}`;
+          } else {
+            // Try to extract manufacturer from cargo description
+            const cargoDesc = consolidatedData.cargoDescription || consolidatedData.commodity || '';
+            if (cargoDesc) {
+              console.log('🔍 Trying to extract manufacturer from cargo description:', cargoDesc);
+              
+              // Look for manufacturer names in cargo descriptions
+              const manufacturerPatterns = [
+                /(\b[A-Z][A-Za-z\s&]+(?:FUTURE|STEEL|METAL|MILL|WORKS)\b[A-Za-z\s]*(?:Co\.|Ltd|Inc|Corp|Company)?)/i,
+                /^([A-Z][A-Za-z\s&]+(?:Co\.|Ltd|Inc|Corp|Company))/i
+              ];
+              
+              for (const pattern of manufacturerPatterns) {
+                const match = cargoDesc.match(pattern);
+                if (match && match[1]) {
+                  let manufacturer = match[1].trim();
+                  manufacturer = manufacturer.replace(/\s+/g, ' ').trim();
+                  
+                  if (!manufacturer.toLowerCase().includes('logistics') &&
+                      !manufacturer.toLowerCase().includes('freight') &&
+                      !manufacturer.toLowerCase().includes('forwarding') &&
+                      manufacturer.length > 3) {
+                    const result = consolidatedData.countryOfOrigin ? 
+                      `${manufacturer}\nCountry: ${consolidatedData.countryOfOrigin}` : manufacturer;
+                    console.log('🎯 MANUFACTURER EXTRACTED FROM CARGO:', result);
+                    return result;
+                  }
+                }
+              }
+            }
+            
+            // Fallback to shipper if it's not a logistics company
+            if (consolidatedData.shipperName && consolidatedData.countryOfOrigin && 
+                consolidatedData.shipperName !== consolidatedData.consolidatorName &&
+                !consolidatedData.shipperName.toLowerCase().includes('logistics') &&
+                !consolidatedData.shipperName.toLowerCase().includes('freight')) {
+              const result = `${consolidatedData.shipperName}\n${consolidatedData.shipperAddress || ''}\nCountry: ${consolidatedData.countryOfOrigin}`.replace(/\n+/g, '\n').trim();
+              console.log('✅ Using shipper as manufacturer (non-logistics):', result);
+              return result;
+            } else if (consolidatedData.manufacturerCountry) {
+              const result = `Manufactured in: ${consolidatedData.manufacturerCountry}`;
+              console.log('✅ Using manufacturerCountry only:', result);
+              return result;
+            }
           }
+          
+          console.log('❌ No manufacturer information found');
           return null;
         })(),
         sellerInformation: (() => {

@@ -214,13 +214,15 @@ export class AIDocumentProcessor {
               "recipient": "recipient information if found (alternative consignee field)",
               "importerName": "importer of record name if found (may be same as consignee)",
               "importerAddress": "importer of record address if found",
-              "manufacturerName": "manufacturer/supplier company name if found",
-              "manufacturerAddress": "manufacturer complete address with country if found",
-              "manufacturerCountry": "country where goods were manufactured if found",
-              "buyerName": "buyer/purchaser company name if found",
-              "buyerAddress": "buyer complete address if found", 
-              "sellerName": "seller company name if found",
-              "sellerAddress": "seller complete address if found",
+              "manufacturerName": "CRITICAL for ISF: Manufacturer/supplier company name - look for 'MANUFACTURER', 'SUPPLIER', 'FACTORY', 'MILL', 'PRODUCER' fields. This is the company that actually MADE the goods, NOT the logistics company or shipper",
+              "manufacturerAddress": "CRITICAL for ISF: Manufacturer complete address with country - the physical location where goods were manufactured",
+              "manufacturerCountry": "CRITICAL for ISF: Country where goods were manufactured - look for 'COUNTRY OF MANUFACTURE', 'MADE IN', 'ORIGIN COUNTRY'",
+              "manufacturerInformation": "CRITICAL for ISF: Complete manufacturer information including name and address of the actual goods manufacturer",
+              "buyerName": "Buyer/purchaser company name if found - the entity purchasing the goods",
+              "buyerAddress": "Buyer complete address if found", 
+              "sellerName": "CRITICAL for ISF: Seller company name - look for 'SELLER', 'VENDOR', 'SUPPLIER' fields. This is who is SELLING the goods to the buyer, often different from shipper/exporter",
+              "sellerAddress": "CRITICAL for ISF: Seller complete address - the business address of the selling entity",
+              "sellerInformation": "CRITICAL for ISF: Complete seller information including name and address of the entity selling the goods",
               "notifyPartyName": "notify party name if found",
               "notifyPartyAddress": "notify party address if found",
               "shipToPartyName": "ship-to party name if found",
@@ -270,9 +272,19 @@ Key extraction priorities:
 1. AMS numbers - they may appear as "AMS NO: 123456", "AMS# 789012", "MANIFEST NO 345678", or similar patterns
 2. For ISF documents, look carefully throughout the entire document for these mandatory fields:
    - CONSOLIDATOR NAME / CONSOLIDATOR / CONTAINER STUFFER - this is a separate company from the shipper
-   - MANUFACTURER information 
+   - MANUFACTURER information - look for "MANUFACTURER:", "SUPPLIER:", "FACTORY:", "MILL:" fields
+   - SELLER information - look for "SELLER:", "VENDOR:", "SOLD BY:" fields (often different from shipper)
    - CONTAINER STUFFING LOCATION - the physical location where stuffing occurred
    - Look at ALL sections of the document, including headers, footers, and separate information blocks
+3. Distinguish between business roles:
+   - SHIPPER: The party exporting/sending the goods (logistics role)
+   - MANUFACTURER: The company that actually MADE the goods (production role) - often mentioned in cargo descriptions
+   - SELLER: The company SELLING the goods to the buyer (commercial role)
+   - CONSOLIDATOR: The company that consolidated/stuffed the container (logistics role)
+4. Extract manufacturer from cargo descriptions:
+   - Look for company names in cargo descriptions like "POSCO FUTURE M REFRACTORIES"
+   - Extract manufacturer names from phrases like "MANUFACTURED BY", "MADE BY", "PRODUCED BY"
+   - Identify manufacturing companies vs logistics companies based on business activity
 3. Distinguish between different company roles:
    - SHIPPER = the company exporting/sending goods
    - CONSOLIDATOR = the company that consolidated/stuffed the container (often a logistics company)
@@ -593,6 +605,78 @@ ${pdfText.substring(0, 8000)}`
         }
       }
       
+      // Enhanced post-processing for manufacturer and seller extraction
+      if (pdfText && documentType === 'isf_information_sheet') {
+        console.log('🔍 POST-PROCESSING: Enhancing manufacturer and seller extraction...');
+        
+        // Try to extract manufacturer from cargo description if not already found
+        if ((!extractedData.manufacturerName || !extractedData.manufacturerInformation) && 
+            (extractedData.cargoDescription || extractedData.commodity)) {
+          const cargoDesc = extractedData.cargoDescription || extractedData.commodity || '';
+          console.log(`🔍 ANALYZING CARGO DESCRIPTION: "${cargoDesc}"`);
+          
+          // Look for manufacturer names in cargo descriptions
+          const manufacturerPatterns = [
+            /^([A-Z][A-Za-z\s&]+(?:Co\.|Ltd|Inc|Corp|Company))/i, // Company name at start of cargo description
+            /(\b[A-Z][A-Za-z\s&]+(?:FUTURE|STEEL|METAL|MILL|WORKS)\b[A-Za-z\s]*(?:Co\.|Ltd|Inc|Corp|Company)?)/i, // Manufacturing companies
+            /MANUFACTURED BY\s+([A-Z][^\n\r]+)/i,
+            /MADE BY\s+([A-Z][^\n\r]+)/i,
+            /PRODUCED BY\s+([A-Z][^\n\r]+)/i
+          ];
+          
+          for (const pattern of manufacturerPatterns) {
+            const match = cargoDesc.match(pattern);
+            if (match && match[1]) {
+              let manufacturer = match[1].trim();
+              
+              // Clean up the manufacturer name
+              manufacturer = manufacturer.replace(/\s+/g, ' ').trim();
+              
+              // Validate it's not a logistics company
+              if (!manufacturer.toLowerCase().includes('logistics') &&
+                  !manufacturer.toLowerCase().includes('freight') &&
+                  !manufacturer.toLowerCase().includes('forwarding') &&
+                  manufacturer.length > 3) {
+                console.log(`🎯 MANUFACTURER EXTRACTED FROM CARGO: ${manufacturer}`);
+                extractedData.manufacturerName = manufacturer;
+                
+                // Try to find manufacturer address/country
+                if (extractedData.countryOfOrigin && !extractedData.manufacturerInformation) {
+                  extractedData.manufacturerInformation = `${manufacturer}\nCountry: ${extractedData.countryOfOrigin}`;
+                }
+                break;
+              }
+            }
+          }
+        }
+        
+        // Try to extract seller information if not already found (often different from shipper in ISF)
+        if (!extractedData.sellerName && !extractedData.sellerInformation) {
+          // Look for seller patterns in the document
+          const sellerPatterns = [
+            /SELLER\s*:\s*([^\n\r]+)/i,
+            /VENDOR\s*:\s*([^\n\r]+)/i,
+            /SOLD BY\s*:\s*([^\n\r]+)/i,
+            /SUPPLIER\s*:\s*([^\n\r]+)/i
+          ];
+          
+          for (const pattern of sellerPatterns) {
+            const match = pdfText.match(pattern);
+            if (match && match[1]) {
+              let seller = match[1].trim();
+              seller = seller.replace(/\s+/g, ' ').trim();
+              
+              if (seller.length > 3 && seller !== extractedData.shipperName) {
+                console.log(`🎯 SELLER EXTRACTED: ${seller}`);
+                extractedData.sellerName = seller;
+                extractedData.sellerInformation = seller;
+                break;
+              }
+            }
+          }
+        }
+      }
+
       // Validate and clean the extracted data
       return this.validateAndCleanData(extractedData);
 
@@ -669,6 +753,15 @@ ${pdfText.substring(0, 8000)}`
               "consigneeEmail": "consignee email if found",
               "notifyPartyName": "notify party name if found",
               "notifyPartyAddress": "notify party address if found",
+              "manufacturerName": "CRITICAL for ISF: Manufacturer/supplier company name - look for 'MANUFACTURER', 'SUPPLIER', 'FACTORY' fields. The company that actually MADE the goods, NOT logistics company",
+              "manufacturerAddress": "CRITICAL for ISF: Complete manufacturer address including country where goods were manufactured",
+              "manufacturerCountry": "CRITICAL for ISF: Country where goods were manufactured - look for 'COUNTRY OF MANUFACTURE', 'MADE IN'",
+              "manufacturerInformation": "CRITICAL for ISF: Complete manufacturer information including name and address",
+              "sellerName": "CRITICAL for ISF: Seller company name - look for 'SELLER', 'VENDOR' fields. Who is SELLING the goods, often different from shipper",
+              "sellerAddress": "CRITICAL for ISF: Complete seller address - business address of the selling entity",
+              "sellerInformation": "CRITICAL for ISF: Complete seller information including name and address",
+              "buyerName": "Buyer/purchaser company name - the entity purchasing the goods",
+              "buyerAddress": "Buyer complete address",
               "cargoDescription": "cargo description if found",
               "commodity": "commodity type if found", 
               "numberOfPackages": "number of packages as integer if found",
@@ -967,7 +1060,22 @@ ${pdfText.substring(0, 8000)}`
       'cfsfacility': 'cfsFacility',
       'stuffername': 'stufferName',
       'amsnumber': 'amsNumber',
-      'amsno': 'amsNumber'
+      'amsno': 'amsNumber',
+      // Manufacturer and seller field mappings
+      'manufacturer': 'manufacturerName',
+      'manufacturername': 'manufacturerName',
+      'manufactureraddress': 'manufacturerAddress',
+      'manufacturercountry': 'manufacturerCountry',
+      'manufacturerinformation': 'manufacturerInformation',
+      'seller': 'sellerName',
+      'sellername': 'sellerName',
+      'selleraddress': 'sellerAddress',
+      'sellerinformation': 'sellerInformation',
+      'supplier': 'manufacturerName',
+      'vendor': 'sellerName',
+      'buyer': 'buyerName',
+      'buyername': 'buyerName',
+      'buyeraddress': 'buyerAddress'
     };
     
     if (fieldMappings[key]) {
