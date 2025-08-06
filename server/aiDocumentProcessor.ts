@@ -104,6 +104,20 @@ interface ExtractedShipmentData {
   stufferName?: string;
   cfsOperator?: string;
   cfsFacility?: string;
+  
+  // ISF-specific fields
+  shipToPartyInformation?: string;
+  hblScacCode?: string;
+  mblScacCode?: string;
+  sellerInformation?: string;
+  manufacturerInformation?: string;
+  manufacturerName?: string;
+  manufacturerAddress?: string;
+  manufacturerCountry?: string;
+  sellerName?: string;
+  sellerAddress?: string;
+  buyerName?: string;
+  buyerAddress?: string;
 }
 
 export class AIDocumentProcessor {
