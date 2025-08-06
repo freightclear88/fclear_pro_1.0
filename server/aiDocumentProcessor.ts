@@ -177,8 +177,20 @@ export class AIDocumentProcessor {
       console.log(`Sending ${pdfText.length} characters to AI for analysis`);
 
       // Enhanced ISF-specific extraction for ISF Information Sheets
+      console.log(`🔍 DOCUMENT TYPE CHECK: "${documentType}" - ISF extraction triggered: ${documentType === 'isf_information_sheet'}`);
+      
       if (documentType === 'isf_information_sheet') {
         console.log('🎯 SPECIALIZED ISF EXTRACTION: Processing ISF Information Sheet with targeted field extraction');
+        console.log(`📄 PDF Text Preview (first 500 chars): ${pdfText.substring(0, 500)}`);
+        
+        // Add specific pattern checks to debug the extraction
+        console.log('🔍 Looking for ISF field patterns in document...');
+        const hasContainerStuffing = /container\s*stuffing\s*location/i.test(pdfText);
+        const hasShipToParty = /ship\s*to\s*party/i.test(pdfText);
+        const hasHblScac = /hbl\s*scac/i.test(pdfText);
+        const hasMblScac = /mbl\s*scac/i.test(pdfText);
+        
+        console.log(`Pattern checks - Container Stuffing: ${hasContainerStuffing}, Ship To Party: ${hasShipToParty}, HBL SCAC: ${hasHblScac}, MBL SCAC: ${hasMblScac}`);
         
         const isfCompletion = await openai.chat.completions.create({
           model: "gpt-4o",
@@ -187,19 +199,24 @@ export class AIDocumentProcessor {
               role: "system",
               content: `You are an expert ISF (Importer Security Filing) document processor. Extract data from ISF Information Sheets by reading the field labels and their corresponding values exactly as written. 
 
-CRITICAL: This is an ISF Information Sheet with specific mandatory fields. Read each field label and extract the EXACT text that appears after or below it.
+CRITICAL INSTRUCTIONS:
+- Find each field label and extract the COMPLETE text that appears after or below it
+- For multi-line addresses, capture ALL lines, not just the first one
+- Never use placeholder text like "Same as Consignee" - extract the actual data written
+- For SCAC codes, extract the exact 4-letter code shown
 
-Look for these EXACT ISF field labels and extract the complete text that follows:
+Required JSON structure with these exact field names:
+{
+  "containerStuffingLocation": "Complete address from Container Stuffing Location field (all lines)",
+  "shipToParty": "Complete company name and address from Ship To Party field (NOT 'Same as Consignee')",
+  "hblScacCode": "4-letter code from HBL SCAC field",
+  "mblScacCode": "4-letter code from MBL SCAC field", 
+  "seller": "Complete seller company name and address (actual manufacturer/seller, NOT logistics)",
+  "manufacturer": "Complete manufacturer company name and address",
+  "consignee": "Complete consignee company name and address"
+}
 
-1. CONTAINER STUFFING LOCATION: Extract the complete address (usually 3+ lines) that appears below this label
-2. SHIP TO PARTY: Extract the complete company name and address that appears below this label (NOT "Same as Consignee")  
-3. HBL SCAC CODE: Extract the 4-letter code that appears after this label
-4. MBL SCAC CODE: Extract the 4-letter code that appears after this label
-5. SELLER: Extract the actual seller/manufacturer company name and address (NOT logistics companies)
-6. MANUFACTURER: Extract the manufacturer company name and address
-7. CONSIGNEE: Extract the consignee company name and address
-
-Return ONLY valid JSON with the exact text found:`
+If a field label is not found or has no data, use null. Extract ONLY the exact text that appears in the document.`
             },
             {
               role: "user", 
