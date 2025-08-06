@@ -5505,11 +5505,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Debug what document types we actually have
+      console.log('🔍 DOCUMENT TYPES DEBUG:');
+      allExtractedData.forEach(doc => {
+        console.log(`  File: ${doc.fileName} -> Type: "${doc.documentType}"`);
+      });
+      
       // Now use the consolidateMultiDocumentData system with properly extracted data
       const consolidatedData = consolidateMultiDocumentData(allExtractedData);
       
       // Prioritize ISF document data for critical fields like consolidator
       const isfDocuments = allExtractedData.filter(doc => doc.documentType === 'isf_information_sheet');
+      console.log(`🔍 ISF FILTER DEBUG: Found ${isfDocuments.length} documents with type 'isf_information_sheet'`);
+      
       if (isfDocuments.length > 0) {
         console.log('🔍 ISF DOCUMENT PRIORITIZATION - Found ISF documents, forcing ISF values for critical fields...');
         for (const isfDoc of isfDocuments) {
