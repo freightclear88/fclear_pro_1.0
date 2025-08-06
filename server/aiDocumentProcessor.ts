@@ -311,6 +311,27 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
         }
       } catch (azureError: any) {
         console.log('Azure processing failed, falling back to OpenAI:', azureError.message);
+        
+        // For ISF documents, still try to enhance even if Azure completely failed
+        const isISFDocument = documentType === 'isf_information_sheet' || documentType === 'isf information sheet' || documentType.toLowerCase().includes('isf');
+        console.log(`🔍 ISF CHECK DURING AZURE FAILURE: documentType="${documentType}", isISFDocument=${isISFDocument}`);
+        
+        if (isISFDocument) {
+          console.log('🎯 ISF DOCUMENT DETECTED DURING AZURE FAILURE: Will enhance OpenAI results with ISF-specific extraction...');
+          try {
+            // Get basic OpenAI extraction first
+            const openaiResult = await this.extractComprehensiveData(await this.extractPDFText(filePath));
+            console.log('🔍 OPENAI RESULT BEFORE ISF ENHANCEMENT (AZURE FAILED):', Object.keys(openaiResult || {}));
+            
+            // Then enhance with ISF-specific logic
+            const enhancedResult = await this.enhanceWithISFExtraction(filePath, openaiResult, documentType);
+            console.log('🎯 ISF ENHANCEMENT COMPLETE FROM AZURE FAILURE: Returning enhanced results');
+            console.log('🔍 ENHANCED RESULT FIELDS FROM AZURE FAILURE:', Object.keys(enhancedResult || {}));
+            return enhancedResult;
+          } catch (isfError) {
+            console.log('ISF enhancement failed during Azure failure, continuing with normal OpenAI processing:', isfError);
+          }
+        }
       }
 
       // Fallback to OpenAI processing
