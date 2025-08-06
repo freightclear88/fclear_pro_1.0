@@ -256,6 +256,11 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
    */
   async extractShipmentData(filePath: string, documentType: string): Promise<ExtractedShipmentData> {
     console.log(`🚀 EXTRACTION START: Document type "${documentType}" at ${filePath}`);
+    
+    // CRITICAL DEBUG: Check if this is an ISF document right at the start
+    const isISFDocument = documentType === 'isf_information_sheet' || documentType === 'isf information sheet' || documentType.toLowerCase().includes('isf');
+    console.log(`🔍 IMMEDIATE ISF CHECK: documentType="${documentType}", isISFDocument=${isISFDocument}`);
+    console.log(`🔍 ISF CHECK BREAKDOWN: exact match isf_information_sheet=${documentType === 'isf_information_sheet'}, exact match isf information sheet=${documentType === 'isf information sheet'}, includes isf=${documentType.toLowerCase().includes('isf')}`);
     try {
       // Try Azure Document Intelligence first (better for structured documents)
       try {
