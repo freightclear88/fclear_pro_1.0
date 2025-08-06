@@ -5446,9 +5446,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ISF Form Pre-filling Route - uses the same consolidateMultiDocumentData system as shipment creation
   app.post('/api/isf/fill-form', upload.array('documents', 10), requireSubscription, async (req: any, res) => {
+    console.log('🚨 ISF FILL-FORM ROUTE HIT! Starting ISF document processing...');
     try {
       const userId = getUserId(req);
-      console.log(`ISF form filling request from user ${userId} with ${req.files?.length || 0} documents`);
+      console.log(`🚨 ISF FILL-FORM: User ${userId} uploading ${req.files?.length || 0} documents`);
 
       if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: 'No documents uploaded for ISF form filling' });
