@@ -5683,18 +5683,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return null;
         })(),
         sellerInformation: (() => {
-          if (consolidatedData.sellerInformation) {
+          console.log('🏪 BUILDING SELLER INFORMATION:');
+          console.log('  sellerInformation:', consolidatedData.sellerInformation);
+          console.log('  sellerName:', consolidatedData.sellerName);
+          console.log('  sellerAddress:', consolidatedData.sellerAddress);
+          console.log('  manufacturerName:', consolidatedData.manufacturerName);
+          console.log('  shipperName:', consolidatedData.shipperName);
+          console.log('  consolidatorName:', consolidatedData.consolidatorName);
+          
+          if (consolidatedData.sellerInformation && !consolidatedData.sellerInformation.toLowerCase().includes('logistics')) {
+            console.log('✅ Using direct sellerInformation (non-logistics)');
             return consolidatedData.sellerInformation;
-          } else if (consolidatedData.sellerName && consolidatedData.sellerAddress) {
-            return `${consolidatedData.sellerName}\n${consolidatedData.sellerAddress}`;
-          } else if (consolidatedData.sellerName) {
+          } else if (consolidatedData.sellerName && consolidatedData.sellerAddress && 
+                     !consolidatedData.sellerName.toLowerCase().includes('logistics')) {
+            const result = `${consolidatedData.sellerName}\n${consolidatedData.sellerAddress}`;
+            console.log('✅ Using sellerName + sellerAddress (non-logistics):', result);
+            return result;
+          } else if (consolidatedData.sellerName && !consolidatedData.sellerName.toLowerCase().includes('logistics')) {
+            console.log('✅ Using sellerName only (non-logistics):', consolidatedData.sellerName);
             return consolidatedData.sellerName;
+          } else if (consolidatedData.manufacturerName && consolidatedData.manufacturerAddress &&
+                     consolidatedData.manufacturerName !== consolidatedData.consolidatorName) {
+            // If manufacturer is available and different from consolidator, use as seller
+            const result = `${consolidatedData.manufacturerName}\n${consolidatedData.manufacturerAddress}`;
+            console.log('✅ Using manufacturer as seller:', result);
+            return result;
           } else if (consolidatedData.shipperName && consolidatedData.shipperAddress && 
                      consolidatedData.shipperName !== consolidatedData.consolidatorName &&
                      !consolidatedData.shipperName.toLowerCase().includes('logistics') &&
                      !consolidatedData.shipperName.toLowerCase().includes('freight')) {
             // Use actual shipper (manufacturer/seller) as seller, not logistics companies
-            return `${consolidatedData.shipperName}\n${consolidatedData.shipperAddress}`;
+            const result = `${consolidatedData.shipperName}\n${consolidatedData.shipperAddress}`;
+            console.log('✅ Using shipper as seller (non-logistics):', result);
+            return result;
           } else {
             // Look at shipper information from different documents
             // From BL document: shipper might be actual manufacturer/seller
@@ -5706,9 +5727,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 !blShipper.toLowerCase().includes('logistics') &&
                 !blShipper.toLowerCase().includes('freight')) {
               // BL shipper is likely the actual seller if different from ISF consolidator
-              return `${blShipper}\n${consolidatedData.shipperAddress}`;
+              const result = `${blShipper}\n${consolidatedData.shipperAddress}`;
+              console.log('✅ Using BL shipper as seller (different from ISF consolidator):', result);
+              return result;
             }
           }
+          
+          console.log('❌ No valid seller information found (avoiding logistics companies)');
           return null;
         })(),
         buyerInformation: (() => {

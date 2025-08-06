@@ -257,7 +257,7 @@ export class AIDocumentProcessor {
               "stufferName": "stuffer company name if found",
               "cfsOperator": "CFS (Container Freight Station) operator name if found",
               "cfsFacility": "CFS facility information if found",
-              "containerStuffingLocation": "EXACT container stuffing location from ISF form - look for fields labeled: 'Container Stuffing Location:', 'Container Stuffing Location', 'Stuffing Location', 'Place of Stuffing', 'CFS Location', 'Place where container was stuffed' - extract the EXACT LOCATION/ADDRESS where stuffing occurred (e.g. 'BUSAN, SOUTH KOREA'), NOT the company name - this is SEPARATE from consolidator name",
+              "containerStuffingLocation": "CRITICAL: ONLY the physical location/address where container stuffing occurred - look for 'Container Stuffing Location:', 'CONTAINER STUFFING LOCATION', 'Stuffing Location', 'Place of Stuffing', 'CFS Location'. Extract ONLY the geographic location (city, port, country) like 'BUSAN, SOUTH KOREA' or 'QINGDAO, CHINA'. DO NOT extract company names or business addresses - this field is for the PHYSICAL LOCATION where stuffing happened, NOT who did the stuffing",
               "containerStuffing": "any container stuffing related information if found",
               "stuffingLocation": "stuffing location if found"
             }`
@@ -508,41 +508,51 @@ ${pdfText.substring(0, 8000)}`
               location = location.replace(/\s+/g, ' ').trim();
             }
             
-            // Clean up multiple companies/addresses - look for primary stuffing location
-            // If multiple companies are listed, try to identify the primary one
-            if (location.includes('\n') && location.split('\n').length > 3) {
+            // Extract only geographic location from stuffing location field
+            // Look for city, country patterns and filter out company names
+            if (location.includes('\n')) {
               const lines = location.split('\n');
-              let bestMatch = '';
-              let bestScore = 0;
               
-              // Look for lines that contain company identifiers
-              for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                let score = 0;
+              // Look for geographic location patterns (city, country)
+              for (const line of lines) {
+                // Skip company lines
+                if (/(Co\.|Ltd|Inc|Corp|Company|LOGISTICS|FORWARDING|FREIGHT|SHIPPING)/i.test(line)) {
+                  continue;
+                }
                 
-                // Increase score for company identifiers
-                if (/(Co\.|Ltd|Inc|Corp|Company)/i.test(line)) score += 3;
-                // Increase score for manufacturing-related companies (stuffing locations are often manufacturers)
-                if (/(STEEL|METAL|MFG|MANUFACTURING|FACTORY|MILL|PLANT|WORKS|INDUSTRIAL)/i.test(line)) score += 2;
-                // Decrease score for logistics companies (they're usually consolidators, not actual stuffing locations)
-                if (/(LOGISTICS|FORWARDING|FREIGHT|SHIPPING|CARGO|EXPRESS|TRANSPORT)/i.test(line)) score -= 2;
+                // Look for geographic patterns
+                const geoPatterns = [
+                  /^([A-Z][A-Za-z\s]+,\s*[A-Z][A-Za-z\s]+)$/i, // City, Country
+                  /(BUSAN|QINGDAO|SHANGHAI|SHENZHEN|NINGBO|TIANJIN|DALIAN|XIAMEN|GUANGZHOU|YANTIAN|SEOUL|INCHEON),?\s*([A-Z][A-Za-z\s]*)/i, // Major ports
+                  /^([A-Z][A-Za-z\s]{3,}),?\s+(CHINA|KOREA|SOUTH KOREA|REP\. OF KOREA|JAPAN|TAIWAN|SINGAPORE|MALAYSIA|THAILAND|VIETNAM|INDONESIA)$/i // City, Country
+                ];
                 
-                if (score > bestScore) {
-                  bestScore = score;
-                  bestMatch = line;
-                  
-                  // If we found a good company, include the next 2-3 lines as address
-                  const addressLines = [line];
-                  for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
-                    if (!/(Co\.|Ltd|Inc|Corp)/i.test(lines[j])) {
-                      addressLines.push(lines[j]);
-                    } else {
-                      break; // Stop if we hit another company
-                    }
+                for (const pattern of geoPatterns) {
+                  const match = line.match(pattern);
+                  if (match) {
+                    location = match[0].trim();
+                    console.log(`🌍 GEOGRAPHIC LOCATION EXTRACTED: ${location}`);
+                    break;
                   }
-                  if (addressLines.length > 1) {
-                    location = addressLines.join('\n');
-                  }
+                }
+                
+                if (location !== line) {
+                  break; // Found geographic location
+                }
+              }
+            } else {
+              // Single line - try to extract geographic part
+              const geoPatterns = [
+                /([A-Z][A-Za-z\s]+,\s*[A-Z][A-Za-z\s]+)$/i, // City, Country at end
+                /(BUSAN|QINGDAO|SHANGHAI|SHENZHEN|NINGBO|TIANJIN|DALIAN|XIAMEN|GUANGZHOU|YANTIAN|SEOUL|INCHEON),?\s*([A-Z][A-Za-z\s]*)/i // Major ports
+              ];
+              
+              for (const pattern of geoPatterns) {
+                const match = location.match(pattern);
+                if (match) {
+                  location = match[0].trim();
+                  console.log(`🌍 GEOGRAPHIC LOCATION EXTRACTED: ${location}`);
+                  break;
                 }
               }
             }
@@ -785,7 +795,7 @@ ${pdfText.substring(0, 8000)}`
               "onBoardDate": "on board date if found",
               "eta": "ETA if found",
               "etd": "ETD if found",
-              "containerStuffingLocation": "CRITICAL: Extract ONLY the specific container stuffing location from ISF form. Look for fields labeled: 'Container Stuffing Location:', 'CONTAINER STUFFING LOCATION:', 'Stuffing Location:', 'Place of Stuffing:', 'CFS Location:'. Extract the SINGLE most specific location - typically a company name with complete address including street, city, province/state, postal code, and country. DO NOT concatenate multiple companies or addresses. DO NOT use generic terms like 'CFS/CFS' or port names. Extract only the primary stuffing facility location.",
+              "containerStuffingLocation": "CRITICAL: Extract ONLY the physical geographic location where container stuffing occurred. Look for 'Container Stuffing Location:', 'CONTAINER STUFFING LOCATION', 'Stuffing Location', 'Place of Stuffing', 'CFS Location'. Extract ONLY the city, port, and country (e.g., 'BUSAN, SOUTH KOREA', 'QINGDAO, CHINA', 'SHANGHAI, CHINA'). DO NOT extract company names or business addresses - this field is for the PHYSICAL LOCATION where stuffing happened, NOT the company that did the stuffing.",
               "containerStuffing": "any container stuffing related information if found",
               "stuffingLocation": "stuffing location if found",
               "consolidatorName": "ISF CRITICAL: Consolidator/Container Stuffer company name - look for labels: 'Consolidator Name', 'Container Stuffer', 'CFS Operator', 'Consolidator Information', 'Consolidator/Stuffer'. This is DIFFERENT from shipper - extract the company that consolidated/stuffed the container",
