@@ -2,6 +2,8 @@ import OpenAI from "openai";
 import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
 import fs from 'fs';
 import pdf2pic from 'pdf2pic';
+import * as XLSX from 'xlsx';
+import AdmZip from 'adm-zip';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -129,20 +131,23 @@ export class AIDocumentProcessor {
     try {
       console.log('🎯 STARTING ISF-SPECIFIC ENHANCEMENT...');
       
-      // Extract document text for ISF processing (support both PDF and DOCX)
+      // Extract document text for ISF processing (support PDF, DOCX, and Excel)
       let documentText = '';
       try {
-        // Try PDF extraction first
-        if (filePath.toLowerCase().endsWith('.pdf')) {
+        const fileExtension = filePath.toLowerCase();
+        
+        if (fileExtension.endsWith('.pdf')) {
           documentText = await this.extractPDFText(filePath);
           console.log(`🔍 Extracted ${documentText.length} characters from PDF for ISF analysis`);
+        } else if (fileExtension.endsWith('.xlsx') || fileExtension.endsWith('.xls')) {
+          // For Excel files, use xlsx library
+          console.log('🔍 Using xlsx library for Excel text extraction...');
+          documentText = await this.extractExcelText(filePath);
+          console.log(`🔍 Extracted ${documentText.length} characters from Excel for ISF analysis`);
         } else {
-          // For DOCX and other formats, use Azure Document Intelligence
-          console.log('🔍 Using Azure Document Intelligence for DOCX text extraction...');
-          const documentBuffer = fs.readFileSync(filePath);
-          const poller = await azureClient.beginAnalyzeDocument("prebuilt-document", documentBuffer);
-          const result = await poller.pollUntilDone();
-          documentText = result.content || '';
+          // For DOCX files, try direct file reading first (more reliable than Azure for some files)
+          console.log('🔍 Using direct DOCX text extraction...');
+          documentText = await this.extractDOCXText(filePath);
           console.log(`🔍 Extracted ${documentText.length} characters from DOCX for ISF analysis`);
         }
         
@@ -337,16 +342,17 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
         if (isISFDocument) {
           console.log('🎯 ISF DOCUMENT DETECTED DURING AZURE FAILURE: Will enhance OpenAI results with ISF-specific extraction...');
           try {
-            // Get basic OpenAI extraction first - support both PDF and DOCX
+            // Get basic OpenAI extraction first - support PDF, DOCX, and Excel
             let documentText = '';
-            if (filePath.toLowerCase().endsWith('.pdf')) {
+            const fileExtension = filePath.toLowerCase();
+            
+            if (fileExtension.endsWith('.pdf')) {
               documentText = await this.extractPDFText(filePath);
+            } else if (fileExtension.endsWith('.xlsx') || fileExtension.endsWith('.xls')) {
+              documentText = await this.extractExcelText(filePath);
             } else {
-              // For DOCX files, use Azure to get text first
-              const documentBuffer = fs.readFileSync(filePath);
-              const poller = await azureClient.beginAnalyzeDocument("prebuilt-document", documentBuffer);
-              const result = await poller.pollUntilDone();
-              documentText = result.content || '';
+              // For DOCX files, use direct extraction instead of Azure (more reliable)
+              documentText = await this.extractDOCXText(filePath);
             }
             const openaiResult = await this.extractComprehensiveData(documentText);
             console.log('🔍 OPENAI RESULT BEFORE ISF ENHANCEMENT (AZURE FAILED):', Object.keys(openaiResult || {}));
@@ -375,16 +381,20 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
       let useImageAnalysis = false;
       
       try {
-        if (filePath.toLowerCase().endsWith('.pdf')) {
+        const fileExtension = filePath.toLowerCase();
+        
+        if (fileExtension.endsWith('.pdf')) {
           documentText = await this.extractPDFText(filePath);
           console.log(`Extracted ${documentText.length} characters from PDF`);
+        } else if (fileExtension.endsWith('.xlsx') || fileExtension.endsWith('.xls')) {
+          // For Excel files, use xlsx library
+          console.log('🔍 Using xlsx library for Excel text extraction in fallback...');
+          documentText = await this.extractExcelText(filePath);
+          console.log(`Extracted ${documentText.length} characters from Excel`);
         } else {
-          // For DOCX files, use Azure Document Intelligence
-          console.log('🔍 Using Azure for DOCX text extraction in fallback...');
-          const documentBuffer = fs.readFileSync(filePath);
-          const poller = await azureClient.beginAnalyzeDocument("prebuilt-document", documentBuffer);
-          const result = await poller.pollUntilDone();
-          documentText = result.content || '';
+          // For DOCX files, use direct extraction instead of Azure (more reliable)
+          console.log('🔍 Using direct DOCX text extraction in fallback...');
+          documentText = await this.extractDOCXText(filePath);
           console.log(`Extracted ${documentText.length} characters from DOCX`);
         }
       } catch (extractionError) {
@@ -1716,6 +1726,120 @@ ${documentText.substring(0, 8000)}`
     } catch (error: any) {
       console.error('PDF text extraction failed:', error);
       throw new Error(`PDF text extraction failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Extract text from Excel (.xlsx/.xls) files using xlsx library
+   */
+  private async extractExcelText(filePath: string): Promise<string> {
+    try {
+      console.log(`Starting Excel text extraction for: ${filePath}`);
+      
+      const workbook = XLSX.readFile(filePath);
+      let extractedText = '';
+      
+      // Process all worksheets
+      for (const sheetName of workbook.SheetNames) {
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Convert sheet to JSON to extract text from all cells
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+        
+        // Add sheet name as context
+        extractedText += `Sheet: ${sheetName}\n`;
+        
+        // Extract text from each row
+        for (const row of jsonData) {
+          if (Array.isArray(row) && row.some(cell => cell !== '')) {
+            const rowText = row.map(cell => String(cell || '')).join(' | ');
+            extractedText += rowText + '\n';
+          }
+        }
+        
+        extractedText += '\n';
+      }
+      
+      console.log(`Successfully extracted ${extractedText.length} characters from Excel`);
+      
+      if (extractedText.length < 50) {
+        throw new Error('Insufficient text extracted from Excel file');
+      }
+      
+      return extractedText.trim();
+      
+    } catch (error: any) {
+      console.error('Excel text extraction failed:', error);
+      throw new Error(`Excel text extraction failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Extract text from DOCX files using direct ZIP reading
+   */
+  private async extractDOCXText(filePath: string): Promise<string> {
+    try {
+      console.log(`Starting DOCX text extraction for: ${filePath}`);
+      
+      const zip = new AdmZip(filePath);
+      const documentXml = zip.readAsText('word/document.xml');
+      
+      if (!documentXml) {
+        throw new Error('Could not find document.xml in DOCX file');
+      }
+      
+      // Extract text between <w:t> tags (Word text elements)
+      const textMatches = documentXml.match(/<w:t[^>]*>(.*?)<\/w:t>/g);
+      let extractedText = '';
+      
+      if (textMatches) {
+        for (const match of textMatches) {
+          const text = match.replace(/<w:t[^>]*>/, '').replace(/<\/w:t>/, '');
+          // Decode XML entities
+          const decodedText = text
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&apos;/g, "'");
+          extractedText += decodedText + ' ';
+        }
+      }
+      
+      // Also try to extract table content
+      const tableMatches = documentXml.match(/<w:tc[^>]*>.*?<\/w:tc>/g);
+      if (tableMatches) {
+        for (const tableMatch of tableMatches) {
+          const cellTextMatches = tableMatch.match(/<w:t[^>]*>(.*?)<\/w:t>/g);
+          if (cellTextMatches) {
+            for (const cellMatch of cellTextMatches) {
+              const cellText = cellMatch.replace(/<w:t[^>]*>/, '').replace(/<\/w:t>/, '');
+              const decodedText = cellText
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&amp;/g, '&')
+                .replace(/&quot;/g, '"')
+                .replace(/&apos;/g, "'");
+              extractedText += decodedText + ' ';
+            }
+          }
+        }
+      }
+      
+      // Clean up whitespace
+      extractedText = extractedText.replace(/\s+/g, ' ').trim();
+      
+      console.log(`Successfully extracted ${extractedText.length} characters from DOCX`);
+      
+      if (extractedText.length < 50) {
+        throw new Error('Insufficient text extracted from DOCX file');
+      }
+      
+      return extractedText;
+      
+    } catch (error: any) {
+      console.error('DOCX text extraction failed:', error);
+      throw new Error(`DOCX text extraction failed: ${error.message}`);
     }
   }
 
