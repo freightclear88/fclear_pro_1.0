@@ -1307,6 +1307,9 @@ ${pdfText.substring(0, 8000)}`
         /Buyer[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
         /Purchaser[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
         /End\s+User[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
+        // Ultra-flexible buyer patterns
+        /3[.\s]*([A-Z][A-Za-z\s,.-]+)/i,
+        /Three[.\s]*([A-Z][A-Za-z\s,.-]+)/i,
       ],
       
       shipToParty: [
@@ -1394,6 +1397,9 @@ ${pdfText.substring(0, 8000)}`
         /Consignee[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
         /To[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
         /Deliver\s+to[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
+        // Ultra-flexible consignee patterns
+        /4[.\s]*([A-Z][A-Za-z\s,.-]+)/i,
+        /Four[.\s]*([A-Z][A-Za-z\s,.-]+)/i,
       ],
 
       importer: [
@@ -1428,6 +1434,9 @@ ${pdfText.substring(0, 8000)}`
         /Importer[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
         /US\s+Importer[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
         /Record\s+Importer[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
+        // Ultra-flexible importer patterns
+        /7[.\s]*([A-Z][A-Za-z\s,.-]+)/i,
+        /Seven[.\s]*([A-Z][A-Za-z\s,.-]+)/i,
       ],
 
       importerOfRecord: [
@@ -1478,6 +1487,11 @@ ${pdfText.substring(0, 8000)}`
         /Origin[:\s\n]*([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
         /Made\s+in[:\s\n]*([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
         /Manufactured\s+in[:\s\n]*([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
+        // Ultra-flexible country patterns
+        /8[.\s]*([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
+        /9[.\s]*([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
+        /Eight[.\s]*([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
+        /Nine[.\s]*([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
       ],
 
       hblScacCode: [
@@ -1582,7 +1596,8 @@ ${pdfText.substring(0, 8000)}`
                                extracted.toLowerCase().includes('n/a') ||
                                extracted.toLowerCase().includes('not applicable') ||
                                extracted.toLowerCase().includes('same as') ||
-                               extracted.toLowerCase().includes('see above');
+                               extracted.toLowerCase().includes('see above') ||
+                               extracted.toLowerCase().includes('file size');
           
           // Special validation for different field types
           let isValid = false;
@@ -1611,10 +1626,10 @@ ${pdfText.substring(0, 8000)}`
             // Commodity descriptions should be substantial (relaxed validation)
             isValid = extracted.length >= 3 && extracted.length <= 1000 && !isPlaceholder;
           } else {
-            // Standard validation for company/party fields (very relaxed validation)
-            isValid = extracted.length > 3 && 
+            // Standard validation for company/party fields (ultra-relaxed validation)
+            isValid = extracted.length > 2 && 
                      !isPlaceholder &&
-                     !extracted.toLowerCase().includes('file size') &&
+                     // Allow logistics companies for consolidator field
                      !(field === 'seller' && isLogisticsCompany) &&
                      !(field === 'manufacturer' && isLogisticsCompany);
           }
