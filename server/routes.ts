@@ -5521,19 +5521,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
                        file.mimetype === 'application/msword' || 
                        file.originalname.toLowerCase().endsWith('.docx') || 
                        file.originalname.toLowerCase().endsWith('.doc')) {
-              // DOCX/DOC files - Azure Document Intelligence has already extracted the text
-              console.log('📄 DOCX file detected - using Azure-extracted text from extractedData');
-              // The text should already be available from Azure processing, let's try to extract it differently
-              if (extractedData && Object.keys(extractedData).length > 0) {
-                // Use Azure Document Intelligence to get the raw text
+              // DOCX/DOC files - Use Azure Document Intelligence to extract raw text
+              console.log('📄 DOCX file detected - extracting text using Azure Document Intelligence');
+              try {
+                const azureDocProcessor = require('./azureDocumentProcessor');
+                const documentBuffer = fs.readFileSync(file.path);
+                const azureResult = await azureDocProcessor.extractTextFromDocument(documentBuffer);
+                documentText = azureResult.content || '';
+                console.log(`📄 Azure extracted ${documentText.length} characters from DOCX`);
+                console.log('📄 Azure DOCX text sample:', documentText.substring(0, 200));
+              } catch (azureError) {
+                console.log('❌ Azure text extraction failed for DOCX:', azureError.message);
+                console.log('📄 Trying alternative DOCX extraction method...');
+                
+                // Fallback: Try to extract text using a different approach
                 try {
-                  const documentBuffer = fs.readFileSync(file.path);
-                  const poller = await azureClient.beginAnalyzeDocument("prebuilt-document", documentBuffer);
-                  const result = await poller.pollUntilDone();
-                  documentText = result.content || '';
-                  console.log(`📄 Azure extracted ${documentText.length} characters from DOCX`);
-                } catch (azureError) {
-                  console.log('❌ Azure text extraction failed for DOCX, using fallback:', azureError.message);
+                  // Try using the aiDocProcessor's Azure processing
+                  const fullAzureData = await aiDocProcessor.processWithAzure(file.path);
+                  if (fullAzureData && fullAzureData.content) {
+                    documentText = fullAzureData.content;
+                    console.log(`📄 Fallback: Extracted ${documentText.length} characters from aiDocProcessor Azure`);
+                  } else {
+                    console.log('❌ Fallback Azure extraction also failed');
+                    documentText = '';
+                  }
+                } catch (fallbackError) {
+                  console.log('❌ All DOCX extraction methods failed:', fallbackError.message);
                   documentText = '';
                 }
               }

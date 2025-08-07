@@ -30,6 +30,24 @@ function getDocumentClient(): DocumentAnalysisClient {
   return documentClient;
 }
 
+/**
+ * Extract raw text content from document using Azure Document Intelligence
+ */
+export async function extractTextFromDocument(documentBuffer: Buffer): Promise<{ content: string }> {
+  try {
+    const client = getDocumentClient();
+    const poller = await client.beginAnalyzeDocument("prebuilt-document", documentBuffer);
+    const result = await poller.pollUntilDone();
+    
+    return {
+      content: result.content || ''
+    };
+  } catch (error) {
+    console.error('Azure text extraction failed:', error);
+    throw error;
+  }
+}
+
 interface ExtractedShipmentData {
   // Core shipping data
   billOfLadingNumber?: string;
