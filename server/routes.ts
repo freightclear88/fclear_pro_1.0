@@ -5795,8 +5795,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Core importer information - Enhanced field mapping
         importerName: consolidatedData.importerName || consolidatedData.consigneeName || null,
         importerAddress: consolidatedData.importerAddress || consolidatedData.consigneeAddress || null,
-        consigneeName: consolidatedData.consigneeName || null,
-        consigneeAddress: consolidatedData.consigneeAddress || null,
+        consigneeName: consolidatedData.consigneeName || consolidatedData.importerName || null,
+        consigneeAddress: consolidatedData.consigneeAddress || consolidatedData.importerAddress || null,
+        importerOfRecord: consolidatedData.importerOfRecord || null,
         
         // Manufacturer and party information - Enhanced mappings with ISF-specific fields
         manufacturerCountry: consolidatedData.manufacturerCountry || consolidatedData.countryOfOrigin || null,
@@ -5956,18 +5957,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })(),
         
         // Shipping and logistics information - Key ISF fields
-        billOfLading: consolidatedData.billOfLading || null,
+        billOfLading: consolidatedData.billOfLading || consolidatedData.billOfLadingNumber || null,
         vesselName: consolidatedData.vesselName || null,
         voyageNumber: consolidatedData.voyageNumber || null,
         containerNumbers: consolidatedData.containerNumbers || null,
-        portOfEntry: consolidatedData.portOfEntry || null,
-        foreignPortOfLading: consolidatedData.foreignPortOfLading || null,
+        portOfEntry: consolidatedData.portOfEntry || consolidatedData.portOfDischarge || consolidatedData.destinationPort || null,
+        foreignPortOfLading: consolidatedData.foreignPortOfLading || consolidatedData.portOfLoading || consolidatedData.originPort || null,
+        portOfLoading: consolidatedData.portOfLoading || consolidatedData.foreignPortOfLading || consolidatedData.originPort || null,
+        portOfDischarge: consolidatedData.portOfDischarge || consolidatedData.portOfEntry || consolidatedData.destinationPort || null,
         estimatedArrivalDate: consolidatedData.estimatedArrivalDate || null,
         estimatedDepartureDate: consolidatedData.estimatedDepartureDate || null,
         
         // Commodity and customs information
-        commodityDescription: consolidatedData.commodityDescription || null,
-        htsusNumber: consolidatedData.htsusNumber || null,
+        commodityDescription: consolidatedData.commodityDescription || consolidatedData.cargoDescription || null,
+        htsusNumber: consolidatedData.htsusNumber || consolidatedData.htsCode || consolidatedData.hsCode || null,
+        htsCode: consolidatedData.htsCode || consolidatedData.htsusNumber || consolidatedData.hsCode || null,
         numberOfPackages: consolidatedData.numberOfPackages || null,
         grossWeight: consolidatedData.grossWeight || null,
         volume: consolidatedData.volume || null,
@@ -6048,6 +6052,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (isfDoc.data.manufacturerInformation) {
             console.log(`🎯 FINAL ISF OVERRIDE: manufacturerInformation: "${isfDoc.data.manufacturerInformation}"`);
             isfFormData.manufacturerInformation = isfDoc.data.manufacturerInformation;
+          }
+          
+          // Apply all other ISF-specific extracted fields
+          if (isfDoc.data.buyerInformation) {
+            console.log(`🎯 FINAL ISF OVERRIDE: buyerInformation: "${isfDoc.data.buyerInformation}"`);
+            isfFormData.buyerInformation = isfDoc.data.buyerInformation;
+          }
+          
+          if (isfDoc.data.shipToPartyInformation) {
+            console.log(`🎯 FINAL ISF OVERRIDE: shipToPartyInformation: "${isfDoc.data.shipToPartyInformation}"`);
+            isfFormData.shipToPartyInformation = isfDoc.data.shipToPartyInformation;
+          }
+          
+          if (isfDoc.data.consigneeName) {
+            console.log(`🎯 FINAL ISF OVERRIDE: consigneeName: "${isfDoc.data.consigneeName}"`);
+            isfFormData.consigneeName = isfDoc.data.consigneeName;
+          }
+          
+          if (isfDoc.data.consigneeAddress) {
+            console.log(`🎯 FINAL ISF OVERRIDE: consigneeAddress: "${isfDoc.data.consigneeAddress}"`);
+            isfFormData.consigneeAddress = isfDoc.data.consigneeAddress;
+          }
+          
+          if (isfDoc.data.importerName) {
+            console.log(`🎯 FINAL ISF OVERRIDE: importerName: "${isfDoc.data.importerName}"`);
+            isfFormData.importerName = isfDoc.data.importerName;
+          }
+          
+          if (isfDoc.data.importerAddress) {
+            console.log(`🎯 FINAL ISF OVERRIDE: importerAddress: "${isfDoc.data.importerAddress}"`);
+            isfFormData.importerAddress = isfDoc.data.importerAddress;
+          }
+          
+          if (isfDoc.data.importerOfRecord) {
+            console.log(`🎯 FINAL ISF OVERRIDE: importerOfRecord: "${isfDoc.data.importerOfRecord}"`);
+            isfFormData.importerOfRecord = isfDoc.data.importerOfRecord;
+          }
+          
+          if (isfDoc.data.countryOfOrigin) {
+            console.log(`🎯 FINAL ISF OVERRIDE: countryOfOrigin: "${isfDoc.data.countryOfOrigin}"`);
+            isfFormData.countryOfOrigin = isfDoc.data.countryOfOrigin;
+            isfFormData.manufacturerCountry = isfDoc.data.countryOfOrigin;
+          }
+          
+          if (isfDoc.data.hblScacCode) {
+            console.log(`🎯 FINAL ISF OVERRIDE: hblScacCode: "${isfDoc.data.hblScacCode}"`);
+            isfFormData.hblScacCode = isfDoc.data.hblScacCode;
+          }
+          
+          if (isfDoc.data.mblScacCode) {
+            console.log(`🎯 FINAL ISF OVERRIDE: mblScacCode: "${isfDoc.data.mblScacCode}"`);
+            isfFormData.mblScacCode = isfDoc.data.mblScacCode;
+            isfFormData.scacCode = isfDoc.data.mblScacCode;
+          }
+          
+          if (isfDoc.data.htsCode) {
+            console.log(`🎯 FINAL ISF OVERRIDE: htsCode: "${isfDoc.data.htsCode}"`);
+            isfFormData.htsCode = isfDoc.data.htsCode;
+            isfFormData.htsusNumber = isfDoc.data.htsCode;
+          }
+          
+          if (isfDoc.data.commodityDescription) {
+            console.log(`🎯 FINAL ISF OVERRIDE: commodityDescription: "${isfDoc.data.commodityDescription}"`);
+            isfFormData.commodityDescription = isfDoc.data.commodityDescription;
+          }
+          
+          if (isfDoc.data.vesselName) {
+            console.log(`🎯 FINAL ISF OVERRIDE: vesselName: "${isfDoc.data.vesselName}"`);
+            isfFormData.vesselName = isfDoc.data.vesselName;
+          }
+          
+          if (isfDoc.data.voyageNumber) {
+            console.log(`🎯 FINAL ISF OVERRIDE: voyageNumber: "${isfDoc.data.voyageNumber}"`);
+            isfFormData.voyageNumber = isfDoc.data.voyageNumber;
+          }
+          
+          if (isfDoc.data.portOfLoading) {
+            console.log(`🎯 FINAL ISF OVERRIDE: portOfLoading: "${isfDoc.data.portOfLoading}"`);
+            isfFormData.portOfLoading = isfDoc.data.portOfLoading;
+            isfFormData.foreignPortOfLading = isfDoc.data.portOfLoading;
+          }
+          
+          if (isfDoc.data.portOfDischarge) {
+            console.log(`🎯 FINAL ISF OVERRIDE: portOfDischarge: "${isfDoc.data.portOfDischarge}"`);
+            isfFormData.portOfDischarge = isfDoc.data.portOfDischarge;
+            isfFormData.portOfEntry = isfDoc.data.portOfDischarge;
           }
         }
       }
