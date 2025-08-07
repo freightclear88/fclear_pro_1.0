@@ -1302,6 +1302,11 @@ ${pdfText.substring(0, 8000)}`
         // More flexible buyer patterns
         /Buyer[:\s]*\n([A-Z][^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
         /(?:ISF\s+)?(?:3[.\)\s]|Three[:\s])\s*([A-Z][^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Very flexible buyer patterns for any document layout
+        /Buyer[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
+        /Purchaser[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
+        /End\s+User[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
       ],
       
       shipToParty: [
@@ -1348,6 +1353,12 @@ ${pdfText.substring(0, 8000)}`
         /(?:Container\s+)?(?:Stuffing|Loading)\s+Location\s*[|\t]\s*([^\n\t|]+)/i,
         /(?:ISF\s+)?(?:Field\s+)?(?:#?5|Five)[:\s]*(?:Container\s+)?(?:Stuffing|Loading)[^\n]*\n([^\n]+)/i,
         /5\.\s*([A-Z][^\n,]*(?:,\s*[A-Z]{2,})?)/i,
+        
+        // Very flexible ship-to party patterns for any document layout
+        /Ship\s+to[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
+        /Ship[-\s]to\s+party[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
+        /Final\s+destination[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
+        /Ultimate\s+consignee[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
       ],
 
       consignee: [
@@ -1378,6 +1389,11 @@ ${pdfText.substring(0, 8000)}`
         // More flexible consignee patterns
         /(?:ISF\s+)?(?:4[.\)\s]|Four[:\s])\s*([A-Z][^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
         /(?:Consignee|To)[:\s]*([A-Z][^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Very flexible consignee patterns for any document layout
+        /Consignee[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
+        /To[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
+        /Deliver\s+to[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
       ],
 
       importer: [
@@ -1407,6 +1423,11 @@ ${pdfText.substring(0, 8000)}`
         
         // More flexible importer patterns
         /(?:ISF\s+)?(?:7[.\)\s]|Seven[:\s])\s*([A-Z][^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Very flexible importer patterns for any document layout
+        /Importer[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
+        /US\s+Importer[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
+        /Record\s+Importer[:\s\n]*([A-Z][^\n]*(?:[A-Za-z0-9\s,.-]+)*)/i,
       ],
 
       importerOfRecord: [
@@ -1451,6 +1472,12 @@ ${pdfText.substring(0, 8000)}`
         
         // More flexible country patterns
         /(?:ISF\s+)?(?:[89][.\)\s]|(?:Eight|Nine)[:\s])\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
+        
+        // Very flexible country patterns for any document layout
+        /Country[:\s\n]*([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
+        /Origin[:\s\n]*([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
+        /Made\s+in[:\s\n]*([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
+        /Manufactured\s+in[:\s\n]*([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
       ],
 
       hblScacCode: [
@@ -1560,12 +1587,13 @@ ${pdfText.substring(0, 8000)}`
           // Special validation for different field types
           let isValid = false;
           if (field === 'countryOfOrigin') {
-            // Country field should be a valid country name or code
+            // Country field should be a valid country name or code (relaxed validation)
             isValid = extracted.length >= 2 && extracted.length <= 50 && 
-                     !isPlaceholder && /^[A-Za-z\s,-]{2,50}$/.test(extracted);
+                     !isPlaceholder && !extracted.toLowerCase().includes('file size') &&
+                     /^[A-Za-z\s,-]{2,50}$/.test(extracted);
           } else if (field === 'importerOfRecord') {
-            // Should be a number/ID format
-            isValid = extracted.length >= 5 && /^[A-Z0-9\-]{5,}$/.test(extracted);
+            // Should be a number/ID format (relaxed validation)
+            isValid = extracted.length >= 3 && !isPlaceholder;
           } else if (field === 'containerStuffingLocation') {
             // Should contain geographic location indicators (relaxed validation)
             isValid = extracted.length > 3 && !isPlaceholder && 
@@ -1583,9 +1611,10 @@ ${pdfText.substring(0, 8000)}`
             // Commodity descriptions should be substantial (relaxed validation)
             isValid = extracted.length >= 3 && extracted.length <= 1000 && !isPlaceholder;
           } else {
-            // Standard validation for company/party fields (relaxed validation)
+            // Standard validation for company/party fields (very relaxed validation)
             isValid = extracted.length > 3 && 
                      !isPlaceholder &&
+                     !extracted.toLowerCase().includes('file size') &&
                      !(field === 'seller' && isLogisticsCompany) &&
                      !(field === 'manufacturer' && isLogisticsCompany);
           }
