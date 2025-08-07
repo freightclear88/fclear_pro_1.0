@@ -5831,10 +5831,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('✅ Applied business rule: Ship-to party = Consignee');
       }
       
-      // Business Rule 4: Enhanced consolidator info completion
+      // Business Rule 4: Enhanced consolidator info completion with multi-line address scanning
       if (consolidatedData.consolidatorName && !consolidatedData.consolidatorStufferInfo) {
-        consolidatedData.consolidatorStufferInfo = consolidatedData.consolidatorName;
-        console.log('✅ Applied business rule: Complete consolidator info from name');
+        // Try to build complete consolidator info from available parts
+        const consolidatorParts = [consolidatedData.consolidatorName];
+        
+        // Look for consolidator address in multiple possible fields
+        if (consolidatedData.consolidatorAddress) {
+          consolidatorParts.push(consolidatedData.consolidatorAddress);
+        } else if (consolidatedData.consolidatorInformation && 
+                   consolidatedData.consolidatorInformation !== consolidatedData.consolidatorName) {
+          consolidatorParts.push(consolidatedData.consolidatorInformation);
+        }
+        
+        consolidatedData.consolidatorStufferInfo = consolidatorParts.join('\n');
+        console.log('✅ Applied business rule: Complete consolidator info from multiple parts');
+      } else if (consolidatedData.consolidatorStufferInfo && consolidatedData.consolidatorAddress &&
+                 !consolidatedData.consolidatorStufferInfo.includes(consolidatedData.consolidatorAddress)) {
+        // If we have separate address info, append it to existing consolidator info
+        consolidatedData.consolidatorStufferInfo += '\n' + consolidatedData.consolidatorAddress;
+        console.log('✅ Applied business rule: Enhanced consolidator info with separate address');
       }
 
       console.log('🔍 DOCUMENT TYPE ANALYSIS:');

@@ -1760,25 +1760,28 @@ ${pdfText.substring(0, 8000)}`
               "onBoardDate": "on board date if found",
               "eta": "ETA if found",
               "etd": "ETD if found",
-              "containerStuffingLocation": "CRITICAL: Extract ONLY the physical geographic location where container stuffing occurred. Look for 'Container Stuffing Location:', 'CONTAINER STUFFING LOCATION', 'Stuffing Location', 'Place of Stuffing', 'CFS Location'. Extract ONLY the city, port, and country (e.g., 'BUSAN, SOUTH KOREA', 'QINGDAO, CHINA', 'SHANGHAI, CHINA'). DO NOT extract company names or business addresses - this field is for the PHYSICAL LOCATION where stuffing happened, NOT the company that did the stuffing.",
+              "containerStuffingLocation": "CRITICAL ISF FIELD: Extract the EXACT location where container was stuffed/loaded. Look for specific ISF field labels: 'Container Stuffing Location:', 'CONTAINER STUFFING LOCATION', 'Stuffing Location', 'Place of Stuffing', 'CFS Location', 'Container Packing Location'. Extract the COMPLETE address or location that appears after these labels - this can be either a geographic location (city, port, country) OR a facility address depending on how it appears in the ISF document. Priority: Use EXACT text from ISF form fields over inferred locations.",
               "containerStuffing": "any container stuffing related information if found",
               "stuffingLocation": "stuffing location if found",
               "consolidatorName": "ISF CRITICAL: Consolidator/Container Stuffer company name - look for labels: 'Consolidator Name', 'Container Stuffer', 'CFS Operator', 'Consolidator Information', 'Consolidator/Stuffer'. This is DIFFERENT from shipper - extract the company that consolidated/stuffed the container",
-              "consolidatorStufferInfo": "ISF CRITICAL: Complete consolidator information including name and address - specifically the entity that stuffed/consolidated the container",
+              "consolidatorStufferInfo": "ISF CRITICAL: COMPLETE consolidator information including FULL company name AND complete address (all lines, room numbers, floor, building, street, district, city, country, postal code) - scan multiple lines after consolidator labels to capture complete address information. Look for patterns like 'ROOM XX, XXth FLOOR, BUILDING XX, NO.XX STREET, DISTRICT, CITY, COUNTRY'",
+              "consolidatorAddress": "Complete consolidator address with all lines (street, room, floor, building, district, city, country, postal code)",
               "consolidatorInformation": "ISF field: Consolidator details",
               "consolidator": "ISF field: Consolidator company"
             }
 
             CRITICAL ISF EXTRACTION RULES:
             1. For ISF documents: Consolidator ≠ Shipper. Look specifically for consolidator/stuffer company names
-            2. Container stuffing location should be the EXACT physical address where goods were stuffed
-            3. Consolidator is the company that consolidated/stuffed the container (often freight forwarder/CFS operator)
-            4. Pay special attention to company names that appear multiple times or in consolidator-specific sections
-            5. Look for exact field labels: "Container Stuffer/Consolidator", "Consolidator Information", "Container Stuffing Location"
-            6. If you see "Container Stuffer/Consolidator:" followed by a company name, use that EXACT value for consolidatorName
-            7. If you see "Container Stuffing Location:" followed by a location, use that EXACT value for containerStuffingLocation
-            8. Do NOT use shipper information for consolidator fields - these are distinct entities
-            9. Look throughout the entire document for these specific ISF field labels before falling back to general extraction
+            2. SCAN MULTIPLE LINES for consolidator address - look for complete address spanning 2-3 lines after consolidator name
+            3. Container stuffing location: Extract EXACTLY what appears after "Container Stuffing Location:" or similar ISF labels
+            4. Consolidator is the company that consolidated/stuffed the container (often freight forwarder/CFS operator)
+            5. Pay special attention to company names that appear multiple times or in consolidator-specific sections
+            6. Look for exact field labels: "Container Stuffer/Consolidator", "Consolidator Information", "Container Stuffing Location"
+            7. If you see "Container Stuffer/Consolidator:" followed by a company name, use that EXACT value for consolidatorName
+            8. If you see "Container Stuffing Location:" followed by a location, use that EXACT value for containerStuffingLocation
+            9. Do NOT use shipper information for consolidator fields - these are distinct entities
+            10. For consolidator address: Scan the lines immediately following consolidator name for complete address (room, floor, building, street, district, city, country)
+            11. Look throughout the entire document for these specific ISF field labels before falling back to general extraction
 
             CRITICAL: Only include fields where you find actual values in the provided document text. Do not include fields with null, "not found", "N/A", etc. DO NOT generate example data. If the document text is empty or corrupted, return empty JSON {}. Only extract data that actually exists in the document.`
           },
