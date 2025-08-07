@@ -5563,6 +5563,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (documentText && documentText.length > 50) {
               console.log('📄 DOCUMENT TEXT SAMPLE for ISF pattern extraction:', documentText.substring(0, 500));
+              console.log('📄 FULL DOCUMENT TEXT LENGTH:', documentText.length);
+              console.log('📄 DOCUMENT TEXT CONTAINS ISF:', documentText.toLowerCase().includes('isf'));
+              console.log('📄 DOCUMENT TEXT CONTAINS CONSIGNEE:', documentText.toLowerCase().includes('consignee'));
+              console.log('📄 DOCUMENT TEXT CONTAINS IMPORTER:', documentText.toLowerCase().includes('importer'));
+              console.log('📄 DOCUMENT TEXT CONTAINS MANUFACTURER:', documentText.toLowerCase().includes('manufacturer'));
               
               // Use the aiDocProcessor's extractISFPatterns method directly
               const isfPatterns = aiDocProcessor.extractISFPatterns(documentText);

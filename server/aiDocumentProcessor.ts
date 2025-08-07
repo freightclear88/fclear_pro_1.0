@@ -1780,11 +1780,11 @@ ${pdfText.substring(0, 8000)}`
             8. Do NOT use shipper information for consolidator fields - these are distinct entities
             9. Look throughout the entire document for these specific ISF field labels before falling back to general extraction
 
-            Only include fields where you find actual values. Do not include fields with null, "not found", "N/A", etc.`
+            CRITICAL: Only include fields where you find actual values in the provided document text. Do not include fields with null, "not found", "N/A", etc. DO NOT generate example data. If the document text is empty or corrupted, return empty JSON {}. Only extract data that actually exists in the document.`
           },
           {
             role: "user",
-            content: `Extract all shipping data from this COMPLETE document text. Pay special attention to consolidator information throughout the entire document:\n\n${fullText}`
+            content: `Extract all shipping data from this COMPLETE document text. Pay special attention to consolidator information throughout the entire document. CRITICAL: Extract ONLY the actual text content from the document - do NOT generate examples or placeholder data. If no data exists in the document, return empty JSON {}. Document text length: ${fullText.length} characters.\n\nDOCUMENT TEXT:\n${fullText}`
           }
         ],
         response_format: { type: "json_object" },
