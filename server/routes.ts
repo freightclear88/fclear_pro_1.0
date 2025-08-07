@@ -198,6 +198,30 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
     }
   }
   
+  // Enhanced consolidator address handling - combine separate fields into complete consolidator info
+  if (consolidated.consolidatorName && consolidated.consolidatorAddress && 
+      (!consolidated.consolidatorStufferInfo || 
+       !consolidated.consolidatorStufferInfo.includes(consolidated.consolidatorAddress))) {
+    
+    // Build complete consolidator info from separate fields
+    const consolidatorParts = [consolidated.consolidatorName];
+    if (consolidated.consolidatorAddress) {
+      consolidatorParts.push(consolidated.consolidatorAddress);
+    }
+    consolidated.consolidatorStufferInfo = consolidatorParts.join('\n');
+    console.log('🔗 ENHANCED: Combined consolidator name + address into complete info:', consolidated.consolidatorStufferInfo);
+  }
+  
+  // If consolidatorStufferInfo is truncated, try to complete it with additional fields
+  if (consolidated.consolidatorStufferInfo && 
+      consolidated.consolidatorStufferInfo.includes('..') && 
+      consolidated.consolidatorAddress) {
+    
+    // The consolidatorStufferInfo is truncated, append the separate address
+    consolidated.consolidatorStufferInfo = consolidated.consolidatorStufferInfo.replace('..', '') + '\n' + consolidated.consolidatorAddress;
+    console.log('🔗 ENHANCED: Completed truncated consolidator info with address:', consolidated.consolidatorStufferInfo);
+  }
+
   console.log(`Consolidated ${Object.keys(consolidated).length} fields from ${allExtractedData.length} documents`);
   console.log('Field sources:', Object.fromEntries(
     Object.entries(sourceTracker).map(([field, info]: [string, any]) => [field, `${info.documentType}:${info.source}`])
@@ -5851,6 +5875,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If we have separate address info, append it to existing consolidator info
         consolidatedData.consolidatorStufferInfo += '\n' + consolidatedData.consolidatorAddress;
         console.log('✅ Applied business rule: Enhanced consolidator info with separate address');
+      }
+      
+      // Business Rule 4b: Fix truncated consolidator info (contains '..')
+      if (consolidatedData.consolidatorStufferInfo && consolidatedData.consolidatorStufferInfo.includes('..')) {
+        console.log('🔧 DETECTED TRUNCATED CONSOLIDATOR INFO:', consolidatedData.consolidatorStufferInfo);
+        
+        // Remove the truncation marker and combine with available address data
+        let fixedConsolidator = consolidatedData.consolidatorStufferInfo.replace(/\.\./g, '');
+        
+        // Add any missing address parts from separate consolidatorAddress field
+        if (consolidatedData.consolidatorAddress && 
+            !fixedConsolidator.includes(consolidatedData.consolidatorAddress)) {
+          fixedConsolidator += '\n' + consolidatedData.consolidatorAddress;
+        }
+        
+        consolidatedData.consolidatorStufferInfo = fixedConsolidator.trim();
+        console.log('✅ Applied business rule: Fixed truncated consolidator info:', consolidatedData.consolidatorStufferInfo);
       }
 
       console.log('🔍 DOCUMENT TYPE ANALYSIS:');
