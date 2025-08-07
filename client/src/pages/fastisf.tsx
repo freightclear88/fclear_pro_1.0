@@ -392,9 +392,6 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           // Direct ISF field mappings
           importerName: 'importerName',
           importerAddress: 'importerAddress',
-          manufacturerInformation: 'manufacturerInformation',
-          countryOfOrigin: 'countryOfOrigin',
-          containerStuffingLocation: 'containerStuffingLocation',
           
           // From consolidated B/L data
           billOfLadingNumber: 'billOfLading',
@@ -452,6 +449,16 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
           'container stuffer': 'consolidatorStufferInfo',
           stufferName: 'consolidatorStufferInfo',
           stufferInformation: 'consolidatorStufferInfo',
+          consolidatorStufferInfo: 'consolidatorStufferInfo', // Direct mapping
+          consolidatorName: 'consolidatorStufferInfo', // ISF-specific field
+          
+          // Critical ISF field mappings - these are the exact field names from backend
+          manufacturerInformation: 'manufacturerInformation',
+          sellerInformation: 'sellerInformation', 
+          buyerInformation: 'buyerInformation',
+          shipToPartyInformation: 'shipToPartyInformation',
+          countryOfOrigin: 'countryOfOrigin',
+          containerStuffingLocation: 'containerStuffingLocation',
           
           // From combined fields
           ...Object.keys(combinedFields).reduce((acc, key) => {
@@ -463,6 +470,10 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         // Set form values from both extracted data and combined fields
         const allData = { ...data, ...combinedFields, ...rawConsolidated };
         
+        // Debug: Log all extracted data keys
+        console.log('🔍 All extracted data keys:', Object.keys(allData));
+        console.log('🔍 Field mappings available:', Object.keys(fieldMappings));
+        
         Object.entries(allData).forEach(([key, value]) => {
           if (value && typeof value === 'string' && value.trim() !== '') {
             const formField = fieldMappings[key];
@@ -473,10 +484,12 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
                   shouldValidate: false, 
                   shouldDirty: true 
                 });
-                console.log(`Set ${formField}:`, value);
+                console.log(`✅ Set ${formField}:`, value.substring(0, 100));
               } catch (error) {
-                console.warn(`Failed to set form field ${formField}:`, error);
+                console.warn(`❌ Failed to set form field ${formField}:`, error);
               }
+            } else {
+              console.log(`⚠️ No mapping found for key: ${key} (value: ${value.substring(0, 50)})`);
             }
           }
         });
