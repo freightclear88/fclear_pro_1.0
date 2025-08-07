@@ -1101,6 +1101,72 @@ ${pdfText.substring(0, 8000)}`
           console.log(`🎯 ISF PATTERN STUFFING LOCATION FOUND: ${isfPatternExtraction.containerStuffingLocation}`);
           extractedData.containerStuffingLocation = isfPatternExtraction.containerStuffingLocation;
         }
+        
+        if (isfPatternExtraction.consignee) {
+          console.log(`🎯 ISF PATTERN CONSIGNEE FOUND: ${isfPatternExtraction.consignee}`);
+          extractedData.consigneeName = isfPatternExtraction.consignee.split(/\n|,/)[0].trim();
+          extractedData.consigneeAddress = isfPatternExtraction.consignee;
+        }
+        
+        if (isfPatternExtraction.importer) {
+          console.log(`🎯 ISF PATTERN IMPORTER FOUND: ${isfPatternExtraction.importer}`);
+          extractedData.importerName = isfPatternExtraction.importer.split(/\n|,/)[0].trim();
+          extractedData.importerAddress = isfPatternExtraction.importer;
+        }
+        
+        if (isfPatternExtraction.countryOfOrigin) {
+          console.log(`🎯 ISF PATTERN COUNTRY OF ORIGIN FOUND: ${isfPatternExtraction.countryOfOrigin}`);
+          extractedData.countryOfOrigin = isfPatternExtraction.countryOfOrigin;
+          extractedData.manufacturerCountry = isfPatternExtraction.countryOfOrigin;
+        }
+        
+        if (isfPatternExtraction.hblScacCode) {
+          console.log(`🎯 ISF PATTERN HBL SCAC FOUND: ${isfPatternExtraction.hblScacCode}`);
+          extractedData.hblScacCode = isfPatternExtraction.hblScacCode;
+        }
+        
+        if (isfPatternExtraction.mblScacCode) {
+          console.log(`🎯 ISF PATTERN MBL SCAC FOUND: ${isfPatternExtraction.mblScacCode}`);
+          extractedData.mblScacCode = isfPatternExtraction.mblScacCode;
+          extractedData.scacCode = isfPatternExtraction.mblScacCode;
+        }
+        
+        if (isfPatternExtraction.htsCode) {
+          console.log(`🎯 ISF PATTERN HTS CODE FOUND: ${isfPatternExtraction.htsCode}`);
+          extractedData.htsCode = isfPatternExtraction.htsCode;
+          extractedData.hsCode = isfPatternExtraction.htsCode;
+          extractedData.htsusNumber = isfPatternExtraction.htsCode;
+        }
+        
+        if (isfPatternExtraction.commodityDescription) {
+          console.log(`🎯 ISF PATTERN COMMODITY DESCRIPTION FOUND: ${isfPatternExtraction.commodityDescription}`);
+          extractedData.commodityDescription = isfPatternExtraction.commodityDescription;
+          extractedData.cargoDescription = isfPatternExtraction.commodityDescription;
+        }
+        
+        if (isfPatternExtraction.vesselName) {
+          console.log(`🎯 ISF PATTERN VESSEL NAME FOUND: ${isfPatternExtraction.vesselName}`);
+          extractedData.vesselName = isfPatternExtraction.vesselName;
+        }
+        
+        if (isfPatternExtraction.voyageNumber) {
+          console.log(`🎯 ISF PATTERN VOYAGE NUMBER FOUND: ${isfPatternExtraction.voyageNumber}`);
+          extractedData.voyageNumber = isfPatternExtraction.voyageNumber;
+        }
+        
+        if (isfPatternExtraction.portOfLoading) {
+          console.log(`🎯 ISF PATTERN PORT OF LOADING FOUND: ${isfPatternExtraction.portOfLoading}`);
+          extractedData.portOfLoading = isfPatternExtraction.portOfLoading;
+          extractedData.originPort = isfPatternExtraction.portOfLoading;
+          extractedData.foreignPortOfLading = isfPatternExtraction.portOfLoading;
+        }
+        
+        if (isfPatternExtraction.portOfDischarge) {
+          console.log(`🎯 ISF PATTERN PORT OF DISCHARGE FOUND: ${isfPatternExtraction.portOfDischarge}`);
+          extractedData.portOfDischarge = isfPatternExtraction.portOfDischarge;
+          extractedData.destinationPort = isfPatternExtraction.portOfDischarge;
+          extractedData.portOfEntry = isfPatternExtraction.portOfDischarge;
+        }
       }
 
       // Validate and clean the extracted data
@@ -1232,6 +1298,10 @@ ${pdfText.substring(0, 8000)}`
         /(?:Buyer|Purchaser)\s*[|\t]\s*([^\n\t|]+)/i,
         /(?:ISF\s+)?(?:Field\s+)?(?:#?3|Three)[:\s]*(?:Buyer|Purchaser)[^\n]*\n([^\n]+)/i,
         /3\.\s*([A-Z][^\n]*(?:Co\.|Corp\.|Ltd\.|Inc\.)[^\n]*)/i,
+        
+        // More flexible buyer patterns
+        /Buyer[:\s]*\n([A-Z][^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /(?:ISF\s+)?(?:3[.\)\s]|Three[:\s])\s*([A-Z][^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
       ],
       
       shipToParty: [
@@ -1281,9 +1351,12 @@ ${pdfText.substring(0, 8000)}`
       ],
 
       consignee: [
-        // ISF Field #4 - Numbered format variations
-        /(?:^|\n)\s*(?:4\.?\s*)?(?:Consignee|Receiver)\s+(?:Name\s*)?(?:&|and)?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:5\.|Ship.*to|Container|$))/i,
-        /(?:^|\n)\s*(?:4\.?\s*)?Consignee[:\s]+([\s\S]*?)(?=\n\s*(?:5\.|Ship.*to|Container|$))/i,
+        // ISF Field #4 - Numbered format variations (more flexible)
+        /(?:^|\n)\s*(?:4\.?\s*)?(?:Consignee|Receiver)\s+(?:Name\s*)?(?:&|and)?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:[5-9]\.|Ship.*to|Container|Importer|$))/i,
+        /(?:^|\n)\s*(?:4\.?\s*)?Consignee[:\s]+([\s\S]*?)(?=\n\s*(?:[5-9]\.|Ship.*to|Container|Importer|$))/i,
+        
+        // More flexible consignee patterns
+        /Consignee[:\s]*\n([A-Z][^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
         
         // Standard format variations
         /(?:Consignee|Receiver)\s*(?:Name\s*)?(?:&|and)?\s*(?:Address\s*)?[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
@@ -1301,13 +1374,21 @@ ${pdfText.substring(0, 8000)}`
         /(?:Consignee|Receiver)\s*[|\t]\s*([^\n\t|]+)/i,
         /(?:ISF\s+)?(?:Field\s+)?(?:#?4|Four)[:\s]*(?:Consignee|Receiver)[^\n]*\n([^\n]+)/i,
         /4\.\s*([A-Z][^\n]*(?:Co\.|Corp\.|Ltd\.|Inc\.)[^\n]*)/i,
+        
+        // More flexible consignee patterns
+        /(?:ISF\s+)?(?:4[.\)\s]|Four[:\s])\s*([A-Z][^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /(?:Consignee|To)[:\s]*([A-Z][^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
       ],
 
       importer: [
-        // ISF Field #7 - Importer of Record patterns  
+        // ISF Field #7 - Importer of Record patterns (more flexible)
         /(?:^|\n)\s*(?:7\.?\s*)?Importer\s+of\s+Record[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
         /(?:^|\n)\s*(?:7\.?\s*)?Importer[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
         /IOR[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // More flexible importer patterns
+        /Importer[:\s]*\n([A-Z][^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /US\s+Importer[:\s]*\n([A-Z][^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
         
         // Standard format variations
         /Importer\s*(?:Name\s*)?(?:&|and)?\s*(?:Address\s*)?[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
@@ -1323,6 +1404,9 @@ ${pdfText.substring(0, 8000)}`
         /(?:Importer|IOR)\s*[|\t]\s*([^\n\t|]+)/i,
         /(?:ISF\s+)?(?:Field\s+)?(?:#?7|Seven)[:\s]*(?:Importer|IOR)[^\n]*\n([^\n]+)/i,
         /7\.\s*([A-Z][^\n]*(?:Co\.|Corp\.|Ltd\.|Inc\.)[^\n]*)/i,
+        
+        // More flexible importer patterns
+        /(?:ISF\s+)?(?:7[.\)\s]|Seven[:\s])\s*([A-Z][^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
       ],
 
       importerOfRecord: [
@@ -1338,13 +1422,17 @@ ${pdfText.substring(0, 8000)}`
       ],
 
       countryOfOrigin: [
-        // ISF Field #8 & #9 - Country of Origin patterns
-        /(?:^|\n)\s*(?:8\.?\s*)?Country\s+of\s+Origin[:\s]+([^\n]+)/i,
-        /(?:^|\n)\s*(?:9\.?\s*)?Country\s+of\s+Origin[:\s]+([^\n]+)/i,
+        // ISF Field #8 & #9 - Country of Origin patterns (more flexible)
+        /(?:^|\n)\s*(?:[89]\.?\s*)?Country\s+of\s+Origin[:\s]+([^\n]+)/i,
         /Origin\s+Country[:\s]+([^\n]+)/i,
         /Manufactured\s+in[:\s]+([^\n]+)/i,
         /Made\s+in[:\s]+([^\n]+)/i,
         /Produced\s+in[:\s]+([^\n]+)/i,
+        /Country\s+of\s+(?:Manufacture|Production)[:\s]+([^\n]+)/i,
+        
+        // Simple country patterns
+        /Origin[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
+        /Country[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
         
         // Alternative field labels
         /Manufacturing\s+Country[:\s]+([^\n]+)/i,
@@ -1360,6 +1448,9 @@ ${pdfText.substring(0, 8000)}`
         /(?:Country\s+of\s+)?Origin\s*[|\t]\s*([^\n\t|]+)/i,
         /(?:ISF\s+)?(?:Field\s+)?(?:#?[89]|Eight|Nine)[:\s]*(?:Country\s+of\s+)?Origin[^\n]*\n([^\n]+)/i,
         /[89]\.\s*([A-Z]{2,3}|[A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
+        
+        // More flexible country patterns
+        /(?:ISF\s+)?(?:[89][.\)\s]|(?:Eight|Nine)[:\s])\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
       ],
 
       hblScacCode: [
@@ -1440,12 +1531,13 @@ ${pdfText.substring(0, 8000)}`
     
     // Extract each field using patterns
     for (const [field, fieldPatterns] of Object.entries(patterns)) {
-      console.log(`🔍 Searching for ${field} patterns...`);
+      console.log(`🔍 Searching for ${field} patterns in document...`);
       for (const pattern of fieldPatterns) {
         const match = text.match(pattern);
         if (match && match[1]) {
           let extracted = match[1].trim();
-          console.log(`✅ Raw match found for ${field}: ${extracted.substring(0, 100)}...`);
+          console.log(`✅ Raw match found for ${field}: "${extracted.substring(0, 150)}..."`);
+          console.log(`🔧 Pattern used: ${pattern.toString().substring(0, 100)}...`);
           
           // Clean up the extracted text
           extracted = extracted.replace(/\s+/g, ' ').trim();
@@ -1475,9 +1567,9 @@ ${pdfText.substring(0, 8000)}`
             // Should be a number/ID format
             isValid = extracted.length >= 5 && /^[A-Z0-9\-]{5,}$/.test(extracted);
           } else if (field === 'containerStuffingLocation') {
-            // Should contain geographic location indicators
-            isValid = extracted.length > 10 && !isPlaceholder && 
-                     (/[A-Z]{2,}/.test(extracted) || /\b(?:port|city|state|province)\b/i.test(extracted));
+            // Should contain geographic location indicators (relaxed validation)
+            isValid = extracted.length > 3 && !isPlaceholder && 
+                     (/[A-Z]{2,}/.test(extracted) || /\b(?:port|city|state|province|country)\b/i.test(extracted));
           } else if (['hblScacCode', 'mblScacCode'].includes(field)) {
             // SCAC codes should be 2-4 uppercase letters
             isValid = /^[A-Z]{2,4}$/.test(extracted.trim());
@@ -1485,14 +1577,14 @@ ${pdfText.substring(0, 8000)}`
             // HTS codes should be numeric with optional dots
             isValid = /^[0-9]{4,10}(?:\.[0-9]{2,4})*$/.test(extracted.trim());
           } else if (['vesselName', 'voyageNumber', 'portOfLoading', 'portOfDischarge'].includes(field)) {
-            // Transportation related fields
-            isValid = extracted.length >= 3 && extracted.length <= 100 && !isPlaceholder;
+            // Transportation related fields (relaxed validation)
+            isValid = extracted.length >= 2 && extracted.length <= 200 && !isPlaceholder;
           } else if (field === 'commodityDescription') {
-            // Commodity descriptions should be substantial
-            isValid = extracted.length >= 5 && extracted.length <= 500 && !isPlaceholder;
+            // Commodity descriptions should be substantial (relaxed validation)
+            isValid = extracted.length >= 3 && extracted.length <= 1000 && !isPlaceholder;
           } else {
-            // Standard validation for company/party fields
-            isValid = extracted.length > 10 && 
+            // Standard validation for company/party fields (relaxed validation)
+            isValid = extracted.length > 3 && 
                      !isPlaceholder &&
                      !(field === 'seller' && isLogisticsCompany) &&
                      !(field === 'manufacturer' && isLogisticsCompany);
