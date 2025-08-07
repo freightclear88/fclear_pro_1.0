@@ -24,9 +24,16 @@ import { db } from './db';
 import { eq, and } from 'drizzle-orm';
 import * as cron from 'node-cron';
 import { NotificationService } from './notificationService';
+import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
 
 // Initialize OpenAI Document Processor
 const aiDocProcessor = new AIDocumentProcessor();
+
+// Initialize Azure Document Intelligence client for ISF processing
+const azureClient = new DocumentAnalysisClient(
+  process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT!,
+  new AzureKeyCredential(process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY!)
+);
 // PDF parsing will be dynamically imported when needed
 
 // Multi-document data consolidation function
@@ -5455,30 +5462,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No documents uploaded for ISF form filling' });
       }
 
+      // Get document types from request body (if provided by frontend)
+      const { documentTypes } = req.body;
+      const documentTypesArray = Array.isArray(documentTypes) ? documentTypes : (documentTypes ? [documentTypes] : []);
+      console.log('🚨 ISF FILL-FORM: Received document types from frontend:', documentTypesArray);
+
       // Process each document through the extraction pipeline first
       const allExtractedData = [];
       
-      for (const file of req.files) {
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
         try {
           console.log(`Processing ISF document: ${file.originalname}`);
           
-          // Determine document type (prioritize ISF documents)
-          let documentType = 'other';
+          // Use frontend-provided document type if available, otherwise auto-detect
+          let documentType = documentTypesArray[i] || 'other';
           const fileName = file.originalname.toLowerCase();
           
-          if (fileName.includes('isf') || fileName.includes('information sheet') || fileName.includes('isf_') || fileName.includes('data sheet')) {
-            documentType = 'isf_information_sheet';
-          } else if (fileName.includes('bill') && fileName.includes('lading')) {
-            documentType = 'bill_of_lading';
-          } else if (fileName.includes('invoice')) {
-            documentType = 'commercial_invoice';
-          } else if (fileName.includes('packing')) {
-            documentType = 'packing_list';
-          } else if (fileName.includes('arrival')) {
-            documentType = 'arrival_notice';
+          // Only auto-detect if no document type was provided from frontend
+          if (!documentTypesArray[i] || documentType === 'other') {
+            if (fileName.includes('isf') || fileName.includes('information sheet') || fileName.includes('isf_') || fileName.includes('data sheet')) {
+              documentType = 'isf_information_sheet';
+            } else if (fileName.includes('bill') && fileName.includes('lading')) {
+              documentType = 'bill_of_lading';
+            } else if (fileName.includes('invoice')) {
+              documentType = 'commercial_invoice';
+            } else if (fileName.includes('packing')) {
+              documentType = 'packing_list';
+            } else if (fileName.includes('arrival')) {
+              documentType = 'arrival_notice';
+            }
           }
           
-          console.log(`📄 Document ${file.originalname} classified as: ${documentType}`);
+          console.log(`📄 Document ${file.originalname} classified as: ${documentType} (frontend provided: ${!!documentTypesArray[i]})`);
           console.log(`🎯 ISF FILL-FORM: CALLING extractShipmentData with documentType: "${documentType}"`);
           
           // Extract data using the same AI processor as shipment creation
@@ -5493,16 +5509,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const fs = require('fs');
             let documentText = '';
             
-            // Try to read as text first, if it fails, extract text from PDF
-            try {
-              documentText = fs.readFileSync(file.path, 'utf8');
-            } catch {
-              // For PDF files, use PDF extraction
-              if (file.mimetype === 'application/pdf') {
-                const pdfParse = require('pdf-parse');
-                const pdfBuffer = fs.readFileSync(file.path);
-                const pdfData = await pdfParse(pdfBuffer);
-                documentText = pdfData.text;
+            // Handle different file types for text extraction
+            if (file.mimetype === 'application/pdf') {
+              // PDF files
+              const pdfParse = require('pdf-parse');
+              const pdfBuffer = fs.readFileSync(file.path);
+              const pdfData = await pdfParse(pdfBuffer);
+              documentText = pdfData.text;
+              console.log('📄 Extracted text from PDF using pdf-parse');
+            } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+                       file.mimetype === 'application/msword' || 
+                       file.originalname.toLowerCase().endsWith('.docx') || 
+                       file.originalname.toLowerCase().endsWith('.doc')) {
+              // DOCX/DOC files - Azure Document Intelligence has already extracted the text
+              console.log('📄 DOCX file detected - using Azure-extracted text from extractedData');
+              // The text should already be available from Azure processing, let's try to extract it differently
+              if (extractedData && Object.keys(extractedData).length > 0) {
+                // Use Azure Document Intelligence to get the raw text
+                try {
+                  const documentBuffer = fs.readFileSync(file.path);
+                  const poller = await azureClient.beginAnalyzeDocument("prebuilt-document", documentBuffer);
+                  const result = await poller.pollUntilDone();
+                  documentText = result.content || '';
+                  console.log(`📄 Azure extracted ${documentText.length} characters from DOCX`);
+                } catch (azureError) {
+                  console.log('❌ Azure text extraction failed for DOCX, using fallback:', azureError.message);
+                  documentText = '';
+                }
+              }
+            } else {
+              // Try to read as plain text first
+              try {
+                documentText = fs.readFileSync(file.path, 'utf8');
+                console.log('📄 Read document as plain text');
+              } catch (textError) {
+                console.log('❌ Could not read document as text:', textError.message);
+                documentText = '';
               }
             }
             

@@ -196,7 +196,7 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
   });
 
   // ISF document processing handler using the new consolidated backend system
-  const handleIsfDocumentProcessing = async (files: File[]) => {
+  const handleIsfDocumentProcessing = async (files: File[], documentTypes?: string[]) => {
     if (!files.length) return;
 
     setUploadedFiles(files);
@@ -208,6 +208,14 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       files.forEach(file => {
         formData.append("documents", file);
       });
+
+      // Add document types if provided
+      if (documentTypes && documentTypes.length > 0) {
+        documentTypes.forEach(docType => {
+          formData.append("documentTypes", docType);
+        });
+        console.log('📄 Sending document types to server:', documentTypes);
+      }
 
       const response = await fetch("/api/isf/fill-form", {
         method: "POST",

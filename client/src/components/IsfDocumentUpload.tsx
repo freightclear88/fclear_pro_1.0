@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 interface IsfDocumentUploadProps {
-  onFilesChange: (files: File[]) => void;
+  onFilesChange: (files: File[], documentTypes?: string[]) => void;
   isScanning?: boolean;
   processedDocuments?: Array<{
     fileName: string;
@@ -160,7 +160,10 @@ export default function IsfDocumentUpload({
     }
 
     const files = uploadedFiles.map(f => f.originalFile);
-    onFilesChange(files);
+    const documentTypes = uploadedFiles.map(f => f.documentType);
+    
+    // Pass both files and document types to the parent handler
+    onFilesChange(files, documentTypes);
   };
 
   const formatFileSize = (bytes: number) => {
