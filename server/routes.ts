@@ -5551,8 +5551,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (documentText && documentText.length > 50) {
               console.log('📄 DOCUMENT TEXT SAMPLE for ISF pattern extraction:', documentText.substring(0, 500));
               
-              // Use the aiDocumentProcessor's extractISFPatterns method directly
-              const isfPatterns = aiDocumentProcessor.extractISFPatterns(documentText);
+              // Use the aiDocProcessor's extractISFPatterns method directly
+              const isfPatterns = aiDocProcessor.extractISFPatterns(documentText);
               console.log('🎯 FORCED ISF PATTERNS RESULT:', JSON.stringify(isfPatterns, null, 2));
               
               // Override extracted data with ISF patterns if found
@@ -5581,6 +5581,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (isfPatterns.containerStuffingLocation) {
                 console.log(`🎯 OVERRIDING STUFFING LOCATION with ISF pattern: ${isfPatterns.containerStuffingLocation}`);
                 extractedData.containerStuffingLocation = isfPatterns.containerStuffingLocation;
+              }
+              // New ISF fields
+              if (isfPatterns.consignee) {
+                console.log(`🎯 OVERRIDING CONSIGNEE with ISF pattern: ${isfPatterns.consignee}`);
+                extractedData.consigneeInformation = isfPatterns.consignee;
+                extractedData.consigneeName = isfPatterns.consignee.split(/\n|,/)[0].trim();
+              }
+              if (isfPatterns.importer) {
+                console.log(`🎯 OVERRIDING IMPORTER with ISF pattern: ${isfPatterns.importer}`);
+                extractedData.importerName = isfPatterns.importer.split(/\n|,/)[0].trim();
+                extractedData.importerAddress = isfPatterns.importer;
+              }
+              if (isfPatterns.importerOfRecord) {
+                console.log(`🎯 OVERRIDING IMPORTER OF RECORD with ISF pattern: ${isfPatterns.importerOfRecord}`);
+                extractedData.importerOfRecord = isfPatterns.importerOfRecord;
+              }
+              if (isfPatterns.countryOfOrigin) {
+                console.log(`🎯 OVERRIDING COUNTRY OF ORIGIN with ISF pattern: ${isfPatterns.countryOfOrigin}`);
+                extractedData.countryOfOrigin = isfPatterns.countryOfOrigin;
+                extractedData.manufacturerCountry = isfPatterns.countryOfOrigin;
               }
             } else {
               console.log('❌ Could not extract text from document for ISF pattern matching');

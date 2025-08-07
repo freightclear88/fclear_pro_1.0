@@ -160,7 +160,7 @@ export default function IsfDocumentUpload({
     }
 
     const files = uploadedFiles.map(f => f.originalFile);
-    const documentTypes = uploadedFiles.map(f => f.documentType);
+    const documentTypes = uploadedFiles.map(f => f.documentType).filter(Boolean) as string[];
     
     // Pass both files and document types to the parent handler
     onFilesChange(files, documentTypes);

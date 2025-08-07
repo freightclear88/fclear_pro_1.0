@@ -1122,6 +1122,10 @@ ${pdfText.substring(0, 8000)}`
     buyer?: string;
     shipToParty?: string;
     containerStuffingLocation?: string;
+    consignee?: string;
+    importer?: string;
+    importerOfRecord?: string;
+    countryOfOrigin?: string;
   } {
     const result: any = {};
     
@@ -1173,6 +1177,34 @@ ${pdfText.substring(0, 8000)}`
         /Container\s+Stuffing\s+Location\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
         /Stuffing\s+Location\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
         /Place\s+of\s+Stuffing\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+      ],
+
+      consignee: [
+        /(?:^|\n)\s*(?:4\.?\s*)?Consignee\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:5\.|Ship.*to|$))/i,
+        /(?:^|\n)\s*(?:4\.?\s*)?Consignee[:\s]+([\s\S]*?)(?=\n\s*(?:5\.|Ship.*to|$))/i,
+        /Consignee\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Delivered\s+to\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Notify\s+party\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+      ],
+
+      importer: [
+        /Importer\s+of\s+Record[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Importer[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /IOR[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+      ],
+
+      importerOfRecord: [
+        /Importer\s+of\s+Record\s+Number[:\s]+([^\n\s]+)/i,
+        /IOR\s+Number[:\s]+([^\n\s]+)/i,
+        /EIN[:\s]+([^\n\s]+)/i,
+        /Tax\s+ID[:\s]+([^\n\s]+)/i,
+      ],
+
+      countryOfOrigin: [
+        /Country\s+of\s+Origin[:\s]+([^\n]+)/i,
+        /Origin\s+Country[:\s]+([^\n]+)/i,
+        /Manufactured\s+in[:\s]+([^\n]+)/i,
+        /Made\s+in[:\s]+([^\n]+)/i,
       ]
     };
     
