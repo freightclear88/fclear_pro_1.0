@@ -4617,8 +4617,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ISF Filing Routes
-  app.get('/api/isf/filings', isAuthenticated, async (req: any, res) => {
+  app.get('/api/isf/filings', async (req: any, res) => {
     try {
+      // Use same authentication pattern as /api/auth/user
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const userId = getUserId(req);
       const filings = await storage.getIsfFilingsByUserId(userId);
       res.json(filings);
@@ -4629,8 +4634,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get specific ISF filing with documents
-  app.get('/api/isf/filings/:id', isAuthenticated, async (req: any, res) => {
+  app.get('/api/isf/filings/:id', async (req: any, res) => {
     try {
+      // Use same authentication pattern as other routes
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const { id } = req.params;
       const filing = await storage.getIsfFilingById(parseInt(id));
       
@@ -4666,8 +4676,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get documents associated with an ISF filing
-  app.get('/api/documents/isf/:id', isAuthenticated, async (req: any, res) => {
+  app.get('/api/documents/isf/:id', async (req: any, res) => {
     try {
+      // Use same authentication pattern as other routes
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const { id } = req.params;
       const userId = getUserId(req);
       
@@ -4694,8 +4709,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update ISF filing
-  app.put('/api/isf/filings/:id', isAuthenticated, async (req: any, res) => {
+  app.put('/api/isf/filings/:id', async (req: any, res) => {
     try {
+      // Use same authentication pattern as other routes
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const { id } = req.params;
       const userId = getUserId(req);
       
