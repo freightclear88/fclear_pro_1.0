@@ -1126,85 +1126,315 @@ ${pdfText.substring(0, 8000)}`
     importer?: string;
     importerOfRecord?: string;
     countryOfOrigin?: string;
+    hblScacCode?: string;
+    mblScacCode?: string;
+    htsCode?: string;
+    commodityDescription?: string;
+    vesselName?: string;
+    voyageNumber?: string;
+    portOfLoading?: string;
+    portOfDischarge?: string;
   } {
     const result: any = {};
     
-    // Comprehensive ISF field patterns - scan entire document
+    // Comprehensive ISF field patterns - scan entire document for all use cases
     const patterns = {
       seller: [
-        // Look specifically for RS Korea Co., Ltd or similar patterns
+        // ISF Field #2 - Numbered format variations
+        /(?:^|\n)\s*(?:2\.?\s*)?(?:Seller|Export[er]*)\s+(?:Name\s*)?(?:&|and)?\s*Address[:\s]*((?:(?!DAEWOO|Logistics|Freight|Forwarder)[\s\S])*?)(?=\n\s*(?:3\.|Buyer|Importer|Consolidator|$))/i,
+        /(?:^|\n)\s*(?:2\.?\s*)?Seller[:\s]+((?:(?!DAEWOO|Logistics|Freight|Forwarder)[\s\S])*?)(?=\n\s*(?:3\.|Buyer|Importer|$))/i,
+        
+        // Standard format variations
+        /(?:Seller|Export[er]*)\s*(?:Name\s*)?(?:&|and)?\s*(?:Address\s*)?[:\s]+((?:(?!DAEWOO|Logistics|Freight|Forwarder)[^\n])*(?:\n(?:(?!DAEWOO|Logistics|Freight|Forwarder)[^\n:]*(?![A-Z][a-z]*:)))*)/i,
+        /Vendor\s*(?:Name\s*)?(?:&|and)?\s*(?:Address\s*)?[:\s]+((?:(?!DAEWOO|Logistics|Freight|Forwarder)[^\n])*(?:\n(?:(?!DAEWOO|Logistics|Freight|Forwarder)[^\n:]*(?![A-Z][a-z]*:)))*)/i,
+        /Supplier\s*(?:Name\s*)?(?:&|and)?\s*(?:Address\s*)?[:\s]+((?:(?!DAEWOO|Logistics|Freight|Forwarder)[^\n])*(?:\n(?:(?!DAEWOO|Logistics|Freight|Forwarder)[^\n:]*(?![A-Z][a-z]*:)))*)/i,
+        
+        // Alternative field labels
+        /(?:Sold\s+by|From)[:\s]+((?:(?!DAEWOO|Logistics|Freight|Forwarder)[^\n])*(?:\n(?:(?!DAEWOO|Logistics|Freight|Forwarder)[^\n:]*(?![A-Z][a-z]*:)))*)/i,
+        /Last\s+Known\s+Seller[:\s]+((?:(?!DAEWOO|Logistics|Freight|Forwarder)[^\n])*(?:\n(?:(?!DAEWOO|Logistics|Freight|Forwarder)[^\n:]*(?![A-Z][a-z]*:)))*)/i,
+        
+        // Table format patterns - horizontal and vertical layouts
+        /Seller[^\n]*\n[^\n]*([A-Z][^\n]*Co\.?[^\n]*(?:\n[^\n:]+)*)/i,
+        /(?:Seller|Export[er]*)\s*[|\t]\s*([^\n\t|]+)/i,
+        
+        // ISF table row patterns
+        /(?:ISF\s+)?(?:Field\s+)?(?:#?2|Two)[:\s]*(?:Seller|Export[er]*)[^\n]*\n([^\n]+)/i,
+        /2\.\s*([A-Z][^\n]*(?:Co\.|Corp\.|Ltd\.|Inc\.)[^\n]*)/i,
+        
+        // Specific company patterns (like RS Korea Co., Ltd)
         /RS\s+Korea\s+Co[.,]\s*Ltd[.\s]*[^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*/i,
-        // Numbered ISF fields for seller
-        /(?:^|\n)\s*(?:2\.?\s*)?Seller\s+Name\s*&?\s*Address[:\s]*((?:(?!DAEWOO|Logistics|Freight)[\s\S])*?)(?=\n\s*(?:3\.|Buyer|Consolidator|$))/i,
-        /(?:^|\n)\s*(?:2\.?\s*)?Seller[:\s]+((?:(?!DAEWOO|Logistics|Freight)[\s\S])*?)(?=\n\s*(?:3\.|Buyer|Consolidator|$))/i,
-        // General seller patterns excluding logistics companies
-        /Seller\s*:\s*((?:(?!DAEWOO|Logistics|Freight)[^\n])*(?:\n(?:(?!DAEWOO|Logistics|Freight)[^\n:]*(?![A-Z][a-z]*:)))*)/i,
-        /Vendor\s*:\s*((?:(?!DAEWOO|Logistics|Freight)[^\n])*(?:\n(?:(?!DAEWOO|Logistics|Freight)[^\n:]*(?![A-Z][a-z]*:)))*)/i,
-        /Supplier\s*:\s*((?:(?!DAEWOO|Logistics|Freight)[^\n])*(?:\n(?:(?!DAEWOO|Logistics|Freight)[^\n:]*(?![A-Z][a-z]*:)))*)/i,
+        
+        // Multi-line company address extraction
+        /(?:Seller|Export[er]*|Vendor|Supplier)[:\s]*\n([A-Z][^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
       ],
       
       manufacturer: [
-        /(?:^|\n)\s*(?:1\.?\s*)?Manufacturer[/\s]*Supplier\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:2\.|Seller|$))/i,
-        /(?:^|\n)\s*(?:1\.?\s*)?Manufacturer[:\s]+([\s\S]*?)(?=\n\s*(?:2\.|Seller|$))/i,
-        /Manufacturer\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
-        /Produced\s+by\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        // ISF Field #1 - Numbered format variations
+        /(?:^|\n)\s*(?:1\.?\s*)?(?:Manufacturer|Producer|Maker)(?:[/\s]*Supplier)?\s+(?:Name\s*)?(?:&|and)?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:2\.|Seller|Export|$))/i,
+        /(?:^|\n)\s*(?:1\.?\s*)?Manufacturer[:\s]+([\s\S]*?)(?=\n\s*(?:2\.|Seller|Export|$))/i,
+        
+        // Standard format variations
+        /(?:Manufacturer|Producer|Maker)\s*(?:Name\s*)?(?:&|and)?\s*(?:Address\s*)?[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /(?:Made|Produced|Manufactured)\s+(?:by|in)[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Factory[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Plant[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Alternative field labels
+        /Origin(?:al)?\s+(?:Manufacturer|Producer)[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Production\s+Facility[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Manufacturing\s+Company[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Table format patterns for manufacturer
+        /(?:Manufacturer|Producer)\s*[|\t]\s*([^\n\t|]+)/i,
+        /(?:ISF\s+)?(?:Field\s+)?(?:#?1|One)[:\s]*(?:Manufacturer|Producer)[^\n]*\n([^\n]+)/i,
+        /1\.\s*([A-Z][^\n]*(?:Co\.|Corp\.|Ltd\.|Inc\.)[^\n]*)/i,
       ],
       
       consolidator: [
-        /(?:^|\n)\s*(?:6\.?\s*)?Consolidator[/'s]*\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:7\.|$))/i,
-        /(?:^|\n)\s*(?:6\.?\s*)?Consolidator[:\s]+([\s\S]*?)(?=\n\s*(?:7\.|$))/i,
-        /Container\s+Stuffer[/\s]*Consolidator\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
-        /Freight\s+Forwarder\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
-        /Consolidator\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        // ISF Field #6 - Numbered format variations
+        /(?:^|\n)\s*(?:6\.?\s*)?(?:Consolidator|Container\s+Stuffer)[/'s]*\s+(?:Name\s*)?(?:&|and)?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:7\.|8\.|AMS|$))/i,
+        /(?:^|\n)\s*(?:6\.?\s*)?Consolidator[:\s]+([\s\S]*?)(?=\n\s*(?:7\.|8\.|AMS|$))/i,
+        
+        // Standard format variations
+        /(?:Consolidator|Container\s+Stuffer)\s*(?:Name\s*)?(?:&|and)?\s*(?:Address\s*)?[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Freight\s+Forwarder\s*(?:Name\s*)?(?:&|and)?\s*(?:Address\s*)?[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /NVOCC\s*(?:Name\s*)?(?:&|and)?\s*(?:Address\s*)?[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Alternative field labels
+        /Stuffing\s+(?:Company|Agent)[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Packing\s+(?:Company|Agent)[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Loading\s+(?:Company|Agent)[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /CFS\s+(?:Operator|Company)[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Warehouse\s+(?:Operator|Company)[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Table format patterns for consolidator
+        /(?:Consolidator|Container\s+Stuffer)\s*[|\t]\s*([^\n\t|]+)/i,
+        /(?:ISF\s+)?(?:Field\s+)?(?:#?6|Six)[:\s]*(?:Consolidator|Container\s+Stuffer)[^\n]*\n([^\n]+)/i,
+        /6\.\s*([A-Z][^\n]*(?:Co\.|Corp\.|Ltd\.|Inc\.)[^\n]*)/i,
       ],
       
       buyer: [
-        /(?:^|\n)\s*(?:3\.?\s*)?Buyer\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:4\.|Ship.*to|$))/i,
-        /(?:^|\n)\s*(?:3\.?\s*)?Buyer[:\s]+([\s\S]*?)(?=\n\s*(?:4\.|Ship.*to|$))/i,
-        /Buyer\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
-        /Importer\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        // ISF Field #3 - Numbered format variations
+        /(?:^|\n)\s*(?:3\.?\s*)?(?:Buyer|Purchaser)\s+(?:Name\s*)?(?:&|and)?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:4\.|Ship.*to|Consignee|$))/i,
+        /(?:^|\n)\s*(?:3\.?\s*)?Buyer[:\s]+([\s\S]*?)(?=\n\s*(?:4\.|Ship.*to|Consignee|$))/i,
+        
+        // Standard format variations
+        /(?:Buyer|Purchaser)\s*(?:Name\s*)?(?:&|and)?\s*(?:Address\s*)?[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /(?:Sold\s+to|To)[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Customer[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Alternative field labels
+        /End\s+User[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Final\s+(?:Buyer|Customer)[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Purchasing\s+Company[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Table format patterns for buyer
+        /(?:Buyer|Purchaser)\s*[|\t]\s*([^\n\t|]+)/i,
+        /(?:ISF\s+)?(?:Field\s+)?(?:#?3|Three)[:\s]*(?:Buyer|Purchaser)[^\n]*\n([^\n]+)/i,
+        /3\.\s*([A-Z][^\n]*(?:Co\.|Corp\.|Ltd\.|Inc\.)[^\n]*)/i,
       ],
       
       shipToParty: [
-        /(?:^|\n)\s*(?:4\.?\s*)?Ship[-\s]*to\s+Party\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:5\.|Container|$))/i,
-        /(?:^|\n)\s*(?:4\.?\s*)?Ship[-\s]*to[:\s]+([\s\S]*?)(?=\n\s*(?:5\.|Container|$))/i,
-        /Ship\s*to\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
-        /Consignee\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        // ISF Field #4 alternate - Ship-to Party (sometimes separate from consignee)
+        /(?:^|\n)\s*(?:4\.?\s*)?Ship[-\s]*to\s+Party\s+(?:Name\s*)?(?:&|and)?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:5\.|Container|Stuffing|$))/i,
+        /(?:^|\n)\s*(?:4\.?\s*)?Ship[-\s]*to[:\s]+([\s\S]*?)(?=\n\s*(?:5\.|Container|Stuffing|$))/i,
+        
+        // Standard format variations
+        /Ship\s*(?:to|[-]to)\s*(?:Party\s*)?[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Ship\s*to\s*Address[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Destination\s*Party[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Alternative field labels
+        /Final\s+Delivery[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Ultimate\s+Destination[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /End\s+Destination[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Table format patterns for ship-to party
+        /Ship[-\s]*to\s*(?:Party)?\s*[|\t]\s*([^\n\t|]+)/i,
+        /(?:ISF\s+)?(?:Field\s+)?(?:#?4|Four)[:\s]*Ship[-\s]*to[^\n]*\n([^\n]+)/i,
       ],
       
       containerStuffingLocation: [
+        // ISF Field #5 - Numbered format variations
         /(?:^|\n)\s*(?:5\.?\s*)?Container\s+Stuffing\s+Location[:\s]*([\s\S]*?)(?=\n\s*(?:6\.|Consolidator|$))/i,
-        /Container\s+Stuffing\s+Location\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
-        /Stuffing\s+Location\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
-        /Place\s+of\s+Stuffing\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /(?:^|\n)\s*(?:5\.?\s*)?(?:Stuffing|Loading)\s+Location[:\s]*([\s\S]*?)(?=\n\s*(?:6\.|Consolidator|$))/i,
+        
+        // Standard format variations
+        /Container\s+Stuffing\s+Location[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /(?:Stuffing|Loading)\s+Location[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Place\s+of\s+(?:Stuffing|Loading)[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Container\s+(?:Packed|Stuffed)\s+at[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Alternative field labels
+        /Origin\s+(?:Location|Address)[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Loading\s+Port[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /CFS\s+Location[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Warehouse\s+Location[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Geographic patterns for locations only
+        /(?:Stuffed|Loaded|Packed)\s+(?:at|in)\s+([A-Z][^\n,]*,\s*[A-Z]{2,})/i,
+        
+        // Table format patterns for container stuffing location
+        /(?:Container\s+)?(?:Stuffing|Loading)\s+Location\s*[|\t]\s*([^\n\t|]+)/i,
+        /(?:ISF\s+)?(?:Field\s+)?(?:#?5|Five)[:\s]*(?:Container\s+)?(?:Stuffing|Loading)[^\n]*\n([^\n]+)/i,
+        /5\.\s*([A-Z][^\n,]*(?:,\s*[A-Z]{2,})?)/i,
       ],
 
       consignee: [
-        /(?:^|\n)\s*(?:4\.?\s*)?Consignee\s+Name\s*&?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:5\.|Ship.*to|$))/i,
-        /(?:^|\n)\s*(?:4\.?\s*)?Consignee[:\s]+([\s\S]*?)(?=\n\s*(?:5\.|Ship.*to|$))/i,
-        /Consignee\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
-        /Delivered\s+to\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
-        /Notify\s+party\s*:\s*([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        // ISF Field #4 - Numbered format variations
+        /(?:^|\n)\s*(?:4\.?\s*)?(?:Consignee|Receiver)\s+(?:Name\s*)?(?:&|and)?\s*Address[:\s]*([\s\S]*?)(?=\n\s*(?:5\.|Ship.*to|Container|$))/i,
+        /(?:^|\n)\s*(?:4\.?\s*)?Consignee[:\s]+([\s\S]*?)(?=\n\s*(?:5\.|Ship.*to|Container|$))/i,
+        
+        // Standard format variations
+        /(?:Consignee|Receiver)\s*(?:Name\s*)?(?:&|and)?\s*(?:Address\s*)?[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /(?:Delivered?\s+to|Deliver\s+to)\s*[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /(?:Notify\s+party|Notify\s+to)\s*[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Final\s+Destination[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Alternative field labels
+        /Receiving\s+Company[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Destination\s+Company[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Addressee[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Ultimate\s+Consignee[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Table format patterns for consignee
+        /(?:Consignee|Receiver)\s*[|\t]\s*([^\n\t|]+)/i,
+        /(?:ISF\s+)?(?:Field\s+)?(?:#?4|Four)[:\s]*(?:Consignee|Receiver)[^\n]*\n([^\n]+)/i,
+        /4\.\s*([A-Z][^\n]*(?:Co\.|Corp\.|Ltd\.|Inc\.)[^\n]*)/i,
       ],
 
       importer: [
-        /Importer\s+of\s+Record[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
-        /Importer[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        // ISF Field #7 - Importer of Record patterns  
+        /(?:^|\n)\s*(?:7\.?\s*)?Importer\s+of\s+Record[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /(?:^|\n)\s*(?:7\.?\s*)?Importer[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
         /IOR[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Standard format variations
+        /Importer\s*(?:Name\s*)?(?:&|and)?\s*(?:Address\s*)?[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Import(?:ing)?\s+Company[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /US\s+Importer[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Alternative field labels
+        /Record\s+Importer[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Principal\s+(?:Party|Importer)[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Responsible\s+Party[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        
+        // Table format patterns for importer
+        /(?:Importer|IOR)\s*[|\t]\s*([^\n\t|]+)/i,
+        /(?:ISF\s+)?(?:Field\s+)?(?:#?7|Seven)[:\s]*(?:Importer|IOR)[^\n]*\n([^\n]+)/i,
+        /7\.\s*([A-Z][^\n]*(?:Co\.|Corp\.|Ltd\.|Inc\.)[^\n]*)/i,
       ],
 
       importerOfRecord: [
+        // Importer identification numbers
         /Importer\s+of\s+Record\s+Number[:\s]+([^\n\s]+)/i,
         /IOR\s+Number[:\s]+([^\n\s]+)/i,
         /EIN[:\s]+([^\n\s]+)/i,
         /Tax\s+ID[:\s]+([^\n\s]+)/i,
+        /Federal\s+ID[:\s]+([^\n\s]+)/i,
+        /CBP\s+ID[:\s]+([^\n\s]+)/i,
+        /Importer\s+ID[:\s]+([^\n\s]+)/i,
+        /US\s+Tax\s+ID[:\s]+([^\n\s]+)/i,
       ],
 
       countryOfOrigin: [
-        /Country\s+of\s+Origin[:\s]+([^\n]+)/i,
+        // ISF Field #8 & #9 - Country of Origin patterns
+        /(?:^|\n)\s*(?:8\.?\s*)?Country\s+of\s+Origin[:\s]+([^\n]+)/i,
+        /(?:^|\n)\s*(?:9\.?\s*)?Country\s+of\s+Origin[:\s]+([^\n]+)/i,
         /Origin\s+Country[:\s]+([^\n]+)/i,
         /Manufactured\s+in[:\s]+([^\n]+)/i,
         /Made\s+in[:\s]+([^\n]+)/i,
+        /Produced\s+in[:\s]+([^\n]+)/i,
+        
+        // Alternative field labels
+        /Manufacturing\s+Country[:\s]+([^\n]+)/i,
+        /Production\s+Country[:\s]+([^\n]+)/i,
+        /Source\s+Country[:\s]+([^\n]+)/i,
+        /Export\s+Country[:\s]+([^\n]+)/i,
+        /Shipping\s+Origin[:\s]+([^\n]+)/i,
+        
+        // Pattern for country codes and names
+        /Country[:\s]+([A-Z]{2,3}|[A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
+        
+        // Table format patterns for country of origin
+        /(?:Country\s+of\s+)?Origin\s*[|\t]\s*([^\n\t|]+)/i,
+        /(?:ISF\s+)?(?:Field\s+)?(?:#?[89]|Eight|Nine)[:\s]*(?:Country\s+of\s+)?Origin[^\n]*\n([^\n]+)/i,
+        /[89]\.\s*([A-Z]{2,3}|[A-Z][a-z]+(?:\s+[A-Z][a-z]*)*)/i,
+      ],
+
+      hblScacCode: [
+        // House Bill of Lading SCAC Code patterns
+        /(?:HBL|House)\s+SCAC\s*(?:Code)?[:\s]+([A-Z]{2,4})/i,
+        /House\s+(?:Bill|B\/L)\s+SCAC[:\s]+([A-Z]{2,4})/i,
+        /HBL\s+Carrier[:\s]+([A-Z]{2,4})/i,
+        /House\s+Carrier\s+Code[:\s]+([A-Z]{2,4})/i,
+        /NVOCC\s+SCAC[:\s]+([A-Z]{2,4})/i,
+      ],
+
+      mblScacCode: [
+        // Master Bill of Lading SCAC Code patterns
+        /(?:MBL|Master)\s+SCAC\s*(?:Code)?[:\s]+([A-Z]{2,4})/i,
+        /Master\s+(?:Bill|B\/L)\s+SCAC[:\s]+([A-Z]{2,4})/i,
+        /MBL\s+Carrier[:\s]+([A-Z]{2,4})/i,
+        /Master\s+Carrier\s+Code[:\s]+([A-Z]{2,4})/i,
+        /Ocean\s+Carrier\s+SCAC[:\s]+([A-Z]{2,4})/i,
+        /Steamship\s+Line[:\s]+([A-Z]{2,4})/i,
+      ],
+
+      htsCode: [
+        // HTS Tariff Classification patterns
+        /HTS\s*(?:Code|Number)?[:\s]+([0-9]{4,10}(?:\.[0-9]{2,4})*)/i,
+        /Tariff\s+(?:Code|Number)[:\s]+([0-9]{4,10}(?:\.[0-9]{2,4})*)/i,
+        /Classification[:\s]+([0-9]{4,10}(?:\.[0-9]{2,4})*)/i,
+        /HS\s+Code[:\s]+([0-9]{4,10}(?:\.[0-9]{2,4})*)/i,
+        /Schedule\s+B[:\s]+([0-9]{4,10}(?:\.[0-9]{2,4})*)/i,
+        /Commodity\s+Code[:\s]+([0-9]{4,10}(?:\.[0-9]{2,4})*)/i,
+      ],
+
+      commodityDescription: [
+        // Commodity/Cargo Description patterns
+        /(?:^|\n)\s*(?:10\.?\s*)?(?:Commodity|Cargo)\s+Description[:\s]+([\s\S]*?)(?=\n\s*(?:HTS|Tariff|Weight|$))/i,
+        /Goods\s+Description[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Product\s+Description[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Merchandise[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Item\s+Description[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+        /Nature\s+of\s+Goods[:\s]+([^\n]*(?:\n[^\n:]*(?![A-Z][a-z]*:))*)/i,
+      ],
+
+      vesselName: [
+        // Vessel/Ship Name patterns
+        /Vessel\s+Name[:\s]+([^\n]+)/i,
+        /Ship\s+Name[:\s]+([^\n]+)/i,
+        /(?:M\/V|MV|S\/S|SS)\s+([A-Z][^\n]*)/i,
+        /Ocean\s+Vessel[:\s]+([^\n]+)/i,
+        /Carrying\s+Vessel[:\s]+([^\n]+)/i,
+      ],
+
+      voyageNumber: [
+        // Voyage/Trip Number patterns
+        /Voyage\s*(?:Number|No\.?|#)?[:\s]+([A-Z0-9\-]+)/i,
+        /Trip\s*(?:Number|No\.?|#)?[:\s]+([A-Z0-9\-]+)/i,
+        /Flight\s*(?:Number|No\.?|#)?[:\s]+([A-Z0-9\-]+)/i,
+      ],
+
+      portOfLoading: [
+        // Port of Loading/Origin patterns
+        /Port\s+of\s+Loading[:\s]+([^\n]+)/i,
+        /Loading\s+Port[:\s]+([^\n]+)/i,
+        /Origin\s+Port[:\s]+([^\n]+)/i,
+        /Departure\s+Port[:\s]+([^\n]+)/i,
+        /From\s+Port[:\s]+([^\n]+)/i,
+        /POL[:\s]+([^\n]+)/i,
+      ],
+
+      portOfDischarge: [
+        // Port of Discharge/Destination patterns
+        /Port\s+of\s+Discharge[:\s]+([^\n]+)/i,
+        /Discharge\s+Port[:\s]+([^\n]+)/i,
+        /Destination\s+Port[:\s]+([^\n]+)/i,
+        /Arrival\s+Port[:\s]+([^\n]+)/i,
+        /To\s+Port[:\s]+([^\n]+)/i,
+        /POD[:\s]+([^\n]+)/i,
       ]
     };
     
@@ -1221,20 +1451,70 @@ ${pdfText.substring(0, 8000)}`
           extracted = extracted.replace(/\s+/g, ' ').trim();
           extracted = extracted.replace(/\n\s*\n/g, '\n').trim();
           
-          // Only use if it has meaningful content and is not a logistics company for seller field
+          // Enhanced validation for meaningful content
           const isLogisticsCompany = extracted.toLowerCase().includes('logistics') || 
                                    extracted.toLowerCase().includes('freight') || 
-                                   extracted.toLowerCase().includes('forwarding');
+                                   extracted.toLowerCase().includes('forwarding') ||
+                                   extracted.toLowerCase().includes('shipping') ||
+                                   extracted.toLowerCase().includes('express');
           
-          if (extracted.length > 5 && 
-              !extracted.toLowerCase().includes('to be provided') && 
-              !extracted.toLowerCase().includes('tbd') &&
-              !(field === 'seller' && isLogisticsCompany)) {
+          const isPlaceholder = extracted.toLowerCase().includes('to be provided') || 
+                               extracted.toLowerCase().includes('tbd') ||
+                               extracted.toLowerCase().includes('n/a') ||
+                               extracted.toLowerCase().includes('not applicable') ||
+                               extracted.toLowerCase().includes('same as') ||
+                               extracted.toLowerCase().includes('see above');
+          
+          // Special validation for different field types
+          let isValid = false;
+          if (field === 'countryOfOrigin') {
+            // Country field should be a valid country name or code
+            isValid = extracted.length >= 2 && extracted.length <= 50 && 
+                     !isPlaceholder && /^[A-Za-z\s,-]{2,50}$/.test(extracted);
+          } else if (field === 'importerOfRecord') {
+            // Should be a number/ID format
+            isValid = extracted.length >= 5 && /^[A-Z0-9\-]{5,}$/.test(extracted);
+          } else if (field === 'containerStuffingLocation') {
+            // Should contain geographic location indicators
+            isValid = extracted.length > 10 && !isPlaceholder && 
+                     (/[A-Z]{2,}/.test(extracted) || /\b(?:port|city|state|province)\b/i.test(extracted));
+          } else if (['hblScacCode', 'mblScacCode'].includes(field)) {
+            // SCAC codes should be 2-4 uppercase letters
+            isValid = /^[A-Z]{2,4}$/.test(extracted.trim());
+          } else if (field === 'htsCode') {
+            // HTS codes should be numeric with optional dots
+            isValid = /^[0-9]{4,10}(?:\.[0-9]{2,4})*$/.test(extracted.trim());
+          } else if (['vesselName', 'voyageNumber', 'portOfLoading', 'portOfDischarge'].includes(field)) {
+            // Transportation related fields
+            isValid = extracted.length >= 3 && extracted.length <= 100 && !isPlaceholder;
+          } else if (field === 'commodityDescription') {
+            // Commodity descriptions should be substantial
+            isValid = extracted.length >= 5 && extracted.length <= 500 && !isPlaceholder;
+          } else {
+            // Standard validation for company/party fields
+            isValid = extracted.length > 10 && 
+                     !isPlaceholder &&
+                     !(field === 'seller' && isLogisticsCompany) &&
+                     !(field === 'manufacturer' && isLogisticsCompany);
+          }
+          
+          if (isValid) {
             result[field] = extracted;
             console.log(`📋 ISF PATTERN MATCHED ${field.toUpperCase()}: ${extracted.substring(0, 100)}...`);
             break; // Use first valid match
           } else {
-            console.log(`❌ Rejected ${field} match: ${field === 'seller' && isLogisticsCompany ? 'logistics company as seller' : 'too short or placeholder'}`);
+            const reason = isPlaceholder ? 'placeholder text' : 
+                          (field === 'seller' && isLogisticsCompany) ? 'logistics company as seller' :
+                          (field === 'manufacturer' && isLogisticsCompany) ? 'logistics company as manufacturer' :
+                          field === 'countryOfOrigin' ? 'invalid country format' :
+                          field === 'importerOfRecord' ? 'invalid ID format' :
+                          field === 'containerStuffingLocation' ? 'no geographic indicators' :
+                          ['hblScacCode', 'mblScacCode'].includes(field) ? 'invalid SCAC code format' :
+                          field === 'htsCode' ? 'invalid HTS code format' :
+                          ['vesselName', 'voyageNumber', 'portOfLoading', 'portOfDischarge'].includes(field) ? 'invalid transportation field' :
+                          field === 'commodityDescription' ? 'invalid commodity description' :
+                          'too short or invalid';
+            console.log(`❌ Rejected ${field} match: ${reason}`);
           }
         } else {
           console.log(`❌ No match for ${field} pattern: ${pattern.toString().substring(0, 50)}...`);

@@ -5602,6 +5602,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 extractedData.countryOfOrigin = isfPatterns.countryOfOrigin;
                 extractedData.manufacturerCountry = isfPatterns.countryOfOrigin;
               }
+              // Additional ISF fields
+              if (isfPatterns.hblScacCode) {
+                console.log(`🎯 OVERRIDING HBL SCAC CODE with ISF pattern: ${isfPatterns.hblScacCode}`);
+                extractedData.hblScacCode = isfPatterns.hblScacCode;
+              }
+              if (isfPatterns.mblScacCode) {
+                console.log(`🎯 OVERRIDING MBL SCAC CODE with ISF pattern: ${isfPatterns.mblScacCode}`);
+                extractedData.mblScacCode = isfPatterns.mblScacCode;
+                extractedData.scacCode = isfPatterns.mblScacCode; // Also set general scac code
+              }
+              if (isfPatterns.htsCode) {
+                console.log(`🎯 OVERRIDING HTS CODE with ISF pattern: ${isfPatterns.htsCode}`);
+                extractedData.htsCode = isfPatterns.htsCode;
+                extractedData.hsCode = isfPatterns.htsCode; // Also set HS code field
+              }
+              if (isfPatterns.commodityDescription) {
+                console.log(`🎯 OVERRIDING COMMODITY DESCRIPTION with ISF pattern: ${isfPatterns.commodityDescription}`);
+                extractedData.commodityDescription = isfPatterns.commodityDescription;
+                extractedData.cargoDescription = isfPatterns.commodityDescription;
+              }
+              if (isfPatterns.vesselName) {
+                console.log(`🎯 OVERRIDING VESSEL NAME with ISF pattern: ${isfPatterns.vesselName}`);
+                extractedData.vesselName = isfPatterns.vesselName;
+              }
+              if (isfPatterns.voyageNumber) {
+                console.log(`🎯 OVERRIDING VOYAGE NUMBER with ISF pattern: ${isfPatterns.voyageNumber}`);
+                extractedData.voyageNumber = isfPatterns.voyageNumber;
+              }
+              if (isfPatterns.portOfLoading) {
+                console.log(`🎯 OVERRIDING PORT OF LOADING with ISF pattern: ${isfPatterns.portOfLoading}`);
+                extractedData.portOfLoading = isfPatterns.portOfLoading;
+                extractedData.originPort = isfPatterns.portOfLoading;
+              }
+              if (isfPatterns.portOfDischarge) {
+                console.log(`🎯 OVERRIDING PORT OF DISCHARGE with ISF pattern: ${isfPatterns.portOfDischarge}`);
+                extractedData.portOfDischarge = isfPatterns.portOfDischarge;
+                extractedData.destinationPort = isfPatterns.portOfDischarge;
+              }
             } else {
               console.log('❌ Could not extract text from document for ISF pattern matching');
             }
