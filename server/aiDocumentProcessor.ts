@@ -129,17 +129,33 @@ export class AIDocumentProcessor {
     try {
       console.log('🎯 STARTING ISF-SPECIFIC ENHANCEMENT...');
       
-      // Extract PDF text for ISF processing
-      let pdfText = '';
+      // Extract document text for ISF processing (support both PDF and DOCX)
+      let documentText = '';
       try {
-        pdfText = await this.extractPDFText(filePath);
-        console.log(`🔍 Extracted ${pdfText.length} characters for ISF analysis`);
+        // Try PDF extraction first
+        if (filePath.toLowerCase().endsWith('.pdf')) {
+          documentText = await this.extractPDFText(filePath);
+          console.log(`🔍 Extracted ${documentText.length} characters from PDF for ISF analysis`);
+        } else {
+          // For DOCX and other formats, use Azure Document Intelligence
+          console.log('🔍 Using Azure Document Intelligence for DOCX text extraction...');
+          const documentBuffer = fs.readFileSync(filePath);
+          const poller = await azureClient.beginAnalyzeDocument("prebuilt-document", documentBuffer);
+          const result = await poller.pollUntilDone();
+          documentText = result.content || '';
+          console.log(`🔍 Extracted ${documentText.length} characters from DOCX for ISF analysis`);
+        }
+        
+        if (documentText.length < 50) {
+          console.log('Insufficient text extracted for ISF enhancement');
+          return azureResult;
+        }
       } catch (error) {
-        console.log('PDF text extraction failed for ISF enhancement');
+        console.log('Document text extraction failed for ISF enhancement:', error);
         return azureResult;
       }
 
-      console.log(`📄 PDF Text Preview (first 500 chars): ${pdfText.substring(0, 500)}`);
+      console.log(`📄 Document Text Preview (first 500 chars): ${documentText.substring(0, 500)}`);
       
       // Run ISF-specific extraction
       const isfCompletion = await openai.chat.completions.create({
@@ -170,7 +186,7 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
           },
           {
             role: "user", 
-            content: `Extract ISF field data from this document text. Pay attention to field labels and extract the complete text that appears after each label:\n\n${pdfText}`
+            content: `Extract ISF field data from this document text. Pay attention to field labels and extract the complete text that appears after each label:\n\n${documentText}`
           }
         ],
         response_format: { type: "json_object" },
@@ -323,8 +339,18 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
         if (isISFDocument) {
           console.log('🎯 ISF DOCUMENT DETECTED DURING AZURE FAILURE: Will enhance OpenAI results with ISF-specific extraction...');
           try {
-            // Get basic OpenAI extraction first
-            const openaiResult = await this.extractComprehensiveData(await this.extractPDFText(filePath));
+            // Get basic OpenAI extraction first - support both PDF and DOCX
+            let documentText = '';
+            if (filePath.toLowerCase().endsWith('.pdf')) {
+              documentText = await this.extractPDFText(filePath);
+            } else {
+              // For DOCX files, use Azure to get text first
+              const documentBuffer = fs.readFileSync(filePath);
+              const poller = await azureClient.beginAnalyzeDocument("prebuilt-document", documentBuffer);
+              const result = await poller.pollUntilDone();
+              documentText = result.content || '';
+            }
+            const openaiResult = await this.extractComprehensiveData(documentText);
             console.log('🔍 OPENAI RESULT BEFORE ISF ENHANCEMENT (AZURE FAILED):', Object.keys(openaiResult || {}));
             
             // Then enhance with ISF-specific logic
@@ -346,27 +372,37 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
       }
       console.log('OpenAI connection successful');
 
-      // Try to extract text from PDF, fallback to image analysis if needed
-      let pdfText = '';
+      // Try to extract text from document (support both PDF and DOCX)
+      let documentText = '';
       let useImageAnalysis = false;
       
       try {
-        pdfText = await this.extractPDFText(filePath);
-        console.log(`Extracted ${pdfText.length} characters from PDF`);
-      } catch (pdfError) {
-        console.log('PDF text extraction failed, using direct file analysis');
+        if (filePath.toLowerCase().endsWith('.pdf')) {
+          documentText = await this.extractPDFText(filePath);
+          console.log(`Extracted ${documentText.length} characters from PDF`);
+        } else {
+          // For DOCX files, use Azure Document Intelligence
+          console.log('🔍 Using Azure for DOCX text extraction in fallback...');
+          const documentBuffer = fs.readFileSync(filePath);
+          const poller = await azureClient.beginAnalyzeDocument("prebuilt-document", documentBuffer);
+          const result = await poller.pollUntilDone();
+          documentText = result.content || '';
+          console.log(`Extracted ${documentText.length} characters from DOCX`);
+        }
+      } catch (extractionError) {
+        console.log('Document text extraction failed, using direct file analysis');
         useImageAnalysis = true;
         // Use filename and file metadata for AI analysis
         const fileName = filePath.split('/').pop() || '';
         const stats = fs.statSync(filePath);
-        pdfText = `Document: ${fileName}\nFile size: ${stats.size} bytes\nDocument type: ${documentType}\nThis PDF requires analysis for shipping data extraction.`;
+        documentText = `Document: ${fileName}\nFile size: ${stats.size} bytes\nDocument type: ${documentType}\nThis document requires analysis for shipping data extraction.`;
       }
 
-      if (!pdfText || pdfText.length < 10) {
-        throw new Error('Unable to extract sufficient content from PDF');
+      if (!documentText || documentText.length < 10) {
+        throw new Error('Unable to extract sufficient content from document');
       }
 
-      console.log(`Sending ${pdfText.length} characters to AI for analysis`);
+      console.log(`Sending ${documentText.length} characters to AI for analysis`);
 
       // Enhanced ISF-specific extraction for ISF Information Sheets
       const isISFDocument = documentType === 'isf_information_sheet' || documentType === 'isf information sheet' || documentType.toLowerCase().includes('isf');
@@ -374,21 +410,21 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
       
       if (isISFDocument) {
         console.log('🎯 SPECIALIZED ISF EXTRACTION: Processing ISF Information Sheet with targeted field extraction');
-        console.log(`📄 PDF Text Preview (first 500 chars): ${pdfText.substring(0, 500)}`);
+        console.log(`📄 Document Text Preview (first 500 chars): ${documentText.substring(0, 500)}`);
         
         // Add specific pattern checks to debug the extraction
         console.log('🔍 Looking for ISF field patterns in document...');
-        const hasContainerStuffing = /container\s*stuffing\s*location/i.test(pdfText);
-        const hasShipToParty = /ship\s*to\s*party/i.test(pdfText);
-        const hasHblScac = /hbl\s*scac/i.test(pdfText);
-        const hasMblScac = /mbl\s*scac/i.test(pdfText);
+        const hasContainerStuffing = /container\s*stuffing\s*location/i.test(documentText);
+        const hasShipToParty = /ship\s*to\s*party/i.test(documentText);
+        const hasHblScac = /hbl\s*scac/i.test(documentText);
+        const hasMblScac = /mbl\s*scac/i.test(documentText);
         
         console.log(`Pattern checks - Container Stuffing: ${hasContainerStuffing}, Ship To Party: ${hasShipToParty}, HBL SCAC: ${hasHblScac}, MBL SCAC: ${hasMblScac}`);
         
-        // Show a sample of the PDF text to understand what OpenAI is working with
-        console.log('🔍 PDF TEXT SAMPLE FOR ISF EXTRACTION (first 3000 chars):');
-        console.log(pdfText.substring(0, 3000));
-        console.log('🔍 END PDF TEXT SAMPLE');
+        // Show a sample of the document text to understand what OpenAI is working with
+        console.log('🔍 DOCUMENT TEXT SAMPLE FOR ISF EXTRACTION (first 3000 chars):');
+        console.log(documentText.substring(0, 3000));
+        console.log('🔍 END DOCUMENT TEXT SAMPLE');
         
         const isfCompletion = await openai.chat.completions.create({
           model: "gpt-4o",
@@ -433,7 +469,7 @@ Look for seller information near: manufacturer, supplier, vendor, trading compan
 Look for consolidator information near: freight forwarder, logistics, consolidation, shipping agent sections
 
 Document text:
-${pdfText}`
+${documentText}`
             }
           ],
           response_format: { type: "json_object" },
@@ -586,7 +622,7 @@ Key extraction priorities:
 
 Read through the ENTIRE document content carefully:
 
-${pdfText.substring(0, 8000)}`
+${documentText.substring(0, 8000)}`
           }
         ],
         response_format: { type: "json_object" },
@@ -610,7 +646,7 @@ ${pdfText.substring(0, 8000)}`
       
       // Enhanced consolidator name extraction with comprehensive pattern matching for ISF documents
       console.log(`🔍 DOCUMENT ANALYSIS: Processing ${documentType} document`);
-      console.log(`📄 Document text length: ${pdfText?.length || 0} characters`);
+      console.log(`📄 Document text length: ${documentText?.length || 0} characters`);
       console.log(`🔍 Current extracted consolidator data:`, {
         consolidatorName: extractedData.consolidatorName,
         consolidatorStufferInfo: extractedData.consolidatorStufferInfo,
@@ -621,12 +657,12 @@ ${pdfText.substring(0, 8000)}`
       });
       
       // Show preview of document text for ISF documents
-      if (pdfText && documentType === 'isf_information_sheet') {
-        console.log(`📋 DOCUMENT PREVIEW (first 500 chars):`, pdfText.substring(0, 500));
-        console.log(`📋 DOCUMENT PREVIEW (last 300 chars):`, pdfText.substring(Math.max(0, pdfText.length - 300)));
+      if (documentText && documentType === 'isf_information_sheet') {
+        console.log(`📋 DOCUMENT PREVIEW (first 500 chars):`, documentText.substring(0, 500));
+        console.log(`📋 DOCUMENT PREVIEW (last 300 chars):`, documentText.substring(Math.max(0, documentText.length - 300)));
       }
       
-      if (!extractedData.consolidatorName && !extractedData.consolidatorStufferInfo && pdfText && documentType === 'isf_information_sheet') {
+      if (!extractedData.consolidatorName && !extractedData.consolidatorStufferInfo && documentText && documentType === 'isf_information_sheet') {
         console.log('🔍 PATTERN MATCHING: Searching for consolidator patterns in ISF document...');
         const consolidatorPatterns = [
           // Exact patterns from ISF Information Sheet format
@@ -652,7 +688,7 @@ ${pdfText.substring(0, 8000)}`
         ];
         
         for (const pattern of consolidatorPatterns) {
-          const match = pdfText.match(pattern);
+          const match = documentText.match(pattern);
           if (match && match[1]) {
             const consolidatorName = match[1].trim();
             // Clean up the extracted name
@@ -692,7 +728,7 @@ ${pdfText.substring(0, 8000)}`
           
           for (const pattern of sectionPatterns) {
             let match;
-            while ((match = pattern.exec(pdfText)) !== null) {
+            while ((match = pattern.exec(documentText)) !== null) {
               const consolidator = match[1]?.trim();
               if (consolidator && consolidator.length > 8 && consolidator.length < 100) {
                 // Clean up the extracted consolidator name
@@ -723,7 +759,7 @@ ${pdfText.substring(0, 8000)}`
           
           for (const pattern of companyPatterns) {
             let match;
-            while ((match = pattern.exec(pdfText)) !== null) {
+            while ((match = pattern.exec(documentText)) !== null) {
               const company = match[1]?.trim();
               if (company && company.length > 8 && company.length < 100) {
                 foundConsolidators.add(company);
