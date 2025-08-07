@@ -5789,6 +5789,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('  containerStuffingLocation:', consolidatedData.containerStuffingLocation);
       console.log('  shipperName (for comparison):', consolidatedData.shipperName);
       
+      // Apply intelligent business rule fallbacks BEFORE final mapping
+      console.log('🧠 APPLYING INTELLIGENT BUSINESS RULE FALLBACKS...');
+      
+      // Business Rule 1: Manufacturer often same as seller/shipper (if not logistics company)
+      if (!consolidatedData.manufacturerInformation && consolidatedData.shipperName) {
+        const isLogistics = consolidatedData.shipperName.toLowerCase().includes('logistics') ||
+                           consolidatedData.shipperName.toLowerCase().includes('freight') ||
+                           consolidatedData.shipperName.toLowerCase().includes('forwarding');
+                           
+        if (!isLogistics) {
+          const manufacturerInfo = [consolidatedData.shipperName];
+          if (consolidatedData.shipperAddress) {
+            manufacturerInfo.push(consolidatedData.shipperAddress);
+          }
+          consolidatedData.manufacturerInformation = manufacturerInfo.join('\n');
+          console.log('✅ Applied business rule: Manufacturer = Shipper (non-logistics)');
+        }
+      }
+      
+      // Business Rule 2: Seller often same as manufacturer/shipper
+      if (!consolidatedData.sellerInformation && consolidatedData.manufacturerInformation) {
+        consolidatedData.sellerInformation = consolidatedData.manufacturerInformation;
+        console.log('✅ Applied business rule: Seller = Manufacturer');
+      } else if (!consolidatedData.sellerInformation && consolidatedData.shipperName) {
+        const sellerInfo = [consolidatedData.shipperName];
+        if (consolidatedData.shipperAddress) {
+          sellerInfo.push(consolidatedData.shipperAddress);
+        }
+        consolidatedData.sellerInformation = sellerInfo.join('\n');
+        console.log('✅ Applied business rule: Seller = Shipper');
+      }
+      
+      // Business Rule 3: Ship-to party often same as consignee/buyer
+      if (!consolidatedData.shipToPartyInformation && consolidatedData.consigneeName) {
+        const shipToInfo = [consolidatedData.consigneeName];
+        if (consolidatedData.consigneeAddress) {
+          shipToInfo.push(consolidatedData.consigneeAddress);
+        }
+        consolidatedData.shipToPartyInformation = shipToInfo.join('\n');
+        console.log('✅ Applied business rule: Ship-to party = Consignee');
+      }
+      
+      // Business Rule 4: Enhanced consolidator info completion
+      if (consolidatedData.consolidatorName && !consolidatedData.consolidatorStufferInfo) {
+        consolidatedData.consolidatorStufferInfo = consolidatedData.consolidatorName;
+        console.log('✅ Applied business rule: Complete consolidator info from name');
+      }
+
       console.log('🔍 DOCUMENT TYPE ANALYSIS:');
       allExtractedData.forEach((docData, index) => {
         console.log(`  Document ${index + 1}: ${docData.fileName} (${docData.documentType})`);
