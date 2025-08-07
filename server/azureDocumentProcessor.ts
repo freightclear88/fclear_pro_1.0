@@ -220,6 +220,13 @@ export class AzureDocumentProcessor {
           }
         }
         
+        // For ISF documents, be more strict about content extraction failures
+        const isISFDocument = documentType === 'isf_information_sheet' || documentType === 'isf information sheet' || documentType.toLowerCase().includes('isf');
+        if (isISFDocument && extractedText.length < 50) {
+          console.log('🚨 ISF DOCUMENT: Azure failed to extract sufficient content, refusing to generate fake data');
+          throw new Error('Azure processing failed for ISF document - insufficient content extracted');
+        }
+        
         if (extractedText.length < 50) {
           throw new Error('Unable to extract sufficient content from document');
         }
@@ -244,7 +251,14 @@ export class AzureDocumentProcessor {
     } catch (error) {
       console.error('Azure Document Intelligence processing failed:', error);
       
-      // Try direct PDF text extraction as fallback
+      // For ISF documents, NEVER return fake data - let the AI processor handle it
+      const isISFDocument = documentType === 'isf_information_sheet' || documentType === 'isf information sheet' || documentType.toLowerCase().includes('isf');
+      if (isISFDocument) {
+        console.log('🚨 ISF DOCUMENT DETECTED: Refusing to generate fake data, will let AI processor handle extraction');
+        throw new Error('Azure processing failed for ISF document - delegating to AI processor');
+      }
+      
+      // Try direct PDF text extraction as fallback for non-ISF documents
       try {
         console.log('Attempting direct PDF text extraction as fallback...');
         const directText = await this.extractPDFTextDirect(filePath);
@@ -257,7 +271,7 @@ export class AzureDocumentProcessor {
         console.error('Direct PDF extraction also failed:', directError);
       }
       
-      // Only return fallback data as last resort
+      // Only return fallback data as last resort for non-ISF documents
       const fileName = filePath.split('/').pop() || '';
       return this.generateRealisticData(fileName, documentType);
     }

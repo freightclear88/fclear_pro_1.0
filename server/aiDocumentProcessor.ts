@@ -295,18 +295,18 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
           console.log('Azure extraction successful, using Azure data');
           console.log(`🔍 AZURE DOCUMENT TYPE CHECK: "${documentType}"`);
           
-          // DISABLED: ISF enhancement was causing issues, using standard Azure extraction only
-          console.log(`🔍 USING STANDARD AZURE EXTRACTION for documentType="${documentType}"`);
-          
-          // Skip ISF enhancement entirely - use standard Azure results
-          /*
+          // Check if this is an ISF document and enhance accordingly
           const isISFDocument = documentType === 'isf_information_sheet' || documentType === 'isf information sheet' || documentType.toLowerCase().includes('isf');
+          console.log(`🔍 ISF DOCUMENT CHECK: documentType="${documentType}", isISFDocument=${isISFDocument}`);
+          
           if (isISFDocument) {
+            console.log('🎯 ISF DOCUMENT DETECTED: Enhancing Azure results with ISF-specific extraction...');
             const enhancedResult = await this.enhanceWithISFExtraction(filePath, azureResult, documentType);
+            console.log('🎯 ISF ENHANCEMENT COMPLETE: Returning enhanced results');
             return enhancedResult;
           }
-          */
           
+          console.log(`🔍 NON-ISF DOCUMENT: Using standard Azure extraction for documentType="${documentType}"`);
           return azureResult;
         } else {
           console.log('Azure extraction yielded minimal data, trying OpenAI enhancement...');
@@ -318,12 +318,10 @@ If a field label is not found or has no data, use null. Extract ONLY the exact t
           
           if (isISFDocument) {
             console.log('🎯 ISF DOCUMENT DETECTED DURING FALLBACK: Will enhance OpenAI results with ISF-specific extraction...');
-            // Get basic OpenAI extraction first
-            const openaiResult = await this.extractComprehensiveData(await this.extractPDFText(filePath));
-            console.log('🔍 OPENAI RESULT BEFORE ISF ENHANCEMENT:', Object.keys(openaiResult || {}));
-            
-            // Then enhance with ISF-specific logic
-            const enhancedResult = await this.enhanceWithISFExtraction(filePath, openaiResult, documentType);
+            // For ISF documents, skip basic OpenAI extraction and go directly to ISF enhancement
+            // This ensures proper DOCX handling with Azure Document Intelligence
+            console.log('🎯 ISF DOCUMENT: Skipping basic OpenAI extraction, going directly to ISF enhancement...');
+            const enhancedResult = await this.enhanceWithISFExtraction(filePath, {}, documentType);
             console.log('🎯 ISF ENHANCEMENT COMPLETE FROM FALLBACK: Returning enhanced results');
             console.log('🔍 ENHANCED RESULT FIELDS FROM FALLBACK:', Object.keys(enhancedResult || {}));
             return enhancedResult;
