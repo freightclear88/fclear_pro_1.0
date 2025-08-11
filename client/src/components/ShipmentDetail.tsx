@@ -201,72 +201,74 @@ CONTAINER:
           </DialogTitle>
         </DialogHeader>
 
-        {/* Visual Route Map */}
-        <div className="bg-gradient-to-r from-blue-50 to-green-50 p-6 rounded-lg border">
-          <div className="flex items-center justify-between max-w-4xl mx-auto">
+        {/* Rebuilt Visual Route Map with Proper Icon Display */}
+        <div className="bg-gradient-to-r from-blue-50 to-green-50 p-6 rounded-lg border mb-6">
+          {/* Transport Mode Header */}
+          <div className="flex items-center justify-center mb-4">
+            <div className="flex items-center space-x-3 bg-white px-4 py-2 rounded-full shadow-sm border">
+              <TransportModeIcon mode={shipment.transportMode} />
+              <span className="font-semibold text-freight-dark">
+                {shipment.transportMode?.toUpperCase() || 'TRANSPORT'} SHIPMENT
+              </span>
+            </div>
+          </div>
+
+          {/* Route Information */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Origin */}
-            <div className="flex flex-col items-center space-y-2 flex-1">
-              <div className="relative">
-                <Star className="w-8 h-8 text-freight-blue fill-freight-blue" />
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-freight-green rounded-full border-2 border-white"></div>
-              </div>
-              <div className="text-center">
-                <div className="font-semibold text-freight-dark">
-                  {shipment.portOfLoading || 'Origin'}
+            <div className="text-center">
+              <div className="flex justify-center mb-2">
+                <div className="relative">
+                  <Star className="w-8 h-8 text-freight-blue fill-freight-blue" />
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-freight-green rounded-full border-2 border-white"></div>
                 </div>
-                <div className="text-sm text-gray-600">
-                  {shipment.countryOfOrigin || 'Country of Origin'}
-                </div>
-                {shipment.etd && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    ETD: {new Date(shipment.etd).toLocaleDateString()}
-                  </div>
-                )}
               </div>
+              <div className="font-semibold text-freight-dark">
+                {shipment.portOfLoading || 'Origin'}
+              </div>
+              <div className="text-sm text-gray-600">
+                {shipment.countryOfOrigin || 'Country of Origin'}
+              </div>
+              {shipment.etd && (
+                <div className="text-xs text-gray-500 mt-1">
+                  ETD: {new Date(shipment.etd).toLocaleDateString()}
+                </div>
+              )}
             </div>
 
-            {/* Route Line with Transport Mode */}
-            <div className="flex-2 flex items-center justify-center px-4">
-              <div className="relative w-full max-w-md">
-                {/* Gradient line */}
-                <div className="h-1 bg-gradient-to-r from-freight-blue via-freight-green to-freight-blue rounded-full"></div>
-                
-                {/* Font Awesome Transport mode indicator - Enhanced */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-16 h-16 flex items-center justify-center shadow-xl border-4 border-freight-blue/20">
-                  <TransportModeIcon mode={shipment.transportMode} />
-                </div>
-                
-                {/* Transport Mode Label */}
-                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs font-bold text-freight-dark bg-white px-3 py-1 rounded-full shadow-md border-2 border-freight-blue/10">
-                  {shipment.transportMode?.toUpperCase() || 'TRANSPORT'}
-                </div>
+            {/* Transport Route */}
+            <div className="flex items-center justify-center">
+              <div className="flex items-center space-x-2">
+                <ArrowRight className="w-5 h-5 text-freight-blue" />
+                <div className="h-1 w-20 bg-gradient-to-r from-freight-blue to-freight-green rounded-full"></div>
+                <ArrowRight className="w-5 h-5 text-freight-green" />
               </div>
             </div>
 
             {/* Destination */}
-            <div className="flex flex-col items-center space-y-2 flex-1">
-              <div className="relative">
-                <Star className="w-8 h-8 text-freight-green fill-freight-green" />
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-freight-blue rounded-full border-2 border-white"></div>
-              </div>
-              <div className="text-center">
-                <div className="font-semibold text-freight-dark">
-                  {shipment.portOfDischarge || 'Destination'}
+            <div className="text-center">
+              <div className="flex justify-center mb-2">
+                <div className="relative">
+                  <Star className="w-8 h-8 text-freight-green fill-freight-green" />
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-freight-blue rounded-full border-2 border-white"></div>
                 </div>
-                <div className="text-sm text-gray-600">
-                  {shipment.destinationPort || 'Destination Port'}
-                </div>
-                {shipment.eta && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    ETA: {new Date(shipment.eta).toLocaleDateString()}
-                  </div>
-                )}
               </div>
+              <div className="font-semibold text-freight-dark">
+                {shipment.portOfDischarge || 'Destination'}
+              </div>
+              <div className="text-sm text-gray-600">
+                {shipment.destinationPort || 'Destination Port'}
+              </div>
+              {shipment.eta && (
+                <div className="text-xs text-gray-500 mt-1">
+                  ETA: {new Date(shipment.eta).toLocaleDateString()}
+                </div>
+              )}
             </div>
           </div>
           
           {/* Status and Progress Bar */}
-          <div className="mt-4 max-w-4xl mx-auto">
+          <div className="mt-6">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-freight-dark">Journey Progress</span>
               <Badge 
