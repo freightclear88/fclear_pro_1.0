@@ -21,14 +21,42 @@ interface ShipmentDetailProps {
   onClose: () => void;
 }
 
-// Font Awesome transport mode icons
+// Font Awesome transport mode icons - rebuilt for proper display
 function TransportModeIcon({ mode }: { mode: string | null }) {
-  if (mode === 'air') {
-    return <FontAwesomeIcon icon={faPlane} className="w-6 h-6 text-blue-600" />;
-  } else if (mode === 'ocean') {
-    return <FontAwesomeIcon icon={faShip} className="w-6 h-6 text-blue-600" />;
-  } else {
-    return <FontAwesomeIcon icon={faTruck} className="w-6 h-6 text-blue-600" />;
+  const iconStyle = "w-8 h-8 text-freight-blue";
+  
+  switch (mode) {
+    case 'air':
+      return (
+        <div className="flex items-center justify-center">
+          <FontAwesomeIcon 
+            icon={faPlane} 
+            className={iconStyle}
+            size="lg"
+          />
+        </div>
+      );
+    case 'ocean':
+      return (
+        <div className="flex items-center justify-center">
+          <FontAwesomeIcon 
+            icon={faShip} 
+            className={iconStyle}
+            size="lg"
+          />
+        </div>
+      );
+    case 'ground':
+    default:
+      return (
+        <div className="flex items-center justify-center">
+          <FontAwesomeIcon 
+            icon={faTruck} 
+            className={iconStyle}
+            size="lg"
+          />
+        </div>
+      );
   }
 }
 
@@ -229,9 +257,14 @@ CONTAINER:
                 {/* Gradient line */}
                 <div className="h-1 bg-gradient-to-r from-freight-blue via-freight-green to-freight-blue rounded-full"></div>
                 
-                {/* Transport mode indicator */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg border-2 border-freight-blue/20">
+                {/* Font Awesome Transport mode indicator - Enhanced */}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-16 h-16 flex items-center justify-center shadow-xl border-4 border-freight-blue/20">
                   <TransportModeIcon mode={shipment.transportMode} />
+                </div>
+                
+                {/* Transport Mode Label */}
+                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs font-bold text-freight-dark bg-white px-3 py-1 rounded-full shadow-md border-2 border-freight-blue/10">
+                  {shipment.transportMode?.toUpperCase() || 'TRANSPORT'}
                 </div>
               </div>
             </div>
