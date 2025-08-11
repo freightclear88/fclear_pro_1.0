@@ -193,11 +193,8 @@ CONTAINER:
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-6">
-          <DialogTitle className="flex justify-between items-center text-2xl py-3">
-            <span>Shipment Details - {shipment.shipmentId}</span>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="w-4 h-4" />
-            </Button>
+          <DialogTitle className="text-2xl py-3">
+            Shipment Details - {shipment.shipmentId}
           </DialogTitle>
         </DialogHeader>
 
