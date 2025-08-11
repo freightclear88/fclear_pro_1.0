@@ -219,6 +219,8 @@ CONTAINER:
                 {/* Transport mode indicator */}
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                   <div className="bg-white border-2 border-freight-blue rounded-full p-4 shadow-lg">
+                    {/* Debug: Show transport mode value */}
+                    <div className="sr-only">Transport Mode: {shipment.transportMode}</div>
                     {shipment.transportMode === 'air' ? (
                       <Plane className="w-8 h-8 text-freight-blue" />
                     ) : shipment.transportMode === 'ocean' ? (

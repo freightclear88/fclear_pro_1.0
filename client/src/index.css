@@ -555,6 +555,14 @@
   .text-freight-dark {
     color: var(--freight-dark);
   }
+
+  .text-freight-blue {
+    color: var(--freight-blue);
+  }
+
+  .text-freight-green {
+    color: var(--freight-green);
+  }
   
   .bg-freight-orange {
     background-color: var(--freight-orange);
