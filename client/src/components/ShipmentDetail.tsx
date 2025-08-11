@@ -236,12 +236,11 @@ CONTAINER:
               )}
             </div>
 
-            {/* Transport Route */}
+            {/* Transport Route - Simplified */}
             <div className="flex items-center justify-center">
-              <div className="flex items-center space-x-2">
-                <ArrowRight className="w-5 h-5 text-freight-blue" />
-                <div className="h-1 w-20 bg-gradient-to-r from-freight-blue to-freight-green rounded-full"></div>
-                <ArrowRight className="w-5 h-5 text-freight-green" />
+              <div className="text-center">
+                <div className="text-sm font-medium text-freight-dark">Via</div>
+                <div className="text-xs text-gray-600">{shipment.transportMode?.toUpperCase()}</div>
               </div>
             </div>
 
