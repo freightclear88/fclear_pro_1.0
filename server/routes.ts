@@ -47,9 +47,38 @@ function parseNumericField(value: any): number | null {
     return value;
   }
   
-  // Extract numeric part from text like "3 Packages at Sight" -> 3
+  // Extract numeric part from text like "3 Packages at Sight" -> 3 or "971.50 KG" -> 971.50
   const stringValue = String(value);
   const match = stringValue.match(/^\s*(\d+(?:\.\d+)?)/);
+  if (match) {
+    const parsed = parseFloat(match[1]);
+    return isNaN(parsed) ? null : parsed;
+  }
+  
+  return null;
+}
+
+// Helper function for financial fields that should remain as text if they contain non-numeric data
+function parseFinancialField(value: any): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  
+  // If it's already a number, return it
+  if (typeof value === 'number') {
+    return value;
+  }
+  
+  const stringValue = String(value).trim();
+  
+  // If it contains text like "COLLECT", "PREPAID", etc., return null (not numeric)
+  if (/\b(collect|prepaid|freight|charges|terms|ams|ddc)\b/i.test(stringValue)) {
+    return null;
+  }
+  
+  // Try to extract a numeric value (currency symbols, commas allowed)
+  const cleanValue = stringValue.replace(/[$,\s]/g, '');
+  const match = cleanValue.match(/^(\d+(?:\.\d{1,2})?)$/);
   if (match) {
     const parsed = parseFloat(match[1]);
     return isNaN(parsed) ? null : parsed;
@@ -2319,13 +2348,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   // Commercial and financial details
                   bookingNumber: extractedData.bookingNumber,
                   bookingConfirmationNumber: extractedData.bookingConfirmationNumber,
-                  freightCharges: extractedData.freightCharges,
+                  freightCharges: parseFinancialField(extractedData.freightCharges),
                   freightPaymentTerms: extractedData.freightPaymentTerms,
                   freightPayableAt: extractedData.freightPayableAt,
                   prepaidCollectDesignation: extractedData.prepaidCollectDesignation,
-                  destinationCharges: extractedData.destinationCharges,
-                  declaredValue: extractedData.declaredValue,
-                  totalValue: extractedData.totalValue,
+                  destinationCharges: parseFinancialField(extractedData.destinationCharges),
+                  declaredValue: parseFinancialField(extractedData.declaredValue),
+                  totalValue: parseFinancialField(extractedData.totalValue),
                   currency: extractedData.currency,
                   freightCurrency: extractedData.freightCurrency,
                   
@@ -2482,13 +2511,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Commercial and financial details
           if (arrivalNoticeData.bookingNumber) updateData.bookingNumber = arrivalNoticeData.bookingNumber;
           if (arrivalNoticeData.bookingConfirmationNumber) updateData.bookingConfirmationNumber = arrivalNoticeData.bookingConfirmationNumber;
-          if (arrivalNoticeData.freightCharges) updateData.freightCharges = arrivalNoticeData.freightCharges;
+          if (arrivalNoticeData.freightCharges) updateData.freightCharges = parseFinancialField(arrivalNoticeData.freightCharges);
           if (arrivalNoticeData.freightPaymentTerms) updateData.freightPaymentTerms = arrivalNoticeData.freightPaymentTerms;
           if (arrivalNoticeData.freightPayableAt) updateData.freightPayableAt = arrivalNoticeData.freightPayableAt;
           if (arrivalNoticeData.prepaidCollectDesignation) updateData.prepaidCollectDesignation = arrivalNoticeData.prepaidCollectDesignation;
-          if (arrivalNoticeData.destinationCharges) updateData.destinationCharges = arrivalNoticeData.destinationCharges;
-          if (arrivalNoticeData.declaredValue) updateData.declaredValue = arrivalNoticeData.declaredValue;
-          if (arrivalNoticeData.totalValue) updateData.totalValue = arrivalNoticeData.totalValue;
+          if (arrivalNoticeData.destinationCharges) updateData.destinationCharges = parseFinancialField(arrivalNoticeData.destinationCharges);
+          if (arrivalNoticeData.declaredValue) updateData.declaredValue = parseFinancialField(arrivalNoticeData.declaredValue);
+          if (arrivalNoticeData.totalValue) updateData.totalValue = parseFinancialField(arrivalNoticeData.totalValue);
           if (arrivalNoticeData.currency) updateData.currency = arrivalNoticeData.currency;
           if (arrivalNoticeData.freightCurrency) updateData.freightCurrency = arrivalNoticeData.freightCurrency;
           
