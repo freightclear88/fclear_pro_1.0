@@ -5,9 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { Copy, Download, X, FileUp, ExternalLink, Star, ArrowRight } from "lucide-react";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlane, faShip, faTruck } from '@fortawesome/free-solid-svg-icons';
+import { Copy, Download, X, FileUp, ExternalLink, Star, ArrowRight, Ship, Plane, Truck } from "lucide-react";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
 import { generateAWBTrackingUrl } from "@/lib/airlineTracking";
@@ -21,49 +19,18 @@ interface ShipmentDetailProps {
   onClose: () => void;
 }
 
-// Font Awesome transport mode icons - debugging version
+// Lucide React transport mode icons - using same library as rest of app
 function TransportModeIcon({ mode }: { mode: string | null }) {
-  console.log('TransportModeIcon called with mode:', mode);
-  console.log('FontAwesome icons:', { faPlane, faShip, faTruck });
-  
-  const iconStyle = "text-freight-blue";
-  const iconSize = "2x" as const;
+  const iconClassName = "w-8 h-8 text-freight-blue";
   
   switch (mode) {
     case 'air':
-      return (
-        <div className="flex items-center justify-center w-full h-full">
-          <FontAwesomeIcon 
-            icon={faPlane} 
-            className={iconStyle}
-            size={iconSize}
-            style={{ color: '#2563eb', fontSize: '24px' }}
-          />
-        </div>
-      );
+      return <Plane className={iconClassName} />;
     case 'ocean':
-      return (
-        <div className="flex items-center justify-center w-full h-full">
-          <FontAwesomeIcon 
-            icon={faShip} 
-            className={iconStyle}
-            size={iconSize}
-            style={{ color: '#2563eb', fontSize: '24px' }}
-          />
-        </div>
-      );
+      return <Ship className={iconClassName} />;
     case 'ground':
     default:
-      return (
-        <div className="flex items-center justify-center w-full h-full">
-          <FontAwesomeIcon 
-            icon={faTruck} 
-            className={iconStyle}
-            size={iconSize}
-            style={{ color: '#2563eb', fontSize: '24px' }}
-          />
-        </div>
-      );
+      return <Truck className={iconClassName} />;
   }
 }
 
