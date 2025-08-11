@@ -71,7 +71,9 @@ interface ExtractedShipmentData {
   
   // Cargo information
   cargoDescription?: string;
+  descriptionOfGoods?: string; // Alternative field name
   numberOfPackages?: number;
+  numberPieces?: number; // Alternative field name
   packageType?: string;
   weight?: string;
   grossWeight?: number;
@@ -1611,6 +1613,33 @@ ${documentText.substring(0, 8000)}`
         /Arrival\s+Port[:\s]+([^\n]+)/i,
         /To\s+Port[:\s]+([^\n]+)/i,
         /POD[:\s]+([^\n]+)/i,
+      ],
+
+      // Number of Packages/Pieces patterns
+      numberOfPackages: [
+        /Number\s+of\s+Packages[:\s]+(\d+)/i,
+        /No\.\s+of\s+Packages[:\s]+(\d+)/i,
+        /Packages[:\s]+(\d+)/i,
+        /Package\s+Count[:\s]+(\d+)/i,
+        /Qty[:\s]+(\d+)/i,
+        /Quantity[:\s]+(\d+)/i,
+      ],
+
+      numberPieces: [
+        /Number\s+of\s+Pieces[:\s]+(\d+)/i,
+        /No\.\s+of\s+Pieces[:\s]+(\d+)/i,
+        /Pieces[:\s]+(\d+)/i,
+        /Piece\s+Count[:\s]+(\d+)/i,
+        /Total\s+Pieces[:\s]+(\d+)/i,
+      ],
+
+      // Gross Weight patterns  
+      grossWeight: [
+        /Gross\s+Weight[:\s]+([0-9.,]+)\s*(KG|LBS|kg|lbs)?/i,
+        /G\.W\.[:\s]+([0-9.,]+)\s*(KG|LBS|kg|lbs)?/i,
+        /Weight\s+\(Gross\)[:\s]+([0-9.,]+)\s*(KG|LBS|kg|lbs)?/i,
+        /Total\s+Weight[:\s]+([0-9.,]+)\s*(KG|LBS|kg|lbs)?/i,
+        /Weight[:\s]+([0-9.,]+)\s*(KG|LBS|kg|lbs)/i,
       ]
     };
     
@@ -1669,6 +1698,14 @@ ${documentText.substring(0, 8000)}`
           } else if (field === 'commodityDescription') {
             // Commodity descriptions should be substantial (relaxed validation)
             isValid = extracted.length >= 3 && extracted.length <= 1000 && !isPlaceholder;
+          } else if (['numberOfPackages', 'numberPieces'].includes(field)) {
+            // Package/pieces count should be numeric
+            const num = parseInt(extracted);
+            isValid = !isNaN(num) && num > 0 && num < 100000;
+          } else if (field === 'grossWeight') {
+            // Weight should be numeric (can contain commas and decimal points)
+            const weight = parseFloat(extracted.replace(/,/g, ''));
+            isValid = !isNaN(weight) && weight > 0 && weight < 1000000;
           } else {
             // Standard validation for company/party fields (ultra-relaxed validation)
             isValid = extracted.length > 2 && 
@@ -1693,6 +1730,8 @@ ${documentText.substring(0, 8000)}`
                           field === 'htsCode' ? 'invalid HTS code format' :
                           ['vesselName', 'voyageNumber', 'portOfLoading', 'portOfDischarge'].includes(field) ? 'invalid transportation field' :
                           field === 'commodityDescription' ? 'invalid commodity description' :
+                          ['numberOfPackages', 'numberPieces'].includes(field) ? 'invalid numeric value' :
+                          field === 'grossWeight' ? 'invalid weight value' :
                           'too short or invalid';
             console.log(`❌ Rejected ${field} match: ${reason}`);
           }
@@ -1896,8 +1935,10 @@ ${documentText.substring(0, 8000)}`
               "buyerName": "Buyer/purchaser company name - the entity purchasing the goods",
               "buyerAddress": "Buyer complete address",
               "cargoDescription": "cargo description if found",
+              "descriptionOfGoods": "description of goods if found",
               "commodity": "commodity type if found", 
               "numberOfPackages": "number of packages as integer if found",
+              "numberPieces": "number of pieces as integer if found",
               "kindOfPackages": "package type if found",
               "grossWeight": "gross weight as number if found",
               "netWeight": "net weight as number if found",
