@@ -21,16 +21,29 @@ interface ShipmentDetailProps {
   onClose: () => void;
 }
 
+// Transport mode icon with fallback
 function TransportModeIcon({ mode }: { mode: string | null }) {
-  const iconClass = "w-6 h-6 text-freight-blue";
-  
-  switch (mode) {
-    case 'air':
-      return <PaperAirplaneIcon className={iconClass} />;
-    case 'ocean':
-      return <MapIcon className={iconClass} />;
-    default:
-      return <TruckIcon className={iconClass} />;
+  // Test if Heroicons are available, otherwise show text
+  try {
+    const iconProps = {
+      className: "w-6 h-6 text-blue-600",
+    };
+    
+    if (mode === 'air') {
+      return <PaperAirplaneIcon {...iconProps} />;
+    } else if (mode === 'ocean') {
+      return <MapIcon {...iconProps} />;
+    } else {
+      return <TruckIcon {...iconProps} />;
+    }
+  } catch (error) {
+    // Fallback to simple text if icons fail
+    console.log('Icons failed, using text fallback:', error);
+    return (
+      <div className="w-6 h-6 flex items-center justify-center text-blue-600 font-bold text-xs">
+        {mode === 'air' ? 'AIR' : mode === 'ocean' ? 'SEA' : 'TRK'}
+      </div>
+    );
   }
 }
 
