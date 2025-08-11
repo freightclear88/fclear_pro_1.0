@@ -78,6 +78,7 @@ interface ExtractedShipmentData {
   weight?: string;
   grossWeight?: number;
   measurement?: string;
+  measurementUnit?: string;
   marks?: string;
   commodity?: string;
   htsCode?: string;
@@ -1640,6 +1641,18 @@ ${documentText.substring(0, 8000)}`
         /Weight\s+\(Gross\)[:\s]+([0-9.,]+)\s*(KG|LBS|kg|lbs)?/i,
         /Total\s+Weight[:\s]+([0-9.,]+)\s*(KG|LBS|kg|lbs)?/i,
         /Weight[:\s]+([0-9.,]+)\s*(KG|LBS|kg|lbs)/i,
+      ],
+
+      // Measurement/Volume patterns
+      measurement: [
+        /Measurement[:\s]+([0-9.,]+)\s*(CBM|CBF|M3|FT3|cbm|cbf|m3|ft3)/i,
+        /Volume[:\s]+([0-9.,]+)\s*(CBM|CBF|M3|FT3|cbm|cbf|m3|ft3)/i,
+        /Dimensions[:\s]+([^\n]*(?:CBM|CBF|M3|FT3|cbm|cbf|m3|ft3)[^\n]*)/i,
+        /Size[:\s]+([^\n]*(?:CBM|CBF|M3|FT3|cbm|cbf|m3|ft3)[^\n]*)/i,
+        /Cubic\s+(?:Meters?|Feet)[:\s]+([0-9.,]+)/i,
+        /CBM[:\s]+([0-9.,]+)/i,
+        /CBF[:\s]+([0-9.,]+)/i,
+        /M3[:\s]+([0-9.,]+)/i,
       ]
     };
     
@@ -1706,6 +1719,11 @@ ${documentText.substring(0, 8000)}`
             // Weight should be numeric (can contain commas and decimal points)
             const weight = parseFloat(extracted.replace(/,/g, ''));
             isValid = !isNaN(weight) && weight > 0 && weight < 1000000;
+          } else if (field === 'measurement') {
+            // Measurement should contain numeric value and unit
+            isValid = extracted.length >= 3 && extracted.length <= 50 && 
+                     !isPlaceholder &&
+                     (/[0-9.,]+/.test(extracted) && /cbm|cbf|m3|ft3|cubic/i.test(extracted));
           } else {
             // Standard validation for company/party fields (ultra-relaxed validation)
             isValid = extracted.length > 2 && 
@@ -1732,6 +1750,7 @@ ${documentText.substring(0, 8000)}`
                           field === 'commodityDescription' ? 'invalid commodity description' :
                           ['numberOfPackages', 'numberPieces'].includes(field) ? 'invalid numeric value' :
                           field === 'grossWeight' ? 'invalid weight value' :
+                          field === 'measurement' ? 'invalid measurement format' :
                           'too short or invalid';
             console.log(`❌ Rejected ${field} match: ${reason}`);
           }
@@ -1942,6 +1961,7 @@ ${documentText.substring(0, 8000)}`
               "kindOfPackages": "package type if found",
               "grossWeight": "gross weight as number if found",
               "netWeight": "net weight as number if found",
+              "measurement": "cargo measurement/volume if found (with unit like CBM, CBF, M3)",
               "weight": "weight string if found",
               "weightUnit": "weight unit if found",
               "volume": "volume as number if found",
