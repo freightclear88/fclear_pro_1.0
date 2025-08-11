@@ -202,9 +202,9 @@ CONTAINER:
                 <div className="text-sm text-gray-600">
                   {shipment.countryOfOrigin || 'Country of Origin'}
                 </div>
-                {shipment.estimatedDeparture && (
+                {shipment.etd && (
                   <div className="text-xs text-gray-500 mt-1">
-                    ETD: {new Date(shipment.estimatedDeparture).toLocaleDateString()}
+                    ETD: {new Date(shipment.etd).toLocaleDateString()}
                   </div>
                 )}
               </div>
@@ -242,11 +242,11 @@ CONTAINER:
                   {shipment.portOfDischarge || 'Destination'}
                 </div>
                 <div className="text-sm text-gray-600">
-                  {shipment.destinationCountry || 'Destination Country'}
+                  {shipment.destinationPort || 'Destination Port'}
                 </div>
-                {shipment.estimatedArrival && (
+                {shipment.eta && (
                   <div className="text-xs text-gray-500 mt-1">
-                    ETA: {new Date(shipment.estimatedArrival).toLocaleDateString()}
+                    ETA: {new Date(shipment.eta).toLocaleDateString()}
                   </div>
                 )}
               </div>
