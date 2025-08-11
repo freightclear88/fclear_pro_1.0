@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { Copy, Download, X, FileUp, ExternalLink, Star, ArrowRight } from "lucide-react";
-import { PaperAirplaneIcon, TruckIcon } from "@heroicons/react/24/solid";
-import { MapIcon } from "@heroicons/react/24/outline";
+// Removing Heroicons imports - using CSS-based icons instead
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
 import { generateAWBTrackingUrl } from "@/lib/airlineTracking";
@@ -21,27 +20,51 @@ interface ShipmentDetailProps {
   onClose: () => void;
 }
 
-// Transport mode icon with fallback
+// CSS-based transport mode icons
 function TransportModeIcon({ mode }: { mode: string | null }) {
-  // Test if Heroicons are available, otherwise show text
-  try {
-    const iconProps = {
-      className: "w-6 h-6 text-blue-600",
-    };
-    
-    if (mode === 'air') {
-      return <PaperAirplaneIcon {...iconProps} />;
-    } else if (mode === 'ocean') {
-      return <MapIcon {...iconProps} />;
-    } else {
-      return <TruckIcon {...iconProps} />;
-    }
-  } catch (error) {
-    // Fallback to simple text if icons fail
-    console.log('Icons failed, using text fallback:', error);
+  const baseClasses = "w-6 h-6 flex items-center justify-center";
+  
+  if (mode === 'air') {
+    // Airplane shape using CSS
     return (
-      <div className="w-6 h-6 flex items-center justify-center text-blue-600 font-bold text-xs">
-        {mode === 'air' ? 'AIR' : mode === 'ocean' ? 'SEA' : 'TRK'}
+      <div className={baseClasses}>
+        <div className="relative">
+          {/* Airplane body */}
+          <div className="w-1 h-4 bg-blue-600 rounded-full"></div>
+          {/* Wings */}
+          <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-4 h-1 bg-blue-600 rounded-full"></div>
+          {/* Tail */}
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-2 h-1 bg-blue-600 rounded-full"></div>
+        </div>
+      </div>
+    );
+  } else if (mode === 'ocean') {
+    // Ship shape using CSS
+    return (
+      <div className={baseClasses}>
+        <div className="relative">
+          {/* Ship hull */}
+          <div className="w-5 h-2 bg-blue-600 rounded-b-full"></div>
+          {/* Ship deck */}
+          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-3 h-1 bg-blue-600 rounded-t"></div>
+          {/* Mast */}
+          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-0.5 h-2 bg-blue-600"></div>
+        </div>
+      </div>
+    );
+  } else {
+    // Truck shape using CSS  
+    return (
+      <div className={baseClasses}>
+        <div className="relative">
+          {/* Truck cab */}
+          <div className="w-2 h-3 bg-blue-600 rounded-l"></div>
+          {/* Truck trailer */}
+          <div className="absolute top-0.5 left-2 w-3 h-2 bg-blue-600 rounded-r"></div>
+          {/* Wheels */}
+          <div className="absolute bottom-0 left-0.5 w-1 h-1 bg-blue-600 rounded-full"></div>
+          <div className="absolute bottom-0 right-0.5 w-1 h-1 bg-blue-600 rounded-full"></div>
+        </div>
       </div>
     );
   }
