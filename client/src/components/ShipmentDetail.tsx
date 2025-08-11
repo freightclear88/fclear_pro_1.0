@@ -218,10 +218,7 @@ CONTAINER:
             {/* Origin */}
             <div className="text-center">
               <div className="flex justify-center mb-2">
-                <div className="relative">
-                  <Star className="w-8 h-8 text-freight-blue fill-freight-blue" />
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-freight-green rounded-full border-2 border-white"></div>
-                </div>
+                <Star className="w-8 h-8 text-freight-blue fill-freight-blue" />
               </div>
               <div className="font-semibold text-freight-dark">
                 {shipment.portOfLoading || 'Origin'}
@@ -247,10 +244,7 @@ CONTAINER:
             {/* Destination */}
             <div className="text-center">
               <div className="flex justify-center mb-2">
-                <div className="relative">
-                  <Star className="w-8 h-8 text-freight-green fill-freight-green" />
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-freight-blue rounded-full border-2 border-white"></div>
-                </div>
+                <Star className="w-8 h-8 text-freight-green fill-freight-green" />
               </div>
               <div className="font-semibold text-freight-dark">
                 {shipment.portOfDischarge || 'Destination'}
