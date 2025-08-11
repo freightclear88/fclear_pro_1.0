@@ -36,6 +36,28 @@ const azureClient = new DocumentAnalysisClient(
 );
 // PDF parsing will be dynamically imported when needed
 
+// Helper function to sanitize numeric fields that may contain text
+function parseNumericField(value: any): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  
+  // If it's already a number, return it
+  if (typeof value === 'number') {
+    return value;
+  }
+  
+  // Extract numeric part from text like "3 Packages at Sight" -> 3
+  const stringValue = String(value);
+  const match = stringValue.match(/^\s*(\d+(?:\.\d+)?)/);
+  if (match) {
+    const parsed = parseFloat(match[1]);
+    return isNaN(parsed) ? null : parsed;
+  }
+  
+  return null;
+}
+
 // Multi-document data consolidation function
 function consolidateMultiDocumentData(allExtractedData: any[]): any {
   const consolidated: any = {};
@@ -2275,10 +2297,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   // Comprehensive cargo details
                   cargoDescription: extractedData.cargoDescription,
                   commodity: extractedData.commodity,
-                  numberOfPackages: extractedData.numberOfPackages,
+                  numberOfPackages: parseNumericField(extractedData.numberOfPackages),
                   kindOfPackages: extractedData.kindOfPackages,
-                  grossWeight: extractedData.grossWeight,
-                  netWeight: extractedData.netWeight,
+                  grossWeight: parseNumericField(extractedData.grossWeight),
+                  netWeight: parseNumericField(extractedData.netWeight),
                   weight: extractedData.weight, // Backward compatibility
                   weightUnit: extractedData.weightUnit,
                   volume: extractedData.volume,
@@ -2438,10 +2460,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Comprehensive cargo information
           if (arrivalNoticeData.cargoDescription) updateData.cargoDescription = arrivalNoticeData.cargoDescription;
           if (arrivalNoticeData.commodity) updateData.commodity = arrivalNoticeData.commodity;
-          if (arrivalNoticeData.numberOfPackages) updateData.numberOfPackages = arrivalNoticeData.numberOfPackages;
+          if (arrivalNoticeData.numberOfPackages) updateData.numberOfPackages = parseNumericField(arrivalNoticeData.numberOfPackages);
           if (arrivalNoticeData.kindOfPackages) updateData.kindOfPackages = arrivalNoticeData.kindOfPackages;
-          if (arrivalNoticeData.grossWeight) updateData.grossWeight = arrivalNoticeData.grossWeight;
-          if (arrivalNoticeData.netWeight) updateData.netWeight = arrivalNoticeData.netWeight;
+          if (arrivalNoticeData.grossWeight) updateData.grossWeight = parseNumericField(arrivalNoticeData.grossWeight);
+          if (arrivalNoticeData.netWeight) updateData.netWeight = parseNumericField(arrivalNoticeData.netWeight);
           if (arrivalNoticeData.weight) updateData.weight = arrivalNoticeData.weight; // Backward compatibility
           if (arrivalNoticeData.weightUnit) updateData.weightUnit = arrivalNoticeData.weightUnit;
           if (arrivalNoticeData.volume) updateData.volume = arrivalNoticeData.volume;
