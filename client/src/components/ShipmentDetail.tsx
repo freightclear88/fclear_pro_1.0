@@ -21,39 +21,46 @@ interface ShipmentDetailProps {
   onClose: () => void;
 }
 
-// Font Awesome transport mode icons - rebuilt for proper display
+// Font Awesome transport mode icons - debugging version
 function TransportModeIcon({ mode }: { mode: string | null }) {
-  const iconStyle = "w-8 h-8 text-freight-blue";
+  console.log('TransportModeIcon called with mode:', mode);
+  console.log('FontAwesome icons:', { faPlane, faShip, faTruck });
+  
+  const iconStyle = "text-freight-blue";
+  const iconSize = "2x" as const;
   
   switch (mode) {
     case 'air':
       return (
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center w-full h-full">
           <FontAwesomeIcon 
             icon={faPlane} 
             className={iconStyle}
-            size="lg"
+            size={iconSize}
+            style={{ color: '#2563eb', fontSize: '24px' }}
           />
         </div>
       );
     case 'ocean':
       return (
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center w-full h-full">
           <FontAwesomeIcon 
             icon={faShip} 
             className={iconStyle}
-            size="lg"
+            size={iconSize}
+            style={{ color: '#2563eb', fontSize: '24px' }}
           />
         </div>
       );
     case 'ground':
     default:
       return (
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center w-full h-full">
           <FontAwesomeIcon 
             icon={faTruck} 
             className={iconStyle}
-            size="lg"
+            size={iconSize}
+            style={{ color: '#2563eb', fontSize: '24px' }}
           />
         </div>
       );
