@@ -674,86 +674,48 @@ CONTAINER:
           </Card>
           </div>
 
-          {/* Commercial Information */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg py-2">Commercial Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <FieldRow 
-                  label="Freight Charges" 
-                  value={shipment.freightCharges ? `${shipment.freightCurrency || '$'}${shipment.freightCharges}` : null}
-                />
+          {/* Dates and Times */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg py-2">Important Dates</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <FieldRow 
+                label="Issue Date" 
+                value={shipment.issueDate ? new Date(shipment.issueDate).toLocaleDateString() : null}
+              />
 
-                <FieldRow label="Payment Terms" value={shipment.freightPaymentTerms} />
+              <FieldRow 
+                label="On Board Date" 
+                value={shipment.onBoardDate ? new Date(shipment.onBoardDate).toLocaleDateString() : null}
+              />
 
-                {shipment.prepaidCollectDesignation && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Prepaid/Collect:</span>
-                    <Badge variant={shipment.prepaidCollectDesignation === 'PREPAID' ? 'default' : 'secondary'}>
-                      {shipment.prepaidCollectDesignation}
-                    </Badge>
-                  </div>
-                )}
+              <FieldRow 
+                label="Shipment Date" 
+                value={shipment.dateOfShipment ? new Date(shipment.dateOfShipment).toLocaleDateString() : null}
+              />
 
-                <FieldRow 
-                  label="Total Value" 
-                  value={shipment.totalValue ? `${shipment.currency || '$'}${shipment.totalValue}` : null}
-                />
+              <FieldRow 
+                label="ETD" 
+                value={shipment.etd ? new Date(shipment.etd).toLocaleDateString() : null}
+              />
 
-                <FieldRow 
-                  label="Declared Value" 
-                  value={shipment.declaredValue ? `${shipment.currency || '$'}${shipment.declaredValue}` : null}
-                />
+              <FieldRow 
+                label="ETA" 
+                value={shipment.eta ? new Date(shipment.eta).toLocaleDateString() : null}
+              />
 
-                <FieldRow label="Customs Broker" value={shipment.customsBroker} />
-              </CardContent>
-            </Card>
+              <FieldRow 
+                label="ATD" 
+                value={shipment.atd ? new Date(shipment.atd).toLocaleDateString() : null}
+              />
 
-            {/* Dates and Times */}
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg py-2">Important Dates</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <FieldRow 
-                  label="Issue Date" 
-                  value={shipment.issueDate ? new Date(shipment.issueDate).toLocaleDateString() : null}
-                />
-
-                <FieldRow 
-                  label="On Board Date" 
-                  value={shipment.onBoardDate ? new Date(shipment.onBoardDate).toLocaleDateString() : null}
-                />
-
-                <FieldRow 
-                  label="Shipment Date" 
-                  value={shipment.dateOfShipment ? new Date(shipment.dateOfShipment).toLocaleDateString() : null}
-                />
-
-                <FieldRow 
-                  label="ETD" 
-                  value={shipment.etd ? new Date(shipment.etd).toLocaleDateString() : null}
-                />
-
-                <FieldRow 
-                  label="ETA" 
-                  value={shipment.eta ? new Date(shipment.eta).toLocaleDateString() : null}
-                />
-
-                <FieldRow 
-                  label="ATD" 
-                  value={shipment.atd ? new Date(shipment.atd).toLocaleDateString() : null}
-                />
-
-                <FieldRow 
-                  label="ATA" 
-                  value={shipment.ata ? new Date(shipment.ata).toLocaleDateString() : null}
-                />
-              </CardContent>
-            </Card>
-          </div>
+              <FieldRow 
+                label="ATA" 
+                value={shipment.ata ? new Date(shipment.ata).toLocaleDateString() : null}
+              />
+            </CardContent>
+          </Card>
 
           {/* Trade and Regulatory Information */}
           {(shipment.countryOfOrigin || shipment.htsCode || shipment.exportLicense) && (
