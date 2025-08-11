@@ -227,7 +227,38 @@ function consolidateMultiDocumentData(allExtractedData: any[]): any {
     Object.entries(sourceTracker).map(([field, info]: [string, any]) => [field, `${info.documentType}:${info.source}`])
   ));
   
-  return consolidated;
+  // Map consolidated fields to database schema field names
+  const databaseFieldMapping: Record<string, string> = {
+    'cargoDescription': 'cargo_description',
+    'numberOfPackages': 'number_of_packages',
+    'grossWeight': 'gross_weight',
+    'netWeight': 'net_weight',
+    'kindOfPackages': 'kind_of_packages',
+    'marksAndNumbers': 'marks_and_numbers',
+    'weightUnit': 'weight_unit',
+    'volumeUnit': 'volume_unit',
+    'billOfLadingNumber': 'bill_of_lading_number',
+    'airWaybillNumber': 'air_waybill_number',
+    'vesselAndVoyage': 'vessel_and_voyage',
+    'containerNumber': 'container_number',
+    'containerType': 'container_type',
+    'portOfLoading': 'port_of_loading',
+    'portOfDischarge': 'port_of_discharge',
+    'placeOfReceipt': 'place_of_receipt',
+    'placeOfDelivery': 'place_of_delivery'
+  };
+  
+  // Create final mapped data for database insertion
+  const mappedForDatabase: any = {};
+  for (const [key, value] of Object.entries(consolidated)) {
+    const dbFieldName = databaseFieldMapping[key] || key;
+    mappedForDatabase[dbFieldName] = value;
+    if (dbFieldName !== key) {
+      console.log(`Database field mapping: ${key} -> ${dbFieldName}`);
+    }
+  }
+  
+  return mappedForDatabase;
 }
 
 // Helper function to map Azure Document Intelligence fields to shipment schema

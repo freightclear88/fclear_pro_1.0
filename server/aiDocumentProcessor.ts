@@ -2244,9 +2244,14 @@ ${documentText.substring(0, 8000)}`
       'consignee': 'consigneeName',
       'portofloading': 'portOfLoading',
       'portofdischarge': 'portOfDischarge',
-      'grossweight': 'weight',
+      'grossweight': 'grossWeight',
       'packages': 'numberOfPackages',
       'commodity': 'cargoDescription',
+      'numberofpackages': 'numberOfPackages',
+      'numberpieces': 'numberOfPackages',
+      'weight': 'grossWeight',
+      'description': 'cargoDescription',
+      'descriptionofgoods': 'cargoDescription',
       'booking': 'bookingNumber',
       // ISF consolidator field mappings
       'consolidator': 'consolidatorName',
@@ -2328,7 +2333,7 @@ ${documentText.substring(0, 8000)}`
     // Prefer Azure data for key fields (more structured)
     const azurePreferredFields = [
       'billOfLadingNumber', 'airWaybillNumber', 'containerNumber', 'vesselAndVoyage',
-      'portOfLoading', 'portOfDischarge', 'numberOfPackages'
+      'portOfLoading', 'portOfDischarge', 'numberOfPackages', 'grossWeight', 'cargoDescription'
     ];
     
     for (const field of azurePreferredFields) {
