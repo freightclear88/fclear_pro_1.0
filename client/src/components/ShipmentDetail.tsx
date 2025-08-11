@@ -219,11 +219,21 @@ CONTAINER:
                 
                 {/* Transport mode indicator */}
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-md border-2 border-blue-200">
-                  <div className="text-2xl">
-                    {shipment.transportMode === 'air' ? '✈️' : 
-                     shipment.transportMode === 'ocean' ? '🚢' : 
-                     '🚛'}
-                  </div>
+                  {shipment.transportMode === 'air' ? (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#2563eb">
+                      <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                    </svg>
+                  ) : shipment.transportMode === 'ocean' ? (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#2563eb">
+                      <path d="M4 20q-.825 0-1.412-.587Q2 18.825 2 18v-3l2-1v-2.5q0-.625.4-1.125q.4-.5 1.025-.75L8 8.5V6q0-.425.288-.713Q8.575 5 9 5h6q.425 0 .713.287Q16 5.575 16 6v2.5l2.575 1.1q.625.25 1.025.75q.4.5.4 1.125V14l2 1v3q0 .825-.587 1.412Q20.825 20 20 20H4Zm0-2h16v-1l-2-1v-4.5L15.4 10H8.6L6 11.5V17l-2 1v1Z"/>
+                    </svg>
+                  ) : (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#2563eb">
+                      <path d="M5 17h14v2H5zm2.5-3H9l1-6h4l1 6h1.5l1.38-3H19v-2h-1.38L16 8H8L6.38 9H5v2h1.62L7.5 14z"/>
+                      <circle cx="7.5" cy="19.5" r="1.5"/>
+                      <circle cx="16.5" cy="19.5" r="1.5"/>
+                    </svg>
+                  )}
                 </div>
               </div>
             </div>
