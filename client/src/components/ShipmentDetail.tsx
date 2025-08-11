@@ -20,51 +20,41 @@ interface ShipmentDetailProps {
   onClose: () => void;
 }
 
-// CSS-based transport mode icons
+// Multiple approaches to ensure icons display
 function TransportModeIcon({ mode }: { mode: string | null }) {
-  const baseClasses = "w-6 h-6 flex items-center justify-center";
+  const iconColor = "#2563eb"; // blue-600
   
   if (mode === 'air') {
-    // Airplane shape using CSS
     return (
-      <div className={baseClasses}>
-        <div className="relative">
-          {/* Airplane body */}
-          <div className="w-1 h-4 bg-blue-600 rounded-full"></div>
-          {/* Wings */}
-          <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-4 h-1 bg-blue-600 rounded-full"></div>
-          {/* Tail */}
-          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-2 h-1 bg-blue-600 rounded-full"></div>
-        </div>
+      <div className="w-6 h-6 flex items-center justify-center">
+        {/* Try inline SVG first */}
+        <svg width="20" height="20" viewBox="0 0 24 24" fill={iconColor}>
+          <path d="M23,8.5 L19,8.5 L14,3.5 L12.5,3.5 L15,8.5 L10,8.5 L8.5,7 L7.5,7 L8.5,10.5 L7.5,14 L8.5,14 L10,12.5 L15,12.5 L12.5,17.5 L14,17.5 L19,12.5 L23,12.5 C23.55,12.5 24,12.05 24,11.5 L24,9.5 C24,8.95 23.55,8.5 23,8.5 Z"/>
+        </svg>
+        {/* Fallback to Unicode */}
+        <span className="text-xl text-blue-600 ml-1">✈</span>
       </div>
     );
   } else if (mode === 'ocean') {
-    // Ship shape using CSS
     return (
-      <div className={baseClasses}>
-        <div className="relative">
-          {/* Ship hull */}
-          <div className="w-5 h-2 bg-blue-600 rounded-b-full"></div>
-          {/* Ship deck */}
-          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-3 h-1 bg-blue-600 rounded-t"></div>
-          {/* Mast */}
-          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-0.5 h-2 bg-blue-600"></div>
-        </div>
+      <div className="w-6 h-6 flex items-center justify-center">
+        {/* Ship SVG */}
+        <svg width="20" height="20" viewBox="0 0 24 24" fill={iconColor}>
+          <path d="M12,2C13.1,2 14,2.9 14,4V6H19C20.1,6 21,6.9 21,8V10L22,11V13H21.92C21.71,14.84 20.23,16.29 18.39,16.5L17.75,18.5H6.25L5.61,16.5C3.77,16.29 2.29,14.84 2.08,13H2V11L3,10V8C3,6.9 3.9,6 5,6H10V4C10,2.9 10.9,2 12,2M12,4V6H12V4M5,8V10.5L12,12L19,10.5V8H5M6.75,16.5H17.25L17.75,18H6.25L6.75,16.5Z"/>
+        </svg>
+        {/* Fallback */}
+        <span className="text-xl text-blue-600 ml-1">⚓</span>
       </div>
     );
   } else {
-    // Truck shape using CSS  
     return (
-      <div className={baseClasses}>
-        <div className="relative">
-          {/* Truck cab */}
-          <div className="w-2 h-3 bg-blue-600 rounded-l"></div>
-          {/* Truck trailer */}
-          <div className="absolute top-0.5 left-2 w-3 h-2 bg-blue-600 rounded-r"></div>
-          {/* Wheels */}
-          <div className="absolute bottom-0 left-0.5 w-1 h-1 bg-blue-600 rounded-full"></div>
-          <div className="absolute bottom-0 right-0.5 w-1 h-1 bg-blue-600 rounded-full"></div>
-        </div>
+      <div className="w-6 h-6 flex items-center justify-center">
+        {/* Truck SVG */}
+        <svg width="20" height="20" viewBox="0 0 24 24" fill={iconColor}>
+          <path d="M18,18.5A1.5,1.5 0 0,1 16.5,17A1.5,1.5 0 0,1 18,15.5A1.5,1.5 0 0,1 19.5,17A1.5,1.5 0 0,1 18,18.5M19.5,9.5L21.46,12H17V9.5M6,18.5A1.5,1.5 0 0,1 4.5,17A1.5,1.5 0 0,1 6,15.5A1.5,1.5 0 0,1 7.5,17A1.5,1.5 0 0,1 6,18.5M20,8H17V4H3C1.89,4 1,4.89 1,6V17H3A3,3 0 0,0 6,20A3,3 0 0,0 9,17H15A3,3 0 0,0 18,20A3,3 0 0,0 21,17H23V12L20,8Z"/>
+        </svg>
+        {/* Fallback */}
+        <span className="text-xl text-blue-600 ml-1">🚛</span>
       </div>
     );
   }
