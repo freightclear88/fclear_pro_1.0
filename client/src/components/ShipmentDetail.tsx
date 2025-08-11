@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { Copy, Download, X, FileUp, ExternalLink, Star, ArrowRight, Plane, Ship, Truck } from "lucide-react";
+import { Copy, Download, X, FileUp, ExternalLink, Star, ArrowRight } from "lucide-react";
+import { FaPlane, FaShip, FaTruck } from "react-icons/fa";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
 import { generateAWBTrackingUrl } from "@/lib/airlineTracking";
@@ -217,13 +218,13 @@ CONTAINER:
                 <div className="h-1 bg-gradient-to-r from-freight-blue via-freight-green to-freight-blue rounded-full"></div>
                 
                 {/* Transport mode indicator */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-md">
                   {shipment.transportMode === 'air' ? (
-                    <Plane className="w-10 h-10 text-blue-600" />
+                    <FaPlane className="w-6 h-6 text-blue-600" />
                   ) : shipment.transportMode === 'ocean' ? (
-                    <Ship className="w-10 h-10 text-blue-600" />
+                    <FaShip className="w-6 h-6 text-blue-600" />
                   ) : (
-                    <Truck className="w-10 h-10 text-blue-600" />
+                    <FaTruck className="w-6 h-6 text-blue-600" />
                   )}
                 </div>
               </div>
