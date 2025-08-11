@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { Copy, Download, X, FileUp, ExternalLink, Star, ArrowRight } from "lucide-react";
 import { PaperAirplaneIcon, TruckIcon } from "@heroicons/react/24/solid";
-import { GlobeAltIcon } from "@heroicons/react/24/outline";
+import { MapIcon } from "@heroicons/react/24/outline";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
 import { generateAWBTrackingUrl } from "@/lib/airlineTracking";
@@ -19,6 +19,19 @@ interface ShipmentDetailProps {
   shipment: Shipment | null;
   isOpen: boolean;
   onClose: () => void;
+}
+
+function TransportModeIcon({ mode }: { mode: string | null }) {
+  const iconClass = "w-6 h-6 text-freight-blue";
+  
+  switch (mode) {
+    case 'air':
+      return <PaperAirplaneIcon className={iconClass} />;
+    case 'ocean':
+      return <MapIcon className={iconClass} />;
+    default:
+      return <TruckIcon className={iconClass} />;
+  }
 }
 
 export default function ShipmentDetail({ shipment, isOpen, onClose }: ShipmentDetailProps) {
@@ -219,14 +232,8 @@ CONTAINER:
                 <div className="h-1 bg-gradient-to-r from-freight-blue via-freight-green to-freight-blue rounded-full"></div>
                 
                 {/* Transport mode indicator */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-md border-2 border-blue-200">
-                  {shipment.transportMode === 'air' ? (
-                    <PaperAirplaneIcon className="w-6 h-6 text-blue-600" />
-                  ) : shipment.transportMode === 'ocean' ? (
-                    <GlobeAltIcon className="w-6 h-6 text-blue-600" />
-                  ) : (
-                    <TruckIcon className="w-6 h-6 text-blue-600" />
-                  )}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg border-2 border-freight-blue/20">
+                  <TransportModeIcon mode={shipment.transportMode} />
                 </div>
               </div>
             </div>
