@@ -218,15 +218,21 @@ CONTAINER:
                 
                 {/* Transport mode indicator */}
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <div className="bg-white border-2 border-freight-blue rounded-full p-4 shadow-lg">
+                  <div className="bg-white border-2 border-freight-blue rounded-full p-4 shadow-lg flex flex-col items-center">
                     {/* Debug: Show transport mode value */}
-                    <div className="sr-only">Transport Mode: {shipment.transportMode}</div>
+                    <div className="text-xs text-center mb-1 text-gray-600">Mode: {shipment.transportMode}</div>
                     {shipment.transportMode === 'air' ? (
-                      <Plane className="w-8 h-8 text-freight-blue" />
+                      <svg className="w-8 h-8" style={{ color: 'hsl(200, 80%, 45%)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m22 16.92-7-4V8.5a2.5 2.5 0 0 0-5 0V13l-7 4 1 2 7-2v4.5l-2 1.5 1 2 2.5-1 2.5 1 1-2-2-1.5V17l7 2z" />
+                      </svg>
                     ) : shipment.transportMode === 'ocean' ? (
-                      <Ship className="w-8 h-8 text-freight-blue" />
+                      <svg className="w-8 h-8" style={{ color: 'hsl(200, 80%, 45%)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2c1.3 0 1.9-.5 2.5-1M12 12V7l3-3 5 5h-8z" />
+                      </svg>
                     ) : (
-                      <Truck className="w-8 h-8 text-freight-blue" />
+                      <svg className="w-8 h-8" style={{ color: 'hsl(200, 80%, 45%)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2m8 0h0v4h-1a1 1 0 0 1-1-1v-1a1 1 0 0 1 1-1zM14 18h1a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1h-1zm4 0h2a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1h-2v3z" />
+                      </svg>
                     )}
                   </div>
                 </div>
