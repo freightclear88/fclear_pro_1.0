@@ -218,14 +218,12 @@ CONTAINER:
                 <div className="h-1 bg-gradient-to-r from-freight-blue via-freight-green to-freight-blue rounded-full"></div>
                 
                 {/* Transport mode indicator */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-md">
-                  {shipment.transportMode === 'air' ? (
-                    <FaPlane className="w-6 h-6 text-blue-600" />
-                  ) : shipment.transportMode === 'ocean' ? (
-                    <FaShip className="w-6 h-6 text-blue-600" />
-                  ) : (
-                    <FaTruck className="w-6 h-6 text-blue-600" />
-                  )}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-md border-2 border-blue-200">
+                  <div className="text-2xl">
+                    {shipment.transportMode === 'air' ? '✈️' : 
+                     shipment.transportMode === 'ocean' ? '🚢' : 
+                     '🚛'}
+                  </div>
                 </div>
               </div>
             </div>
