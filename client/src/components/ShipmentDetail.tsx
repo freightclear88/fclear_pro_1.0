@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { Copy, Download, X, FileUp, ExternalLink, Star, ArrowRight } from "lucide-react";
-import { FaPlane, FaShip, FaTruck } from "react-icons/fa";
+import { PaperAirplaneIcon, TruckIcon } from "@heroicons/react/24/solid";
+import { GlobeAltIcon } from "@heroicons/react/24/outline";
 import DocumentUpload from "@/components/DocumentUpload";
 import DocumentList from "@/components/DocumentList";
 import { generateAWBTrackingUrl } from "@/lib/airlineTracking";
@@ -218,10 +219,14 @@ CONTAINER:
                 <div className="h-1 bg-gradient-to-r from-freight-blue via-freight-green to-freight-blue rounded-full"></div>
                 
                 {/* Transport mode indicator */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 rounded-full w-10 h-10 flex items-center justify-center shadow-md text-white font-bold text-sm">
-                  {shipment.transportMode === 'air' ? 'AIR' : 
-                   shipment.transportMode === 'ocean' ? 'SEA' : 
-                   'TRK'}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-md border-2 border-blue-200">
+                  {shipment.transportMode === 'air' ? (
+                    <PaperAirplaneIcon className="w-6 h-6 text-blue-600" />
+                  ) : shipment.transportMode === 'ocean' ? (
+                    <GlobeAltIcon className="w-6 h-6 text-blue-600" />
+                  ) : (
+                    <TruckIcon className="w-6 h-6 text-blue-600" />
+                  )}
                 </div>
               </div>
             </div>
