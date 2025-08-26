@@ -157,9 +157,9 @@ export default function AuthorizeNetPaymentForm({
   useEffect(() => {
     if (paymentConfig?.success && !isAcceptJsLoaded) {
       const script = document.createElement('script');
-      script.src = paymentConfig.environment === 'sandbox' 
-        ? 'https://jstest.authorize.net/v1/Accept.js'
-        : 'https://js.authorize.net/v1/Accept.js';
+      script.src = paymentConfig.environment === 'production' 
+        ? 'https://js.authorize.net/v1/Accept.js'
+        : 'https://jstest.authorize.net/v1/Accept.js';
       script.async = true;
       script.onload = () => setIsAcceptJsLoaded(true);
       script.onerror = () => {
