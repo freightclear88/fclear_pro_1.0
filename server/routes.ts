@@ -3469,9 +3469,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const ctrl = new ApiControllers.CreateTransactionController(createRequest.getJSON());
           
           if (isProduction) {
-            ctrl.setEnvironment(SDKConstants.endpoint.production);
+            ctrl.setEnvironment('https://api.authorize.net/xml/v1/request.api');
           } else {
-            ctrl.setEnvironment(SDKConstants.endpoint.sandbox);
+            ctrl.setEnvironment('https://apitest.authorize.net/xml/v1/request.api');
           }
 
           ctrl.execute(() => {
@@ -3679,9 +3679,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Payment processing - Invoice: ${invoiceNumber}, Amount: $${paymentAmount.toFixed(2)}`);
       
       if (isProductionCredentials) {
-        ctrl.setEnvironment(SDKConstants.endpoint.production);
+        ctrl.setEnvironment('https://api.authorize.net/xml/v1/request.api');
       } else {
-        ctrl.setEnvironment(SDKConstants.endpoint.sandbox);
+        ctrl.setEnvironment('https://apitest.authorize.net/xml/v1/request.api');
       }
 
       // Process the transaction
