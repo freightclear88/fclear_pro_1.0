@@ -318,40 +318,38 @@ export default function AuthorizeNetPaymentForm({
       }
     }
     
-    // Billing address validation (if shown)
-    if (showBillingAddress) {
-      if (!formData.billingAddress.firstName.trim()) {
-        errors['billingAddress.firstName'] = 'First name is required';
-      }
-      
-      if (!formData.billingAddress.lastName.trim()) {
-        errors['billingAddress.lastName'] = 'Last name is required';
-      }
-      
-      if (!formData.billingAddress.address.trim()) {
-        errors['billingAddress.address'] = 'Address is required';
-      }
-      
-      if (!formData.billingAddress.city.trim()) {
-        errors['billingAddress.city'] = 'City is required';
-      }
-      
-      if (!formData.billingAddress.state) {
-        errors['billingAddress.state'] = 'State is required';
-      }
-      
-      const zipError = validateZip(formData.billingAddress.zip);
-      if (zipError) errors['billingAddress.zip'] = zipError;
-      
-      if (formData.billingAddress.email) {
-        const emailError = validateEmail(formData.billingAddress.email);
-        if (emailError) errors['billingAddress.email'] = emailError;
-      }
-      
-      if (formData.billingAddress.phone) {
-        const phoneError = validatePhone(formData.billingAddress.phone);
-        if (phoneError) errors['billingAddress.phone'] = phoneError;
-      }
+    // Billing address validation - always required for Accept.js
+    if (!formData.billingAddress.firstName.trim()) {
+      errors['billingAddress.firstName'] = 'First name is required';
+    }
+    
+    if (!formData.billingAddress.lastName.trim()) {
+      errors['billingAddress.lastName'] = 'Last name is required';
+    }
+    
+    if (!formData.billingAddress.address.trim()) {
+      errors['billingAddress.address'] = 'Address is required';
+    }
+    
+    if (!formData.billingAddress.city.trim()) {
+      errors['billingAddress.city'] = 'City is required';
+    }
+    
+    if (!formData.billingAddress.state) {
+      errors['billingAddress.state'] = 'State is required';
+    }
+    
+    const zipError = validateZip(formData.billingAddress.zip);
+    if (zipError) errors['billingAddress.zip'] = zipError;
+    
+    if (formData.billingAddress.email && formData.billingAddress.email.trim()) {
+      const emailError = validateEmail(formData.billingAddress.email);
+      if (emailError) errors['billingAddress.email'] = emailError;
+    }
+    
+    if (formData.billingAddress.phone && formData.billingAddress.phone.trim()) {
+      const phoneError = validatePhone(formData.billingAddress.phone);
+      if (phoneError) errors['billingAddress.phone'] = phoneError;
     }
     
     // Terms validation
@@ -388,21 +386,34 @@ export default function AuthorizeNetPaymentForm({
     setIsProcessing(true);
     
     try {
+      // Ensure all required fields are present and properly formatted
       const acceptData = {
         clientKey: paymentConfig.clientKey,
         apiLoginID: paymentConfig.apiLoginId,
         paymentForm: {
           cardNumber: formData.cardNumber.replace(/\s/g, ''),
-          month: formData.expiryMonth,
+          month: formData.expiryMonth.padStart(2, '0'),
           year: formData.expiryYear,
           cardCode: formData.cardCode,
           zip: formData.billingAddress.zip,
-          fullName: formData.cardholderName
+          fullName: formData.cardholderName || `${formData.billingAddress.firstName} ${formData.billingAddress.lastName}`.trim(),
+          // Additional required fields for Accept.js
+          firstName: formData.billingAddress.firstName,
+          lastName: formData.billingAddress.lastName,
+          address: formData.billingAddress.address,
+          city: formData.billingAddress.city,
+          state: formData.billingAddress.state,
+          country: formData.billingAddress.country || 'US'
         }
       };
 
+      // Debug log for troubleshooting
+      console.log('Accept.js data being sent:', acceptData);
+      
       // Use Accept.js to tokenize payment data
       window.Accept.dispatchData(acceptData, (response: any) => {
+        console.log('Accept.js response:', response);
+        
         if (response.messages.resultCode === 'Ok') {
           // Payment data successfully tokenized
           const paymentData = {
@@ -415,10 +426,15 @@ export default function AuthorizeNetPaymentForm({
           };
           
           onPaymentSuccess(paymentData);
+          setIsProcessing(false);
         } else {
-          // Payment tokenization failed
-          const errorMessage = response.messages.message[0]?.text || 'Payment validation failed';
-          onPaymentError(errorMessage);
+          // Payment tokenization failed - provide detailed error information
+          const errorMessages = response.messages.message || [];
+          const detailedError = errorMessages.map((msg: any) => msg.text).join('. ');
+          const errorMessage = detailedError || 'Payment validation failed';
+          
+          console.error('Accept.js validation failed:', response);
+          onPaymentError(`Payment Error: ${errorMessage}`);
           setIsProcessing(false);
         }
       });
