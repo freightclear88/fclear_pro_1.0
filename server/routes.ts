@@ -3565,6 +3565,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Authorize.Net Webhook/Receipt URL endpoint
+  app.post('/api/payment/webhook', async (req, res) => {
+    try {
+      console.log('Authorize.Net webhook received:', req.body);
+      
+      // Acknowledge receipt immediately
+      res.status(200).send('OK');
+      
+      // Process the webhook data
+      const webhookData = req.body;
+      
+      // Log transaction details for debugging
+      if (webhookData.payload) {
+        console.log('Transaction ID:', webhookData.payload.id);
+        console.log('Transaction Status:', webhookData.payload.responseCode);
+        console.log('Amount:', webhookData.payload.authAmount);
+      }
+      
+      // Here you can add logic to update your database with transaction status
+      // For example: update payment records, send confirmation emails, etc.
+      
+    } catch (error) {
+      console.error('Webhook processing error:', error);
+      res.status(200).send('OK'); // Always respond OK to Authorize.Net
+    }
+  });
+
   // Subscription Plans Route
   app.get('/api/subscription/plans', async (req, res) => {
     try {
