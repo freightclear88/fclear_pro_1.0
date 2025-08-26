@@ -426,7 +426,12 @@ export default function AuthorizeNetPaymentForm({
           // Payment tokenization failed - provide detailed error information
           const errorMessages = response.messages.message || [];
           const detailedError = errorMessages.map((msg: any) => msg.text).join('. ');
-          const errorMessage = detailedError || 'Payment validation failed';
+          let errorMessage = detailedError || 'Payment validation failed';
+          
+          // Provide specific guidance for authentication errors
+          if (errorMessage.includes('authentication failed') || errorMessage.includes('invalid authentication')) {
+            errorMessage += ' Please contact support to verify your Authorize.Net credentials are correctly configured for your account environment.';
+          }
           
           console.error('Accept.js validation failed:', response);
           onPaymentError(`Payment Error: ${errorMessage}`);
