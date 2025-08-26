@@ -3386,8 +3386,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Payment Configuration Route
-  app.get('/api/payment/config', requireSubscription, async (req, res) => {
+  // Payment Configuration Route (no subscription required for payment processing)
+  app.get('/api/payment/config', isAuthenticated, async (req, res) => {
     try {
       const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
       const clientKey = process.env.AUTHORIZE_NET_CLIENT_KEY;
@@ -3408,8 +3408,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Payment Processing Route
-  app.post('/api/payment/process', requireSubscription, async (req: any, res) => {
+  // Payment Processing Route (no subscription required for payment processing)
+  app.post('/api/payment/process', isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const {

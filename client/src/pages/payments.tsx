@@ -484,31 +484,49 @@ export default function Payments() {
                     </div>
                   </div>
               
-              {/* Use the new Authorize.Net compliant payment form */}
-              {invoiceForm.invoiceNumber && invoiceForm.amount && parseFloat(invoiceForm.amount) > 0 && paymentConfig && (
-                <AuthorizeNetPaymentForm
-                  paymentConfig={paymentConfig}
-                  onPaymentSuccess={handlePaymentSuccess}
-                  onPaymentError={handlePaymentError}
-                  amount={parseFloat(invoiceForm.amount)}
-                  invoiceNumber={invoiceForm.invoiceNumber}
-                  description={invoiceForm.description}
-                  serviceFeeRate={0.035}
-                  initialData={{
-                    billingAddress: {
-                      firstName: user?.firstName || '',
-                      lastName: user?.lastName || '',
-                      company: user?.companyName || '',
-                      address: user?.address || '',
-                      city: user?.city || '',
-                      state: user?.state || '',
-                      zip: user?.zipCode || '',
-                      country: 'US',
-                      phone: user?.phoneNumber || '',
-                      email: user?.email || ''
-                    }
-                  }}
-                />
+              {/* Authorize.Net Compliant Payment Form */}
+              {invoiceForm.invoiceNumber && invoiceForm.amount && parseFloat(invoiceForm.amount) > 0 && (
+                <>
+                  {paymentConfig ? (
+                    <AuthorizeNetPaymentForm
+                      paymentConfig={paymentConfig}
+                      onPaymentSuccess={handlePaymentSuccess}
+                      onPaymentError={handlePaymentError}
+                      amount={parseFloat(invoiceForm.amount)}
+                      invoiceNumber={invoiceForm.invoiceNumber}
+                      description={invoiceForm.description}
+                      serviceFeeRate={0.035}
+                      initialData={{
+                        billingAddress: {
+                          firstName: user?.firstName || '',
+                          lastName: user?.lastName || '',
+                          company: user?.companyName || '',
+                          address: user?.address || '',
+                          city: user?.city || '',
+                          state: user?.state || '',
+                          zip: user?.zipCode || '',
+                          country: 'US',
+                          phone: user?.phoneNumber || '',
+                          email: user?.email || ''
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="w-5 h-5 text-yellow-600" />
+                          <div>
+                            <h3 className="font-medium text-yellow-800">Payment Configuration Loading</h3>
+                            <p className="text-sm text-yellow-700">
+                              The payment system is loading. Please wait a moment or refresh the page.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
                 </CardContent>
               </Card>
