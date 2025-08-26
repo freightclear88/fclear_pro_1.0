@@ -32,6 +32,11 @@ export default function PaymentTest() {
     enabled: isAuthenticated,
   });
 
+  // Merchant validation mutation
+  const validateMerchantMutation = useMutation({
+    mutationFn: () => apiRequest('/api/payment/validate-merchant', 'POST'),
+  });
+
   const runSystemTests = async () => {
     setIsRunningTests(true);
     const results: TestResult[] = [];
@@ -143,7 +148,30 @@ export default function PaymentTest() {
         });
       }
 
-      // Test 5: Environment Variables
+      // Test 5: Merchant Account Validation
+      try {
+        console.log('Running merchant account validation...');
+        const merchantValidation = await validateMerchantMutation.mutateAsync();
+        
+        results.push({
+          test: "Merchant Account Validation",
+          status: merchantValidation.valid ? "success" : "error",
+          message: merchantValidation.message,
+          details: {
+            status: merchantValidation.status,
+            diagnosis: merchantValidation.diagnosis,
+            ...merchantValidation.details
+          }
+        });
+      } catch (error: any) {
+        results.push({
+          test: "Merchant Account Validation",
+          status: "error",
+          message: `Validation failed: ${error.message || 'Unknown error'}`
+        });
+      }
+
+      // Test 6: Environment Variables
       results.push({
         test: "Production Readiness",
         status: paymentConfig?.environment === 'production' ? "success" : "warning",

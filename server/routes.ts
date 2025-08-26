@@ -3419,6 +3419,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Merchant Account Validation Route
+  app.post('/api/payment/validate-merchant', isAuthenticated, async (req: any, res) => {
+    try {
+      const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
+      const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
+
+      if (!apiLoginId || !transactionKey) {
+        return res.json({
+          valid: false,
+          status: 'missing_credentials',
+          message: 'API credentials not configured'
+        });
+      }
+
+      const { validateMerchantAccount } = require('./authorizeNetValidator.js');
+      const isProduction = apiLoginId.length === 8 && !apiLoginId.includes('test');
+      
+      console.log('🔍 Starting comprehensive merchant account validation...');
+      const result = await validateMerchantAccount(apiLoginId, transactionKey, isProduction);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Merchant validation error:', error);
+      res.status(500).json({
+        valid: false,
+        status: 'validation_error',
+        message: 'Failed to validate merchant account'
+      });
+    }
+  });
+
   // Payment Processing Route (no subscription required for payment processing)
   app.post('/api/payment/process', isAuthenticated, async (req: any, res) => {
     try {
