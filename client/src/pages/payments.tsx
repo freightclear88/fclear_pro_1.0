@@ -82,11 +82,7 @@ export default function Payments() {
   // Invoice payment mutation
   const invoicePaymentMutation = useMutation({
     mutationFn: async (data: InvoicePaymentData) => {
-      return await apiRequest("/api/payment/invoice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("/api/payment/invoice", "POST", data);
     },
     onSuccess: () => {
       toast({
@@ -139,20 +135,16 @@ export default function Payments() {
 
   const handlePaymentSuccess = async (paymentData: any) => {
     try {
-      const response = await apiRequest("/api/payment/process", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          invoiceNumber: invoiceForm.invoiceNumber,
-          companyName: paymentData.billingInfo?.company || user?.companyName,
-          amount: invoiceForm.amount,
-          description: invoiceForm.description,
-          opaqueData: paymentData.opaqueData,
-          billingInfo: paymentData.billingInfo
-        }),
+      const response = await apiRequest("/api/payment/process", "POST", {
+        invoiceNumber: invoiceForm.invoiceNumber,
+        companyName: paymentData.billingInfo?.company || user?.companyName,
+        amount: invoiceForm.amount,
+        description: invoiceForm.description,
+        opaqueData: paymentData.opaqueData,
+        billingInfo: paymentData.billingInfo
       });
 
-      if (response.success) {
+      if (response && (response as any).success) {
         toast({
           title: "Payment Successful",
           description: `Payment for invoice ${invoiceForm.invoiceNumber} has been processed successfully.`,
@@ -174,7 +166,7 @@ export default function Payments() {
           }
         });
       } else {
-        throw new Error(response.error || 'Payment failed');
+        throw new Error((response as any).error || 'Payment failed');
       }
     } catch (error: any) {
       toast({
@@ -506,7 +498,7 @@ export default function Payments() {
                           state: user?.state || '',
                           zip: user?.zipCode || '',
                           country: 'US',
-                          phone: user?.phoneNumber || '',
+                          phone: user?.phone || '',
                           email: user?.email || ''
                         }
                       }}
