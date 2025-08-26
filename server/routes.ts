@@ -2669,30 +2669,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Payment configuration
-  app.get('/api/payment/config', requireSubscription, async (req: any, res) => {
-    try {
-      const clientKey = process.env.AUTHORIZE_NET_CLIENT_KEY;
-      const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
-      
-      if (!clientKey || !apiLoginId) {
-        return res.status(500).json({ 
-          success: false, 
-          error: "Payment system not configured" 
-        });
-      }
-      
-      res.json({
-        success: true,
-        clientKey,
-        apiLoginId,
-        environment: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
-      });
-    } catch (error) {
-      console.error("Error fetching payment config:", error);
-      res.status(500).json({ message: "Failed to fetch payment configuration" });
-    }
-  });
+
 
   // Dashboard stats route
   app.get('/api/dashboard/stats', requireSubscription, async (req: any, res) => {
