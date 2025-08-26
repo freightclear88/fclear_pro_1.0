@@ -3391,11 +3391,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Detect environment based on API Login ID pattern
+      // Sandbox credentials are typically test credentials or have specific patterns
+      const isProduction = apiLoginId.length === 8 && !apiLoginId.includes('test') && !apiLoginId.toLowerCase().includes('sandbox');
+      
       res.json({
         success: true,
         apiLoginId: apiLoginId,
         clientKey: clientKey,
-        environment: 'sandbox'  // Use sandbox for testing with any credentials
+        environment: isProduction ? 'production' : 'sandbox'
       });
     } catch (error) {
       console.error("Error fetching payment config:", error);

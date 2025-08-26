@@ -167,15 +167,17 @@ export default function AuthorizeNetPaymentForm({
       const existingScripts = document.querySelectorAll('script[src*="Accept.js"]');
       existingScripts.forEach(script => script.remove());
       
-      // Force sandbox Accept.js for compatibility
+      // Use appropriate Accept.js script based on environment
       const script = document.createElement('script');
-      script.src = 'https://jstest.authorize.net/v1/Accept.js';
+      script.src = paymentConfig.environment === 'production' 
+        ? 'https://js.authorize.net/v1/Accept.js'
+        : 'https://jstest.authorize.net/v1/Accept.js';
       script.type = 'text/javascript';
       script.charset = 'utf-8';
       script.crossOrigin = 'anonymous';
       
       script.onload = () => {
-        console.log('Accept.js script loaded successfully');
+        console.log(`Accept.js ${paymentConfig.environment} script loaded successfully`);
         // Wait for the script to initialize and check for Accept object
         let attempts = 0;
         const checkAccept = () => {
