@@ -3395,7 +3395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         apiLoginId: apiLoginId,
         clientKey: clientKey,
-        environment: 'production'  // Force production environment for live credentials
+        environment: 'sandbox'  // Use sandbox for testing with any credentials
       });
     } catch (error) {
       console.error("Error fetching payment config:", error);

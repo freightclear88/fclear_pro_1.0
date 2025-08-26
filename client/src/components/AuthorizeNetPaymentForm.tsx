@@ -156,40 +156,41 @@ export default function AuthorizeNetPaymentForm({
   // Load Accept.js dynamically
   useEffect(() => {
     if (paymentConfig?.success && !isAcceptJsLoaded) {
-      // Remove any existing Accept.js script first
-      const existingScript = document.querySelector('script[src*="Accept.js"]');
-      if (existingScript) {
-        existingScript.remove();
+      // Check if Accept.js is already loaded globally
+      if (window.Accept) {
+        console.log('Accept.js already available globally');
+        setIsAcceptJsLoaded(true);
+        return;
       }
       
+      // Remove any existing Accept.js script first
+      const existingScripts = document.querySelectorAll('script[src*="Accept.js"]');
+      existingScripts.forEach(script => script.remove());
+      
+      // Always use sandbox for testing since production credentials may be sandbox
       const script = document.createElement('script');
-      script.src = paymentConfig.environment === 'production' 
-        ? 'https://js.authorize.net/v1/Accept.js'
-        : 'https://jstest.authorize.net/v1/Accept.js';
-      script.async = true;
+      script.src = 'https://jstest.authorize.net/v1/Accept.js';
+      script.type = 'text/javascript';
+      script.charset = 'utf-8';
+      
       script.onload = () => {
-        console.log('Accept.js loaded successfully');
-        setIsAcceptJsLoaded(true);
-      };
-      script.onerror = (error) => {
-        console.error('Failed to load Accept.js:', error);
-        // Try sandbox script as fallback if production fails
-        if (paymentConfig.environment === 'production') {
-          const fallbackScript = document.createElement('script');
-          fallbackScript.src = 'https://jstest.authorize.net/v1/Accept.js';
-          fallbackScript.async = true;
-          fallbackScript.onload = () => {
-            console.log('Accept.js sandbox fallback loaded successfully');
+        console.log('Accept.js sandbox script loaded successfully');
+        // Wait a moment for the script to initialize
+        setTimeout(() => {
+          if (window.Accept) {
             setIsAcceptJsLoaded(true);
-          };
-          fallbackScript.onerror = () => {
-            onPaymentError('Failed to load payment processing system. Please ensure you have a secure HTTPS connection.');
-          };
-          document.head.appendChild(fallbackScript);
-        } else {
-          onPaymentError('Failed to load payment processing system. Please ensure you have a secure HTTPS connection.');
-        }
+          } else {
+            console.error('Accept.js loaded but window.Accept not available');
+            onPaymentError('Payment system initialization failed');
+          }
+        }, 100);
       };
+      
+      script.onerror = (error) => {
+        console.error('Failed to load Accept.js sandbox script:', error);
+        onPaymentError('Failed to load payment processing system. Please check your internet connection.');
+      };
+      
       document.head.appendChild(script);
       
       return () => {
