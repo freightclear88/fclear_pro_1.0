@@ -384,6 +384,17 @@ export default function PaymentTest() {
                   </div>
 
                   {paymentConfig && parseFloat(testAmount) >= 1 && invoiceNumber.trim() && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h4 className="font-medium text-sm mb-2">Environment Check:</h4>
+                      <div className="text-xs space-y-1">
+                        <div>API Login ID: {paymentConfig.apiLoginId}</div>
+                        <div>Environment: {(paymentConfig.apiLoginId?.length === 8 && !paymentConfig.apiLoginId.includes('test')) ? 'PRODUCTION' : 'SANDBOX'}</div>
+                        <div>Accept.js: {(paymentConfig.apiLoginId?.length === 8 && !paymentConfig.apiLoginId.includes('test')) ? 'js.authorize.net' : 'jstest.authorize.net'}</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {paymentConfig && parseFloat(testAmount) >= 1 && invoiceNumber.trim() && (
                     <AuthorizeNetPaymentForm
                       paymentConfig={paymentConfig}
                       onPaymentSuccess={handlePaymentSuccess}

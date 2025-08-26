@@ -167,17 +167,22 @@ export default function AuthorizeNetPaymentForm({
       const existingScripts = document.querySelectorAll('script[src*="Accept.js"]');
       existingScripts.forEach(script => script.remove());
       
-      // Use appropriate Accept.js script based on environment
+      // Use appropriate Accept.js script based on credentials type (matching server logic)
+      // Production credentials (8-char API Login ID without 'test') use production Accept.js
+      const isProductionCredentials = paymentConfig.apiLoginId?.length === 8 && !paymentConfig.apiLoginId.includes('test');
+      
       const script = document.createElement('script');
-      script.src = paymentConfig.environment === 'production' 
+      script.src = isProductionCredentials
         ? 'https://js.authorize.net/v1/Accept.js'
         : 'https://jstest.authorize.net/v1/Accept.js';
+        
+      console.log(`Loading ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'} Accept.js for credentials: ${paymentConfig.apiLoginId}`);
       script.type = 'text/javascript';
       script.charset = 'utf-8';
       script.crossOrigin = 'anonymous';
       
       script.onload = () => {
-        console.log(`Accept.js ${paymentConfig.environment} script loaded successfully`);
+        console.log(`Accept.js ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'} script loaded successfully`);
         // Wait for the script to initialize and check for Accept object
         let attempts = 0;
         const checkAccept = () => {
@@ -196,8 +201,8 @@ export default function AuthorizeNetPaymentForm({
       };
       
       script.onerror = (error) => {
-        console.error('Failed to load Accept.js sandbox script:', error);
-        onPaymentError('Failed to load payment processing system. Please check your internet connection.');
+        console.error(`Failed to load Accept.js ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'} script:`, error);
+        onPaymentError(`Failed to load payment processing system (${isProductionCredentials ? 'production' : 'sandbox'}). Please check your internet connection.`);
       };
       
       document.head.appendChild(script);
