@@ -386,24 +386,19 @@ export default function AuthorizeNetPaymentForm({
     setIsProcessing(true);
     
     try {
-      // Ensure all required fields are present and properly formatted
+      // Prepare Accept.js data with exact required structure per Authorize.Net documentation
       const acceptData = {
-        clientKey: paymentConfig.clientKey,
-        apiLoginID: paymentConfig.apiLoginId,
-        paymentForm: {
+        authData: {
+          clientKey: paymentConfig.clientKey,
+          apiLoginID: paymentConfig.apiLoginId
+        },
+        cardData: {
           cardNumber: formData.cardNumber.replace(/\s/g, ''),
           month: formData.expiryMonth.padStart(2, '0'),
           year: formData.expiryYear,
           cardCode: formData.cardCode,
           zip: formData.billingAddress.zip,
-          fullName: formData.cardholderName || `${formData.billingAddress.firstName} ${formData.billingAddress.lastName}`.trim(),
-          // Additional required fields for Accept.js
-          firstName: formData.billingAddress.firstName,
-          lastName: formData.billingAddress.lastName,
-          address: formData.billingAddress.address,
-          city: formData.billingAddress.city,
-          state: formData.billingAddress.state,
-          country: formData.billingAddress.country || 'US'
+          fullName: formData.cardholderName || `${formData.billingAddress.firstName} ${formData.billingAddress.lastName}`.trim()
         }
       };
 
