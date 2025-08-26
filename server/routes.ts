@@ -3370,7 +3370,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientKey = process.env.AUTHORIZE_NET_CLIENT_KEY;
       
       console.log('Payment config request - API Login ID length:', apiLoginId ? apiLoginId.length : 'undefined');
+      console.log('Payment config request - API Login ID first 20 chars:', apiLoginId ? apiLoginId.substring(0, 20) : 'undefined');
       console.log('Payment config request - Client Key length:', clientKey ? clientKey.length : 'undefined');
+      console.log('Payment config request - Client Key first 10 chars:', clientKey ? clientKey.substring(0, 10) : 'undefined');
       
       if (!apiLoginId || !clientKey) {
         console.error('Missing Authorize.Net credentials in environment variables');
