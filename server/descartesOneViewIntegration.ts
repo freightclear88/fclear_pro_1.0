@@ -391,7 +391,7 @@ export class DescartesOneViewIntegration {
     xml += '<CargoXML xmlns="http://www.iata.org/cargoxml" version="3.0">\n';
     xml += '  <MessageHeader>\n';
     xml += `    <MessageId>${this.escapeXml(shipment.transactionId)}</MessageId>\n`;
-    xml += `    <Timestamp>${new Date().toISOString()}</Timestamp>\n`;
+    xml += `    <Timestamp>${new Date().toISOString()}</Timestamp>\n';
     xml += '    <Source>FreightClear</Source>\n';
     xml += '    <Destination>OneView</Destination>\n';
     xml += '  </MessageHeader>\n';
