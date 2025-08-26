@@ -24,6 +24,7 @@ export default function PaymentTest() {
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [isRunningTests, setIsRunningTests] = useState(false);
   const [testAmount, setTestAmount] = useState("1.00");
+  const [invoiceNumber, setInvoiceNumber] = useState(`TEST-${Date.now()}`);
   
   // Payment configuration query
   const { data: paymentConfig, refetch: refetchConfig } = useQuery({
@@ -180,7 +181,8 @@ export default function PaymentTest() {
       message: `$${testAmount} test payment processed successfully`,
       details: {
         opaqueData: paymentData.opaqueData?.dataDescriptor,
-        amount: testAmount
+        amount: testAmount,
+        invoiceNumber: invoiceNumber
       }
     }]);
   };
@@ -356,27 +358,39 @@ export default function PaymentTest() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="test-amount">Test Amount (USD)</Label>
-                    <Input
-                      id="test-amount"
-                      type="number"
-                      step="0.01"
-                      min="1.00"
-                      value={testAmount}
-                      onChange={(e) => setTestAmount(e.target.value)}
-                      placeholder="1.00"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="test-amount">Test Amount (USD)</Label>
+                      <Input
+                        id="test-amount"
+                        type="number"
+                        step="0.01"
+                        min="1.00"
+                        value={testAmount}
+                        onChange={(e) => setTestAmount(e.target.value)}
+                        placeholder="1.00"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="invoice-number">Invoice Number</Label>
+                      <Input
+                        id="invoice-number"
+                        type="text"
+                        value={invoiceNumber}
+                        onChange={(e) => setInvoiceNumber(e.target.value)}
+                        placeholder="TEST-123456"
+                      />
+                    </div>
                   </div>
 
-                  {paymentConfig && parseFloat(testAmount) >= 1 && (
+                  {paymentConfig && parseFloat(testAmount) >= 1 && invoiceNumber.trim() && (
                     <AuthorizeNetPaymentForm
                       paymentConfig={paymentConfig}
                       onPaymentSuccess={handlePaymentSuccess}
                       onPaymentError={handlePaymentError}
                       amount={parseFloat(testAmount)}
-                      invoiceNumber={`TEST-${Date.now()}`}
-                      description={`Production API Test - $${testAmount}`}
+                      invoiceNumber={invoiceNumber}
+                      description={`Production API Test - $${testAmount} - Invoice: ${invoiceNumber}`}
                       serviceFeeRate={0.035}
                       showBillingAddress={true}
                       initialData={{
