@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Receipt, CreditCard, FileText, DollarSign, Eye, Download, AlertCircle } from "lucide-react";
 import type { Document } from "@shared/schema";
+import AuthorizeNetPaymentForm from "@/components/AuthorizeNetPaymentForm";
 
 interface InvoicePaymentData {
   invoiceNumber: string;
@@ -130,37 +131,66 @@ export default function Payments() {
     },
   });
 
-  const handleInvoiceSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!invoiceForm.invoiceNumber || !invoiceForm.amount) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide both invoice number and amount.",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Payment configuration query
+  const { data: paymentConfig } = useQuery({
+    queryKey: ["/api/payment/config"],
+    enabled: isAuthenticated,
+  });
 
-    setIsProcessingPayment(true);
-    
+  const handlePaymentSuccess = async (paymentData: any) => {
     try {
-      // For now, we'll process the payment directly
-      // In a real implementation, you would integrate with Accept.js here
-      const formWithNonce = {
-        ...invoiceForm,
-        paymentNonce: `mock-nonce-${Date.now()}` // This would be replaced with actual Accept.js integration
-      };
-      
-      invoicePaymentMutation.mutate(formWithNonce);
-    } catch (error) {
+      const response = await apiRequest("/api/payment/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invoiceNumber: invoiceForm.invoiceNumber,
+          companyName: paymentData.billingInfo?.company || user?.companyName,
+          amount: invoiceForm.amount,
+          description: invoiceForm.description,
+          opaqueData: paymentData.opaqueData,
+          billingInfo: paymentData.billingInfo
+        }),
+      });
+
+      if (response.success) {
+        toast({
+          title: "Payment Successful",
+          description: `Payment for invoice ${invoiceForm.invoiceNumber} has been processed successfully.`,
+        });
+        
+        // Reset form
+        setInvoiceForm({
+          invoiceNumber: "",
+          amount: "",
+          description: "",
+          paymentMethod: {
+            cardNumber: "",
+            expiryMonth: "",
+            expiryYear: "",
+            cardCode: "",
+            cardholderName: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : "",
+            companyName: user?.companyName || "",
+            zipCode: user?.zipCode || ""
+          }
+        });
+      } else {
+        throw new Error(response.error || 'Payment failed');
+      }
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Failed to process payment. Please try again.",
+        title: "Payment Failed",
+        description: error.message || "Payment processing failed. Please try again.",
         variant: "destructive",
       });
-      setIsProcessingPayment(false);
     }
+  };
+
+  const handlePaymentError = (error: string) => {
+    toast({
+      title: "Payment Error",
+      description: error,
+      variant: "destructive",
+    });
   };
 
   const handleViewInvoice = (invoice: Document) => {
@@ -402,8 +432,8 @@ export default function Payments() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleInvoiceSubmit} className="space-y-6">
-                    {/* Invoice Details */}
+                  {/* Invoice Details Form */}
+                  <div className="space-y-6 mb-6">
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-freight-dark">Invoice Details</h3>
                       
@@ -415,220 +445,77 @@ export default function Payments() {
                             value={invoiceForm.invoiceNumber}
                             onChange={(e) => setInvoiceForm(prev => ({
                               ...prev,
-                        invoiceNumber: e.target.value
-                      }))}
-                      placeholder="INV-2024-001"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="amount">Amount *</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      step="0.01"
-                      value={invoiceForm.amount}
-                      onChange={(e) => setInvoiceForm(prev => ({
-                        ...prev,
-                        amount: e.target.value
-                      }))}
-                      placeholder="0.00"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="description">Description (Optional)</Label>
-                  <Input
-                    id="description"
-                    value={invoiceForm.description}
-                    onChange={(e) => setInvoiceForm(prev => ({
-                      ...prev,
-                      description: e.target.value
-                    }))}
-                    placeholder="Customs clearance fees, duties, etc."
-                  />
-                </div>
-              </div>
-
-              {/* Payment Summary */}
-              <div className="space-y-4 border-t pt-4">
-                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                  <h4 className="font-medium text-freight-dark mb-2">Payment Summary</h4>
-                  <div className="flex justify-between text-sm">
-                    <span>Invoice Amount:</span>
-                    <span>${baseAmount.toFixed(2)}</span>
-                  </div>
-                  {baseAmount > 0 && (
-                    <div className="flex justify-between text-sm text-orange-600">
-                      <span>Credit Card Service Fee (3.5%):</span>
-                      <span>${serviceFee.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="border-t pt-2 flex justify-between font-medium">
-                    <span>Total Amount:</span>
-                    <span>${totalAmount.toFixed(2)}</span>
-                  </div>
-                  {baseAmount > 0 && (
-                    <div className="flex items-start gap-2 mt-3 p-3 bg-yellow-50 rounded border">
-                      <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                      <div className="text-xs text-yellow-800">
-                        <p className="font-medium">Service Fee Notice:</p>
-                        <p>A 3.5% service fee is automatically applied to all credit card transactions to cover processing costs. This fee is capped at 3.5% as permitted by law.</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Payment Method */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-freight-dark">Payment Method</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="cardholderName">Cardholder Name *</Label>
-                    <Input
-                      id="cardholderName"
-                      value={invoiceForm.paymentMethod.cardholderName}
-                      onChange={(e) => setInvoiceForm(prev => ({
-                        ...prev,
-                        paymentMethod: { ...prev.paymentMethod, cardholderName: e.target.value }
-                      }))}
-                      placeholder="John Doe"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="companyName">Company Name</Label>
-                    <Input
-                      id="companyName"
-                      value={invoiceForm.paymentMethod.companyName}
-                      onChange={(e) => setInvoiceForm(prev => ({
-                        ...prev,
-                        paymentMethod: { ...prev.paymentMethod, companyName: e.target.value }
-                      }))}
-                      placeholder="Company LLC"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="cardNumber">Card Number *</Label>
-                  <Input
-                    id="cardNumber"
-                    value={invoiceForm.paymentMethod.cardNumber}
-                    onChange={(e) => setInvoiceForm(prev => ({
-                      ...prev,
-                      paymentMethod: { ...prev.paymentMethod, cardNumber: e.target.value }
-                    }))}
-                    placeholder="1234 5678 9012 3456"
-                    required
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                  <div>
-                    <Label htmlFor="expiryMonth">Month *</Label>
-                    <Input
-                      id="expiryMonth"
-                      value={invoiceForm.paymentMethod.expiryMonth}
-                      onChange={(e) => setInvoiceForm(prev => ({
-                        ...prev,
-                        paymentMethod: { ...prev.paymentMethod, expiryMonth: e.target.value }
-                      }))}
-                      placeholder="MM"
-                      maxLength={2}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="expiryYear">Year *</Label>
-                    <Input
-                      id="expiryYear"
-                      value={invoiceForm.paymentMethod.expiryYear}
-                      onChange={(e) => setInvoiceForm(prev => ({
-                        ...prev,
-                        paymentMethod: { ...prev.paymentMethod, expiryYear: e.target.value }
-                      }))}
-                      placeholder="YY"
-                      maxLength={2}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="cardCode">CVV *</Label>
-                    <Input
-                      id="cardCode"
-                      value={invoiceForm.paymentMethod.cardCode}
-                      onChange={(e) => setInvoiceForm(prev => ({
-                        ...prev,
-                        paymentMethod: { ...prev.paymentMethod, cardCode: e.target.value }
-                      }))}
-                      placeholder="123"
-                      maxLength={4}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="zipCode">ZIP Code *</Label>
-                    <Input
-                      id="zipCode"
-                      value={invoiceForm.paymentMethod.zipCode}
-                      onChange={(e) => setInvoiceForm(prev => ({
-                        ...prev,
-                        paymentMethod: { ...prev.paymentMethod, zipCode: e.target.value }
-                      }))}
-                      placeholder="12345"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-6">
-                <Button
-                  type="submit"
-                  disabled={isProcessingPayment}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 shadow-lg"
-                >
-                  {isProcessingPayment ? "Processing Payment..." : `Pay $${totalAmount.toFixed(2)}`}
-                </Button>
-              </div>
-                    </form>
-                  </CardContent>
-                </Card>
-
-                {/* Security Notice */}
-                <Card className="mt-8 bg-gray-50">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-center gap-6 text-sm text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="w-4 h-4" />
-                        <span>Your payment information is secure and encrypted</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
-                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                            <line x1="8" y1="21" x2="16" y2="21"/>
-                            <line x1="12" y1="17" x2="12" y2="21"/>
-                          </svg>
-                          <span className="text-xs text-blue-600 font-medium">Authorize.Net</span>
+                              invoiceNumber: e.target.value
+                            }))}
+                            placeholder="INV-2024-001"
+                            required
+                          />
                         </div>
-                        <span>PCI DSS Compliant</span>
+                        
+                        <div>
+                          <Label htmlFor="amount">Amount *</Label>
+                          <Input
+                            id="amount"
+                            type="number"
+                            step="0.01"
+                            value={invoiceForm.amount}
+                            onChange={(e) => setInvoiceForm(prev => ({
+                              ...prev,
+                              amount: e.target.value
+                            }))}
+                            placeholder="0.00"
+                            required
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="description">Description (Optional)</Label>
+                        <Input
+                          id="description"
+                          value={invoiceForm.description}
+                          onChange={(e) => setInvoiceForm(prev => ({
+                            ...prev,
+                            description: e.target.value
+                          }))}
+                          placeholder="Customs clearance fees, duties, etc."
+                        />
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  </div>
+              
+              {/* Use the new Authorize.Net compliant payment form */}
+              {invoiceForm.invoiceNumber && invoiceForm.amount && parseFloat(invoiceForm.amount) > 0 && paymentConfig && (
+                <AuthorizeNetPaymentForm
+                  paymentConfig={paymentConfig}
+                  onPaymentSuccess={handlePaymentSuccess}
+                  onPaymentError={handlePaymentError}
+                  amount={parseFloat(invoiceForm.amount)}
+                  invoiceNumber={invoiceForm.invoiceNumber}
+                  description={invoiceForm.description}
+                  serviceFeeRate={0.035}
+                  initialData={{
+                    billingAddress: {
+                      firstName: user?.firstName || '',
+                      lastName: user?.lastName || '',
+                      company: user?.companyName || '',
+                      address: user?.address || '',
+                      city: user?.city || '',
+                      state: user?.state || '',
+                      zip: user?.zipCode || '',
+                      country: 'US',
+                      phone: user?.phoneNumber || '',
+                      email: user?.email || ''
+                    }
+                  }}
+                />
+              )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
+      </div>
 
       {/* Invoice View Dialog */}
       <Dialog open={isInvoiceViewOpen} onOpenChange={setIsInvoiceViewOpen}>
