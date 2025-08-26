@@ -156,20 +156,47 @@ export default function AuthorizeNetPaymentForm({
   // Load Accept.js dynamically
   useEffect(() => {
     if (paymentConfig?.success && !isAcceptJsLoaded) {
+      // Remove any existing Accept.js script first
+      const existingScript = document.querySelector('script[src*="Accept.js"]');
+      if (existingScript) {
+        existingScript.remove();
+      }
+      
       const script = document.createElement('script');
       script.src = paymentConfig.environment === 'production' 
         ? 'https://js.authorize.net/v1/Accept.js'
         : 'https://jstest.authorize.net/v1/Accept.js';
       script.async = true;
-      script.onload = () => setIsAcceptJsLoaded(true);
-      script.onerror = () => {
-        onPaymentError('Failed to load payment processing system');
+      script.onload = () => {
+        console.log('Accept.js loaded successfully');
+        setIsAcceptJsLoaded(true);
+      };
+      script.onerror = (error) => {
+        console.error('Failed to load Accept.js:', error);
+        // Try sandbox script as fallback if production fails
+        if (paymentConfig.environment === 'production') {
+          const fallbackScript = document.createElement('script');
+          fallbackScript.src = 'https://jstest.authorize.net/v1/Accept.js';
+          fallbackScript.async = true;
+          fallbackScript.onload = () => {
+            console.log('Accept.js sandbox fallback loaded successfully');
+            setIsAcceptJsLoaded(true);
+          };
+          fallbackScript.onerror = () => {
+            onPaymentError('Failed to load payment processing system. Please ensure you have a secure HTTPS connection.');
+          };
+          document.head.appendChild(fallbackScript);
+        } else {
+          onPaymentError('Failed to load payment processing system. Please ensure you have a secure HTTPS connection.');
+        }
       };
       document.head.appendChild(script);
       
       return () => {
         try {
-          document.head.removeChild(script);
+          if (document.head.contains(script)) {
+            document.head.removeChild(script);
+          }
         } catch (e) {
           // Script may have already been removed
         }
@@ -369,7 +396,7 @@ export default function AuthorizeNetPaymentForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isAcceptJsLoaded) {
+    if (!isAcceptJsLoaded || !window.Accept) {
       onPaymentError('Payment system is still loading. Please wait and try again.');
       return;
     }
