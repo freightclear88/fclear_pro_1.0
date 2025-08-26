@@ -167,23 +167,30 @@ export default function AuthorizeNetPaymentForm({
       const existingScripts = document.querySelectorAll('script[src*="Accept.js"]');
       existingScripts.forEach(script => script.remove());
       
-      // Always use sandbox for testing since production credentials may be sandbox
+      // Force sandbox Accept.js for compatibility
       const script = document.createElement('script');
       script.src = 'https://jstest.authorize.net/v1/Accept.js';
       script.type = 'text/javascript';
       script.charset = 'utf-8';
+      script.crossOrigin = 'anonymous';
       
       script.onload = () => {
-        console.log('Accept.js sandbox script loaded successfully');
-        // Wait a moment for the script to initialize
-        setTimeout(() => {
-          if (window.Accept) {
+        console.log('Accept.js script loaded successfully');
+        // Wait for the script to initialize and check for Accept object
+        let attempts = 0;
+        const checkAccept = () => {
+          attempts++;
+          if (window.Accept && typeof window.Accept.dispatchData === 'function') {
+            console.log('Accept.js initialized and ready');
             setIsAcceptJsLoaded(true);
+          } else if (attempts < 20) {
+            setTimeout(checkAccept, 100);
           } else {
-            console.error('Accept.js loaded but window.Accept not available');
+            console.error('Accept.js loaded but not properly initialized after 2 seconds');
             onPaymentError('Payment system initialization failed');
           }
-        }, 100);
+        };
+        checkAccept();
       };
       
       script.onerror = (error) => {
