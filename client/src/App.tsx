@@ -19,6 +19,7 @@ import Admin from "@/pages/admin";
 import Agent from "@/pages/agent";
 import Subscription from "@/pages/subscription";
 import Payments from "@/pages/payments";
+import PaymentTest from "@/pages/payment-test";
 
 import Chat from "@/pages/chat";
 import FastIsf from "@/pages/fastisf";
@@ -35,6 +36,7 @@ const navigation = [
   { name: "Fast ISF", href: "/fastisf", icon: FileText },
   { name: "Chat/Support", href: "/chat", icon: MessageCircle },
   { name: "Payments", href: "/payments", icon: Receipt },
+  { name: "Payment Test", href: "/payment-test", icon: CreditCard },
   { name: "Profile", href: "/profile", icon: User },
   { name: "Subscription", href: "/subscription", icon: CreditCard },
 ];
@@ -252,6 +254,7 @@ function Router() {
         <Route path="/chat" component={Chat} />
         <Route path="/subscription" component={Subscription} />
         <Route path="/payments" component={Payments} />
+        <Route path="/payment-test" component={PaymentTest} />
         <Route path="/admin" component={Admin} />
         <Route path="/agent" component={Agent} />
         <Route path="/profile" component={Profile} />
