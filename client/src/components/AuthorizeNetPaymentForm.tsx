@@ -439,8 +439,19 @@ export default function AuthorizeNetPaymentForm({
         }
       };
 
-      // Debug log for troubleshooting
-      console.log('Accept.js data being sent:', acceptData);
+      // Debug log for troubleshooting (hide sensitive data)
+      console.log('Accept.js data being sent:', {
+        ...acceptData,
+        authData: { 
+          clientKey: acceptData.authData.clientKey.substring(0, 10) + '...', 
+          apiLoginID: acceptData.authData.apiLoginID 
+        },
+        cardData: { 
+          ...acceptData.cardData, 
+          cardNumber: acceptData.cardData.cardNumber.substring(0, 4) + '****',
+          cardCode: '***'
+        }
+      });
       
       // Use Accept.js to tokenize payment data
       window.Accept.dispatchData(acceptData, (response: any) => {
@@ -467,7 +478,7 @@ export default function AuthorizeNetPaymentForm({
           
           // Provide specific guidance for authentication errors
           if (errorMessage.includes('authentication failed') || errorMessage.includes('invalid authentication')) {
-            errorMessage += ' Please contact support to verify your Authorize.Net credentials are correctly configured for your account environment.';
+            errorMessage = 'Authentication failed. This may be due to:\n• Production credentials being used in sandbox mode\n• Merchant account not fully activated\n• Missing SSL/TLS configuration for production\n• Incorrect API Login ID or Client Key format\n\nFor testing, please use sandbox credentials or contact Authorize.Net support to verify your production account setup.';
           }
           
           console.error('Accept.js validation failed:', response);

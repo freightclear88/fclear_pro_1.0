@@ -3391,9 +3391,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Detect environment based on API Login ID pattern
-      // Sandbox credentials are typically test credentials or have specific patterns
-      const isProduction = apiLoginId.length === 8 && !apiLoginId.includes('test') && !apiLoginId.toLowerCase().includes('sandbox');
+      // Force sandbox environment for testing - production credentials often need merchant account setup
+      // Production processing requires merchant account configuration, SSL certificates, etc.
+      const isProduction = false; // Set to true only when merchant account is fully configured
       
       res.json({
         success: true,
