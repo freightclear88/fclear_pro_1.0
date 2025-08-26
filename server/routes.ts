@@ -3373,6 +3373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Payment config request - API Login ID first 20 chars:', apiLoginId ? apiLoginId.substring(0, 20) : 'undefined');
       console.log('Payment config request - Client Key length:', clientKey ? clientKey.length : 'undefined');
       console.log('Payment config request - Client Key first 10 chars:', clientKey ? clientKey.substring(0, 10) : 'undefined');
+      console.log('Payment config request - Transaction Key available:', process.env.AUTHORIZE_NET_TRANSACTION_KEY ? 'Yes' : 'No');
       
       if (!apiLoginId || !clientKey) {
         console.error('Missing Authorize.Net credentials in environment variables');
@@ -3508,8 +3509,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Execute the request
       const ctrl = new ApiControllers.CreateTransactionController(createRequest.getJSON());
       
-      // Set environment (sandbox or production)
-      if (process.env.NODE_ENV === 'production') {
+      // Set environment based on credentials type, not NODE_ENV
+      // Production credentials should use production endpoint
+      const isProductionCredentials = apiLoginId.length === 8 && !apiLoginId.includes('test');
+      
+      console.log(`Payment processing - API Login ID: ${apiLoginId}`);
+      console.log(`Payment processing - Using ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'} environment`);
+      console.log(`Payment processing - Invoice: ${invoiceNumber}, Amount: $${paymentAmount.toFixed(2)}`);
+      
+      if (isProductionCredentials) {
         ctrl.setEnvironment(SDKConstants.endpoint.production);
       } else {
         ctrl.setEnvironment(SDKConstants.endpoint.sandbox);
@@ -3517,7 +3525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Process the transaction
       await new Promise<void>((resolve, reject) => {
-        ctrl.execute(() => {
+        ctrl.execute(async () => {
           try {
             const apiResponse = ctrl.getResponse();
             const response = new ApiContracts.CreateTransactionResponse(apiResponse);
@@ -3527,21 +3535,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               if (transactionResponse && transactionResponse.getResponseCode() === '1') {
                 // Transaction approved
-                console.log(`Payment successful - Transaction ID: ${transactionResponse.getTransId()}`);
+                const transactionId = transactionResponse.getTransId();
+                console.log(`✅ PAYMENT SUCCESSFUL!`);
+                console.log(`   Transaction ID: ${transactionId}`);
+                console.log(`   Auth Code: ${transactionResponse.getAuthCode()}`);
+                console.log(`   Amount: $${paymentAmount.toFixed(2)}`);
+                console.log(`   Invoice: ${invoiceNumber}`);
+                console.log(`   Environment: ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'}`);
+                
+                // Store transaction record
+                try {
+                  await storage.createPaymentTransaction({
+                    userId: userId,
+                    amount: paymentAmount,
+                    transactionId: transactionId,
+                    authCode: transactionResponse.getAuthCode(),
+                    invoiceNumber: invoiceNumber,
+                    description: description,
+                    status: 'completed',
+                    environment: isProductionCredentials ? 'production' : 'sandbox'
+                  });
+                } catch (dbError) {
+                  console.error('Failed to store transaction record:', dbError);
+                }
                 
                 res.json({
                   success: true,
-                  transactionId: transactionResponse.getTransId(),
+                  transactionId: transactionId,
                   authCode: transactionResponse.getAuthCode(),
                   responseCode: transactionResponse.getResponseCode(),
-                  message: "Payment processed successfully"
+                  message: "Payment processed successfully",
+                  environment: isProductionCredentials ? 'production' : 'sandbox'
                 });
               } else {
                 // Transaction declined
                 const errorCode = transactionResponse?.getErrors()?.getError()?.[0]?.getErrorCode() || 'Unknown';
                 const errorText = transactionResponse?.getErrors()?.getError()?.[0]?.getErrorText() || 'Transaction declined';
                 
-                console.error(`Payment declined - Code: ${errorCode}, Text: ${errorText}`);
+                console.error(`❌ PAYMENT DECLINED!`);
+                console.error(`   Error Code: ${errorCode}`);
+                console.error(`   Error Text: ${errorText}`);
+                console.error(`   Invoice: ${invoiceNumber}`);
+                console.error(`   Amount: $${paymentAmount.toFixed(2)}`);
+                console.error(`   Environment: ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'}`);
                 
                 res.json({
                   success: false,
