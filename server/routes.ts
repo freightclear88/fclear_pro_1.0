@@ -3397,13 +3397,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let testClientKey = clientKey;
       let environment = 'sandbox';
       
-      // For production credentials that can't authenticate with sandbox, use Authorize.Net test credentials
+      // Use production credentials and environment for live deployment
       if (apiLoginId.length === 8 && !apiLoginId.includes('test')) {
-        // Use Authorize.Net's public test credentials for sandbox testing
-        testApiLoginId = '5KP3u95bQpv';  // Authorize.Net public test API Login ID
-        testClientKey = '4Ktq966gC55GAX7S6tB8LBpmB3L9k93EdtcpN9hYx7EB6jYdEZcB5X6XmfW9fgGt'; // Test Client Key
-        environment = 'sandbox';
-        console.log('Using Authorize.Net test credentials for sandbox compatibility');
+        // Keep production credentials for live processing
+        testApiLoginId = apiLoginId;
+        testClientKey = clientKey;
+        environment = 'production';
+        console.log('Using production credentials for live payment processing');
       }
       
       res.json({
