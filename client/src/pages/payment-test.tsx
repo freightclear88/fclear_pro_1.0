@@ -34,7 +34,20 @@ export default function PaymentTest() {
 
   // Merchant validation mutation
   const validateMerchantMutation = useMutation({
-    mutationFn: () => apiRequest('/api/payment/validate-merchant', 'POST'),
+    mutationFn: async () => {
+      const response = await fetch('/api/payment/validate-merchant', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({})
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    },
   });
 
   const runSystemTests = async () => {
