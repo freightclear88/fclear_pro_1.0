@@ -3859,18 +3859,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       billTo.setZip(paymentMethod.zipCode);
       transactionRequest.setBillTo(billTo);
 
-      // Set order information
+      // Set order information with service fee details
       const order = new ApiContracts.OrderType();
       order.setInvoiceNumber(invoiceNumber);
-      order.setDescription(description || `Payment for invoice ${invoiceNumber}`);
-      transactionRequest.setOrder(order);
-
-      // Skip line items to avoid XML schema complexity - use description instead
+      
       const fullDescription = serviceFee > 0 
         ? `${description || `Invoice ${invoiceNumber}`} (includes $${serviceFee.toFixed(2)} credit card processing fee)`
         : description || `Payment for invoice ${invoiceNumber}`;
       
-      transactionRequest.setDescription(fullDescription);
+      order.setDescription(fullDescription);
+      transactionRequest.setOrder(order);
 
       // Create transaction
       const createTransactionRequest = new ApiContracts.CreateTransactionRequest();
