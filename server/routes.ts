@@ -3367,7 +3367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/payment/config', isAuthenticated, async (req, res) => {
     try {
       const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
-      const clientKey = process.env.AUTHORIZE_NET_CLIENT_KEY;
+      const clientKey = process.env.authorize_client_key2;
       
       console.log('Payment config request - API Login ID length:', apiLoginId ? apiLoginId.length : 'undefined');
       console.log('Payment config request - API Login ID first 20 chars:', apiLoginId ? apiLoginId.substring(0, 20) : 'undefined');

@@ -13,7 +13,7 @@ async function runDiagnostics() {
   // Check environment variables
   const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
   const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
-  const clientKey = process.env.AUTHORIZE_NET_CLIENT_KEY;
+  const clientKey = process.env.authorize_client_key2;
   
   console.log('1. ENVIRONMENT VARIABLES CHECK:');
   console.log(`   API Login ID: ${apiLoginId ? apiLoginId.substring(0, 6) + '****' : 'MISSING'}`);
