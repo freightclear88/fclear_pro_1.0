@@ -94,8 +94,19 @@ export default function AuthorizeNetDebug() {
           }
         };
 
+        console.log('Sending test data to Accept.js:', {
+          authData: {
+            clientKey: testData.authData.clientKey.substring(0, 10) + '...',
+            apiLoginID: testData.authData.apiLoginID
+          },
+          cardData: { ...testData.cardData, cardNumber: '4111...', cardCode: '***' }
+        });
+
         const response = await new Promise((resolve) => {
-          window.Accept.dispatchData(testData, resolve);
+          window.Accept.dispatchData(testData, (res) => {
+            console.log('Accept.js raw response:', res);
+            resolve(res);
+          });
         });
 
         results.push({
@@ -104,7 +115,12 @@ export default function AuthorizeNetDebug() {
           details: {
             resultCode: response.messages?.resultCode,
             messages: response.messages?.message || [],
-            fullResponse: response
+            fullResponse: response,
+            sentData: {
+              clientKeyUsed: testData.authData.clientKey.substring(0, 10) + '...',
+              apiLoginIdUsed: testData.authData.apiLoginID,
+              environment: 'production'
+            }
           }
         });
       } catch (error) {
