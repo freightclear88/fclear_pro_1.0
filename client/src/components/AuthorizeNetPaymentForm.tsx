@@ -496,12 +496,18 @@ export default function AuthorizeNetPaymentForm({
           cardCode: acceptData.cardData.cardCode,
           cardholderName: acceptData.cardData.fullName,
           zipCode: acceptData.cardData.zip,
+          // Include billing address fields required by Authorize.Net
+          address: formData.billingAddress.address,
+          city: formData.billingAddress.city,
+          state: formData.billingAddress.state,
+          country: formData.billingAddress.country,
+          phone: formData.billingAddress.phone,
+          email: formData.billingAddress.email,
           companyName: formData.billingAddress.company
         },
         amount: totalAmount.toFixed(2),
         invoiceNumber: formData.invoiceNumber,
-        description: formData.description,
-        billingInfo: showBillingAddress ? formData.billingAddress : undefined
+        description: formData.description
       };
       
       console.log('🔄 DIRECT PAYMENT DATA:', {

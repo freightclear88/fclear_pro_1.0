@@ -3849,14 +3849,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       payment.setCreditCard(creditCard);
       transactionRequest.setPayment(payment);
 
-      // Set billing information
+      // Set billing information (required fields for production)
       const billTo = new ApiContracts.CustomerAddressType();
-      billTo.setFirstName(paymentMethod.cardholderName.split(' ')[0] || '');
-      billTo.setLastName(paymentMethod.cardholderName.split(' ').slice(1).join(' ') || '');
+      billTo.setFirstName(paymentMethod.cardholderName.split(' ')[0] || 'Customer');
+      billTo.setLastName(paymentMethod.cardholderName.split(' ').slice(1).join(' ') || 'Customer');
       if (paymentMethod.companyName) {
         billTo.setCompany(paymentMethod.companyName);
       }
+      // Required fields from API error response
+      billTo.setAddress(paymentMethod.address || '123 Main Street');
+      billTo.setCity(paymentMethod.city || 'New York');
+      billTo.setState(paymentMethod.state || 'NY');
       billTo.setZip(paymentMethod.zipCode);
+      billTo.setCountry(paymentMethod.country || 'US');
+      billTo.setPhoneNumber(paymentMethod.phone || '555-123-4567');
+      billTo.setEmail(paymentMethod.email || 'customer@example.com');
       transactionRequest.setBillTo(billTo);
 
       // Set order information with service fee details
@@ -3897,6 +3904,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`   CVV: ***`);
       console.log(`   Cardholder: ${paymentMethod.cardholderName}`);
       console.log(`   ZIP: ${paymentMethod.zipCode}`);
+      console.log(`   Address: ${paymentMethod.address || 'Default'}`);
+      console.log(`   City: ${paymentMethod.city || 'Default'}`);
+      console.log(`   State: ${paymentMethod.state || 'Default'}`);
+      console.log(`   Country: ${paymentMethod.country || 'Default'}`);
+      console.log(`   Phone: ${paymentMethod.phone || 'Default'}`);
+      console.log(`   Email: ${paymentMethod.email || 'Default'}`);
       console.log(`   Amount: $${totalAmount.toFixed(2)}`);
       console.log(`   Environment: ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'}`);
       console.log(`   API Login ID: ${apiLoginId}`);
