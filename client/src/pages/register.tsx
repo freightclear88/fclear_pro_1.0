@@ -3,11 +3,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { UserPlus, Building2, Mail, Phone, MapPin, User } from "lucide-react";
 import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_1751903859339.png";
+
+const US_STATES = [
+  'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 
+  'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 
+  'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 
+  'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 
+  'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 
+  'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 
+  'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
+];
+
+const COUNTRIES = [
+  'United States', 'Canada', 'Mexico', 'United Kingdom', 'Germany', 'France', 'Italy', 'Spain', 
+  'Netherlands', 'Belgium', 'Switzerland', 'Austria', 'Sweden', 'Norway', 'Denmark', 'Finland',
+  'Australia', 'New Zealand', 'Japan', 'South Korea', 'Singapore', 'Hong Kong', 'China', 'India',
+  'Brazil', 'Argentina', 'Chile', 'Colombia', 'Peru', 'Other'
+];
 
 interface RegisterFormData {
   email: string;
@@ -15,7 +33,11 @@ interface RegisterFormData {
   lastName: string;
   phone: string;
   companyName: string;
-  companyAddress: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
 }
 
 export default function Register() {
@@ -26,7 +48,11 @@ export default function Register() {
     lastName: "",
     phone: "",
     companyName: "",
-    companyAddress: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "United States",
   });
 
   const registerMutation = useMutation({
@@ -61,7 +87,8 @@ export default function Register() {
     
     // Basic validation
     if (!formData.email || !formData.firstName || !formData.lastName || 
-        !formData.phone || !formData.companyName || !formData.companyAddress) {
+        !formData.phone || !formData.companyName || !formData.address ||
+        !formData.city || !formData.state || !formData.zipCode || !formData.country) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -184,19 +211,81 @@ export default function Register() {
                 />
               </div>
               
-              <div>
-                <Label htmlFor="companyAddress" className="flex items-center">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  Company Address *
-                </Label>
-                <Input
-                  id="companyAddress"
-                  type="text"
-                  value={formData.companyAddress}
-                  onChange={(e) => updateField('companyAddress', e.target.value)}
-                  placeholder="123 Business Ave, City, State 12345"
-                  required
-                />
+              <div className="space-y-4">
+                <h4 className="text-md font-medium text-freight-dark flex items-center">
+                  <MapPin className="w-4 h-4 mr-2 text-freight-blue" />
+                  Business Address
+                </h4>
+                
+                <div>
+                  <Label htmlFor="address">Street Address *</Label>
+                  <Input
+                    id="address"
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => updateField('address', e.target.value)}
+                    placeholder="123 Business Street"
+                    required
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="city">City *</Label>
+                    <Input
+                      id="city"
+                      type="text"
+                      value={formData.city}
+                      onChange={(e) => updateField('city', e.target.value)}
+                      placeholder="City"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="zipCode">ZIP Code *</Label>
+                    <Input
+                      id="zipCode"
+                      type="text"
+                      value={formData.zipCode}
+                      onChange={(e) => updateField('zipCode', e.target.value)}
+                      placeholder="12345"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="state">State/Province *</Label>
+                    <Select value={formData.state} onValueChange={(value) => updateField('state', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {US_STATES.map((state) => (
+                          <SelectItem key={state} value={state}>
+                            {state}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="country">Country *</Label>
+                    <Select value={formData.country} onValueChange={(value) => updateField('country', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country} value={country}>
+                            {country}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </div>
 
