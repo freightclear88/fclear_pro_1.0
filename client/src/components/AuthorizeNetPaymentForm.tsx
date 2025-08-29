@@ -167,24 +167,23 @@ export default function AuthorizeNetPaymentForm({
       const existingScripts = document.querySelectorAll('script[src*="Accept.js"]');
       existingScripts.forEach(script => script.remove());
       
-      // Use appropriate Accept.js script based on credentials type (matching server logic)
-      // Production credentials (8-char API Login ID without 'test') use production Accept.js
-      const isProductionCredentials = paymentConfig.apiLoginId?.length === 8 && !paymentConfig.apiLoginId.includes('test');
+      // Force production Accept.js script since we're using production credentials
+      // The paymentConfig.environment from server tells us which environment to use
+      const useProduction = paymentConfig.environment === 'production';
       
       console.log('Environment detection for Accept.js:', {
         apiLoginId: paymentConfig.apiLoginId,
-        apiLoginIdLength: paymentConfig.apiLoginId?.length,
-        hasTestInName: paymentConfig.apiLoginId?.includes('test'),
-        isProductionCredentials: isProductionCredentials,
-        willUseScript: isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'
+        serverEnvironment: paymentConfig.environment,
+        useProduction: useProduction,
+        willUseScript: useProduction ? 'PRODUCTION' : 'SANDBOX'
       });
       
       const script = document.createElement('script');
-      script.src = isProductionCredentials
+      script.src = useProduction
         ? 'https://js.authorize.net/v1/Accept.js'
         : 'https://jstest.authorize.net/v1/Accept.js';
         
-      console.log(`Loading ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'} Accept.js for credentials: ${paymentConfig.apiLoginId}`);
+      console.log(`Loading ${useProduction ? 'PRODUCTION' : 'SANDBOX'} Accept.js for credentials: ${paymentConfig.apiLoginId}`);
       script.type = 'text/javascript';
       script.charset = 'utf-8';
       script.crossOrigin = 'anonymous';
@@ -209,8 +208,8 @@ export default function AuthorizeNetPaymentForm({
       };
       
       script.onerror = (error) => {
-        console.error(`Failed to load Accept.js ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'} script:`, error);
-        onPaymentError(`Failed to load payment processing system (${isProductionCredentials ? 'production' : 'sandbox'}). Please check your internet connection.`);
+        console.error(`Failed to load Accept.js ${useProduction ? 'PRODUCTION' : 'SANDBOX'} script:`, error);
+        onPaymentError(`Failed to load payment processing system (${useProduction ? 'production' : 'sandbox'}). Please check your internet connection.`);
       };
       
       document.head.appendChild(script);
@@ -489,14 +488,14 @@ export default function AuthorizeNetPaymentForm({
       window.Accept.dispatchData(acceptData, (response: any) => {
         console.log('Accept.js full response:', JSON.stringify(response, null, 2));
         console.log('Accept.js request data sent:', JSON.stringify(acceptData, null, 2));
-        const currentIsProduction = paymentConfig.apiLoginId?.length === 8 && !paymentConfig.apiLoginId.includes('test');
+        const currentIsProduction = paymentConfig.environment === 'production';
         console.log('Accept.js environment check:', {
           apiLoginId: paymentConfig.apiLoginId,
+          serverEnvironment: paymentConfig.environment,
           isProduction: currentIsProduction,
           acceptJsUrl: currentIsProduction ? 'production' : 'sandbox',
           clientKeyLength: paymentConfig.clientKey?.length,
-          clientKeyPrefix: paymentConfig.clientKey?.substring(0, 10),
-          clientKeyFull: paymentConfig.clientKey // Temporary debug
+          clientKeyPrefix: paymentConfig.clientKey?.substring(0, 10)
         });
         
         if (response.messages.resultCode === 'Ok') {
