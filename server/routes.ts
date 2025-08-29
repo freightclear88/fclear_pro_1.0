@@ -3367,7 +3367,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/payment/config', isAuthenticated, async (req, res) => {
     try {
       const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
-      const clientKey = process.env.AUTHORIZE_NET_CLIENT_KEY;
+      // Temporary fix: Use the correct Client Key that matches API Login ID 2V4az4Gx
+      const clientKey = process.env.AUTHORIZE_NET_CLIENT_KEY?.startsWith('4na3w6T8YF') 
+        ? '6atgF9Z8w86mmcmApzqXTa5df7L3ztnEgbL33r3q8YwF4F9P96fveckQD3fNA8B4'
+        : process.env.AUTHORIZE_NET_CLIENT_KEY;
       
       console.log('Payment config request - API Login ID length:', apiLoginId ? apiLoginId.length : 'undefined');
       console.log('Payment config request - API Login ID first 20 chars:', apiLoginId ? apiLoginId.substring(0, 20) : 'undefined');
