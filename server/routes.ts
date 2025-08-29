@@ -1326,18 +1326,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      // Require authentication
-      if (!req.isAuthenticated() || !req.user) {
+      // Check for native login session
+      if (!req.session?.userId || !req.session?.isAuthenticated) {
         return res.status(401).json({ message: "Unauthorized" });
       }
       
-      const userId = getUserId(req);
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
-      res.json(user);
+      
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Return user data without password
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
+  });
+
+  // Logout route
+  app.post('/api/auth/logout', (req: any, res) => {
+    req.session.destroy((err: any) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.clearCookie('connect.sid');
+      res.json({ message: "Logout successful" });
+    });
   });
 
   // Profile management routes

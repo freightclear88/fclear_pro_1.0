@@ -30,16 +30,14 @@ export default function Landing() {
                   Get Started
                 </Button>
               </a>
-              <Button 
-                onClick={() => {
-                  console.log("Sign In button clicked - navigating to /api/login");
-                  window.location.href = "/api/login";
-                }}
-                variant="outline"
-                className="border-teal text-teal hover:bg-teal hover:text-white"
-              >
-                Sign In
-              </Button>
+              <a href="/login">
+                <Button 
+                  variant="outline"
+                  className="border-teal text-teal hover:bg-teal hover:text-white"
+                >
+                  Sign In
+                </Button>
+              </a>
             </div>
           </div>
         </div>
