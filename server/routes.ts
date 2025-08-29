@@ -3443,7 +3443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('🔍 Starting merchant account validation...');
           console.log(`   API Login ID: ${apiLoginId}`);
           console.log(`   Environment: ${isProduction ? 'PRODUCTION' : 'SANDBOX'}`);
-          console.log(`   Transmission Mode: ${isProduction ? 'LIVE' : 'TEST'}`);
+          console.log(`   Transmission Mode: Determined by credentials + endpoint`);
           
           // Create merchant authentication
           const merchantAuthenticationType = new ApiContracts.MerchantAuthenticationType();
@@ -3467,12 +3467,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           createRequest.setMerchantAuthentication(merchantAuthenticationType);
           createRequest.setTransactionRequest(transactionRequest);
           
-          // Set transmission mode for production
-          if (isProduction) {
-            transactionRequest.setTestRequest(false); // CRITICAL: Set to live mode for production
-          } else {
-            transactionRequest.setTestRequest(true);  // Test mode for sandbox
-          }
+          // Note: Transmission mode is determined by endpoint URL and credentials
+          // Production credentials + production endpoint = live mode
+          // Sandbox credentials + sandbox endpoint = test mode
 
           const ctrl = new ApiControllers.CreateTransactionController(createRequest.getJSON());
           
@@ -3675,12 +3672,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       createRequest.setMerchantAuthentication(merchantAuthenticationType);
       createRequest.setTransactionRequest(transactionRequest);
       
-      // Set transmission mode for production credentials
-      if (isProductionCredentials) {
-        transactionRequest.setTestRequest(false); // CRITICAL: Set to live mode for production
-      } else {
-        transactionRequest.setTestRequest(true);  // Test mode for sandbox
-      }
+      // Note: Transmission mode is determined by endpoint URL and credentials
+      // Production credentials + production endpoint = live mode
+      // Sandbox credentials + sandbox endpoint = test mode
 
       // Execute the request
       const ctrl = new ApiControllers.CreateTransactionController(createRequest.getJSON());
@@ -3691,7 +3685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Payment processing - API Login ID: ${apiLoginId}`);
       console.log(`Payment processing - Using ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'} environment`);
-      console.log(`Payment processing - Transmission Mode: ${isProductionCredentials ? 'LIVE' : 'TEST'}`);
+      console.log(`Payment processing - Transmission Mode: Determined by credentials + endpoint`);
       console.log(`Payment processing - Invoice: ${invoiceNumber}, Amount: $${paymentAmount.toFixed(2)}`);
       
       if (isProductionCredentials) {
