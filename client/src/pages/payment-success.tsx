@@ -170,22 +170,14 @@ export default function PaymentSuccessPage() {
           onEmailReceipt={handleEmailReceipt}
         />
 
-        {/* Additional Actions */}
+        {/* Footer */}
         <div className="text-center mt-8">
-          <div className="flex gap-3 justify-center">
-            <Button 
-              onClick={handleGoToInvoices}
-              variant="outline"
-            >
-              View All Invoices
-            </Button>
-            <Button 
-              onClick={handleGoToDashboard}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Continue to Dashboard
-            </Button>
-          </div>
+          <p className="text-sm text-gray-600">
+            Thank you for using FreightClear Workflows!
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            Questions? Contact support at support@freightclear.com
+          </p>
         </div>
       </div>
     </div>
