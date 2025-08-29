@@ -3901,16 +3901,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const transactionResponse = response.getTransactionResponse();
               
               if (transactionResponse && transactionResponse.getResponseCode() === '1') {
+                console.log('✅ PAYMENT SUCCESSFUL!');
+                console.log(`   Transaction ID: ${transactionResponse.getTransId()}`);
+                console.log(`   Auth Code: ${transactionResponse.getAuthCode()}`);
+                console.log(`   Amount: $${totalAmount.toFixed(2)}`);
+                console.log(`   Invoice: ${invoiceNumber}`);
+                
                 resolve({
                   success: true,
                   transactionId: transactionResponse.getTransId(),
                   authCode: transactionResponse.getAuthCode(),
-                  amount: paymentAmount,
+                  amount: totalAmount,
                   invoiceNumber: invoiceNumber
                 });
               } else {
-                const errorText = transactionResponse?.getErrors()?.getError()[0]?.getErrorText() || 'Transaction failed';
-                reject(new Error(errorText));
+                // Enhanced error reporting for transaction failures
+                const responseCode = transactionResponse?.getResponseCode();
+                const reasonText = transactionResponse?.getMessages()?.getMessage()[0]?.getDescription();
+                const errorCode = transactionResponse?.getMessages()?.getMessage()[0]?.getCode();
+                const errors = transactionResponse?.getErrors()?.getError();
+                
+                console.log('❌ PAYMENT FAILED - Transaction Response:');
+                console.log(`   Response Code: ${responseCode}`);
+                console.log(`   Reason: ${reasonText}`);
+                console.log(`   Error Code: ${errorCode}`);
+                
+                if (errors && errors.length > 0) {
+                  console.log('   Detailed Errors:');
+                  errors.forEach((error: any, index: number) => {
+                    console.log(`     ${index + 1}. Code: ${error.getErrorCode()}, Text: ${error.getErrorText()}`);
+                  });
+                }
+                
+                const detailedError = errors?.[0]?.getErrorText() || reasonText || `Transaction declined (Code: ${responseCode})`;
+                reject(new Error(detailedError));
               }
             } else {
               const errorText = response.getMessages().getMessage()[0]?.getText() || 'Payment processing failed';
