@@ -3890,11 +3890,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ctrl.setEnvironment('https://apitest.authorize.net/xml/v1/request.api');
       }
 
+      // Debug the complete request being sent to Authorize.Net
+      console.log('🔍 DEBUG: Transaction request details:');
+      console.log(`   Card Number: ${paymentMethod.cardNumber.substring(0, 4)}****`);
+      console.log(`   Expiry: ${paymentMethod.expiryMonth}/${paymentMethod.expiryYear}`);
+      console.log(`   CVV: ***`);
+      console.log(`   Cardholder: ${paymentMethod.cardholderName}`);
+      console.log(`   ZIP: ${paymentMethod.zipCode}`);
+      console.log(`   Amount: $${totalAmount.toFixed(2)}`);
+      console.log(`   Environment: ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'}`);
+      console.log(`   API Login ID: ${apiLoginId}`);
+      
       // Execute transaction
       const transactionResult = await new Promise<any>((resolve, reject) => {
         ctrl.execute(() => {
           try {
             const apiResponse = ctrl.getResponse();
+            console.log('🔍 Raw API Response:', JSON.stringify(apiResponse, null, 2));
             const response = new ApiContracts.CreateTransactionResponse(apiResponse);
             
             if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
