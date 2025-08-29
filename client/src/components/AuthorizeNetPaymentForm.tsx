@@ -125,6 +125,7 @@ export default function AuthorizeNetPaymentForm({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAcceptJsLoaded, setIsAcceptJsLoaded] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [debugMode, setDebugMode] = useState(false);
   
   const serviceFee = amount * serviceFeeRate;
   const totalAmount = amount + serviceFee;
@@ -425,6 +426,12 @@ export default function AuthorizeNetPaymentForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // If debug mode is enabled, use debug payment instead
+    if (debugMode) {
+      processDebugPayment();
+      return;
+    }
+    
     if (!isAcceptJsLoaded || !window.Accept) {
       onPaymentError('Payment system is still loading. Please wait and try again.');
       return;
@@ -598,6 +605,68 @@ export default function AuthorizeNetPaymentForm({
     }
   };
 
+  // DEBUG: Test payment function (bypasses real Authorize.Net processing)
+  const processDebugPayment = async () => {
+    console.log('🧪 STARTING DEBUG PAYMENT TEST');
+    setIsProcessing(true);
+    
+    try {
+      const debugPaymentData = {
+        amount: totalAmount.toFixed(2),
+        invoiceNumber: formData.invoiceNumber,
+        cardholderName: formData.cardholderName,
+        email: formData.billingAddress.email
+      };
+      
+      console.log('🧪 DEBUG PAYMENT DATA:', debugPaymentData);
+      
+      const response = await fetch('/api/payment/debug-test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(debugPaymentData),
+      });
+      
+      const result = await response.json();
+      console.log('🧪 DEBUG PAYMENT RESULT:', result);
+      
+      if (result.success) {
+        // Store payment data for the success page
+        const paymentSuccessData = {
+          transactionId: result.transactionId,
+          authCode: result.authCode,
+          amount: result.amount,
+          invoiceNumber: result.invoiceNumber,
+          cardLast4: '1111', // Test card last 4
+          cardType: 'DEBUG VISA',
+          timestamp: new Date().toISOString(),
+          billingName: formData.cardholderName,
+          billingEmail: formData.billingAddress.email
+        };
+        
+        console.log('💾 STORING DEBUG SUCCESS DATA:', paymentSuccessData);
+        sessionStorage.setItem('paymentSuccess', JSON.stringify(paymentSuccessData));
+        
+        const storedData = sessionStorage.getItem('paymentSuccess');
+        console.log('✅ VERIFIED DEBUG STORED DATA:', storedData);
+        
+        // Navigate to success page
+        console.log('🔄 NAVIGATING TO DEBUG SUCCESS PAGE:', `/payment/success/${result.transactionId}`);
+        setLocation(`/payment/success/${result.transactionId}`);
+        setIsProcessing(false);
+        return;
+      } else {
+        onPaymentError(`Debug Payment Error: ${result.error || 'Unknown error'}`);
+        setIsProcessing(false);
+      }
+    } catch (error: any) {
+      console.error('❌ DEBUG PAYMENT ERROR:', error);
+      onPaymentError(`Debug Payment Error: ${error.message || 'Failed to process debug payment'}`);
+      setIsProcessing(false);
+    }
+  };
+
   if (!paymentConfig?.success) {
     return (
       <Card>
@@ -614,13 +683,27 @@ export default function AuthorizeNetPaymentForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CreditCard className="w-5 h-5" />
-          Secure Payment Information
-        </CardTitle>
-        <div className="flex items-center gap-2 text-sm text-green-600">
-          <Shield className="w-4 h-4" />
-          <span>Protected by Authorize.Net SSL encryption</span>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5" />
+              {debugMode ? 'DEBUG Payment Information' : 'Secure Payment Information'}
+            </CardTitle>
+            <div className="flex items-center gap-2 text-sm text-green-600 mt-1">
+              <Shield className="w-4 h-4" />
+              <span>{debugMode ? 'DEBUG MODE - No real charges' : 'Protected by Authorize.Net SSL encryption'}</span>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="debugMode"
+              checked={debugMode}
+              onCheckedChange={(checked) => setDebugMode(!!checked)}
+            />
+            <Label htmlFor="debugMode" className="text-sm font-normal">
+              Debug Mode
+            </Label>
+          </div>
         </div>
       </CardHeader>
       
@@ -944,18 +1027,18 @@ export default function AuthorizeNetPaymentForm({
           <Button
             type="submit"
             className="w-full"
-            disabled={disabled || isProcessing || !isAcceptJsLoaded}
+            disabled={disabled || isProcessing || (!isAcceptJsLoaded && !debugMode)}
             size="lg"
           >
             {isProcessing ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Processing Payment...
+                {debugMode ? 'Processing Debug Payment...' : 'Processing Payment...'}
               </>
-            ) : !isAcceptJsLoaded ? (
+            ) : (!isAcceptJsLoaded && !debugMode) ? (
               'Loading Payment System...'
             ) : (
-              `${submitButtonText} - $${totalAmount.toFixed(2)}`
+              `${debugMode ? 'DEBUG ' : ''}${submitButtonText} - $${totalAmount.toFixed(2)}`
             )}
           </Button>
         </form>

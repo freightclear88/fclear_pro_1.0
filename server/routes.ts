@@ -4022,6 +4022,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DEBUG: Test Payment Endpoint (simulates successful payment without real transaction)
+  app.post('/api/payment/debug-test', isAuthenticated, async (req: any, res) => {
+    try {
+      const { amount, invoiceNumber, cardholderName, email } = req.body;
+      
+      // Simulate successful payment response
+      const mockTransactionId = `DEBUG${Date.now()}`;
+      const mockAuthCode = `TEST${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      
+      console.log('🧪 DEBUG PAYMENT TEST:');
+      console.log('   Amount:', amount);
+      console.log('   Invoice:', invoiceNumber);
+      console.log('   Mock Transaction ID:', mockTransactionId);
+      console.log('   Mock Auth Code:', mockAuthCode);
+      
+      // Simulate the same response structure as real payment
+      res.json({
+        success: true,
+        message: "DEBUG: Payment processed successfully",
+        transactionId: mockTransactionId,
+        authCode: mockAuthCode,
+        amount: parseFloat(amount),
+        invoiceNumber: invoiceNumber
+      });
+
+    } catch (error) {
+      console.error("Debug payment test error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Debug payment test failed"
+      });
+    }
+  });
+
   // Email Receipt Endpoint
   app.post('/api/payment/email-receipt', isAuthenticated, async (req: any, res) => {
     try {
