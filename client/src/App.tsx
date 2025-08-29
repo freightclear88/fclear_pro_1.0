@@ -47,7 +47,6 @@ const navigation = [
 const adminNavigation = [
   { name: "Admin", href: "/admin", icon: Shield },
   { name: "XML Management", href: "/xml-management", icon: Settings },
-  { name: "Payment Debug", href: "/payment-debug-test", icon: Settings },
 ];
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {

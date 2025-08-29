@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -126,6 +127,16 @@ export default function AuthorizeNetPaymentForm({
   const [isAcceptJsLoaded, setIsAcceptJsLoaded] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [debugMode, setDebugMode] = useState(false);
+  
+  // Get current user to check if they are master admin
+  const { data: currentUser } = useQuery({
+    queryKey: ['/api/auth/user'],
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Only master admin (chris@wcscargo.com) can see debug mode
+  const isMasterAdmin = currentUser?.email === 'chris@wcscargo.com' && currentUser?.isAdmin;
   
   const serviceFee = amount * serviceFeeRate;
   const totalAmount = amount + serviceFee;
@@ -699,16 +710,18 @@ export default function AuthorizeNetPaymentForm({
               <span>{debugMode ? 'DEBUG MODE - No real charges' : 'Protected by Authorize.Net SSL encryption'}</span>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="debugMode"
-              checked={debugMode}
-              onCheckedChange={(checked) => setDebugMode(!!checked)}
-            />
-            <Label htmlFor="debugMode" className="text-sm font-normal">
-              Debug Mode
-            </Label>
-          </div>
+          {isMasterAdmin && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="debugMode"
+                checked={debugMode}
+                onCheckedChange={(checked) => setDebugMode(!!checked)}
+              />
+              <Label htmlFor="debugMode" className="text-sm font-normal">
+                Debug Mode
+              </Label>
+            </div>
+          )}
         </div>
       </CardHeader>
       
