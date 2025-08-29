@@ -651,6 +651,11 @@ export default function AuthorizeNetPaymentForm({
         const storedData = sessionStorage.getItem('paymentSuccess');
         console.log('✅ VERIFIED DEBUG STORED DATA:', storedData);
         
+        // Additional verification
+        const parsedStored = JSON.parse(storedData || '{}');
+        console.log('🔍 PARSED STORED AMOUNT:', parsedStored.amount);
+        console.log('🔍 EXPECTED AMOUNT:', result.amount);
+        
         // Navigate to success page
         console.log('🔄 NAVIGATING TO DEBUG SUCCESS PAGE:', `/payment/success/${result.transactionId}`);
         setLocation(`/payment/success/${result.transactionId}`);
