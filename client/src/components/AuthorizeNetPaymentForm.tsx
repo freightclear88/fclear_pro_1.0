@@ -727,6 +727,18 @@ export default function AuthorizeNetPaymentForm({
       
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Payment Notice */}
+          {!debugMode && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="text-sm space-y-1">
+                <p className="font-semibold text-amber-800">Payment Methods & Fees:</p>
+                <p className="text-amber-700">• Credit card payments include a 3.5% service fee</p>
+                <p className="text-amber-700">• Alternative payment methods: Checks and wire transfers are accepted</p>
+                <p className="text-amber-700">• Contact accounting for check/wire transfer arrangements</p>
+              </div>
+            </div>
+          )}
+
           {/* Payment Summary */}
           <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="font-medium mb-2">Payment Summary</h3>

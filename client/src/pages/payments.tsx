@@ -222,7 +222,29 @@ export default function Payments() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-freight-dark mb-2">Invoice Payments</h1>
-          <p className="text-gray-600">Pay your freight and customs invoices securely</p>
+          <p className="text-gray-600 mb-4">Pay your freight and customs invoices securely</p>
+          
+          {/* Payment Instructions */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="font-semibold text-freight-dark mb-2 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-blue-600" />
+              Payment Information
+            </h3>
+            <div className="space-y-2 text-sm text-gray-700">
+              <p className="font-medium text-amber-700">
+                • All credit card submissions are subject to a 3.5% service fee
+              </p>
+              <p>
+                • <strong>Alternative Payment Methods:</strong> Checks and wire transfers are also accepted
+              </p>
+              <p>
+                • For check or wire transfer payments, please contact our accounting department
+              </p>
+              <p>
+                • Credit card payments are processed immediately with instant confirmation
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Two Column Layout */}
