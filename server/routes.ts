@@ -3899,11 +3899,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const ctrl = new ApiControllers.CreateTransactionController(createTransactionRequest.getJSON());
       
-      // Set environment
-      if (process.env.NODE_ENV === 'production') {
-        ctrl.setEnvironment(SDKConstants.endpoint.production);
+      // Set environment based on credentials type, not NODE_ENV
+      const isProductionCredentials = apiLoginId.length === 8 && !apiLoginId.includes('test');
+      
+      console.log(`Invoice payment processing - API Login ID: ${apiLoginId}`);
+      console.log(`Invoice payment processing - Using ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'} environment`);
+      console.log(`Invoice payment processing - Invoice: ${invoiceNumber}, Amount: $${totalAmount.toFixed(2)}`);
+      
+      if (isProductionCredentials) {
+        ctrl.setEnvironment('https://api.authorize.net/xml/v1/request.api');
       } else {
-        ctrl.setEnvironment(SDKConstants.endpoint.sandbox);
+        ctrl.setEnvironment('https://apitest.authorize.net/xml/v1/request.api');
       }
 
       // Execute transaction
