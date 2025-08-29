@@ -452,6 +452,18 @@ export default function AuthorizeNetPaymentForm({
         }
       };
 
+      console.log('🔍 PAYMENT FORM ACCEPT.JS DATA:', {
+        authData: {
+          clientKey: acceptData.authData.clientKey?.substring(0, 10) + '...',
+          apiLoginID: acceptData.authData.apiLoginID
+        },
+        cardData: {
+          ...acceptData.cardData,
+          cardNumber: acceptData.cardData.cardNumber?.substring(0, 4) + '****',
+          cardCode: '***'
+        }
+      });
+
       // Debug log for troubleshooting (hide sensitive data)
       console.log('Accept.js data being sent:', {
         ...acceptData,
