@@ -3865,32 +3865,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       order.setDescription(description || `Payment for invoice ${invoiceNumber}`);
       transactionRequest.setOrder(order);
 
-      // Add line items for detailed breakdown
-      if (serviceFee > 0) {
-        const lineItems = [];
-        
-        // Invoice amount line item
-        const invoiceLineItem = new ApiContracts.LineItemType();
-        invoiceLineItem.setItemId('invoice');
-        invoiceLineItem.setName(description || `Invoice ${invoiceNumber}`);
-        invoiceLineItem.setDescription('Invoice payment');
-        invoiceLineItem.setQuantity('1');
-        invoiceLineItem.setUnitPrice(baseAmount.toFixed(2));
-        invoiceLineItem.setTaxable(false);
-        lineItems.push(invoiceLineItem);
-        
-        // Service fee line item
-        const serviceFeeLineItem = new ApiContracts.LineItemType();
-        serviceFeeLineItem.setItemId('service_fee');
-        serviceFeeLineItem.setName('Credit Card Service Fee');
-        serviceFeeLineItem.setDescription('3.5% processing fee for credit card transactions');
-        serviceFeeLineItem.setQuantity('1');
-        serviceFeeLineItem.setUnitPrice(serviceFee.toFixed(2));
-        serviceFeeLineItem.setTaxable(false);
-        lineItems.push(serviceFeeLineItem);
-        
-        transactionRequest.setLineItems(lineItems);
-      }
+      // Skip line items to avoid XML schema complexity - use description instead
+      const fullDescription = serviceFee > 0 
+        ? `${description || `Invoice ${invoiceNumber}`} (includes $${serviceFee.toFixed(2)} credit card processing fee)`
+        : description || `Payment for invoice ${invoiceNumber}`;
+      
+      transactionRequest.setDescription(fullDescription);
 
       // Create transaction
       const createTransactionRequest = new ApiContracts.CreateTransactionRequest();
