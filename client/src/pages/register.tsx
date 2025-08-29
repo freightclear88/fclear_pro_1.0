@@ -70,10 +70,10 @@ export default function Register() {
     onSuccess: () => {
       toast({
         title: "Registration Successful",
-        description: "Your account has been created. You can now log in.",
+        description: "Your account information has been received.",
       });
-      // Redirect to login
-      window.location.href = "/api/login";
+      // Redirect to registration success page
+      window.location.href = "/registration-success";
     },
     onError: (error: Error) => {
       toast({

@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Register from "@/pages/register";
+import RegistrationSuccess from "@/pages/registration-success";
+import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Shipments from "@/pages/shipments";
 import Profile from "@/pages/profile";
@@ -216,7 +218,7 @@ function Router() {
   const [location] = useLocation();
 
   // Always show public pages when explicitly requested, regardless of auth status
-  const publicPaths = ['/landing', '/register'];
+  const publicPaths = ['/landing', '/register', '/registration-success', '/login'];
   const isPublicPath = publicPaths.includes(location);
 
   // Show loading state
@@ -238,6 +240,8 @@ function Router() {
         <Route path="/" component={isAuthenticated ? Dashboard : Landing} />
         <Route path="/landing" component={Landing} />
         <Route path="/register" component={Register} />
+        <Route path="/registration-success" component={RegistrationSuccess} />
+        <Route path="/login" component={Login} />
         <Route component={NotFound} />
       </Switch>
     );
