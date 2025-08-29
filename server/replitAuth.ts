@@ -139,43 +139,22 @@ export async function setupAuth(app: Express) {
   });
 }
 
-export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  const user = req.user as any;
-
-  if (!req.isAuthenticated() || !user.expires_at) {
+export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
+  // Check for native login session
+  if (!req.session?.userId || !req.session?.isAuthenticated) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-
-  const now = Math.floor(Date.now() / 1000);
-  if (now <= user.expires_at) {
-    return next();
-  }
-
-  const refreshToken = user.refresh_token;
-  if (!refreshToken) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
-
-  try {
-    const config = await getOidcConfig();
-    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-    updateUserSession(user, tokenResponse);
-    return next();
-  } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
+  return next();
 };
 
 // Middleware to check subscription access
 export const requireSubscription: RequestHandler = async (req: any, res, next) => {
   try {
-    // Require authentication
-    if (!req.isAuthenticated() || !req.user) {
+    // Check for native login session
+    if (!req.session?.userId || !req.session?.isAuthenticated) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = req.user.claims.sub;
+    const userId = req.session.userId;
     const accessInfo = await storage.checkUserAccess(userId);
 
     if (!accessInfo.hasAccess) {
@@ -219,11 +198,11 @@ export const requireSubscription: RequestHandler = async (req: any, res, next) =
 // Middleware to check admin access
 export const requireAdmin: RequestHandler = async (req: any, res, next) => {
   try {
-    // Require authentication
-    if (!req.isAuthenticated() || !req.user) {
+    // Check for native login session
+    if (!req.session?.userId || !req.session?.isAuthenticated) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = req.user.claims.sub;
+    const userId = req.session.userId;
 
     const user = await storage.getUser(userId);
     if (!user || !user.isAdmin) {
@@ -242,11 +221,11 @@ export const requireAdmin: RequestHandler = async (req: any, res, next) => {
 // Middleware to check agent access (agents have admin-like permissions but not full admin)
 export const requireAgent: RequestHandler = async (req: any, res, next) => {
   try {
-    // Require authentication
-    if (!req.isAuthenticated() || !req.user) {
+    // Check for native login session
+    if (!req.session?.userId || !req.session?.isAuthenticated) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = req.user.claims.sub;
+    const userId = req.session.userId;
 
     const user = await storage.getUser(userId);
     if (!user || (!user.isAgent && !user.isAdmin)) {
@@ -265,11 +244,11 @@ export const requireAgent: RequestHandler = async (req: any, res, next) => {
 // Middleware to check chat access based on subscription plan
 export const requireChatAccess: RequestHandler = async (req: any, res, next) => {
   try {
-    // Require authentication
-    if (!req.isAuthenticated() || !req.user) {
+    // Check for native login session
+    if (!req.session?.userId || !req.session?.isAuthenticated) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = req.user.claims.sub;
+    const userId = req.session.userId;
 
     const user = await storage.getUser(userId);
     if (!user) {

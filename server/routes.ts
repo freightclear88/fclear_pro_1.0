@@ -1134,12 +1134,12 @@ const isfUpload = multer({
 
 // Helper function to get user ID in both development and production modes
 function getUserId(req: any): string {
-  // Get from authenticated user
-  if (!req.user?.claims?.sub) {
+  // Get from native session
+  if (!req.session?.userId || !req.session?.isAuthenticated) {
     throw new Error('User not authenticated');
   }
   
-  return req.user.claims.sub;
+  return req.session.userId;
 }
 
 // Enhanced AI response generator using trained data
