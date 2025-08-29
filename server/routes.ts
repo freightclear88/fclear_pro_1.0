@@ -3542,7 +3542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 } else if (errorCode === 'E00001') {
                   diagnosis = 'Authentication failed - credentials may be invalid or account inactive';
                 } else if (errorCode === 'E00027') {
-                  diagnosis = 'Transaction declined (possibly test mode restrictions)';
+                  diagnosis = 'MERCHANT ACCOUNT IN TEST MODE: Login to account.authorize.net → Security Settings → Test Mode → Switch to Live Mode';
                 }
                 
                 resolve({
