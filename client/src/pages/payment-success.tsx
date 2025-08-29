@@ -23,18 +23,24 @@ export default function PaymentSuccessPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🎯 SUCCESS PAGE LOADING with transaction ID:', params?.transactionId);
+    
     // Try to get payment data from sessionStorage (set after successful payment)
     const storedData = sessionStorage.getItem('paymentSuccess');
+    console.log('📦 RAW STORED DATA:', storedData);
+    
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
+        console.log('✅ PARSED SUCCESS DATA:', data);
         setPaymentData(data);
         // Clear the stored data after use
         sessionStorage.removeItem('paymentSuccess');
       } catch (error) {
-        console.error('Error parsing payment data:', error);
+        console.error('❌ Error parsing payment data:', error);
       }
     } else if (params?.transactionId) {
+      console.log('⚠️ NO STORED DATA - Creating fallback data for transaction:', params.transactionId);
       // If no stored data but we have a transaction ID, create minimal data
       setPaymentData({
         transactionId: params.transactionId,

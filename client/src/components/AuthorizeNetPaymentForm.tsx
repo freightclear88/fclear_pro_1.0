@@ -555,9 +555,15 @@ export default function AuthorizeNetPaymentForm({
           };
           
           console.log('💾 STORING SUCCESS DATA:', paymentSuccessData);
+          console.log('💰 SERVER RESPONSE AMOUNT:', result.amount);
+          console.log('🧮 CALCULATED TOTAL:', totalAmount);
           
           // Store in sessionStorage for the success page
           sessionStorage.setItem('paymentSuccess', JSON.stringify(paymentSuccessData));
+          
+          // Verify storage worked
+          const storedData = sessionStorage.getItem('paymentSuccess');
+          console.log('✅ VERIFIED STORED DATA:', storedData);
           
           // Call the success callback if provided
           if (onPaymentSuccess) {
