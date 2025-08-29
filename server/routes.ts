@@ -3916,24 +3916,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 });
               } else {
                 // Enhanced error reporting for transaction failures
+                console.log('❌ PAYMENT FAILED - Full Transaction Response:');
+                console.log(JSON.stringify(transactionResponse, null, 2));
+                
                 const responseCode = transactionResponse?.getResponseCode();
-                const reasonText = transactionResponse?.getMessages()?.getMessage()[0]?.getDescription();
-                const errorCode = transactionResponse?.getMessages()?.getMessage()[0]?.getCode();
-                const errors = transactionResponse?.getErrors()?.getError();
+                let detailedError = `Transaction declined (Code: ${responseCode})`;
                 
-                console.log('❌ PAYMENT FAILED - Transaction Response:');
-                console.log(`   Response Code: ${responseCode}`);
-                console.log(`   Reason: ${reasonText}`);
-                console.log(`   Error Code: ${errorCode}`);
-                
-                if (errors && errors.length > 0) {
-                  console.log('   Detailed Errors:');
-                  errors.forEach((error: any, index: number) => {
-                    console.log(`     ${index + 1}. Code: ${error.getErrorCode()}, Text: ${error.getErrorText()}`);
-                  });
+                // Try multiple ways to extract error messages
+                try {
+                  const messages = transactionResponse?.getMessages();
+                  const errors = transactionResponse?.getErrors();
+                  
+                  console.log(`   Response Code: ${responseCode}`);
+                  console.log(`   Messages object:`, messages);
+                  console.log(`   Errors object:`, errors);
+                  
+                  if (messages && messages.getMessage && messages.getMessage().length > 0) {
+                    const message = messages.getMessage()[0];
+                    console.log(`   Message: ${message.getDescription()}`);
+                    detailedError = message.getDescription();
+                  }
+                  
+                  if (errors && errors.getError && errors.getError().length > 0) {
+                    const error = errors.getError()[0];
+                    console.log(`   Error Code: ${error.getErrorCode()}`);
+                    console.log(`   Error Text: ${error.getErrorText()}`);
+                    detailedError = `${error.getErrorText()} (Code: ${error.getErrorCode()})`;
+                  }
+                } catch (parseError) {
+                  console.log('   Error parsing transaction response:', parseError);
                 }
                 
-                const detailedError = errors?.[0]?.getErrorText() || reasonText || `Transaction declined (Code: ${responseCode})`;
                 reject(new Error(detailedError));
               }
             } else {
