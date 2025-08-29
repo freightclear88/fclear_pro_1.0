@@ -3472,31 +3472,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`   Result Code: ${response.getMessages().getResultCode()}`);
               
               if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-                const merchantDetails = response.getMerchantDetails();
+                console.log('✅ MERCHANT ACCOUNT VALIDATION SUCCESSFUL');
+                console.log('   Credentials authenticated successfully with Authorize.Net');
+                console.log('   Account is active and ready for processing');
                 
-                if (merchantDetails) {
-                  console.log('✅ ACCOUNT VALIDATION SUCCESSFUL');
-                  console.log(`   Merchant Name: ${merchantDetails.getMerchantName()}`);
-                  console.log(`   Gateway ID: ${merchantDetails.getGatewayId()}`);
-                  
-                  resolve({
-                    valid: true,
-                    status: 'active',
-                    message: 'Merchant account validated successfully',
-                    details: {
-                      merchantName: merchantDetails.getMerchantName(),
-                      gatewayId: merchantDetails.getGatewayId(),
-                      validationMethod: 'merchant_details'
-                    }
-                  });
-                } else {
-                  console.log('❌ NO MERCHANT DETAILS');
-                  resolve({
-                    valid: false,
-                    status: 'no_details',
-                    message: 'No merchant details received'
-                  });
-                }
+                resolve({
+                  valid: true,
+                  status: 'active',
+                  message: 'Merchant account validated successfully - credentials authenticated',
+                  details: {
+                    resultCode: response.getMessages().getResultCode(),
+                    validationMethod: 'merchant_authentication',
+                    environment: isProduction ? 'production' : 'sandbox'
+                  }
+                });
               } else {
                 const errorMessage = response.getMessages().getMessage()[0].getText();
                 const errorCode = response.getMessages().getMessage()[0].getCode();

@@ -469,10 +469,11 @@ export default function AuthorizeNetPaymentForm({
       // Use Accept.js to tokenize payment data
       window.Accept.dispatchData(acceptData, (response: any) => {
         console.log('Accept.js full response:', JSON.stringify(response, null, 2));
+        const currentIsProduction = paymentConfig.apiLoginId?.length === 8 && !paymentConfig.apiLoginId.includes('test');
         console.log('Accept.js environment check:', {
           apiLoginId: paymentConfig.apiLoginId,
-          isProduction: paymentConfig.apiLoginId?.length === 8 && !paymentConfig.apiLoginId.includes('test'),
-          acceptJsUrl: isProductionCredentials ? 'production' : 'sandbox',
+          isProduction: currentIsProduction,
+          acceptJsUrl: currentIsProduction ? 'production' : 'sandbox',
           clientKeyLength: paymentConfig.clientKey?.length,
           clientKeyPrefix: paymentConfig.clientKey?.substring(0, 10)
         });
@@ -508,10 +509,10 @@ export default function AuthorizeNetPaymentForm({
             console.error('Authentication Error Detected:');
             console.error('- API Login ID:', paymentConfig.apiLoginId);
             console.error('- Client Key (first 10):', paymentConfig.clientKey?.substring(0, 10));
-            console.error('- Accept.js URL:', isProductionCredentials ? 'PRODUCTION' : 'SANDBOX');
+            console.error('- Accept.js URL:', currentIsProduction ? 'PRODUCTION' : 'SANDBOX');
             console.error('- Expected environment:', paymentConfig.apiLoginId?.length === 8 ? 'PRODUCTION' : 'SANDBOX');
             
-            errorMessage = `Authentication Error: ${detailedError}\n\nDebugging info:\n• API Login ID: ${paymentConfig.apiLoginId}\n• Accept.js Environment: ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'}\n• Client Key Length: ${paymentConfig.clientKey?.length}\n\nThis error typically occurs when:\n• Client Key doesn't match the API Login ID\n• Wrong Accept.js environment for your credentials\n• API credentials are not activated for the environment`;
+            errorMessage = `Authentication Error: ${detailedError}\n\nDebugging info:\n• API Login ID: ${paymentConfig.apiLoginId}\n• Accept.js Environment: ${currentIsProduction ? 'PRODUCTION' : 'SANDBOX'}\n• Client Key Length: ${paymentConfig.clientKey?.length}\n\nThis error typically occurs when:\n• Client Key doesn't match the API Login ID\n• Wrong Accept.js environment for your credentials\n• API credentials are not activated for the environment`;
           }
           
           onPaymentError(`Payment Error: ${errorMessage}`);
