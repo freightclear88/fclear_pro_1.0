@@ -84,14 +84,44 @@ export default function PaymentReceipt({
     URL.revokeObjectURL(url);
   };
 
-  const handleEmailReceipt = () => {
+  const handleEmailReceipt = async () => {
     if (onEmailReceipt) {
+      // Use the callback if provided
       onEmailReceipt();
     } else {
-      toast({
-        title: "Receipt Sent",
-        description: `Receipt has been sent to ${billingEmail}`,
-      });
+      // Send email directly if no callback provided
+      try {
+        const response = await fetch('/api/payment/email-receipt', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            transactionId: transactionId,
+            email: billingEmail
+          }),
+        });
+
+        if (response.ok) {
+          toast({
+            title: "Receipt Sent",
+            description: `Receipt has been sent to ${billingEmail}`,
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to send receipt. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Error sending receipt:', error);
+        toast({
+          title: "Error",
+          description: "Failed to send receipt. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
