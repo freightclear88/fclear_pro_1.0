@@ -391,12 +391,17 @@ export default function AuthorizeNetPaymentForm({
     const zipError = validateZip(formData.billingAddress.zip);
     if (zipError) errors['billingAddress.zip'] = zipError;
     
-    if (formData.billingAddress.email && formData.billingAddress.email.trim()) {
+    // Email and phone are required for production Authorize.Net processing
+    if (!formData.billingAddress.email || !formData.billingAddress.email.trim()) {
+      errors['billingAddress.email'] = 'Email is required for payment processing';
+    } else {
       const emailError = validateEmail(formData.billingAddress.email);
       if (emailError) errors['billingAddress.email'] = emailError;
     }
     
-    if (formData.billingAddress.phone && formData.billingAddress.phone.trim()) {
+    if (!formData.billingAddress.phone || !formData.billingAddress.phone.trim()) {
+      errors['billingAddress.phone'] = 'Phone number is required for payment processing';
+    } else {
       const phoneError = validatePhone(formData.billingAddress.phone);
       if (phoneError) errors['billingAddress.phone'] = phoneError;
     }
@@ -819,7 +824,7 @@ export default function AuthorizeNetPaymentForm({
                 </div>
                 
                 <div>
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">Phone *</Label>
                   <Input
                     id="phone"
                     value={formData.billingAddress.phone}
@@ -834,7 +839,7 @@ export default function AuthorizeNetPaymentForm({
                 </div>
                 
                 <div>
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
                     type="email"
