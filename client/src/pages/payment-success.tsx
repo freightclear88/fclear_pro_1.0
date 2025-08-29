@@ -25,25 +25,38 @@ export default function PaymentSuccessPage() {
   useEffect(() => {
     console.log('🎯 SUCCESS PAGE LOADING with transaction ID:', params?.transactionId);
     
+    // Check all sessionStorage keys for debugging
+    console.log('🔍 ALL SESSION STORAGE KEYS:', Object.keys(sessionStorage));
+    
     // Try to get payment data from sessionStorage (set after successful payment)
     const storedData = sessionStorage.getItem('paymentSuccess');
     console.log('📦 RAW STORED DATA:', storedData);
+    console.log('📦 STORED DATA LENGTH:', storedData?.length);
     
-    if (storedData) {
+    if (storedData && storedData !== 'null' && storedData !== 'undefined') {
       try {
         const data = JSON.parse(storedData);
         console.log('✅ PARSED SUCCESS DATA:', data);
+        console.log('💰 PARSED AMOUNT:', data.amount);
         setPaymentData(data);
-        // Clear the stored data after use
-        sessionStorage.removeItem('paymentSuccess');
+        // DON'T clear the stored data immediately - keep it for debugging
+        // sessionStorage.removeItem('paymentSuccess');
       } catch (error) {
         console.error('❌ Error parsing payment data:', error);
+        console.log('📦 FAILED TO PARSE:', storedData);
       }
-    } else if (params?.transactionId) {
-      console.log('⚠️ NO STORED DATA - Creating fallback data for transaction:', params.transactionId);
+    } else {
+      console.log('⚠️ NO VALID STORED DATA - sessionStorage item is:', storedData);
+      console.log('⚠️ Creating fallback data for transaction:', params.transactionId);
+      
+      // Check if this is a DEBUG transaction and try to extract amount from server if needed
+      if (params?.transactionId?.startsWith('DEBUG')) {
+        console.log('🧪 DEBUG TRANSACTION DETECTED - this should have had stored data');
+      }
+      
       // If no stored data but we have a transaction ID, create minimal data
       setPaymentData({
-        transactionId: params.transactionId,
+        transactionId: params.transactionId || 'UNKNOWN',
         authCode: 'N/A',
         amount: 0,
         invoiceNumber: 'N/A',
