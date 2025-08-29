@@ -1257,9 +1257,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Hash password and create user
-      const bcrypt = require('bcrypt');
+      const bcrypt = await import('bcrypt');
       const saltRounds = 12;
-      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      const hashedPassword = await bcrypt.default.hash(password, saltRounds);
       
       // Create the user with all registration data
       const newUser = await storage.createUser({
@@ -1301,8 +1301,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verify password
-      const bcrypt = require('bcrypt');
-      const isValidPassword = await bcrypt.compare(password, user.password);
+      const bcrypt = await import('bcrypt');
+      const isValidPassword = await bcrypt.default.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
