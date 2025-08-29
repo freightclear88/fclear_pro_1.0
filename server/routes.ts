@@ -3866,6 +3866,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       billTo.setEmail(paymentMethod.email || 'customer@example.com');
       transactionRequest.setBillTo(billTo);
 
+      // Set customer information (email also required here for production)
+      const customer = new ApiContracts.CustomerDataType();
+      customer.setType(ApiContracts.CustomerTypeEnum.INDIVIDUAL);
+      customer.setId(userId.toString());
+      customer.setEmail(paymentMethod.email || 'customer@example.com');
+      transactionRequest.setCustomer(customer);
+
       // Set order information with service fee details
       const order = new ApiContracts.OrderType();
       order.setInvoiceNumber(invoiceNumber);
@@ -3910,6 +3917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`   Country: ${paymentMethod.country || 'Default'}`);
       console.log(`   Phone: ${paymentMethod.phone || 'Default'}`);
       console.log(`   Email: ${paymentMethod.email || 'Default'}`);
+      console.log(`   Customer Email: ${paymentMethod.email || 'Default'} (set in customer object)`);
       console.log(`   Amount: $${totalAmount.toFixed(2)}`);
       console.log(`   Environment: ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'}`);
       console.log(`   API Login ID: ${apiLoginId}`);
