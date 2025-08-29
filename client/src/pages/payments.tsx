@@ -134,54 +134,28 @@ export default function Payments() {
   });
 
   const handlePaymentSuccess = async (paymentData: any) => {
-    try {
-      const response = await apiRequest("/api/payment/invoice", "POST", {
-        invoiceNumber: invoiceForm.invoiceNumber,
-        companyName: paymentData.billingInfo?.company || user?.companyName,
-        amount: invoiceForm.amount,
-        description: invoiceForm.description,
-        opaqueData: paymentData.opaqueData,
-        billingInfo: paymentData.billingInfo
-      });
-
-      if (response && (response as any).success) {
-        // Navigate to payment success page instead of showing toast here
-        const transactionData = (response as any).transactionData;
-        if (transactionData && transactionData.transId) {
-          window.location.href = `/payment-success?transactionId=${transactionData.transId}&authCode=${transactionData.authCode}&invoiceNumber=${invoiceForm.invoiceNumber}&amount=${invoiceForm.amount}&billingEmail=${paymentData.billingInfo?.email || user?.email}`;
-        } else {
-          toast({
-            title: "Payment Successful",
-            description: `Payment for invoice ${invoiceForm.invoiceNumber} has been processed successfully.`,
-          });
-        }
-        
-        // Reset form
-        setInvoiceForm({
-          invoiceNumber: "",
-          amount: "",
-          description: "",
-          paymentMethod: {
-            cardNumber: "",
-            expiryMonth: "",
-            expiryYear: "",
-            cardCode: "",
-            cardholderName: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : "",
-            companyName: user?.companyName || "",
-            zipCode: user?.zipCode || ""
-          }
-        });
-      } else {
-        throw new Error((response as any).error || 'Payment failed');
+    // Payment is already processed successfully by AuthorizeNetPaymentForm
+    // Just reset the form and show success message
+    console.log('Payment success callback triggered:', paymentData);
+    
+    // Reset form
+    setInvoiceForm({
+      invoiceNumber: "",
+      amount: "",
+      description: "",
+      paymentMethod: {
+        cardNumber: "",
+        expiryMonth: "",
+        expiryYear: "",
+        cardCode: "",
+        cardholderName: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : "",
+        companyName: user?.companyName || "",
+        zipCode: user?.zipCode || ""
       }
-    } catch (error: any) {
-      console.error('Payment processing error:', error);
-      toast({
-        title: "Payment Failed",
-        description: error.message || "Payment processing failed. Please try again.",
-        variant: "destructive",
-      });
-    }
+    });
+
+    // The AuthorizeNetPaymentForm will handle navigation to success page
+    // No need for additional API calls or error handling here
   };
 
   const handlePaymentError = (error: string) => {
