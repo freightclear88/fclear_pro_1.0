@@ -41,6 +41,12 @@ export default function Payments() {
     queryKey: ["/api/documents/category/shipping_invoice"],
     enabled: isAuthenticated,
   });
+
+  // Query to get payment history
+  const { data: paymentHistory, isLoading: isLoadingPayments } = useQuery({
+    queryKey: ["/api/payment/history"],
+    enabled: isAuthenticated,
+  });
   
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [invoiceForm, setInvoiceForm] = useState<InvoicePaymentData>({
@@ -501,6 +507,69 @@ export default function Payments() {
                   )}
                 </>
               )}
+                </CardContent>
+              </Card>
+
+              {/* Payment History Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-freight-blue" />
+                    Payment History
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">
+                    View your recent payment transactions
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingPayments ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-freight-blue mx-auto"></div>
+                      <p className="mt-2 text-gray-600">Loading payment history...</p>
+                    </div>
+                  ) : paymentHistory && paymentHistory.payments && paymentHistory.payments.length > 0 ? (
+                    <div className="space-y-3">
+                      {paymentHistory.payments.map((payment: any) => (
+                        <div key={payment.id} className="p-4 border rounded-lg bg-gray-50">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-600">Transaction ID</p>
+                              <p className="font-mono text-sm">{payment.transactionId}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600">Amount</p>
+                              <p className="font-semibold text-green-600">${parseFloat(payment.amount).toFixed(2)}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600">Status</p>
+                              <Badge 
+                                variant={payment.status === 'completed' ? 'default' : 'secondary'}
+                                className="text-xs"
+                              >
+                                {payment.status === 'completed' ? '✓ Completed' : payment.status}
+                              </Badge>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600">Date</p>
+                              <p className="text-sm">{new Date(payment.createdAt).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          {payment.description && (
+                            <div className="mt-2 pt-2 border-t border-gray-200">
+                              <p className="text-xs text-gray-600">Description</p>
+                              <p className="text-sm">{payment.description}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Receipt className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p>No payment history found</p>
+                      <p className="text-sm">Your completed payments will appear here</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

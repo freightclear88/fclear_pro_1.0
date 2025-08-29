@@ -4056,6 +4056,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Payment History Endpoint
+  app.get('/api/payment/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const limit = parseInt(req.query.limit as string) || 10;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const paymentHistory = await storage.getPaymentTransactionsByUserId(userId, limit, offset);
+      
+      res.json({
+        success: true,
+        payments: paymentHistory,
+        count: paymentHistory.length
+      });
+    } catch (error) {
+      console.error("Error fetching payment history:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch payment history"
+      });
+    }
+  });
+
   // Email Receipt Endpoint
   app.post('/api/payment/email-receipt', isAuthenticated, async (req: any, res) => {
     try {

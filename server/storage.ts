@@ -76,7 +76,7 @@ export interface IStorage {
   getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
   getSubscriptionPlan(planName: string): Promise<SubscriptionPlan | undefined>;
   createPaymentTransaction(transaction: InsertPaymentTransaction): Promise<PaymentTransaction>;
-  getPaymentTransactionsByUserId(userId: string): Promise<PaymentTransaction[]>;
+  getPaymentTransactionsByUserId(userId: string, limit?: number, offset?: number): Promise<PaymentTransaction[]>;
   getPaymentTransactionById(transactionId: string): Promise<PaymentTransaction | undefined>;
   updateUserSubscription(userId: string, subscriptionData: Partial<UpsertUser>): Promise<User>;
   checkUserAccess(userId: string): Promise<{
@@ -380,8 +380,20 @@ export class DatabaseStorage implements IStorage {
     return transaction;
   }
 
-  async getPaymentTransactionsByUserId(userId: string): Promise<PaymentTransaction[]> {
-    return await db.select().from(paymentTransactions).where(eq(paymentTransactions.userId, userId));
+  async getPaymentTransactionsByUserId(userId: string, limit?: number, offset?: number): Promise<PaymentTransaction[]> {
+    let query = db.select().from(paymentTransactions)
+      .where(eq(paymentTransactions.userId, userId))
+      .orderBy(desc(paymentTransactions.createdAt));
+    
+    if (limit !== undefined) {
+      query = query.limit(limit);
+    }
+    
+    if (offset !== undefined) {
+      query = query.offset(offset);
+    }
+    
+    return await query;
   }
 
   async getPaymentTransactionById(transactionId: string): Promise<PaymentTransaction | undefined> {
