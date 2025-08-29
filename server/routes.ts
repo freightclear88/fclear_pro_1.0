@@ -3784,8 +3784,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Invoice Payment Route
-  app.post('/api/payment/invoice', requireSubscription, async (req: any, res) => {
+  // Invoice Payment Route (no subscription required for payment processing)
+  app.post('/api/payment/invoice', isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const {
