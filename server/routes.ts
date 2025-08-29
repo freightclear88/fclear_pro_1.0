@@ -3450,28 +3450,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           merchantAuthenticationType.setName(apiLoginId);
           merchantAuthenticationType.setTransactionKey(transactionKey);
 
-          // Create a minimal test transaction request
-          const paymentType = new ApiContracts.PaymentType();
-          const creditCard = new ApiContracts.CreditCardType();
-          creditCard.setCardNumber('4111111111111111');
-          creditCard.setExpirationDate('1225');
-          creditCard.setCardCode('123');
-          paymentType.setCreditCard(creditCard);
+          // Use merchant details validation instead of test transactions
+          // This avoids E00027 errors on live accounts with test card numbers
+          const getMerchantDetailsRequest = new ApiContracts.GetMerchantDetailsRequest();
+          getMerchantDetailsRequest.setMerchantAuthentication(merchantAuthenticationType);
 
-          const transactionRequest = new ApiContracts.TransactionRequestType();
-          transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.AUTHONLYTRANSACTION);
-          transactionRequest.setPayment(paymentType);
-          transactionRequest.setAmount('0.01');
-
-          const createRequest = new ApiContracts.CreateTransactionRequest();
-          createRequest.setMerchantAuthentication(merchantAuthenticationType);
-          createRequest.setTransactionRequest(transactionRequest);
-          
-          // Note: Transmission mode is determined by endpoint URL and credentials
-          // Production credentials + production endpoint = live mode
-          // Sandbox credentials + sandbox endpoint = test mode
-
-          const ctrl = new ApiControllers.CreateTransactionController(createRequest.getJSON());
+          const ctrl = new ApiControllers.GetMerchantDetailsController(getMerchantDetailsRequest.getJSON());
           
           if (isProduction) {
             ctrl.setEnvironment('https://api.authorize.net/xml/v1/request.api');
@@ -3482,50 +3466,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ctrl.execute(() => {
             try {
               const apiResponse = ctrl.getResponse();
-              const response = new ApiContracts.CreateTransactionResponse(apiResponse);
+              const response = new ApiContracts.GetMerchantDetailsResponse(apiResponse);
               
               console.log('📋 Merchant Account Validation Results:');
               console.log(`   Result Code: ${response.getMessages().getResultCode()}`);
               
               if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-                const transactionResponse = response.getTransactionResponse();
+                const merchantDetails = response.getMerchantDetails();
                 
-                if (transactionResponse) {
-                  console.log(`   Transaction Response Code: ${transactionResponse.getResponseCode()}`);
+                if (merchantDetails) {
+                  console.log('✅ ACCOUNT VALIDATION SUCCESSFUL');
+                  console.log(`   Merchant Name: ${merchantDetails.getMerchantName()}`);
+                  console.log(`   Gateway ID: ${merchantDetails.getGatewayId()}`);
                   
-                  if (transactionResponse.getResponseCode() === '1') {
-                    console.log('✅ ACCOUNT VALIDATION SUCCESSFUL');
-                    resolve({
-                      valid: true,
-                      status: 'active',
-                      message: 'Merchant account validated successfully',
-                      details: {
-                        responseCode: transactionResponse.getResponseCode(),
-                        authCode: transactionResponse.getAuthCode()
-                      }
-                    });
-                  } else {
-                    const errors = transactionResponse.getErrors();
-                    const errorCode = errors?.getError()?.[0]?.getErrorCode() || 'Unknown';
-                    const errorText = errors?.getError()?.[0]?.getErrorText() || 'Transaction declined';
-                    
-                    console.log('⚠️ ACCOUNT VALIDATION DECLINED');
-                    console.log(`   Error Code: ${errorCode}`);
-                    console.log(`   Error Text: ${errorText}`);
-                    
-                    resolve({
-                      valid: false,
-                      status: 'declined',
-                      message: `Account validation declined: ${errorText}`,
-                      details: { errorCode, errorText }
-                    });
-                  }
+                  resolve({
+                    valid: true,
+                    status: 'active',
+                    message: 'Merchant account validated successfully',
+                    details: {
+                      merchantName: merchantDetails.getMerchantName(),
+                      gatewayId: merchantDetails.getGatewayId(),
+                      validationMethod: 'merchant_details'
+                    }
+                  });
                 } else {
-                  console.log('❌ NO TRANSACTION RESPONSE');
+                  console.log('❌ NO MERCHANT DETAILS');
                   resolve({
                     valid: false,
-                    status: 'no_response',
-                    message: 'No transaction response received'
+                    status: 'no_details',
+                    message: 'No merchant details received'
                   });
                 }
               } else {
@@ -3542,7 +3511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 } else if (errorCode === 'E00001') {
                   diagnosis = 'Authentication failed - credentials may be invalid or account inactive';
                 } else if (errorCode === 'E00027') {
-                  diagnosis = 'MERCHANT ACCOUNT IN TEST MODE: Login to account.authorize.net → Security Settings → Test Mode → Switch to Live Mode';
+                  diagnosis = 'Live account rejecting test card numbers - use real payment form instead';
                 }
                 
                 resolve({
