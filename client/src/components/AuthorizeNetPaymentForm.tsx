@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -120,6 +121,7 @@ export default function AuthorizeNetPaymentForm({
   disabled = false
 }: AuthorizeNetPaymentFormProps) {
   const { toast } = useToast();
+  const [location, setLocation] = useLocation();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAcceptJsLoaded, setIsAcceptJsLoaded] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -538,13 +540,36 @@ export default function AuthorizeNetPaymentForm({
         
         if (result.success) {
           console.log('✅ DIRECT PAYMENT SUCCESSFUL:', result);
-          onPaymentSuccess({
+          
+          // Store payment data for the success page
+          const paymentSuccessData = {
             transactionId: result.transactionId,
-            amount: paymentData.amount,
+            authCode: result.authCode || 'N/A',
+            amount: parseFloat(paymentData.amount),
             invoiceNumber: paymentData.invoiceNumber,
-            description: paymentData.description,
-            authCode: result.authCode
-          });
+            cardLast4: paymentData.paymentMethod.cardNumber.slice(-4),
+            cardType: 'Credit Card', // Could be enhanced to detect card type
+            timestamp: new Date().toISOString(),
+            billingName: paymentData.paymentMethod.cardholderName,
+            billingEmail: paymentData.paymentMethod.email
+          };
+          
+          // Store in sessionStorage for the success page
+          sessionStorage.setItem('paymentSuccess', JSON.stringify(paymentSuccessData));
+          
+          // Call the success callback if provided
+          if (onPaymentSuccess) {
+            onPaymentSuccess({
+              transactionId: result.transactionId,
+              amount: paymentData.amount,
+              invoiceNumber: paymentData.invoiceNumber,
+              description: paymentData.description,
+              authCode: result.authCode
+            });
+          }
+          
+          // Navigate to success page
+          setLocation(`/payment/success/${result.transactionId}`);
           setIsProcessing(false);
         } else {
           console.error('❌ DIRECT PAYMENT FAILED:', result);

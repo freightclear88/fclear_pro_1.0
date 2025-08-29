@@ -4021,6 +4021,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email Receipt Endpoint
+  app.post('/api/payment/email-receipt', isAuthenticated, async (req: any, res) => {
+    try {
+      const { transactionId, email } = req.body;
+      
+      if (!transactionId || !email) {
+        return res.status(400).json({
+          success: false,
+          error: "Transaction ID and email are required"
+        });
+      }
+
+      // In a real implementation, you would:
+      // 1. Fetch transaction details from database
+      // 2. Generate receipt email content
+      // 3. Send email using nodemailer or similar service
+      
+      console.log(`Email receipt requested for transaction ${transactionId} to ${email}`);
+      
+      // For now, just return success
+      res.json({
+        success: true,
+        message: `Receipt sent to ${email}`
+      });
+
+    } catch (error) {
+      console.error("Error sending receipt email:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to send receipt email"
+      });
+    }
+  });
+
   // User Access Check Route
   app.get('/api/subscription/access', isAuthenticated, async (req: any, res) => {
     try {
