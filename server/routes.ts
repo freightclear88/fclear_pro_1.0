@@ -3996,7 +3996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createPaymentTransaction({
         userId: userId,
         transactionId: transactionResult.transactionId,
-        amount: paymentAmount,
+        amount: totalAmount,
         currency: 'USD',
         status: 'completed',
         paymentMethod: 'credit_card',
@@ -4008,7 +4008,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         message: "Payment processed successfully",
         transactionId: transactionResult.transactionId,
-        amount: paymentAmount,
+        amount: totalAmount,
         invoiceNumber: invoiceNumber
       });
 
