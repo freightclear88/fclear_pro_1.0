@@ -552,7 +552,7 @@ export default function AuthorizeNetPaymentForm({
           const paymentSuccessData = {
             transactionId: result.transactionId,
             authCode: result.authCode || 'N/A',
-            amount: result.amount || totalAmount, // Use server response amount first, fallback to calculated total
+            amount: parseFloat(result.amount) || totalAmount, // Ensure amount is a number
             invoiceNumber: paymentData.invoiceNumber,
             cardLast4: paymentData.paymentMethod.cardNumber.slice(-4),
             cardType: 'Credit Card', // Could be enhanced to detect card type
