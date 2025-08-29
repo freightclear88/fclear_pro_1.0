@@ -171,6 +171,14 @@ export default function AuthorizeNetPaymentForm({
       // Production credentials (8-char API Login ID without 'test') use production Accept.js
       const isProductionCredentials = paymentConfig.apiLoginId?.length === 8 && !paymentConfig.apiLoginId.includes('test');
       
+      console.log('Environment detection for Accept.js:', {
+        apiLoginId: paymentConfig.apiLoginId,
+        apiLoginIdLength: paymentConfig.apiLoginId?.length,
+        hasTestInName: paymentConfig.apiLoginId?.includes('test'),
+        isProductionCredentials: isProductionCredentials,
+        willUseScript: isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'
+      });
+      
       const script = document.createElement('script');
       script.src = isProductionCredentials
         ? 'https://js.authorize.net/v1/Accept.js'
@@ -460,7 +468,14 @@ export default function AuthorizeNetPaymentForm({
       
       // Use Accept.js to tokenize payment data
       window.Accept.dispatchData(acceptData, (response: any) => {
-        console.log('Accept.js response:', response);
+        console.log('Accept.js full response:', JSON.stringify(response, null, 2));
+        console.log('Accept.js environment check:', {
+          apiLoginId: paymentConfig.apiLoginId,
+          isProduction: paymentConfig.apiLoginId?.length === 8 && !paymentConfig.apiLoginId.includes('test'),
+          acceptJsUrl: isProductionCredentials ? 'production' : 'sandbox',
+          clientKeyLength: paymentConfig.clientKey?.length,
+          clientKeyPrefix: paymentConfig.clientKey?.substring(0, 10)
+        });
         
         if (response.messages.resultCode === 'Ok') {
           // Payment data successfully tokenized
@@ -481,12 +496,24 @@ export default function AuthorizeNetPaymentForm({
           const detailedError = errorMessages.map((msg: any) => msg.text).join('. ');
           let errorMessage = detailedError || 'Payment validation failed';
           
-          // Provide specific guidance for authentication errors
-          if (errorMessage.includes('authentication failed') || errorMessage.includes('invalid authentication')) {
-            errorMessage = 'Authentication failed. This may be due to:\n• Production credentials being used in sandbox mode\n• Merchant account not fully activated\n• Missing SSL/TLS configuration for production\n• Incorrect API Login ID or Client Key format\n\nFor testing, please use sandbox credentials or contact Authorize.Net support to verify your production account setup.';
+          console.error('Accept.js validation failed - Full response:', JSON.stringify(response, null, 2));
+          console.error('Accept.js error messages:', errorMessages);
+          
+          // Enhanced error analysis for better debugging
+          const isAuthError = errorMessage.toLowerCase().includes('authentication') || 
+                             errorMessage.toLowerCase().includes('invalid') ||
+                             errorMessage.toLowerCase().includes('unauthorized');
+          
+          if (isAuthError) {
+            console.error('Authentication Error Detected:');
+            console.error('- API Login ID:', paymentConfig.apiLoginId);
+            console.error('- Client Key (first 10):', paymentConfig.clientKey?.substring(0, 10));
+            console.error('- Accept.js URL:', isProductionCredentials ? 'PRODUCTION' : 'SANDBOX');
+            console.error('- Expected environment:', paymentConfig.apiLoginId?.length === 8 ? 'PRODUCTION' : 'SANDBOX');
+            
+            errorMessage = `Authentication Error: ${detailedError}\n\nDebugging info:\n• API Login ID: ${paymentConfig.apiLoginId}\n• Accept.js Environment: ${isProductionCredentials ? 'PRODUCTION' : 'SANDBOX'}\n• Client Key Length: ${paymentConfig.clientKey?.length}\n\nThis error typically occurs when:\n• Client Key doesn't match the API Login ID\n• Wrong Accept.js environment for your credentials\n• API credentials are not activated for the environment`;
           }
           
-          console.error('Accept.js validation failed:', response);
           onPaymentError(`Payment Error: ${errorMessage}`);
           setIsProcessing(false);
         }
