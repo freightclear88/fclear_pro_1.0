@@ -21,10 +21,18 @@ const US_STATES = [
 ];
 
 const COUNTRIES = [
-  'United States', 'Canada', 'Mexico', 'United Kingdom', 'Germany', 'France', 'Italy', 'Spain', 
-  'Netherlands', 'Belgium', 'Switzerland', 'Austria', 'Sweden', 'Norway', 'Denmark', 'Finland',
-  'Australia', 'New Zealand', 'Japan', 'South Korea', 'Singapore', 'Hong Kong', 'China', 'India',
-  'Brazil', 'Argentina', 'Chile', 'Colombia', 'Peru', 'Other'
+  'United States', 'Afghanistan', 'Albania', 'Algeria', 'Argentina', 'Armenia', 'Australia', 'Austria', 
+  'Azerbaijan', 'Bahrain', 'Bangladesh', 'Belarus', 'Belgium', 'Bolivia', 'Bosnia and Herzegovina', 
+  'Brazil', 'Bulgaria', 'Cambodia', 'Canada', 'Chile', 'China', 'Colombia', 'Costa Rica', 'Croatia', 
+  'Czech Republic', 'Denmark', 'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Estonia', 
+  'Finland', 'France', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Guatemala', 'Honduras', 'Hong Kong', 
+  'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Japan', 
+  'Jordan', 'Kazakhstan', 'Kenya', 'Kuwait', 'Latvia', 'Lebanon', 'Lithuania', 'Luxembourg', 'Malaysia', 
+  'Mexico', 'Morocco', 'Netherlands', 'New Zealand', 'Nicaragua', 'Nigeria', 'Norway', 'Oman', 
+  'Pakistan', 'Panama', 'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 
+  'Russia', 'Saudi Arabia', 'Singapore', 'Slovakia', 'Slovenia', 'South Africa', 'South Korea', 'Spain', 
+  'Sri Lanka', 'Sweden', 'Switzerland', 'Taiwan', 'Thailand', 'Turkey', 'Ukraine', 'United Arab Emirates', 
+  'United Kingdom', 'Uruguay', 'Venezuela', 'Vietnam', 'Yemen', 'Other'
 ];
 
 interface RegisterFormData {
@@ -79,13 +87,23 @@ export default function Register() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic validation
+    // Basic validation (state is optional for international addresses)
     if (!formData.email || !formData.firstName || !formData.lastName || 
         !formData.phone || !formData.companyName || !formData.address ||
-        !formData.city || !formData.state || !formData.zipCode || !formData.country) {
+        !formData.city || !formData.zipCode || !formData.country) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // State is required only for US addresses
+    if (formData.country === 'United States' && !formData.state) {
+      toast({
+        title: "Missing Information",
+        description: "State is required for US addresses.",
         variant: "destructive",
       });
       return;
@@ -231,39 +249,24 @@ export default function Register() {
                       type="text"
                       value={formData.city}
                       onChange={(e) => updateField('city', e.target.value)}
-                      placeholder="City"
+                      placeholder="Enter city"
                       required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="zipCode">ZIP Code *</Label>
+                    <Label htmlFor="zipCode">Postal/ZIP Code *</Label>
                     <Input
                       id="zipCode"
                       type="text"
                       value={formData.zipCode}
                       onChange={(e) => updateField('zipCode', e.target.value)}
-                      placeholder="12345"
+                      placeholder="Postal or ZIP code"
                       required
                     />
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="state">State/Province *</Label>
-                    <Select value={formData.state} onValueChange={(value) => updateField('state', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select state" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {US_STATES.map((state) => (
-                          <SelectItem key={state} value={state}>
-                            {state}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                   <div>
                     <Label htmlFor="country">Country *</Label>
                     <Select value={formData.country} onValueChange={(value) => updateField('country', value)}>
@@ -278,6 +281,31 @@ export default function Register() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="state">State/Province/Region {formData.country === 'United States' ? '*' : '(Optional)'}</Label>
+                    {formData.country === 'United States' ? (
+                      <Select value={formData.state} onValueChange={(value) => updateField('state', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select state" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {US_STATES.map((state) => (
+                            <SelectItem key={state} value={state}>
+                              {state}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        id="state"
+                        type="text"
+                        value={formData.state}
+                        onChange={(e) => updateField('state', e.target.value)}
+                        placeholder="State, province, or region (if applicable)"
+                      />
+                    )}
                   </div>
                 </div>
               </div>

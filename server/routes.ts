@@ -1235,9 +1235,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, firstName, lastName, phone, companyName, address, city, state, zipCode, country } = req.body;
       
-      // Basic validation
-      if (!email || !firstName || !lastName || !phone || !companyName || !address || !city || !state || !zipCode || !country) {
-        return res.status(400).json({ message: "All fields are required" });
+      // Basic validation (state is optional for international addresses)
+      if (!email || !firstName || !lastName || !phone || !companyName || !address || !city || !zipCode || !country) {
+        return res.status(400).json({ message: "All required fields must be filled" });
+      }
+      
+      // State is required only for US addresses
+      if (country === 'United States' && !state) {
+        return res.status(400).json({ message: "State is required for US addresses" });
       }
       
       // Check if user already exists
