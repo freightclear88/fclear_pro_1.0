@@ -1233,10 +1233,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registration route
   app.post('/api/register', async (req, res) => {
     try {
-      const { email, firstName, lastName, phone, companyName, companyAddress } = req.body;
+      const { email, firstName, lastName, phone, companyName, address, city, state, zipCode, country } = req.body;
       
       // Basic validation
-      if (!email || !firstName || !lastName || !phone || !companyName || !companyAddress) {
+      if (!email || !firstName || !lastName || !phone || !companyName || !address || !city || !state || !zipCode || !country) {
         return res.status(400).json({ message: "All fields are required" });
       }
       
@@ -1246,6 +1246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "An account with this email already exists" });
       }
       
+      // Store registration data in session or temporary storage for OAuth completion
       // For now, just return success - actual user creation will happen during OAuth
       res.json({ 
         message: "Registration information received. Please complete authentication.",
