@@ -221,11 +221,7 @@ export default function PaymentReceipt({
         </CardContent>
       </Card>
 
-      {/* Footer */}
-      <div className="text-center text-sm text-gray-500">
-        <p>Thank you for using FreightClear Workflows!</p>
-        <p>Questions? Contact support at support@freightclear.com</p>
-      </div>
+
     </div>
   );
 }
