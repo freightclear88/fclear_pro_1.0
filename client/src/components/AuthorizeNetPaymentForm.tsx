@@ -464,6 +464,13 @@ export default function AuthorizeNetPaymentForm({
         }
       });
 
+      // Critical comparison with debug test data
+      console.log('🔄 COMPARING WITH DEBUG TEST:');
+      console.log('- Debug test used test card: 4111111111111111');
+      console.log('- Payment form using real card:', acceptData.cardData.cardNumber?.substring(0, 4) + '****');
+      console.log('- Both use same API Login ID:', acceptData.authData.apiLoginID);
+      console.log('- Both use same Client Key prefix:', acceptData.authData.clientKey?.substring(0, 10));
+
       // Debug log for troubleshooting (hide sensitive data)
       console.log('Accept.js data being sent:', {
         ...acceptData,
