@@ -19,9 +19,7 @@ import Admin from "@/pages/admin";
 import Agent from "@/pages/agent";
 import Subscription from "@/pages/subscription";
 import Payments from "@/pages/payments";
-import PaymentTest from "@/pages/payment-test";
-import AuthorizeNetDebug from "@/pages/authorize-net-debug";
-import PaymentFormTest from "@/pages/payment-form-test";
+
 import PaymentSuccess from "@/pages/payment-success";
 import PaymentDebugTest from "@/pages/payment-debug-test";
 
@@ -40,10 +38,6 @@ const navigation = [
   { name: "Fast ISF", href: "/fastisf", icon: FileText },
   { name: "Chat/Support", href: "/chat", icon: MessageCircle },
   { name: "Payments", href: "/payments", icon: Receipt },
-  { name: "Payment Test", href: "/payment-test", icon: CreditCard },
-  { name: "Debug A.Net", href: "/authorize-net-debug", icon: Settings },
-  { name: "Form Test", href: "/payment-form-test", icon: CreditCard },
-  { name: "Payment Debug", href: "/payment-debug-test", icon: Settings },
   { name: "Profile", href: "/profile", icon: User },
   { name: "Subscription", href: "/subscription", icon: CreditCard },
 ];
@@ -51,6 +45,7 @@ const navigation = [
 const adminNavigation = [
   { name: "Admin", href: "/admin", icon: Shield },
   { name: "XML Management", href: "/xml-management", icon: Settings },
+  { name: "Payment Debug", href: "/payment-debug-test", icon: Settings },
 ];
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -261,9 +256,7 @@ function Router() {
         <Route path="/chat" component={Chat} />
         <Route path="/subscription" component={Subscription} />
         <Route path="/payments" component={Payments} />
-        <Route path="/payment-test" component={PaymentTest} />
-        <Route path="/authorize-net-debug" component={AuthorizeNetDebug} />
-        <Route path="/payment-form-test" component={PaymentFormTest} />
+
         <Route path="/payment-debug-test" component={PaymentDebugTest} />
         <Route path="/payment/success/:transactionId?" component={PaymentSuccess} />
         <Route path="/admin" component={Admin} />
