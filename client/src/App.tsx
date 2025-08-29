@@ -20,6 +20,7 @@ import Agent from "@/pages/agent";
 import Subscription from "@/pages/subscription";
 import Payments from "@/pages/payments";
 import PaymentTest from "@/pages/payment-test";
+import AuthorizeNetDebug from "@/pages/authorize-net-debug";
 
 import Chat from "@/pages/chat";
 import FastIsf from "@/pages/fastisf";
@@ -37,6 +38,7 @@ const navigation = [
   { name: "Chat/Support", href: "/chat", icon: MessageCircle },
   { name: "Payments", href: "/payments", icon: Receipt },
   { name: "Payment Test", href: "/payment-test", icon: CreditCard },
+  { name: "Debug A.Net", href: "/authorize-net-debug", icon: Settings },
   { name: "Profile", href: "/profile", icon: User },
   { name: "Subscription", href: "/subscription", icon: CreditCard },
 ];
@@ -255,6 +257,7 @@ function Router() {
         <Route path="/subscription" component={Subscription} />
         <Route path="/payments" component={Payments} />
         <Route path="/payment-test" component={PaymentTest} />
+        <Route path="/authorize-net-debug" component={AuthorizeNetDebug} />
         <Route path="/admin" component={Admin} />
         <Route path="/agent" component={Agent} />
         <Route path="/profile" component={Profile} />

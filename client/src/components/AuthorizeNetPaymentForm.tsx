@@ -469,13 +469,15 @@ export default function AuthorizeNetPaymentForm({
       // Use Accept.js to tokenize payment data
       window.Accept.dispatchData(acceptData, (response: any) => {
         console.log('Accept.js full response:', JSON.stringify(response, null, 2));
+        console.log('Accept.js request data sent:', JSON.stringify(acceptData, null, 2));
         const currentIsProduction = paymentConfig.apiLoginId?.length === 8 && !paymentConfig.apiLoginId.includes('test');
         console.log('Accept.js environment check:', {
           apiLoginId: paymentConfig.apiLoginId,
           isProduction: currentIsProduction,
           acceptJsUrl: currentIsProduction ? 'production' : 'sandbox',
           clientKeyLength: paymentConfig.clientKey?.length,
-          clientKeyPrefix: paymentConfig.clientKey?.substring(0, 10)
+          clientKeyPrefix: paymentConfig.clientKey?.substring(0, 10),
+          clientKeyFull: paymentConfig.clientKey // Temporary debug
         });
         
         if (response.messages.resultCode === 'Ok') {
