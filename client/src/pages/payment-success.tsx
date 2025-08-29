@@ -95,11 +95,11 @@ export default function PaymentSuccessPage() {
   };
 
   const handleGoToDashboard = () => {
-    setLocation('/dashboard');
+    setLocation('/');
   };
 
   const handleGoToInvoices = () => {
-    setLocation('/invoices');
+    setLocation('/payments');
   };
 
   if (loading) {
