@@ -1233,11 +1233,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registration route
   app.post('/api/register', async (req, res) => {
     try {
-      const { email, firstName, lastName, phone, companyName, address, city, state, zipCode, country } = req.body;
+      const { email, password, firstName, lastName, phone, companyName, address, city, state, zipCode, country } = req.body;
       
       // Basic validation (state is optional for international addresses)
-      if (!email || !firstName || !lastName || !phone || !companyName || !address || !city || !zipCode || !country) {
+      if (!email || !password || !firstName || !lastName || !phone || !companyName || !address || !city || !zipCode || !country) {
         return res.status(400).json({ message: "All required fields must be filled" });
+      }
+      
+      // Password validation
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters long" });
       }
       
       // State is required only for US addresses
@@ -1251,15 +1256,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "An account with this email already exists" });
       }
       
-      // Store registration data in session or temporary storage for OAuth completion
-      // For now, just return success - actual user creation will happen during OAuth
+      // Hash password and create user
+      const bcrypt = require('bcrypt');
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      
+      // Create the user with all registration data
+      const newUser = await storage.createUser({
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        phone,
+        companyName,
+        address: `${address}, ${city}, ${state ? state + ', ' : ''}${zipCode}, ${country}`,
+        isVerified: false,
+        subscriptionPlan: 'Free',
+        subscriptionStatus: 'active'
+      });
+      
       res.json({ 
-        message: "Registration information received. Please complete authentication.",
-        redirect: "/api/login"
+        message: "Registration successful. Please sign in to access your account.",
+        userId: newUser.id
       });
     } catch (error) {
       console.error("Registration error:", error);
       res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  // Native login route
+  app.post('/api/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.password) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      
+      // Verify password
+      const bcrypt = require('bcrypt');
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      
+      // Create session
+      req.session.userId = user.id;
+      req.session.isAuthenticated = true;
+      
+      // Return user data (without password)
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({ 
+        message: "Login successful",
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed" });
     }
   });
 

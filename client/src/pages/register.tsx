@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { UserPlus, Building2, Mail, Phone, MapPin, User } from "lucide-react";
+import { UserPlus, Building2, Mail, Phone, MapPin, User, Lock } from "lucide-react";
 import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_1751903859339.png";
 
 const US_STATES = [
@@ -37,6 +37,8 @@ const COUNTRIES = [
 
 interface RegisterFormData {
   email: string;
+  password: string;
+  confirmPassword: string;
   firstName: string;
   lastName: string;
   phone: string;
@@ -52,6 +54,8 @@ export default function Register() {
   const { toast } = useToast();
   const [formData, setFormData] = useState<RegisterFormData>({
     email: "",
+    password: "",
+    confirmPassword: "",
     firstName: "",
     lastName: "",
     phone: "",
@@ -88,12 +92,32 @@ export default function Register() {
     e.preventDefault();
     
     // Basic validation (state is optional for international addresses)
-    if (!formData.email || !formData.firstName || !formData.lastName || 
-        !formData.phone || !formData.companyName || !formData.address ||
-        !formData.city || !formData.zipCode || !formData.country) {
+    if (!formData.email || !formData.password || !formData.confirmPassword ||
+        !formData.firstName || !formData.lastName || !formData.phone || 
+        !formData.companyName || !formData.address || !formData.city || 
+        !formData.zipCode || !formData.country) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Password validation
+    if (formData.password.length < 8) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 8 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Passwords Don't Match",
+        description: "Please ensure both password fields match.",
         variant: "destructive",
       });
       return;
@@ -185,6 +209,7 @@ export default function Register() {
                     onChange={(e) => updateField('email', e.target.value)}
                     placeholder="your@company.com"
                     required
+                    autoComplete="email"
                   />
                 </div>
                 <div>
@@ -199,6 +224,44 @@ export default function Register() {
                     onChange={(e) => updateField('phone', e.target.value)}
                     placeholder="+1 (555) 123-4567"
                     required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="password" className="flex items-center">
+                    <Lock className="w-4 h-4 mr-1" />
+                    Password *
+                  </Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => updateField('password', e.target.value)}
+                    placeholder="Create a secure password"
+                    required
+                    autoComplete="new-password"
+                    minLength={8}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Minimum 8 characters required
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="confirmPassword" className="flex items-center">
+                    <Lock className="w-4 h-4 mr-1" />
+                    Confirm Password *
+                  </Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => updateField('confirmPassword', e.target.value)}
+                    placeholder="Confirm your password"
+                    required
+                    autoComplete="new-password"
+                    minLength={8}
                   />
                 </div>
               </div>

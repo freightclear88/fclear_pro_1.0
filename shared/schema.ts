@@ -29,6 +29,7 @@ export const sessions = pgTable(
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
   email: varchar("email").unique(),
+  password: varchar("password"), // For native authentication
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   phone: varchar("phone"),
