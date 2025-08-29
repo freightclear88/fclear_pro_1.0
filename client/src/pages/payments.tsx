@@ -135,7 +135,7 @@ export default function Payments() {
 
   const handlePaymentSuccess = async (paymentData: any) => {
     try {
-      const response = await apiRequest("/api/payment/process", "POST", {
+      const response = await apiRequest("/api/payment/invoice", "POST", {
         invoiceNumber: invoiceForm.invoiceNumber,
         companyName: paymentData.billingInfo?.company || user?.companyName,
         amount: invoiceForm.amount,
@@ -145,10 +145,16 @@ export default function Payments() {
       });
 
       if (response && (response as any).success) {
-        toast({
-          title: "Payment Successful",
-          description: `Payment for invoice ${invoiceForm.invoiceNumber} has been processed successfully.`,
-        });
+        // Navigate to payment success page instead of showing toast here
+        const transactionData = (response as any).transactionData;
+        if (transactionData && transactionData.transId) {
+          window.location.href = `/payment-success?transactionId=${transactionData.transId}&authCode=${transactionData.authCode}&invoiceNumber=${invoiceForm.invoiceNumber}&amount=${invoiceForm.amount}&billingEmail=${paymentData.billingInfo?.email || user?.email}`;
+        } else {
+          toast({
+            title: "Payment Successful",
+            description: `Payment for invoice ${invoiceForm.invoiceNumber} has been processed successfully.`,
+          });
+        }
         
         // Reset form
         setInvoiceForm({
@@ -169,6 +175,7 @@ export default function Payments() {
         throw new Error((response as any).error || 'Payment failed');
       }
     } catch (error: any) {
+      console.error('Payment processing error:', error);
       toast({
         title: "Payment Failed",
         description: error.message || "Payment processing failed. Please try again.",
