@@ -4008,6 +4008,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         message: "Payment processed successfully",
         transactionId: transactionResult.transactionId,
+        authCode: transactionResult.authCode,
         amount: totalAmount,
         invoiceNumber: invoiceNumber
       });

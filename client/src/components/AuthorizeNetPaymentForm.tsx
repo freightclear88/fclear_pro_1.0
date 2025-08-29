@@ -545,7 +545,7 @@ export default function AuthorizeNetPaymentForm({
           const paymentSuccessData = {
             transactionId: result.transactionId,
             authCode: result.authCode || 'N/A',
-            amount: parseFloat(paymentData.amount),
+            amount: result.amount || totalAmount, // Use server response amount first, fallback to calculated total
             invoiceNumber: paymentData.invoiceNumber,
             cardLast4: paymentData.paymentMethod.cardNumber.slice(-4),
             cardType: 'Credit Card', // Could be enhanced to detect card type
@@ -553,6 +553,8 @@ export default function AuthorizeNetPaymentForm({
             billingName: paymentData.paymentMethod.cardholderName,
             billingEmail: paymentData.paymentMethod.email
           };
+          
+          console.log('💾 STORING SUCCESS DATA:', paymentSuccessData);
           
           // Store in sessionStorage for the success page
           sessionStorage.setItem('paymentSuccess', JSON.stringify(paymentSuccessData));
@@ -569,8 +571,10 @@ export default function AuthorizeNetPaymentForm({
           }
           
           // Navigate to success page
+          console.log('🔄 NAVIGATING TO SUCCESS PAGE:', `/payment/success/${result.transactionId}`);
           setLocation(`/payment/success/${result.transactionId}`);
           setIsProcessing(false);
+          return; // Important: return early to prevent any further error handling
         } else {
           console.error('❌ DIRECT PAYMENT FAILED:', result);
           onPaymentError(`Payment Error: ${result.error || result.message || 'Unknown error occurred'}`);
