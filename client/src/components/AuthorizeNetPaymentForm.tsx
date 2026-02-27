@@ -572,7 +572,6 @@ export default function AuthorizeNetPaymentForm({
             billingEmail: paymentData.paymentMethod.email
           };
           
-          console.log('💾 STORING SUCCESS DATA:', paymentSuccessData);
           console.log('💰 SERVER RESPONSE AMOUNT:', result.amount);
           console.log('🧮 CALCULATED TOTAL:', totalAmount);
           
