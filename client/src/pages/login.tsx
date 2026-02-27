@@ -28,13 +28,13 @@ export default function Login() {
     mutationFn: async (data: LoginFormData) => {
       return await apiRequest("POST", "/api/login", data);
     },
-    onSuccess: async () => {
+    onSuccess: async (response) => {
+      const data = await response.json();
       toast({
         title: "Login Successful",
         description: "Welcome back to FreightClear Workflows!",
       });
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.setQueryData(["/api/auth/user"], data.user);
       setLocation("/");
     },
     onError: (error: Error) => {
