@@ -1,5 +1,19 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+export function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const token = localStorage.getItem("authToken");
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+export function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  const headers = { ...getAuthHeaders(), ...(options.headers as Record<string, string> || {}) };
+  return fetch(url, { ...options, headers, credentials: "include" });
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -12,9 +26,15 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers: Record<string, string> = {
+    ...getAuthHeaders(),
+  };
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -31,13 +51,11 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const [baseUrl, ...params] = queryKey as [string, ...unknown[]];
     
-    // Build URL with query parameters
     let url = baseUrl;
     if (params.length > 0) {
       const searchParams = new URLSearchParams();
       params.forEach((param, index) => {
         if (param !== undefined && param !== null) {
-          // For shipment documents: /api/documents?shipmentId=123
           if (baseUrl === '/api/documents' && index === 0) {
             searchParams.append('shipmentId', param.toString());
           }
@@ -51,6 +69,7 @@ export const getQueryFn: <T>(options: {
     
     const res = await fetch(url, {
       credentials: "include",
+      headers: getAuthHeaders(),
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

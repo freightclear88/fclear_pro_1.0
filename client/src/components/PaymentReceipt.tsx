@@ -91,15 +91,18 @@ export default function PaymentReceipt({
     } else {
       // Send email directly if no callback provided
       try {
+        const token = localStorage.getItem("authToken");
         const response = await fetch('/api/payment/email-receipt', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
             transactionId: transactionId,
             email: billingEmail
           }),
+          credentials: "include",
         });
 
         if (response.ok) {

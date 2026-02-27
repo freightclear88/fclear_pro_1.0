@@ -546,12 +546,15 @@ export default function AuthorizeNetPaymentForm({
       });
       
       try {
+        const token = localStorage.getItem("authToken");
         const response = await fetch('/api/payment/invoice', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           },
           body: JSON.stringify(paymentData),
+          credentials: "include",
         });
         
         const result = await response.json();
@@ -630,12 +633,15 @@ export default function AuthorizeNetPaymentForm({
       
       console.log('🧪 DEBUG PAYMENT DATA:', debugPaymentData);
       
+      const token2 = localStorage.getItem("authToken");
       const response = await fetch('/api/payment/debug-test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token2 ? { 'Authorization': `Bearer ${token2}` } : {}),
         },
         body: JSON.stringify(debugPaymentData),
+        credentials: "include",
       });
       
       const result = await response.json();

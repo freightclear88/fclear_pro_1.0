@@ -74,15 +74,18 @@ export default function PaymentSuccessPage() {
     if (!paymentData) return;
 
     try {
+      const token = localStorage.getItem("authToken");
       const response = await fetch('/api/payment/email-receipt', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           transactionId: paymentData.transactionId,
           email: paymentData.billingEmail
         }),
+        credentials: "include",
       });
 
       if (response.ok) {

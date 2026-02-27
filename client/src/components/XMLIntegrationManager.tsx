@@ -113,9 +113,14 @@ export default function XMLIntegrationManager() {
         formData.append('userId', data.userId);
       }
 
+      const token = localStorage.getItem("authToken");
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      
       const response = await fetch("/api/xml/shipments/upload-file", {
         method: "POST",
         body: formData,
+        headers,
         credentials: "include",
       });
 

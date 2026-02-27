@@ -102,9 +102,15 @@ export default function DocumentUpload({ shipmentId, trigger, onShipmentCreated 
         formData.append('shipmentId', shipmentId.toString());
       }
 
+      const token = localStorage.getItem("authToken");
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      
       const response = await fetch('/api/documents/upload', {
         method: 'POST',
         body: formData,
+        headers,
+        credentials: "include",
       });
 
       if (!response.ok) {

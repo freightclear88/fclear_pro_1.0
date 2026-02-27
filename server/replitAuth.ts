@@ -6,10 +6,40 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
+import crypto from "crypto";
 import { storage } from "./storage";
 
 if (!process.env.REPLIT_DOMAINS) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
+}
+
+const authTokens = new Map<string, { userId: string; createdAt: number }>();
+const TOKEN_TTL = 7 * 24 * 60 * 60 * 1000;
+
+export function generateAuthToken(userId: string): string {
+  const token = crypto.randomBytes(32).toString("hex");
+  authTokens.set(token, { userId, createdAt: Date.now() });
+  return token;
+}
+
+function resolveAuthUserId(req: any): string | null {
+  if (req.session?.userId && req.session?.isAuthenticated) {
+    return req.session.userId;
+  }
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    const entry = authTokens.get(token);
+    if (entry && Date.now() - entry.createdAt < TOKEN_TTL) {
+      return entry.userId;
+    }
+    if (entry) authTokens.delete(token);
+  }
+  return null;
+}
+
+export function getAuthUserId(req: any): string | null {
+  return resolveAuthUserId(req);
 }
 
 const getOidcConfig = memoize(
@@ -141,21 +171,22 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
-  // Check for native login session
-  if (!req.session?.userId || !req.session?.isAuthenticated) {
+  const userId = getAuthUserId(req);
+  if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
+  req.authUserId = userId;
   return next();
 };
 
 // Middleware to check subscription access
 export const requireSubscription: RequestHandler = async (req: any, res, next) => {
   try {
-    // Check for native login session
-    if (!req.session?.userId || !req.session?.isAuthenticated) {
+    const userId = getAuthUserId(req);
+    if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = req.session.userId;
+    req.authUserId = userId;
     const accessInfo = await storage.checkUserAccess(userId);
 
     if (!accessInfo.hasAccess) {
@@ -199,11 +230,11 @@ export const requireSubscription: RequestHandler = async (req: any, res, next) =
 // Middleware to check admin access
 export const requireAdmin: RequestHandler = async (req: any, res, next) => {
   try {
-    // Check for native login session
-    if (!req.session?.userId || !req.session?.isAuthenticated) {
+    const userId = getAuthUserId(req);
+    if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = req.session.userId;
+    req.authUserId = userId;
 
     const user = await storage.getUser(userId);
     if (!user || !user.isAdmin) {
@@ -222,11 +253,11 @@ export const requireAdmin: RequestHandler = async (req: any, res, next) => {
 // Middleware to check agent access (agents have admin-like permissions but not full admin)
 export const requireAgent: RequestHandler = async (req: any, res, next) => {
   try {
-    // Check for native login session
-    if (!req.session?.userId || !req.session?.isAuthenticated) {
+    const userId = getAuthUserId(req);
+    if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = req.session.userId;
+    req.authUserId = userId;
 
     const user = await storage.getUser(userId);
     if (!user || (!user.isAgent && !user.isAdmin)) {
@@ -245,11 +276,11 @@ export const requireAgent: RequestHandler = async (req: any, res, next) => {
 // Middleware to check chat access based on subscription plan
 export const requireChatAccess: RequestHandler = async (req: any, res, next) => {
   try {
-    // Check for native login session
-    if (!req.session?.userId || !req.session?.isAuthenticated) {
+    const userId = getAuthUserId(req);
+    if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = req.session.userId;
+    req.authUserId = userId;
 
     const user = await storage.getUser(userId);
     if (!user) {

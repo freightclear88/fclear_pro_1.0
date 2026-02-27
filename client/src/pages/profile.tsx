@@ -73,8 +73,11 @@ export default function Profile() {
   // Delete POA mutation
   const deletePOAMutation = useMutation({
     mutationFn: async () => {
+      const token = localStorage.getItem("authToken");
       const response = await fetch('/api/profile/poa', {
         method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        credentials: "include",
       });
       
       if (!response.ok) {
@@ -150,6 +153,7 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("authToken");
     window.location.href = "/api/logout";
   };
 

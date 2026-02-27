@@ -30,11 +30,15 @@ export default function Login() {
     },
     onSuccess: async (response) => {
       const data = await response.json();
+      if (data.token) {
+        localStorage.setItem("authToken", data.token);
+      }
       toast({
         title: "Login Successful",
         description: "Welcome back to FreightClear Workflows!",
       });
       queryClient.setQueryData(["/api/auth/user"], data.user);
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       setLocation("/");
     },
     onError: (error: Error) => {

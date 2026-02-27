@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, requireSubscription, requireAdmin, requireAgent, requireChatAccess } from "./replitAuth";
+import { setupAuth, isAuthenticated, requireSubscription, requireAdmin, requireAgent, requireChatAccess, generateAuthToken, getAuthUserId } from "./replitAuth";
 import ApiContracts from 'authorizenet/lib/apicontracts.js';
 import ApiControllers from 'authorizenet/lib/apicontrollers.js';
 import SDKConstants from 'authorizenet/lib/constants.js';
@@ -1134,12 +1134,16 @@ const isfUpload = multer({
 
 // Helper function to get user ID in both development and production modes
 function getUserId(req: any): string {
-  // Get from native session
-  if (!req.session?.userId || !req.session?.isAuthenticated) {
-    throw new Error('User not authenticated');
+  if (req.authUserId) {
+    return req.authUserId;
   }
-  
-  return req.session.userId;
+  if (req.session?.userId && req.session?.isAuthenticated) {
+    return req.session.userId;
+  }
+  const { getAuthUserId } = require('./replitAuth');
+  const userId = getAuthUserId(req);
+  if (userId) return userId;
+  throw new Error('User not authenticated');
 }
 
 // Enhanced AI response generator using trained data
@@ -1311,17 +1315,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       req.session.isAuthenticated = true;
       
+      const authToken = generateAuthToken(user.id);
+      
       // Save session explicitly before responding to ensure it's persisted
       req.session.save((saveErr: any) => {
         if (saveErr) {
           console.error("Session save error:", saveErr);
-          return res.status(500).json({ message: "Login failed" });
         }
-        // Return user data (without password)
         const { password: _, ...userWithoutPassword } = user;
         res.json({ 
           message: "Login successful",
-          user: userWithoutPassword
+          user: userWithoutPassword,
+          token: authToken
         });
       });
     } catch (error) {
@@ -1333,12 +1338,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      // Check for native login session
-      if (!req.session?.userId || !req.session?.isAuthenticated) {
+      const userId = getAuthUserId(req);
+      if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      
-      const userId = req.session.userId;
       const user = await storage.getUser(userId);
       
       if (!user) {

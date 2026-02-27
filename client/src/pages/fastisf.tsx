@@ -217,9 +217,15 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
         console.log('📄 Sending document types to server:', documentTypes);
       }
 
+      const token = localStorage.getItem("authToken");
+      const isfHeaders: Record<string, string> = {};
+      if (token) isfHeaders["Authorization"] = `Bearer ${token}`;
+      
       const response = await fetch("/api/isf/fill-form", {
         method: "POST",
         body: formData,
+        headers: isfHeaders,
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -528,9 +534,14 @@ function IsfFilingForm({ onSuccess }: { onSuccess: () => void }) {
       });
 
       // Use fetch directly for FormData since apiRequest expects JSON
+      const createToken = localStorage.getItem("authToken");
+      const createHeaders: Record<string, string> = {};
+      if (createToken) createHeaders["Authorization"] = `Bearer ${createToken}`;
+      
       const response = await fetch("/api/isf/create", {
         method: "POST",
         body: formData,
+        headers: createHeaders,
         credentials: "include",
       });
 

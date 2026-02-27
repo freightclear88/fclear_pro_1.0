@@ -93,10 +93,15 @@ export default function PowerOfAttorneyWizard({ isOpen, onClose, user }: PowerOf
 
   const generatePOAMutation = useMutation({
     mutationFn: async (data: POAFormData) => {
+      const token = localStorage.getItem("authToken");
       const response = await fetch('/api/profile/generate-poa', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(data),
+        credentials: "include",
       });
 
       if (!response.ok) {

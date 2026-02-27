@@ -39,9 +39,15 @@ export default function PowerOfAttorneyUpload({ trigger }: PowerOfAttorneyUpload
       const formData = new FormData();
       formData.append('file', file);
 
+      const token = localStorage.getItem("authToken");
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      
       const response = await fetch('/api/profile/upload-poa', {
         method: 'POST',
         body: formData,
+        headers,
+        credentials: "include",
       });
 
       if (!response.ok) {
