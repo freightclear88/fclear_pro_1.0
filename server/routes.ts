@@ -1311,11 +1311,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       req.session.isAuthenticated = true;
       
-      // Return user data (without password)
-      const { password: _, ...userWithoutPassword } = user;
-      res.json({ 
-        message: "Login successful",
-        user: userWithoutPassword
+      // Save session explicitly before responding to ensure it's persisted
+      req.session.save((saveErr: any) => {
+        if (saveErr) {
+          console.error("Session save error:", saveErr);
+          return res.status(500).json({ message: "Login failed" });
+        }
+        // Return user data (without password)
+        const { password: _, ...userWithoutPassword } = user;
+        res.json({ 
+          message: "Login successful",
+          user: userWithoutPassword
+        });
       });
     } catch (error) {
       console.error("Login error:", error);
