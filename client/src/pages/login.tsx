@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, LogIn } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_1751903859339.png";
 
 interface LoginFormData {
@@ -17,6 +17,7 @@ interface LoginFormData {
 
 export default function Login() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState<LoginFormData>({
     email: "",
@@ -27,14 +28,14 @@ export default function Login() {
     mutationFn: async (data: LoginFormData) => {
       return await apiRequest("POST", "/api/login", data);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Login Successful",
         description: "Welcome back to FreightClear Workflows!",
       });
-      // Invalidate auth cache and redirect to dashboard
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      window.location.href = "/";
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+      setLocation("/");
     },
     onError: (error: Error) => {
       toast({
