@@ -661,7 +661,6 @@ export default function AuthorizeNetPaymentForm({
           billingEmail: formData.billingAddress.email
         };
         
-        console.log('💾 STORING DEBUG SUCCESS DATA:', paymentSuccessData);
         sessionStorage.setItem('paymentSuccess', JSON.stringify(paymentSuccessData));
         
         const storedData = sessionStorage.getItem('paymentSuccess');
