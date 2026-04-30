@@ -71,21 +71,22 @@ Each disabled charge has a comment: *"ISF charge disabled: set to $0 until real 
 
 **File changed:** `server/routes.ts`
 
-**Added:** `export async function checkAndChargeRenewals(): Promise<void>`
+**Added:** `export async function checkAndChargeRenewals(): Promise<void>` (exported at end of file)
 
 Logic:
-1. Queries all users via `storage.getAllUsers()`
-2. Filters for `subscriptionStatus === 'active'` AND `nextBillingDate <= now` AND stored Authorize.net `customerProfileId`/`paymentProfileId`
-3. For each overdue user: charges via `CreateTransactionRequest` using the stored customer payment profile (no card re-entry needed)
-4. On success: advances `nextBillingDate` by one billing cycle, updates `lastPaymentDate`, `subscriptionEndDate`, resets `paymentFailureCount`, records a `PaymentTransaction`
-5. On failure: increments `paymentFailureCount` (caller can implement retry/dunning logic on top)
+1. Loads all users via `storage.getAllUsers()`, filters for `subscriptionStatus === 'active'` AND `nextBillingDate <= now` AND stored Authorize.net `customerProfileId`/`paymentProfileId`
+2. For each overdue user: charges via `CreateTransactionRequest` using the stored customer payment profile (no card re-entry needed)
+3. On success: advances `nextBillingDate` by one billing cycle from the original due date (not `now`, preventing drift), updates `lastPaymentDate`/`subscriptionEndDate`, resets `paymentFailureCount`, records a `PaymentTransaction`
+4. On failure: increments `paymentFailureCount`
 
-**Usage:** Import and call on a schedule:
+Also wired up inside `registerRoutes()`:
+- **Cron job** (`node-cron`): fires daily at 02:00 UTC
+- **Admin endpoint** `POST /api/billing/check-renewals` (requireAdmin): allows manual trigger
+
+**Usage (manual import):**
 ```typescript
 import { checkAndChargeRenewals } from './routes';
-
-// e.g. daily at 2am
-cron.schedule('0 2 * * *', () => checkAndChargeRenewals().catch(console.error));
+await checkAndChargeRenewals();
 ```
 
 **Required env vars:**
