@@ -5,16 +5,28 @@ import pdf2pic from 'pdf2pic';
 import * as XLSX from 'xlsx';
 import AdmZip from 'adm-zip';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy-initialize API clients to prevent startup crash if keys are missing
+let _openai: OpenAI | null = null;
+function getOpenAI(): OpenAI {
+  if (!_openai) {
+    if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not set');
+    _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return _openai;
+}
+const openai = { chat: { completions: { create: (...args: any[]) => getOpenAI().chat.completions.create(...args) } } } as any;
 
-// Initialize Azure Document Intelligence client
-const azureClient = new DocumentAnalysisClient(
-  process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT!,
-  new AzureKeyCredential(process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY!)
-);
+let _azureClient: DocumentAnalysisClient | null = null;
+function getAzureClient(): DocumentAnalysisClient {
+  if (!_azureClient) {
+    const endpoint = process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT;
+    const key = process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY;
+    if (!endpoint || !key) throw new Error('Azure Document Intelligence credentials are not set');
+    _azureClient = new DocumentAnalysisClient(endpoint, new AzureKeyCredential(key));
+  }
+  return _azureClient;
+}
+const azureClient = { beginAnalyzeDocument: (...args: any[]) => getAzureClient().beginAnalyzeDocument(...args) } as any;
 
 interface ExtractedShipmentData {
   // Core shipping data
