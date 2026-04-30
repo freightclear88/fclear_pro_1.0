@@ -25,6 +25,7 @@ import { eq, and } from 'drizzle-orm';
 import * as cron from 'node-cron';
 import { NotificationService } from './notificationService';
 import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
+import { storageService } from './fileStorage';
 
 // Initialize OpenAI Document Processor
 const aiDocProcessor = new AIDocumentProcessor();
@@ -601,7 +602,7 @@ async function sendPOANotification(userDetails: any) {
 
 // Send invoice notification email
 async function sendInvoiceNotification(userDetails: any, invoiceDetails: any, adminUser: any) {
-  const domainUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+  const domainUrl = process.env.APP_URL || `http://localhost:5000`;
   
   const mailOptions = {
     from: process.env.SMTP_USER || 'admin@freightclear.com',
@@ -671,7 +672,8 @@ async function sendInvoiceNotification(userDetails: any, invoiceDetails: any, ad
 // Send user invitation email
 async function sendUserInvitationEmail(invitation: any, inviterUser: any) {
   const inviteToken = invitation.inviteToken;
-  const inviteUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}/accept-invite?token=${inviteToken}`;
+  const baseUrl = process.env.APP_URL || `http://localhost:5000`;
+  const inviteUrl = `${baseUrl}/accept-invite?token=${inviteToken}`;
   
   const mailOptions = {
     from: process.env.SMTP_USER || 'admin@freightclear.com',
@@ -1935,10 +1937,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
+      const poaDestination = `poa/${userId}_${Date.now()}${path.extname(file.originalname)}`;
+      const poaStoredPath = await storageService.uploadFile(file.path, poaDestination);
+
       // Update user's POA status and document path
       const updatedUser = await storage.updateUser(userId, {
         powerOfAttorneyStatus: 'uploaded',
-        powerOfAttorneyDocumentPath: file.path,
+        powerOfAttorneyDocumentPath: poaStoredPath,
         powerOfAttorneyUploadedAt: new Date(),
       });
 
@@ -2035,16 +2040,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userId = getUserId(req);
-      const fileName = `IRS_Proof_${userId}_${Date.now()}${path.extname(req.file.originalname)}`;
-      const filePath = path.join('uploads', fileName);
-      
-      // Move the uploaded file to the final location
-      fs.renameSync(req.file.path, filePath);
+      const irsDestination = `irs-proof/IRS_Proof_${userId}_${Date.now()}${path.extname(req.file.originalname)}`;
+      const irsStoredPath = await storageService.uploadFile(req.file.path, irsDestination);
 
       // Update user's IRS proof status and document path
       const updatedUser = await storage.updateUser(userId, {
         irsProofStatus: 'uploaded',
-        irsProofDocumentPath: filePath,
+        irsProofDocumentPath: irsStoredPath,
         irsProofUploadedAt: new Date(),
       });
 
@@ -2312,6 +2314,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           finalSubCategory = 'last_mile';
         }
 
+        // Upload to GCS (or local) — keepLocal=true so AI processing below can still read the temp file
+        const docDest = `documents/${userId}/${Date.now()}_${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        const docStoredPath = await storageService.uploadFile(file.path, docDest, true);
+
         const document = await storage.createDocument({
           userId,
           shipmentId: createdShipment?.id || (shipmentId ? parseInt(shipmentId) : undefined),
@@ -2322,7 +2328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           category: documentCategory,
           subCategory: finalSubCategory || null,
           status: 'pending',
-          filePath: file.path,
+          filePath: docStoredPath,
         });
 
         // Create OCR processing job with mock extraction for now
@@ -2520,6 +2526,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           status: 'completed'
         });
+
+        // Upload file to cloud storage (GCS when configured, local ./uploads/ otherwise)
+        try {
+          const gcsDestination = `documents/${userId}/${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+          // keepLocal=true: AI extraction already finished; file stays for debugging but DB path is updated to stored location
+          const storedPath = await storageService.uploadFile(file.path, gcsDestination, true);
+          await storage.updateDocument(document.id, { filePath: storedPath });
+        } catch (uploadErr) {
+          console.error('Cloud storage upload failed, local file retained:', uploadErr);
+        }
 
         // Update shipment with AI-extracted data
         if (createdShipment && arrivalNoticeData) {
@@ -2725,6 +2741,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
       
+      const docSingleDest = `documents/${userId}/${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const docSinglePath = await storageService.uploadFile(req.file.path, docSingleDest);
+
       // Create document record
       const document = await storage.createDocument({
         userId,
@@ -2736,15 +2755,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category,
         subCategory,
         status: 'pending',
-        filePath: req.file.path,
+        filePath: docSinglePath,
       });
-      
+
       // Create OCR job
       await storage.createOcrJob({
         documentId: document.id,
         status: 'pending',
       });
-      
+
       res.status(201).json(document);
     } catch (error) {
       console.error("Error uploading document:", error);
@@ -2835,13 +2854,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
       
-      if (!document.filePath || !fs.existsSync(document.filePath)) {
+      if (!document.filePath) {
+        return res.status(404).json({ message: "File not found" });
+      }
+
+      // If file is stored in GCS, redirect to a signed URL
+      if (document.filePath.startsWith("gs://")) {
+        const signedUrl = await storageService.getFileUrl(document.filePath);
+        return res.redirect(signedUrl);
+      }
+
+      if (!fs.existsSync(document.filePath)) {
         return res.status(404).json({ message: "File not found on disk" });
       }
-      
+
       res.setHeader('Content-Disposition', `attachment; filename="${document.originalName || document.fileName}"`);
       res.setHeader('Content-Type', document.fileType || 'application/octet-stream');
-      
+
       const fileStream = fs.createReadStream(document.filePath);
       fileStream.pipe(res);
     } catch (error) {
@@ -5367,12 +5396,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         submittedAt: new Date()
       });
 
+      // ISF charge disabled: the $35 fee is not charged until real CBP/ABI filing is implemented.
+      // Do not re-enable without wiring up actual ABI submission to CBP.
       res.json({
         success: true,
         isfFiling: updatedFiling,
-        message: "ISF filing submitted successfully. Proceed to payment.",
-        paymentRequired: true,
-        amount: 35.00
+        message: "ISF filing submitted successfully. Data preparation complete — no charge applies until CBP filing is implemented.",
+        paymentRequired: false,
+        amount: 0.00
       });
 
     } catch (error) {
@@ -5642,8 +5673,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         isfNumber,
         status: 'draft',
-        filingFee: 35.00,
-        
+        // ISF charge disabled: set to $0 until real CBP/ABI filing is implemented.
+        filingFee: 0.00,
+
         // Required fields with defaults
         importerOfRecord: req.body.importerOfRecord || 'TO BE PROVIDED',
         importerName: req.body.importerName || req.body.consigneeName || 'TO BE PROVIDED',
@@ -5776,14 +5808,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const timestamp = Date.now().toString().slice(-6);
       const isfNumber = `ISF-${timestamp}`;
 
-      // Create ISF filing record
+      // ISF charge disabled: the $35 fee is not charged until real CBP/ABI filing is implemented.
+      // Do not re-enable without wiring up actual ABI submission to CBP.
       const isfFiling = await storage.createIsfFiling({
         userId,
         isfNumber,
         ...req.body,
         status: 'submitted',
         submittedAt: new Date(),
-        filingFee: 35.00
+        filingFee: 0.00
       });
 
       // Send notification
@@ -5792,8 +5825,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         isfFiling,
-        message: `ISF filing ${isfNumber} submitted successfully. Filing fee: $35.00`,
-        amount: 35.00
+        message: `ISF filing ${isfNumber} submitted successfully. No charge — CBP filing pending manual review.`,
+        amount: 0.00
       });
 
     } catch (error) {
@@ -6845,7 +6878,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Run billing renewal check daily at 02:00 UTC
+  cron.schedule('0 2 * * *', () => {
+    checkAndChargeRenewals().catch(err =>
+      console.error('[billing] Scheduled renewal run failed:', err)
+    );
+  });
+
+  // Admin endpoint to manually trigger a renewal run
+  app.post('/api/billing/check-renewals', requireAdmin, async (_req, res) => {
+    try {
+      await checkAndChargeRenewals();
+      res.json({ success: true, message: 'Renewal check complete' });
+    } catch (err) {
+      console.error('[billing] Manual renewal check failed:', err);
+      res.status(500).json({ error: 'Renewal check failed' });
+    }
+  });
+
   // End of routes - close the function properly
   const httpServer = createServer(app);
   return httpServer;
+}
+
+/**
+ * Find active subscriptions whose nextBillingDate has passed and charge them via Authorize.net.
+ * Call this on a schedule (e.g. daily cron) to handle recurring billing.
+ */
+export async function checkAndChargeRenewals(): Promise<void> {
+  const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
+  const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
+  if (!apiLoginId || !transactionKey) {
+    console.warn("checkAndChargeRenewals: Authorize.net credentials not configured");
+    return;
+  }
+
+  const now = new Date();
+  const allUsers = await storage.getAllUsers();
+  const overdueUsers = allUsers.filter(
+    (u) =>
+      u.subscriptionStatus === "active" &&
+      u.nextBillingDate !== null &&
+      u.nextBillingDate !== undefined &&
+      new Date(u.nextBillingDate) <= now &&
+      u.customerProfileId &&
+      u.paymentProfileId &&
+      u.subscriptionAmount &&
+      parseFloat(u.subscriptionAmount as string) > 0
+  );
+
+  console.log(`checkAndChargeRenewals: ${overdueUsers.length} overdue subscription(s) found`);
+
+  for (const user of overdueUsers) {
+    try {
+      const amount = parseFloat(user.subscriptionAmount as string);
+
+      const merchantAuth = new ApiContracts.MerchantAuthenticationType();
+      merchantAuth.setName(apiLoginId);
+      merchantAuth.setTransactionKey(transactionKey);
+
+      const profilePayment = new ApiContracts.CustomerProfilePaymentType();
+      profilePayment.setCustomerProfileId(user.customerProfileId!);
+      const paymentProfile = new ApiContracts.PaymentProfileType();
+      paymentProfile.setPaymentProfileId(user.paymentProfileId!);
+      profilePayment.setPaymentProfile(paymentProfile);
+
+      const transactionRequest = new ApiContracts.TransactionRequestType();
+      transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION);
+      transactionRequest.setAmount(amount.toFixed(2));
+      transactionRequest.setProfile(profilePayment);
+
+      const createRequest = new ApiContracts.CreateTransactionRequest();
+      createRequest.setMerchantAuthentication(merchantAuth);
+      createRequest.setTransactionRequest(transactionRequest);
+
+      const ctrl = new ApiControllers.CreateTransactionController(createRequest.getJSON());
+      if (process.env.NODE_ENV === "production") {
+        ctrl.setEnvironment(SDKConstants.endpoint.production);
+      } else {
+        ctrl.setEnvironment(SDKConstants.endpoint.sandbox);
+      }
+
+      await new Promise<void>((resolve) => {
+        ctrl.execute(async () => {
+          try {
+            const apiResponse = ctrl.getResponse();
+            const response = new ApiContracts.CreateTransactionResponse(apiResponse);
+            const result = response.getTransactionResponse();
+
+            if (
+              response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK &&
+              result?.getResponseCode() === "1"
+            ) {
+              const transactionId = result.getTransId();
+              console.log(`Renewal charged for user ${user.id}: $${amount} (txn ${transactionId})`);
+
+              // Advance nextBillingDate by one billing cycle
+              const nextDate = new Date(user.nextBillingDate!);
+              if (user.billingCycle === "yearly") {
+                nextDate.setFullYear(nextDate.getFullYear() + 1);
+              } else {
+                nextDate.setMonth(nextDate.getMonth() + 1);
+              }
+              const newEndDate = new Date(nextDate);
+
+              await storage.updateUserSubscription(user.id, {
+                lastPaymentDate: now,
+                nextBillingDate: nextDate,
+                subscriptionEndDate: newEndDate,
+                paymentFailureCount: 0,
+              });
+
+              await storage.createPaymentTransaction({
+                userId: user.id,
+                transactionId,
+                amount: amount.toString(),
+                status: "success",
+                paymentMethod: "credit_card",
+                authCode: result.getAuthCode(),
+                responseCode: result.getResponseCode(),
+                description: `Renewal - ${user.subscriptionPlan} (${user.billingCycle})`,
+                billingCycle: user.billingCycle ?? "monthly",
+                rawResponse: apiResponse,
+              });
+            } else {
+              const errorText = result?.getErrors()?.getError()?.[0]?.getErrorText() || "Unknown error";
+              console.error(`Renewal failed for user ${user.id}: ${errorText}`);
+              await storage.updateUserSubscription(user.id, {
+                paymentFailureCount: (user.paymentFailureCount ?? 0) + 1,
+              });
+            }
+          } catch (err) {
+            console.error(`Renewal processing error for user ${user.id}:`, err);
+          }
+          resolve();
+        });
+      });
+    } catch (err) {
+      console.error(`checkAndChargeRenewals error for user ${user.id}:`, err);
+    }
+  }
 }

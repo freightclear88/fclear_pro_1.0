@@ -1,17 +1,12 @@
-import * as client from "openid-client";
-import { Strategy, type VerifyFunction } from "openid-client/passport";
+import { Strategy as LocalStrategy } from "passport-local";
 
 import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
-import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 import { storage } from "./storage";
-
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
 
 const authTokens = new Map<string, { userId: string; createdAt: number }>();
 const TOKEN_TTL = 7 * 24 * 60 * 60 * 1000;
@@ -42,16 +37,6 @@ export function getAuthUserId(req: any): string | null {
   return resolveAuthUserId(req);
 }
 
-const getOidcConfig = memoize(
-  async () => {
-    return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
-    );
-  },
-  { maxAge: 3600 * 1000 }
-);
-
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
@@ -62,7 +47,7 @@ export function getSession() {
     tableName: "sessions",
   });
   return session({
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex"),
     store: sessionStore,
     resave: true,
     saveUninitialized: true,
@@ -75,97 +60,58 @@ export function getSession() {
   });
 }
 
-function updateUserSession(
-  user: any,
-  tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers
-) {
-  user.claims = tokens.claims();
-  user.access_token = tokens.access_token;
-  user.refresh_token = tokens.refresh_token;
-  user.expires_at = user.claims?.exp;
-}
-
-async function upsertUser(
-  claims: any,
-) {
-  await storage.upsertUser({
-    id: claims["sub"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
-  });
-}
-
 export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
 
-  const config = await getOidcConfig();
+  // Local strategy: look up user by email, verify bcrypt password
+  passport.use(
+    new LocalStrategy(
+      { usernameField: "email", passwordField: "password" },
+      async (email, password, done) => {
+        try {
+          const user = await storage.getUserByEmail(email);
+          if (!user) {
+            return done(null, false, { message: "Invalid email or password" });
+          }
+          if (!user.password) {
+            return done(null, false, { message: "Invalid email or password" });
+          }
+          const match = await bcrypt.compare(password, user.password);
+          if (!match) {
+            return done(null, false, { message: "Invalid email or password" });
+          }
+          return done(null, { id: user.id });
+        } catch (err) {
+          return done(err);
+        }
+      }
+    )
+  );
 
-  const verify: VerifyFunction = async (
-    tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-    verified: passport.AuthenticateCallback
-  ) => {
-    const user = {};
-    updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
-    verified(null, user);
-  };
-
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
-    const strategy = new Strategy(
-      {
-        name: `replitauth:${domain}`,
-        config,
-        scope: "openid email profile offline_access",
-        callbackURL: `https://${domain}/api/callback`,
-      },
-      verify,
-    );
-    passport.use(strategy);
-  }
-
-  passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
-
-  app.get("/api/login", (req, res, next) => {
-    // In development, use the first domain from REPLIT_DOMAINS
-    // In production, use the actual hostname
-    const hostname = req.hostname === 'localhost' 
-      ? process.env.REPLIT_DOMAINS!.split(",")[0] 
-      : req.hostname;
-    
-    passport.authenticate(`replitauth:${hostname}`, {
-      prompt: "login consent",
-      scope: ["openid", "email", "profile", "offline_access"],
-    })(req, res, next);
+  passport.serializeUser((user: any, cb) => cb(null, user.id));
+  passport.deserializeUser(async (id: string, cb) => {
+    try {
+      const user = await storage.getUser(id);
+      cb(null, user || false);
+    } catch (err) {
+      cb(err);
+    }
   });
 
-  app.get("/api/callback", (req, res, next) => {
-    // In development, use the first domain from REPLIT_DOMAINS
-    // In production, use the actual hostname
-    const hostname = req.hostname === 'localhost' 
-      ? process.env.REPLIT_DOMAINS!.split(",")[0] 
-      : req.hostname;
-    
-    passport.authenticate(`replitauth:${hostname}`, {
-      successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
-    })(req, res, next);
+  // POST /api/login is handled by routes.ts using bcrypt directly.
+  // GET /api/login — redirect to frontend login page for browser navigation
+  app.get("/api/login", (_req, res) => {
+    res.redirect("/login");
   });
 
   app.get("/api/logout", (req, res) => {
     req.logout(() => {
-      res.redirect(
-        client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href
-      );
+      req.session.destroy(() => {
+        res.redirect("/");
+      });
     });
   });
 }
@@ -190,7 +136,7 @@ export const requireSubscription: RequestHandler = async (req: any, res, next) =
     const accessInfo = await storage.checkUserAccess(userId);
 
     if (!accessInfo.hasAccess) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: "Subscription required",
         subscriptionStatus: accessInfo.subscriptionStatus,
         isTrialActive: accessInfo.isTrialActive
@@ -200,9 +146,9 @@ export const requireSubscription: RequestHandler = async (req: any, res, next) =
     // Check usage limits for specific operations
     const path = req.path;
     if (path.includes('/shipments') && req.method === 'POST') {
-      if (accessInfo.usageLimits.shipments.max !== -1 && 
+      if (accessInfo.usageLimits.shipments.max !== -1 &&
           accessInfo.usageLimits.shipments.current >= accessInfo.usageLimits.shipments.max) {
-        return res.status(403).json({ 
+        return res.status(403).json({
           message: "Shipment limit reached",
           usageLimits: accessInfo.usageLimits
         });
@@ -210,9 +156,9 @@ export const requireSubscription: RequestHandler = async (req: any, res, next) =
     }
 
     if (path.includes('/documents') && req.method === 'POST') {
-      if (accessInfo.usageLimits.documents.max !== -1 && 
+      if (accessInfo.usageLimits.documents.max !== -1 &&
           accessInfo.usageLimits.documents.current >= accessInfo.usageLimits.documents.max) {
-        return res.status(403).json({ 
+        return res.status(403).json({
           message: "Document limit reached",
           usageLimits: accessInfo.usageLimits
         });
@@ -238,7 +184,7 @@ export const requireAdmin: RequestHandler = async (req: any, res, next) => {
 
     const user = await storage.getUser(userId);
     if (!user || !user.isAdmin) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: "Admin access required"
       });
     }
@@ -261,7 +207,7 @@ export const requireAgent: RequestHandler = async (req: any, res, next) => {
 
     const user = await storage.getUser(userId);
     if (!user || (!user.isAgent && !user.isAdmin)) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: "Agent access required"
       });
     }
@@ -289,9 +235,9 @@ export const requireChatAccess: RequestHandler = async (req: any, res, next) => 
 
     // Check if user has chat access based on subscription
     const subscriptionPlan = user.subscriptionPlan || 'free';
-    
+
     if (subscriptionPlan === 'free') {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: "Chat access requires Starter or Pro subscription",
         upgradeRequired: true,
         requiredPlans: ['starter', 'pro']
