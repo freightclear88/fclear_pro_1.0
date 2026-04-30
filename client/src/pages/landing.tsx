@@ -23,13 +23,6 @@ export default function Landing() {
               </div>
             </div>
             <div className="flex space-x-3">
-              <a href="/register">
-                <Button 
-                  className="gradient-accent hover-glow text-white border-0"
-                >
-                  Get Started
-                </Button>
-              </a>
               <a href="/login">
                 <Button 
                   variant="outline"
