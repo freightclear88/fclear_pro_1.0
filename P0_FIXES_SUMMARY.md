@@ -43,17 +43,21 @@ Each disabled charge has a comment: *"ISF charge disabled: set to $0 until real 
 
 ## Fix 3: Google Cloud Storage
 
-**File created:** `server/cloudStorage.ts`
+**File created:** `server/fileStorage.ts` (primary — wired into routes)  
+**File created:** `server/cloudStorage.ts` (buffer-based alternative, not currently wired)
 
-**Class:** `StorageService` with:
-- `uploadFile(buffer, destination, mimetype): Promise<string>` — uploads to GCS when `GOOGLE_CLOUD_BUCKET` is set; otherwise writes to `./uploads/` as a fallback.
-- `getFileUrl(path): string` — returns a `https://storage.googleapis.com/...` URL (GCS) or `/uploads/<basename>` (local).
-
-Also exports standalone `uploadFile` and `getFileUrl` helpers.
+**Class in `fileStorage.ts`:** `StorageService` with:
+- `uploadFile(localPath, destination, keepLocal?): Promise<string>` — uploads to GCS from a local file path when `GOOGLE_CLOUD_BUCKET` is set; otherwise moves the file to `./uploads/` as a fallback. Pass `keepLocal: true` when downstream code still needs to read the local file (e.g. AI extraction).
+- `getFileUrl(storedPath): Promise<string>` — returns a 1-hour signed URL for `gs://...` paths, or the local path as-is for local storage.
+- `isGcsEnabled(): boolean`
 
 **File changed:** `server/routes.ts`
-- Added `import { storageService, uploadFile as gcsUploadFile } from './cloudStorage'`
-- In `POST /api/documents/upload` (primary upload handler): after AI extraction, reads the multer temp file and uploads to cloud storage, then updates the document DB record's `filePath` with the stored path. Failure is non-fatal (local file is retained).
+- Added `import { storageService } from './fileStorage'`
+- **POA upload** (`POST /api/profile/upload-poa`): uploads via `storageService`, stores returned path in DB.
+- **IRS proof upload** (`POST /api/profile/irs-proof/upload`): replaced `fs.renameSync` with `storageService.uploadFile()`.
+- **Single-file document upload** (`POST /api/shipments/:id/documents`): uploads to GCS before creating document record.
+- **Multi-file document upload loop**: uploads to GCS with `keepLocal: true` so Azure AI can still read the temp file; stores GCS path in DB from the start.
+- **Document download endpoint**: when `document.filePath` starts with `gs://`, redirects to a signed URL instead of reading from disk.
 
 **Required env vars:**
 | Var | Purpose |
@@ -87,8 +91,8 @@ cron.schedule('0 2 * * *', () => checkAndChargeRenewals().catch(console.error));
 **Required env vars:**
 | Var | Purpose |
 |-----|---------|
-| `AUTHORIZENET_API_LOGIN_ID` | Authorize.net API login ID |
-| `AUTHORIZENET_TRANSACTION_KEY` | Authorize.net transaction key |
+| `AUTHORIZE_NET_API_LOGIN_ID` | Authorize.net API login ID |
+| `AUTHORIZE_NET_TRANSACTION_KEY` | Authorize.net transaction key |
 | `NODE_ENV` | Set to `production` to use live Authorize.net endpoint |
 
 ---
@@ -102,7 +106,8 @@ cron.schedule('0 2 * * *', () => checkAndChargeRenewals().catch(console.error));
 | `APP_URL` | Recommended | Public base URL for email links |
 | `GOOGLE_CLOUD_BUCKET` | Optional | GCS bucket; omit for local file storage |
 | `GOOGLE_APPLICATION_CREDENTIALS` | If GCS | Path to GCP service account key file |
-| `AUTHORIZENET_API_LOGIN_ID` | Yes (billing) | Authorize.net merchant credentials |
-| `AUTHORIZENET_TRANSACTION_KEY` | Yes (billing) | Authorize.net merchant credentials |
+| `AUTHORIZE_NET_API_LOGIN_ID` | Yes (billing) | Authorize.net API login ID |
+| `AUTHORIZE_NET_TRANSACTION_KEY` | Yes (billing) | Authorize.net transaction key |
+| `authorize_client_key2` | Yes (frontend) | Authorize.net Accept.js client key |
 | `NODE_ENV` | Recommended | `production` enables live payment endpoints |
 | `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` | Yes (email) | Nodemailer SMTP config |
