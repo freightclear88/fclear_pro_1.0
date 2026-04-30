@@ -685,11 +685,6 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(isfFilings.createdAt));
   }
 
-  async getIsfFilingById(id: number): Promise<IsfFiling | undefined> {
-    const [filing] = await db.select().from(isfFilings).where(eq(isfFilings.id, id));
-    return filing;
-  }
-
   async getIsfFilingByNumber(isfNumber: string): Promise<IsfFiling | undefined> {
     const [filing] = await db.select().from(isfFilings).where(eq(isfFilings.isfNumber, isfNumber));
     return filing;
@@ -700,37 +695,6 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(isfFilings)
       .orderBy(desc(isfFilings.createdAt));
-  }
-
-  async createIsfFiling(filingData: InsertIsfFiling): Promise<IsfFiling> {
-    const [filing] = await db.insert(isfFilings).values(filingData).returning();
-    return filing;
-  }
-
-  async updateIsfFiling(id: number, filingData: Partial<InsertIsfFiling>): Promise<IsfFiling> {
-    const [filing] = await db
-      .update(isfFilings)
-      .set({
-        ...filingData,
-        updatedAt: new Date(),
-      })
-      .where(eq(isfFilings.id, id))
-      .returning();
-    return filing;
-  }
-
-  async generateIsfNumber(): Promise<string> {
-    const year = new Date().getFullYear();
-    const prefix = `ISF${year}`;
-    
-    // Get the count of ISF filings this year
-    const existingFilings = await db
-      .select()
-      .from(isfFilings)
-      .where(sql`isf_number LIKE ${prefix + '%'}`);
-    
-    const nextNumber = (existingFilings.length + 1).toString().padStart(6, '0');
-    return `${prefix}${nextNumber}`;
   }
 
   async getDocumentsByIsfId(isfId: number): Promise<Document[]> {
