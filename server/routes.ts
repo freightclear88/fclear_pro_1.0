@@ -5673,7 +5673,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         isfNumber,
         status: 'draft',
-        // ISF charge disabled: set to $0 until real CBP/ABI filing is implemented.
+        // ISF fee disabled until real ABI/CBP filing is implemented.
         filingFee: 0.00,
 
         // Required fields with defaults
