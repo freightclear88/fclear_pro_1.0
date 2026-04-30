@@ -675,16 +675,6 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return invitation;
   }
-
-  // ISF Filing operations
-  async getIsfFilingsByUserId(userId: string): Promise<IsfFiling[]> {
-    return await db
-      .select()
-      .from(isfFilings)
-      .where(eq(isfFilings.userId, userId))
-      .orderBy(desc(isfFilings.createdAt));
-  }
-
   async getIsfFilingByNumber(isfNumber: string): Promise<IsfFiling | undefined> {
     const [filing] = await db.select().from(isfFilings).where(eq(isfFilings.isfNumber, isfNumber));
     return filing;
