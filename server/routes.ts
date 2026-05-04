@@ -26,6 +26,7 @@ import * as cron from 'node-cron';
 import { NotificationService } from './notificationService';
 import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
 import { storageService } from './fileStorage';
+import { handleAiSupportQuery, type AiSupportMessage } from './aiSupport';
 
 // Initialize OpenAI Document Processor
 const aiDocProcessor = new AIDocumentProcessor();
@@ -6893,6 +6894,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) {
       console.error('[billing] Manual renewal check failed:', err);
       res.status(500).json({ error: 'Renewal check failed' });
+    }
+  });
+
+  // ─── AI Support Endpoint ─────────────────────────────────────────────────────
+  // Hybrid AI assistant: local knowledge base + live web search (HTS, duty rates, CBP updates)
+  app.post('/api/ai-support', isAuthenticated, async (req: any, res) => {
+    try {
+      const { message, history = [] } = req.body as {
+        message: string;
+        history?: AiSupportMessage[];
+      };
+
+      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        return res.status(400).json({ error: 'message is required' });
+      }
+
+      if (message.trim().length > 2000) {
+        return res.status(400).json({ error: 'message too long (max 2000 characters)' });
+      }
+
+      const reply = await handleAiSupportQuery(message.trim(), history.slice(-10));
+      res.json({ reply });
+    } catch (err) {
+      console.error('[ai-support] Error:', err);
+      res.status(500).json({
+        error: 'AI support temporarily unavailable',
+        reply: 'Our AI support is temporarily unavailable. Please try again shortly or contact FreightClear directly at freightclear.com.',
+      });
     }
   });
 

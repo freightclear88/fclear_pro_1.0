@@ -74,10 +74,16 @@ export default function AiSupport() {
     setIsLoading(true);
 
     try {
+      // Build conversation history for multi-turn context (last 10 messages)
+      const historyForApi = messages
+        .filter((m) => m.id !== "welcome")
+        .slice(-10)
+        .map((m) => ({ role: m.role, content: m.content }));
+
       const res = await fetch("/api/ai-support", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text.trim() }),
+        body: JSON.stringify({ message: text.trim(), history: historyForApi }),
       });
 
       if (!res.ok) throw new Error("API not available");
