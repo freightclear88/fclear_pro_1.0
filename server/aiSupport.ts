@@ -468,7 +468,8 @@ const SYSTEM_PROMPT = `You are the FreightClear AI Support Assistant — a sharp
 2. Use ## headers to break answers into clear sections.
 3. Use bullets or numbered steps for requirements, processes, or lists.
 4. Bold key terms, deadlines, dollar amounts, and penalties.
-5. Keep total response under 350 words unless genuinely necessary.
+5. Use markdown tables for comparisons, rate schedules, classification breakdowns, or any data with multiple columns — they render beautifully in the app.
+6. Keep total response under 400 words unless genuinely necessary.
 
 ## FreightClear Integration
 - Always mention the relevant FreightClear app feature if it applies.

@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -218,13 +220,19 @@ export default function AiSupport() {
                     {msg.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                   </div>
                   <div
-                    className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                       msg.role === "user"
                         ? "bg-freight-blue text-white rounded-tr-sm"
                         : "bg-gray-100 text-gray-800 rounded-tl-sm"
                     }`}
                   >
-                    {msg.content}
+                    {msg.role === "user" ? (
+                      <span>{msg.content}</span>
+                    ) : (
+                      <div className="prose prose-sm max-w-none prose-headings:text-freight-dark prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1 prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-table:text-xs prose-th:bg-freight-blue prose-th:text-white prose-th:px-2 prose-th:py-1 prose-td:px-2 prose-td:py-1 prose-td:border prose-td:border-gray-200 prose-strong:text-freight-dark prose-hr:my-2">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                      </div>
+                    )}
                     <div
                       className={`text-[10px] mt-1 ${
                         msg.role === "user" ? "text-blue-200 text-right" : "text-gray-400"
