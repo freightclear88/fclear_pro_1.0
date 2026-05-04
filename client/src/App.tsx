@@ -31,7 +31,8 @@ import IsfEdit from "@/pages/isf-edit";
 import IsfDetail from "@/pages/isfdetail";
 import XmlManagement from "@/pages/XmlManagement";
 
-import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle, FileText, Menu, X, Upload, Settings } from "lucide-react";
+import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle, FileText, Menu, X, Upload, Settings, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_1751903859339.png";
 
 const navigation = [
@@ -50,7 +51,7 @@ const adminNavigation = [
 ];
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -177,7 +178,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 
           <SidebarFooter className="p-4 border-t border-white/20 glass-effect bg-white/95 backdrop-blur-sm">
             <div className="flex items-center space-x-3">
-              <Avatar className="w-10 h-10">
+              <Avatar className="w-10 h-10 flex-shrink-0">
                 <AvatarImage 
                   src={user?.profileImageUrl || ""} 
                   alt={`${user?.firstName || ""} ${user?.lastName || ""}`}
@@ -195,6 +196,15 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                   {user?.companyName || "Freight Professional"}
                 </p>
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={logout}
+                title="Sign out"
+                className="flex-shrink-0 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
             </div>
           </SidebarFooter>
         </Sidebar>
