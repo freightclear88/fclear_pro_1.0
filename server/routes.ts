@@ -6022,28 +6022,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message,
       ].filter(Boolean).join('\n');
 
-      // Try Zendesk API first
-      if (zendeskClient) {
-        try {
-          await new Promise((resolve, reject) => {
-            zendeskClient.tickets.create({
-              ticket: {
-                subject: ticketSubject,
-                comment: { body: ticketBody },
-                requester: { name, email },
-                tags: ['freightclear-contact', category || 'general'],
-                priority: 'normal',
-                custom_fields: [],
-              },
-            }, (err: any, _req: any, result: any) => {
-              if (err) reject(err);
-              else resolve(result);
-            });
-          });
-          return res.json({ success: true, method: 'zendesk-api' });
-        } catch (zdErr) {
-          console.error('[contact] Zendesk API error, falling back to email:', zdErr);
+      // Use Zendesk REST API directly (most reliable)
+      const zdUsername = process.env.ZENDESK_USERNAME;
+      const zdToken = process.env.ZENDESK_API_TOKEN;
+
+      if (zdUsername && zdToken) {
+        const credentials = Buffer.from(`${zdUsername}/token:${zdToken}`).toString('base64');
+        const zdRes = await fetch('https://wcscargo.zendesk.com/api/v2/tickets.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${credentials}`,
+          },
+          body: JSON.stringify({
+            ticket: {
+              subject: ticketSubject,
+              comment: { body: ticketBody },
+              requester: { name, email },
+              tags: ['freightclear-contact', (category || 'general').toLowerCase().replace(/[^a-z0-9]/g, '-')],
+              priority: 'normal',
+            },
+          }),
+        });
+
+        if (zdRes.ok) {
+          const zdData = await zdRes.json() as any;
+          return res.json({ success: true, method: 'zendesk-api', ticketId: zdData?.ticket?.id });
         }
+
+        const zdError = await zdRes.text();
+        console.error('[contact] Zendesk API error:', zdRes.status, zdError);
       }
 
       // Fallback: email directly to Zendesk support address
@@ -6055,7 +6063,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         text: ticketBody,
       });
 
-      res.json({ success: true, method: 'email' });
+      res.json({ success: true, method: 'email-fallback' });
     } catch (err) {
       console.error('[contact] Error:', err);
       res.status(500).json({ error: 'Failed to submit contact form. Please try again.' });
