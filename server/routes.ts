@@ -6974,7 +6974,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ─── AI Support Endpoint ─────────────────────────────────────────────────────
   // Hybrid AI assistant: local knowledge base + live web search (HTS, duty rates, CBP updates)
-  app.post('/api/ai-support', isAuthenticated, async (req: any, res) => {
+  app.post('/api/ai-support', async (req: any, res) => {
     try {
       const { message, history = [] } = req.body as {
         message: string;

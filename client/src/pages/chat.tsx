@@ -105,10 +105,14 @@ export default function AiSupport() {
       const res = await fetch("/api/ai-support", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ message: text.trim(), history: historyForApi }),
       });
 
-      if (!res.ok) throw new Error("API not available");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData?.reply || errData?.error || `HTTP ${res.status}`);
+      }
 
       const data = await res.json();
       const aiMessage: Message = {
@@ -118,12 +122,13 @@ export default function AiSupport() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMessage]);
-    } catch {
+    } catch (err: any) {
       const fallbackMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content:
-          "Our AI support is being configured. In the meantime, you can reach our compliance team directly at freightclear.com or browse the knowledge base links on the right for answers to common import and customs questions.",
+        content: err?.message && !err.message.startsWith("HTTP")
+          ? err.message
+          : "I'm having trouble connecting right now. Please try again in a moment, or contact our team at freightclear.com.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, fallbackMessage]);
