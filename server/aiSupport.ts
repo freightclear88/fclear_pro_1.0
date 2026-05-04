@@ -176,6 +176,43 @@ SPECIAL SITUATIONS
 FreightClear can assist with customs clearance and entry filing for vehicle imports. NHTSA/EPA conformance work must be done by a licensed RI/ICI.`,
   },
   {
+    category: "freightclear",
+    title: "Power of Attorney — First Step for Every FreightClear Importer",
+    content: `A Customs Power of Attorney (POA) is a legal document that authorizes FreightClear (as your licensed customs broker) to act on your behalf with U.S. Customs and Border Protection (CBP). Without a signed POA, FreightClear cannot file entries, ISF filings, or any customs documents for you.
+
+WHY IT'S REQUIRED
+- CBP regulations require importers to authorize their customs broker in writing before any filing can be made on their behalf.
+- The POA is a one-time setup — once signed, it covers all future shipments.
+- Without it, your cargo cannot be legally cleared through U.S. Customs.
+
+WHAT INFORMATION IS NEEDED
+For an Individual or Sole Proprietor:
+- Full legal name
+- Social Security Number (SSN)
+- Address and contact information
+- Signature
+
+For a Corporation or LLC:
+- Company legal name and DBA (if applicable)
+- Employer Identification Number (EIN / IRS Tax ID)
+- State and country of incorporation
+- Authorized officer signature and title
+- Corporate seal (in some cases)
+
+HOW TO COMPLETE YOUR POA WITH FREIGHTCLEAR
+1. Log in to FreightClear and go to your Profile
+2. Navigate to the Power of Attorney section
+3. Complete the POA Wizard — it guides you through each required field
+4. Sign digitally and submit — FreightClear will review and file it with CBP
+5. Once approved, you are legally on file and FreightClear can begin filing on your behalf
+
+NOTE ON SECURITY
+- Your POA is stored securely and is only used for CBP-authorized customs activities.
+- You can revoke the POA at any time by submitting a written revocation to FreightClear.
+
+Complete your Power of Attorney now — go to Profile in the FreightClear app and follow the POA Wizard.`,
+  },
+  {
     category: "fda",
     title: "FDA Compliance — Importing Food & Perishables to the USA",
     content: `Importing food and perishable goods into the United States requires compliance with FDA regulations under the Food Safety Modernization Act (FSMA) and the Federal Food, Drug, and Cosmetic Act (FD&C Act).

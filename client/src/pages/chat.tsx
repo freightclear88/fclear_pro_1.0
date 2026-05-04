@@ -19,6 +19,7 @@ import {
   Sparkles,
   Apple,
   Stethoscope,
+  Pen,
 } from "lucide-react";
 
 interface Message {
@@ -39,9 +40,15 @@ const QUICK_PROMPTS = [
   { label: "Import cars & vehicles", prompt: "What are the requirements for importing cars and vehicles into the USA? Include DOT and NHTSA compliance, HS security bond requirements, and current duty rates.", icon: Car },
   { label: "FDA — Food & Perishables", prompt: "What are the FDA compliance requirements for importing food and perishable goods into the USA? Include Prior Notice, FSVP, detention/refusal procedures, and labeling requirements.", icon: Apple },
   { label: "FDA — Medical Devices", prompt: "What are the FDA compliance requirements for importing medical devices into the USA? Include device classification, 510(k) clearance, PMA, registration requirements, and CBP entry procedures.", icon: Stethoscope },
+  { label: "Power of Attorney", prompt: "What is a Customs Power of Attorney and why does every importer need one? What information is required, and how do I complete and submit it to FreightClear to get started?", icon: Pen },
 ];
 
 const KB_LINKS = [
+  {
+    label: "⚡ Power of Attorney (Start Here)",
+    prompt: "What is a Customs Power of Attorney and why does every importer need one? What information is required, and how do I complete and submit it to FreightClear to get started?",
+    icon: Pen,
+  },
   {
     label: "Duty Rate Tables",
     prompt: "What are the current US import duty rates? Give me an overview of how duty rates are structured and where to look them up.",
