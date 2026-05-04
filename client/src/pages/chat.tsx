@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Bot,
   Send,
@@ -77,6 +79,9 @@ const KB_LINKS = [
 ];
 
 export default function AiSupport() {
+  const { user } = useAuth();
+  const poaComplete = (user as any)?.powerOfAttorneyStatus === "validated" || (user as any)?.powerOfAttorneyStatus === "uploaded";
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -179,6 +184,27 @@ export default function AiSupport() {
       </div>
 
 
+
+      {/* Power of Attorney Banner — shown until POA is on file */}
+      {!poaComplete && (
+        <div className="mb-6 rounded-xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-400 flex items-center justify-center">
+            <Pen className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-amber-900 text-sm">⚡ Step 1: Complete your Power of Attorney to get started
+            </p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              A signed POA is required before FreightClear can file customs entries, ISF filings, or any documents on your behalf. It only takes 2 minutes.
+            </p>
+          </div>
+          <Link href="/profile">
+            <Button className="flex-shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold px-4 py-2">
+              Complete POA →
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Quick Prompt Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
