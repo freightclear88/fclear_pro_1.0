@@ -1,21 +1,23 @@
 /**
  * FreightClear AI Support Service
- * 
+ *
  * Hybrid AI assistant combining:
- * 1. Local knowledge base (FreightClear-specific content)
+ * 1. Local knowledge base (FreightClear-specific content, DB-backed)
  * 2. Live web search (HTS codes, duty rates, CBP updates, tariff changes)
- * 
- * Uses Claude with tool_use so the AI decides when to search vs. answer directly.
- * Web search powered by Brave Search API (BRAVE_API_KEY env var)
- * or Tavily Search API (TAVILY_API_KEY env var) as fallback.
+ *
+ * Uses OpenAI gpt-4o-mini with function calling so the AI decides when
+ * to search vs. answer directly. Web search via Brave or Tavily API.
  */
 
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { db, pool } from "./db";
 import { knowledgeBase } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
-// Ensure the knowledge_base table exists (runs once at startup)
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// ─── Ensure DB Table ──────────────────────────────────────────────────────────
+
 export async function ensureKnowledgeBaseTable(): Promise<void> {
   try {
     await pool.query(`
@@ -29,19 +31,13 @@ export async function ensureKnowledgeBaseTable(): Promise<void> {
         updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
-    console.log('[kb] knowledge_base table ready');
+    console.log("[kb] knowledge_base table ready");
   } catch (err) {
-    console.error('[kb] Failed to ensure knowledge_base table:', err);
+    console.error("[kb] Failed to ensure knowledge_base table:", err);
   }
 }
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
-// ─── Local Knowledge Base ────────────────────────────────────────────────────
-// Seed content for FreightClear-specific knowledge.
-// Phase 2 will move this to pgvector in Postgres for full CRUD management.
+// ─── Static KB (fallback + seed source) ──────────────────────────────────────
 
 export const LOCAL_KNOWLEDGE: { category: string; title: string; content: string }[] = [
   {
@@ -220,11 +216,10 @@ Contact: freightclear.com`,
 // ─── Web Search ───────────────────────────────────────────────────────────────
 
 async function webSearch(query: string): Promise<string> {
-  // Try Brave Search API first
   const braveKey = process.env.BRAVE_API_KEY;
   if (braveKey) {
     try {
-      const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5&freshness=pm`;
+      const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`;
       const resp = await fetch(url, {
         headers: {
           Accept: "application/json",
@@ -236,14 +231,10 @@ async function webSearch(query: string): Promise<string> {
         const data = (await resp.json()) as any;
         const results = data?.web?.results ?? [];
         if (results.length > 0) {
-          const formatted = results
+          return results
             .slice(0, 5)
-            .map(
-              (r: any, i: number) =>
-                `[${i + 1}] ${r.title}\nURL: ${r.url}\n${r.description ?? ""}`
-            )
+            .map((r: any, i: number) => `[${i + 1}] ${r.title}\nURL: ${r.url}\n${r.description ?? ""}`)
             .join("\n\n");
-          return `Web search results for "${query}":\n\n${formatted}`;
         }
       }
     } catch (err) {
@@ -251,150 +242,112 @@ async function webSearch(query: string): Promise<string> {
     }
   }
 
-  // Fallback: Tavily Search API
   const tavilyKey = process.env.TAVILY_API_KEY;
   if (tavilyKey) {
     try {
       const resp = await fetch("https://api.tavily.com/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          api_key: tavilyKey,
-          query,
-          search_depth: "basic",
-          include_answer: true,
-          max_results: 5,
-        }),
+        body: JSON.stringify({ api_key: tavilyKey, query, search_depth: "basic", include_answer: true, max_results: 5 }),
       });
       if (resp.ok) {
         const data = (await resp.json()) as any;
         const answer = data?.answer ? `Summary: ${data.answer}\n\n` : "";
         const results = (data?.results ?? [])
           .slice(0, 5)
-          .map(
-            (r: any, i: number) =>
-              `[${i + 1}] ${r.title}\nURL: ${r.url}\n${r.content?.slice(0, 300) ?? ""}`
-          )
+          .map((r: any, i: number) => `[${i + 1}] ${r.title}\nURL: ${r.url}\n${r.content?.slice(0, 300) ?? ""}`)
           .join("\n\n");
-        return `${answer}Web search results for "${query}":\n\n${results}`;
+        return `${answer}${results}`;
       }
     } catch (err) {
       console.error("[aiSupport] Tavily search error:", err);
     }
   }
 
-  return `No web search API configured. To enable live HTS/tariff lookups, set BRAVE_API_KEY or TAVILY_API_KEY in your environment variables.`;
+  return "No web search API configured (set BRAVE_API_KEY or TAVILY_API_KEY).";
 }
 
-// ─── Local KB Search ─────────────────────────────────────────────────────────
+// ─── Local KB Search ──────────────────────────────────────────────────────────
 
 async function searchLocalKB(query: string): Promise<string> {
   const q = query.toLowerCase();
-
-  // Try DB first
   try {
-    const dbEntries = await db
-      .select()
-      .from(knowledgeBase)
-      .where(eq(knowledgeBase.isActive, true));
-
-    const allEntries = dbEntries.length > 0
-      ? dbEntries.map((e) => ({ title: e.title, content: e.content, category: e.category }))
+    const dbEntries = await db.select().from(knowledgeBase).where(eq(knowledgeBase.isActive, true));
+    const all = dbEntries.length > 0
+      ? dbEntries.map((e) => ({ title: e.title, content: e.content }))
       : LOCAL_KNOWLEDGE;
 
-    const matches = allEntries.filter(
-      (entry) =>
-        entry.title.toLowerCase().includes(q) ||
-        entry.content.toLowerCase().split(" ").some((word) => q.includes(word.replace(/[^a-z]/g, "")))
+    const matches = all.filter(
+      (e) => e.title.toLowerCase().includes(q) ||
+        e.content.toLowerCase().split(" ").some((w) => q.includes(w.replace(/[^a-z]/g, "")))
     );
 
-    if (matches.length === 0) return "No matching entries found in local knowledge base.";
-
-    return matches
-      .slice(0, 3)
-      .map((m) => `## ${m.title}\n${m.content}`)
-      .join("\n\n---\n\n");
+    if (!matches.length) return "No matching entries found in the knowledge base.";
+    return matches.slice(0, 3).map((m) => `## ${m.title}\n${m.content}`).join("\n\n---\n\n");
   } catch {
-    // Fallback to static KB if DB unavailable
     const matches = LOCAL_KNOWLEDGE.filter(
-      (entry) =>
-        entry.title.toLowerCase().includes(q) ||
-        entry.content.toLowerCase().split(" ").some((word) => q.includes(word.replace(/[^a-z]/g, "")))
+      (e) => e.title.toLowerCase().includes(q) ||
+        e.content.toLowerCase().split(" ").some((w) => q.includes(w.replace(/[^a-z]/g, "")))
     );
-    if (matches.length === 0) return "No matching entries found in local knowledge base.";
-    return matches
-      .slice(0, 3)
-      .map((m) => `## ${m.title}\n${m.content}`)
-      .join("\n\n---\n\n");
+    if (!matches.length) return "No matching entries found in the knowledge base.";
+    return matches.slice(0, 3).map((m) => `## ${m.title}\n${m.content}`).join("\n\n---\n\n");
   }
 }
 
-// ─── Tool Definitions ─────────────────────────────────────────────────────────
+// ─── OpenAI Tool Definitions ──────────────────────────────────────────────────
 
-const TOOLS: Anthropic.Tool[] = [
+const TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
   {
-    name: "web_search",
-    description:
-      "Search the web for live, up-to-date information. Use this for: current HTS codes and duty rates, recent CBP or USTR announcements, Federal Register tariff updates, Section 301 product lists, UFLPA entity list updates, current trade news, and any information that may have changed recently. Always prefer this over guessing at specific duty rates or HTS classifications.",
-    input_schema: {
-      type: "object",
-      properties: {
-        query: {
-          type: "string",
-          description:
-            "A specific, well-formed search query. Be precise — include product names, HTS codes, country of origin, and date context when relevant. Example: 'HTS code 8471.30 duty rate Section 301 2025'",
+    type: "function",
+    function: {
+      name: "web_search",
+      description:
+        "Search the web for live, up-to-date information: current HTS codes, duty rates, CBP announcements, Federal Register tariff updates, Section 301 lists, UFLPA entity list updates. Use this for any question involving specific rates or recent regulatory changes.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Specific search query, e.g. 'HTS 8471.30 duty rate China Section 301 2025'" },
         },
+        required: ["query"],
       },
-      required: ["query"],
     },
   },
   {
-    name: "search_knowledge_base",
-    description:
-      "Search FreightClear's internal knowledge base for information about our services, ISF filing requirements, customs clearance procedures, UFLPA compliance, de minimis rules, and HTS code structure. Use this for company-specific questions and standard regulatory explanations.",
-    input_schema: {
-      type: "object",
-      properties: {
-        query: {
-          type: "string",
-          description: "Keywords to search the knowledge base. Example: 'ISF filing deadline'",
+    type: "function",
+    function: {
+      name: "search_knowledge_base",
+      description:
+        "Search FreightClear's internal knowledge base for company services, ISF requirements, UFLPA overview, de minimis rules, HTS code structure, vehicle import requirements.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Keywords to search, e.g. 'ISF filing deadline'" },
         },
+        required: ["query"],
       },
-      required: ["query"],
     },
   },
 ];
 
 // ─── System Prompt ────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are the FreightClear AI Support Assistant — a knowledgeable, professional, and helpful customs compliance expert embedded in the FreightClear.com platform.
+const SYSTEM_PROMPT = `You are the FreightClear AI Support Assistant — a knowledgeable U.S. customs compliance expert.
 
-Your expertise covers:
-- U.S. import customs clearance procedures
-- HTS (Harmonized Tariff Schedule) classifications and duty rates
-- Section 301 tariffs on Chinese goods
-- ISF 10+2 filing requirements
-- UFLPA (Uyghur Forced Labor Prevention Act) compliance
-- De minimis rules and exemptions
-- CBP (U.S. Customs and Border Protection) regulations
-- Trade agreements (USMCA, GSP, etc.)
-- FreightClear services and the World Class Shipping network
+Your expertise: HTS classifications, duty rates, Section 301 tariffs, ISF 10+2 filing, UFLPA compliance, de minimis rules, CBP regulations, trade agreements, FreightClear services.
 
 TOOL USE RULES:
-- For ANY question involving specific HTS codes, duty rates, or tariff percentages: ALWAYS use web_search first. Rates change frequently and must be current.
-- For questions about CBP policy changes, USTR announcements, or Federal Register updates: use web_search.
-- For FreightClear services, ISF procedures, UFLPA overview, and standard compliance concepts: use search_knowledge_base.
-- You may use both tools in one response if needed.
-- After searching, synthesize the results into a clear, actionable answer.
+- For ANY question about specific HTS codes, duty rates, or tariff percentages: use web_search FIRST. Rates change frequently.
+- For CBP policy changes, USTR announcements, Federal Register updates: use web_search.
+- For FreightClear services, ISF procedures, UFLPA overview, standard compliance concepts: use search_knowledge_base.
+- You may use both tools. After getting results, synthesize a clear answer.
 
 RESPONSE STYLE:
-- Be concise but thorough. Freight professionals are busy.
-- Use bullet points or numbered lists for multi-step processes.
-- When citing duty rates or HTS codes, always note the date/source and remind users to verify with CBP or a licensed broker.
-- End complex answers with: "For binding classification or duty advice, consult a licensed customs broker."
-- Never make up duty rates, HTS codes, or CBP penalty amounts — always search or acknowledge uncertainty.
+- Concise but thorough. Freight professionals are busy.
+- Use bullet points for multi-step processes.
+- When citing rates or codes, note the source and remind users to verify with CBP or a licensed broker.
+- Never invent duty rates, HTS codes, or penalty amounts.
 
-You represent FreightClear and World Class Shipping. Be professional, accurate, and genuinely helpful.`;
+You represent FreightClear and World Class Shipping. Be professional and genuinely helpful.`;
 
 // ─── Main Handler ─────────────────────────────────────────────────────────────
 
@@ -407,67 +360,56 @@ export async function handleAiSupportQuery(
   userMessage: string,
   history: AiSupportMessage[] = []
 ): Promise<string> {
-  const messages: Anthropic.MessageParam[] = [
-    ...history.map((m) => ({ role: m.role, content: m.content })),
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    { role: "system", content: SYSTEM_PROMPT },
+    ...history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
     { role: "user", content: userMessage },
   ];
 
-  let currentMessages = [...messages];
-
-  // Agentic loop: let Claude call tools until it has a final answer
+  // Agentic loop: let the model call tools until it finishes
   for (let round = 0; round < 5; round++) {
-    const response = await anthropic.messages.create({
-      model: "claude-3-5-haiku-20241022",
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages,
       tools: TOOLS,
-      messages: currentMessages,
+      tool_choice: "auto",
+      max_tokens: 1024,
     });
 
-    // If Claude is done, return its text response
-    if (response.stop_reason === "end_turn") {
-      const textBlock = response.content.find((b) => b.type === "text");
-      return textBlock ? (textBlock as Anthropic.TextBlock).text : "I was unable to generate a response. Please try again.";
+    const choice = response.choices[0];
+
+    if (choice.finish_reason === "stop") {
+      return choice.message.content ?? "I was unable to generate a response. Please try again.";
     }
 
-    // Process tool calls
-    if (response.stop_reason === "tool_use") {
-      const toolUseBlocks = response.content.filter((b) => b.type === "tool_use") as Anthropic.ToolUseBlock[];
+    if (choice.finish_reason === "tool_calls" && choice.message.tool_calls?.length) {
+      messages.push(choice.message);
 
-      // Add Claude's response (with tool calls) to message history
-      currentMessages.push({ role: "assistant", content: response.content });
-
-      // Execute all tool calls in parallel
-      const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
-        toolUseBlocks.map(async (toolUse) => {
-          let result: string;
-          try {
-            const input = toolUse.input as { query: string };
-            if (toolUse.name === "web_search") {
-              result = await webSearch(input.query);
-            } else if (toolUse.name === "search_knowledge_base") {
-              result = await searchLocalKB(input.query);
-            } else {
-              result = `Unknown tool: ${toolUse.name}`;
-            }
-          } catch (err) {
-            result = `Tool error: ${String(err)}`;
+      // Execute all tool calls
+      for (const toolCall of choice.message.tool_calls) {
+        let result: string;
+        try {
+          const args = JSON.parse(toolCall.function.arguments) as { query: string };
+          if (toolCall.function.name === "web_search") {
+            result = await webSearch(args.query);
+          } else if (toolCall.function.name === "search_knowledge_base") {
+            result = await searchLocalKB(args.query);
+          } else {
+            result = `Unknown tool: ${toolCall.function.name}`;
           }
+        } catch (err) {
+          result = `Tool error: ${String(err)}`;
+        }
 
-          return {
-            type: "tool_result" as const,
-            tool_use_id: toolUse.id,
-            content: result,
-          };
-        })
-      );
-
-      // Feed tool results back to Claude
-      currentMessages.push({ role: "user", content: toolResults });
+        messages.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: result,
+        });
+      }
       continue;
     }
 
-    // Unexpected stop reason
     break;
   }
 
