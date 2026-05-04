@@ -278,17 +278,16 @@ export default function AiSupport() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <p className="text-xs text-gray-400 mb-3">Click a topic to ask the AI assistant</p>
+              <p className="text-xs text-gray-500 mb-3">Click a topic to get an instant answer</p>
               {KB_LINKS.map((link) => (
                 <button
                   key={link.label}
                   onClick={() => sendMessage(link.prompt)}
-                  disabled={isLoading}
-                  className="w-full flex items-center gap-2 p-2.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all group text-sm text-gray-700 text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center gap-2 p-2.5 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-100 hover:border-blue-300 transition-all group text-sm font-medium text-freight-blue text-left cursor-pointer"
                 >
                   <link.icon className="w-4 h-4 text-freight-blue flex-shrink-0" />
                   <span className="flex-1">{link.label}</span>
-                  <Send className="w-3 h-3 text-gray-300 group-hover:text-freight-blue flex-shrink-0" />
+                  <Send className="w-3 h-3 text-freight-blue opacity-50 group-hover:opacity-100 flex-shrink-0" />
                 </button>
               ))}
             </CardContent>
