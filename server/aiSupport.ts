@@ -111,6 +111,50 @@ To look up an HTS code: www.usitc.gov (official) or hts.usitc.gov (searchable sc
 Correct HTS classification is critical — errors can result in underpayment (CBP penalties) or overpayment (missed duty savings) of duties.`,
   },
   {
+    category: "vehicles",
+    title: "Importing Cars and Vehicles to the USA — DOT & NHTSA Requirements",
+    content: `Importing a car or vehicle into the United States involves customs (CBP), safety (NHTSA), and emissions (EPA) compliance. Here is a full overview:
+
+CUSTOMS DUTY RATES (CBP)
+- Passenger vehicles: 2.5% of customs value
+- Trucks and SUVs (classified as trucks): 25% of customs value ("chicken tax")
+- Motorcycles: 0%
+- Electric vehicles: 2.5% (may be subject to Section 301 if from China)
+- Duty is based on the transaction value (purchase price)
+
+NHTSA (National Highway Traffic Safety Administration)
+All imported vehicles must comply with Federal Motor Vehicle Safety Standards (FMVSS). Options:
+1. Vehicles manufactured to U.S. standards (e.g., Canadian-market vehicles) → relatively simple entry
+2. Vehicles NOT manufactured to U.S. standards (most foreign-market cars) → must be brought into conformance by a Registered Importer (RI) OR qualify for an exemption
+
+Key NHTSA rules:
+- Vehicle must be 25 years or older to qualify for the "show or display" or classic car exemption (bypasses FMVSS conformance)
+- HS-7 Declaration Form required at entry — declares the basis for importation
+- Registered Importers (RIs) are NHTSA-approved companies that perform conformance modifications
+
+EPA (Environmental Protection Agency)
+- Vehicle must meet U.S. emissions standards or be modified by an Independent Commercial Importer (ICI)
+- EPA Form 3520-1 required at entry
+- Vehicles 21 years or older are generally exempt from EPA emissions requirements
+
+CBP ENTRY PROCESS
+- Title/MSO required
+- Bill of Lading
+- Commercial Invoice or purchase agreement
+- HS-7 form (NHTSA declaration)
+- EPA 3520-1 form
+- If vehicle is dutiable, a CBP Form 7501 entry summary is filed
+- Security bond may be required for non-conforming vehicles held for modification
+
+SPECIAL SITUATIONS
+- Vehicles from Canada: Generally easy if Canadian spec (close to U.S. spec)
+- Vehicles from Europe/Japan/etc.: Require RI conformance unless 25+ years old
+- Grey market vehicles: Require full RI/ICI process
+- Electric vehicles from China: Subject to 27.5% total duty (2.5% + 25% Section 301)
+
+FreightClear can assist with customs clearance and entry filing for vehicle imports. NHTSA/EPA conformance work must be done by a licensed RI/ICI.`,
+  },
+  {
     category: "freightclear",
     title: "FreightClear Services",
     content: `FreightClear is a U.S. customs compliance service brand powered by World Class Shipping (WCS), a WCA-member freight forwarder with 38+ years of experience.

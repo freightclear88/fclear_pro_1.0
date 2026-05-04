@@ -15,6 +15,7 @@ import {
   HelpCircle,
   Sparkles,
   ExternalLink,
+  Car,
 } from "lucide-react";
 
 interface Message {
@@ -31,6 +32,7 @@ const QUICK_PROMPTS = [
   { label: "De minimis rule", prompt: "Explain the de minimis rule and the $800 threshold for imports.", icon: HelpCircle },
   { label: "UFLPA compliance", prompt: "What do I need to know about UFLPA compliance requirements?", icon: AlertTriangle },
   { label: "Read my HTS code", prompt: "How do I read and understand my HTS classification code?", icon: BookOpen },
+  { label: "Import cars & vehicles", prompt: "What are the requirements for importing cars and vehicles into the USA? Include DOT and NHTSA compliance, HS security bond requirements, and current duty rates.", icon: Car },
 ];
 
 const KB_LINKS = [
