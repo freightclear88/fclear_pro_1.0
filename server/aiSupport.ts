@@ -417,7 +417,7 @@ export async function handleAiSupportQuery(
   // Agentic loop: let Claude call tools until it has a final answer
   for (let round = 0; round < 5; round++) {
     const response = await anthropic.messages.create({
-      model: "claude-haiku-4-5",
+      model: "claude-3-5-haiku-20241022",
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
       tools: TOOLS,
