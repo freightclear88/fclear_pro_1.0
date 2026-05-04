@@ -1476,6 +1476,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Document routes
+  // Document stats for dashboard widget
+  app.get('/api/documents/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const allDocs = await storage.getDocumentsByUserId(userId);
+      const recentDocs = [...allDocs].sort((a, b) => new Date(b.uploadedAt!).getTime() - new Date(a.uploadedAt!).getTime()).slice(0, 5);
+      const byCategory: Record<string, number> = {};
+      allDocs.forEach((d) => { byCategory[d.category] = (byCategory[d.category] || 0) + 1; });
+      res.json({ total: allDocs.length, recent: recentDocs, byCategory });
+    } catch (err) {
+      res.status(500).json({ message: 'Failed to fetch document stats' });
+    }
+  });
+
+  // Standalone documents (not linked to a shipment)
+  app.get('/api/documents/standalone', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const allDocs = await storage.getDocumentsByUserId(userId);
+      const standalone = allDocs.filter((d) => !d.shipmentId);
+      res.json(standalone);
+    } catch (err) {
+      res.status(500).json({ message: 'Failed to fetch standalone documents' });
+    }
+  });
+
   app.get('/api/documents', requireSubscription, async (req: any, res) => {
     try {
       const userId = getUserId(req);

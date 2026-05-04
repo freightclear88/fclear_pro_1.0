@@ -266,6 +266,11 @@ export const documents = pgTable("documents", {
   viewedAt: timestamp("viewed_at"),
   paidAt: timestamp("paid_at"),
   paymentTransactionId: varchar("payment_transaction_id").references(() => paymentTransactions.transactionId),
+
+  // Standalone document fields (documents not tied to a shipment)
+  isStandalone: boolean("is_standalone").default(false),
+  documentLabel: varchar("document_label"), // user-provided label/description
+  documentCategory: varchar("document_category"), // customs_compliance, templates, regulatory, company_docs, isf_related, other
 });
 
 // Subscription plans table

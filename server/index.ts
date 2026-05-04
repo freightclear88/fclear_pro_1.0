@@ -42,6 +42,19 @@ app.use((req, res, next) => {
 
   // Ensure AI Support knowledge_base table exists
   await ensureKnowledgeBaseTable();
+
+  // Ensure standalone document columns exist
+  try {
+    await (await import('./db')).pool.query(`
+      ALTER TABLE documents
+        ADD COLUMN IF NOT EXISTS is_standalone BOOLEAN DEFAULT false,
+        ADD COLUMN IF NOT EXISTS document_label VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS document_category VARCHAR(64)
+    `);
+    console.log('[documents] Standalone columns ready');
+  } catch (err) {
+    console.error('[documents] Column migration error:', err);
+  }
   
   // Initialize XML scheduler after routes are set up
   try {

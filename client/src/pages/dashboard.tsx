@@ -11,7 +11,7 @@ import ShipmentDetail from "@/components/ShipmentDetail";
 import CreateShipmentDialog from "@/components/CreateShipmentDialog";
 import NotificationDropdown from "@/components/NotificationDropdown";
 
-import { Ship, FileText, CheckCircle, Plus, Bell, FileUp, ChevronLeft, ChevronRight, Clock, DollarSign, AlertCircle } from "lucide-react";
+import { Ship, FileText, CheckCircle, Plus, Bell, FileUp, ChevronLeft, ChevronRight, Clock, DollarSign, AlertCircle, FolderOpen, File } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
@@ -29,6 +29,10 @@ export default function Dashboard() {
   const [isfFilingsPage, setIsfFilingsPage] = useState(1);
   const shipmentsPerPage = 10;
   const isfFilingsPerPage = 5;
+
+  const { data: docStats } = useQuery<{ total: number; recent: any[]; byCategory: Record<string, number> }>({
+    queryKey: ["/api/documents/stats"],
+  });
 
   const { data: stats } = useQuery<{
     activeShipments: number;
@@ -277,6 +281,60 @@ export default function Dashboard() {
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Documents Widget */}
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FolderOpen className="w-5 h-5 text-freight-blue" /> Documents
+              {docStats && (
+                <Badge variant="outline" className="text-xs ml-1">{docStats.total} total</Badge>
+              )}
+            </CardTitle>
+            <Link href="/documents">
+              <Button size="sm" variant="outline" className="text-xs">View All →</Button>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {docStats && docStats.recent && docStats.recent.length > 0 ? (
+            <div className="space-y-2">
+              {docStats.recent.slice(0, 4).map((doc: any) => (
+                <div key={doc.id} className="flex items-center gap-3 py-1.5">
+                  <div className="w-7 h-7 rounded bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <File className="w-3.5 h-3.5 text-freight-blue" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-800 truncate">{doc.originalName}</p>
+                    <p className="text-xs text-gray-400">{doc.category?.replace(/_/g, ' ')}</p>
+                  </div>
+                  <a href={`/api/documents/${doc.id}/view`} target="_blank" rel="noopener noreferrer">
+                    <Button size="sm" variant="ghost" className="text-xs text-freight-blue h-7 px-2">View</Button>
+                  </a>
+                </div>
+              ))}
+              {(docStats.total || 0) > 4 && (
+                <Link href="/documents">
+                  <p className="text-xs text-freight-blue text-center pt-1 cursor-pointer hover:underline">
+                    + {(docStats.total || 0) - 4} more documents
+                  </p>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-gray-400">
+              <FolderOpen className="w-8 h-8 mx-auto mb-2 text-gray-200" />
+              <p className="text-sm">No documents yet.</p>
+              <Link href="/documents">
+                <Button size="sm" className="mt-2 bg-freight-blue hover:bg-freight-blue/90 text-white text-xs">
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Upload Your First Document
+                </Button>
+              </Link>
             </div>
           )}
         </CardContent>

@@ -27,17 +27,19 @@ import PaymentDebugTest from "@/pages/payment-debug-test";
 
 import Chat from "@/pages/chat";
 import FastIsf from "@/pages/fastisf";
+import DocumentsPage from "@/pages/documents";
 import IsfEdit from "@/pages/isf-edit";
 import IsfDetail from "@/pages/isfdetail";
 import XmlManagement from "@/pages/XmlManagement";
 
-import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle, FileText, Menu, X, Upload, Settings, LogOut } from "lucide-react";
+import { BarChart3, Ship, User, Shield, CreditCard, Receipt, MessageCircle, FileText, Menu, X, Upload, Settings, LogOut, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import freightclearLogo from "@assets/cropped-freigthclear_alt_logo2_1751903859339.png";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
   { name: "Shipments", href: "/shipments", icon: Ship },
+  { name: "Documents", href: "/documents", icon: FolderOpen },
   { name: "Fast ISF", href: "/fastisf", icon: FileText },
   { name: "AI Support", href: "/chat", icon: MessageCircle },
   { name: "Payments", href: "/payments", icon: Receipt },
@@ -262,6 +264,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/shipments" component={Shipments} />
+        <Route path="/documents" component={DocumentsPage} />
         <Route path="/xml-management" component={XmlManagement} />
         <Route path="/fastisf" component={FastIsf} />
         <Route path="/isf/edit/:id" component={IsfEdit} />
