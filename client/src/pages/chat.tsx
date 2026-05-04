@@ -12,10 +12,8 @@ import {
   FileText,
   AlertTriangle,
   Globe,
-  HelpCircle,
   Sparkles,
   ExternalLink,
-  Car,
 } from "lucide-react";
 
 interface Message {
@@ -25,15 +23,6 @@ interface Message {
   timestamp: Date;
 }
 
-const QUICK_PROMPTS = [
-  { label: "Calculate import duties", prompt: "How do I calculate import duties for my shipment?", icon: Calculator },
-  { label: "China tariff rates", prompt: "What are the current tariff rates for goods from China?", icon: Globe },
-  { label: "ISF 10+2 requirements", prompt: "What are the ISF 10+2 filing requirements and deadlines?", icon: FileText },
-  { label: "De minimis rule", prompt: "Explain the de minimis rule and the $800 threshold for imports.", icon: HelpCircle },
-  { label: "UFLPA compliance", prompt: "What do I need to know about UFLPA compliance requirements?", icon: AlertTriangle },
-  { label: "Read my HTS code", prompt: "How do I read and understand my HTS classification code?", icon: BookOpen },
-  { label: "Import cars & vehicles", prompt: "What are the requirements for importing cars and vehicles into the USA? Include DOT and NHTSA compliance, HS security bond requirements, and current duty rates.", icon: Car },
-];
 
 const KB_LINKS = [
   { label: "Duty Rate Tables", href: "https://freightclear.com", icon: Calculator },
@@ -140,20 +129,7 @@ export default function AiSupport() {
         </div>
       </div>
 
-      {/* Quick Prompt Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
-        {QUICK_PROMPTS.map((qp) => (
-          <button
-            key={qp.label}
-            onClick={() => sendMessage(qp.prompt)}
-            disabled={isLoading}
-            className="flex flex-col items-center gap-1 p-3 bg-white border border-gray-200 rounded-lg hover:border-freight-blue hover:bg-blue-50 transition-all text-center group disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <qp.icon className="w-5 h-5 text-freight-blue group-hover:scale-110 transition-transform" />
-            <span className="text-xs text-gray-600 font-medium leading-tight">{qp.label}</span>
-          </button>
-        ))}
-      </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Chat Interface */}
