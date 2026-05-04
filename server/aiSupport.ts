@@ -176,6 +176,99 @@ SPECIAL SITUATIONS
 FreightClear can assist with customs clearance and entry filing for vehicle imports. NHTSA/EPA conformance work must be done by a licensed RI/ICI.`,
   },
   {
+    category: "fda",
+    title: "FDA Compliance — Importing Food & Perishables to the USA",
+    content: `Importing food and perishable goods into the United States requires compliance with FDA regulations under the Food Safety Modernization Act (FSMA) and the Federal Food, Drug, and Cosmetic Act (FD&C Act).
+
+PRIOR NOTICE (Required for ALL food imports)
+- Importers must submit Prior Notice to FDA before food arrives at a U.S. port
+- Submission window: No earlier than 15 days before arrival; no later than:
+  - 2 hours before arrival (air)
+  - 4 hours before arrival (land)
+  - 8 hours before arrival (ocean)
+- Submit via FDA's Prior Notice System Interface (PNSI) or through ABI/ACE
+- Failure to submit = cargo may be held or refused
+
+FOREIGN SUPPLIER VERIFICATION PROGRAM (FSVP)
+- Importers must verify that foreign food suppliers meet U.S. food safety standards
+- Required under FSMA for most imported food products
+- Importer must conduct hazard analysis, verify supplier performance, conduct periodic audits
+- FSVP records must be maintained and available to FDA on request
+
+FDA REGISTRATION
+- Foreign food facilities that manufacture, process, pack, or hold food for U.S. consumption must be registered with FDA
+- Registration must be renewed every 2 years (odd-numbered years)
+- Unregistered facilities = food may be refused entry
+
+LABELING REQUIREMENTS
+- Must comply with FDA labeling rules: ingredient list, net quantity, nutrition facts, allergen declaration
+- Labels must be in English
+- Country of origin required
+
+REFUSAL & DETENTION
+- FDA can issue an Import Alert for products with history of violations
+- Products on Import Alert are automatically detained — importer must prove compliance to release
+- FDA may refuse admission — refused goods must be re-exported or destroyed
+
+HIGH-RISK CATEGORIES
+- Fresh produce, seafood, dairy, juice — subject to specific HACCP/preventive control rules
+- Products from countries with food safety concerns may face automatic detention
+
+CBP ENTRY
+- Standard CBP formal or informal entry required
+- FDA reviews entry through ACE/ITDS system
+- May require FDA examination (physical or records review)
+
+FreightClear coordinates FDA Prior Notice filing and entry as part of our customs clearance service.`,
+  },
+  {
+    category: "fda",
+    title: "FDA Compliance — Importing Medical Devices to the USA",
+    content: `Importing medical devices into the United States requires compliance with FDA regulations under the Federal Food, Drug, and Cosmetic Act (FD&C Act) and 21 CFR Parts 800-898.
+
+DEVICE CLASSIFICATION
+FDA classifies medical devices into three classes based on risk:
+- Class I: Low risk (e.g., bandages, tongue depressors) — General controls only, most exempt from 510(k)
+- Class II: Moderate risk (e.g., X-ray equipment, powered wheelchairs) — Requires 510(k) Premarket Notification
+- Class III: High risk (e.g., implantable pacemakers, heart valves) — Requires Premarket Approval (PMA)
+
+FDA REGISTRATION & LISTING
+- Foreign manufacturers of devices distributed in the U.S. must register with FDA annually
+- Device establishments must list their devices with FDA
+- Unregistered devices = may be detained/refused at port of entry
+
+510(k) CLEARANCE
+- Required for most Class II devices before they can be marketed in the U.S.
+- Demonstrates device is substantially equivalent to a legally marketed predicate device
+- Must obtain clearance BEFORE importing for commercial distribution
+
+PREMARKET APPROVAL (PMA)
+- Required for Class III devices
+- Most stringent pathway — requires clinical data demonstrating safety and effectiveness
+
+CBP ENTRY REQUIREMENTS
+- Standard CBP entry (formal or informal depending on value)
+- FDA reviews via ACE/ITDS — may flag for examination
+- Importer may need to provide: FDA registration number, 510(k)/PMA number, device listing info
+- Personal use importation (small quantities for personal use) — different rules apply
+
+FDA IMPORT ALERTS
+- Devices from manufacturers with compliance history may be subject to Import Alert
+- Detained shipments require proof of compliance or refusal of entry
+
+UDI (UNIQUE DEVICE IDENTIFICATION)
+- Most medical devices must bear a UDI label
+- Device must be listed in FDA's GUDID database
+
+COMMON ISSUES
+- Importing devices without 510(k) clearance (for Class II)
+- Manufacturer not registered with FDA
+- Missing or non-compliant labeling
+- Device falls under a different regulatory pathway than importer expects
+
+FreightClear can assist with CBP customs clearance for medical device imports. FDA regulatory pathway determination should be confirmed with an FDA regulatory consultant.`,
+  },
+  {
     category: "freightclear",
     title: "FreightClear Services",
     content: `FreightClear is a U.S. customs compliance service brand powered by World Class Shipping (WCS), a WCA-member freight forwarder with 38+ years of experience.

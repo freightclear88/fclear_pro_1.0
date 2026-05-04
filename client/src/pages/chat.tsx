@@ -15,6 +15,8 @@ import {
   HelpCircle,
   Car,
   Sparkles,
+  Apple,
+  Stethoscope,
 } from "lucide-react";
 
 interface Message {
@@ -33,6 +35,8 @@ const QUICK_PROMPTS = [
   { label: "De minimis rule", prompt: "Explain the de minimis rule and the $800 threshold for imports.", icon: HelpCircle },
   { label: "Read my HTS code", prompt: "How do I read and understand my HTS classification code?", icon: BookOpen },
   { label: "Import cars & vehicles", prompt: "What are the requirements for importing cars and vehicles into the USA? Include DOT and NHTSA compliance, HS security bond requirements, and current duty rates.", icon: Car },
+  { label: "FDA — Food & Perishables", prompt: "What are the FDA compliance requirements for importing food and perishable goods into the USA? Include Prior Notice, FSVP, detention/refusal procedures, and labeling requirements.", icon: Apple },
+  { label: "FDA — Medical Devices", prompt: "What are the FDA compliance requirements for importing medical devices into the USA? Include device classification, 510(k) clearance, PMA, registration requirements, and CBP entry procedures.", icon: Stethoscope },
 ];
 
 const KB_LINKS = [
