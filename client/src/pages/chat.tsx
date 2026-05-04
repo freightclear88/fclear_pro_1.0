@@ -163,6 +163,7 @@ export default function AiSupport() {
   };
 
   return (
+    <>
     <div className="container mx-auto px-4 py-6 max-w-6xl">
       {/* Header */}
       <div className="mb-6">
@@ -368,7 +369,7 @@ export default function AiSupport() {
         </div>
       </div>
     </div>
-
     <ContactForm open={contactOpen} onClose={() => setContactOpen(false)} />
+    </>
   );
 }
