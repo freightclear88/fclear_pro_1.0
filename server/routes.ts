@@ -6047,7 +6047,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (zdRes.ok) {
           const zdData = await zdRes.json() as any;
-          return res.json({ success: true, method: 'zendesk-api', ticketId: zdData?.ticket?.id });
+          const ticketId = zdData?.ticket?.id;
+          const ticketUrl = `https://wcscargo.zendesk.com/agent/tickets/${ticketId}`;
+          console.log(`[contact] Zendesk ticket created: #${ticketId} — ${ticketUrl}`);
+          return res.json({ success: true, method: 'zendesk-api', ticketId, ticketUrl });
         }
 
         const zdError = await zdRes.text();

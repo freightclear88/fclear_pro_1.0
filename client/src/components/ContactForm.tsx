@@ -36,6 +36,7 @@ export default function ContactForm({ open, onClose }: ContactFormProps) {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [ticketId, setTicketId] = useState<number | null>(null);
+  const [ticketUrl, setTicketUrl] = useState<string | null>(null);
 
   const update = (field: keyof typeof form, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -62,6 +63,7 @@ export default function ContactForm({ open, onClose }: ContactFormProps) {
       }
 
       setTicketId(data.ticketId || null);
+      setTicketUrl(data.ticketUrl || null);
       setStatus("success");
     } catch (err: any) {
       setErrorMsg(err.message || "Something went wrong. Please try again.");
@@ -100,6 +102,11 @@ export default function ContactForm({ open, onClose }: ContactFormProps) {
               Our compliance team will respond within <strong>2 business hours</strong><br />
               Mon–Fri, 9AM–7PM ET
             </p>
+            {ticketId && ticketUrl && (
+              <a href={ticketUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-freight-blue underline">
+                View in Zendesk →
+              </a>
+            )}
             {ticketId && (
               <p className="text-xs text-gray-400">Save your ticket number for reference when following up.</p>
             )}
