@@ -35,6 +35,7 @@ export default function ContactForm({ open, onClose }: ContactFormProps) {
   });
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [ticketId, setTicketId] = useState<number | null>(null);
 
   const update = (field: keyof typeof form, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -54,11 +55,13 @@ export default function ContactForm({ open, onClose }: ContactFormProps) {
         body: JSON.stringify(form),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Submission failed");
       }
 
+      setTicketId(data.ticketId || null);
       setStatus("success");
     } catch (err: any) {
       setErrorMsg(err.message || "Something went wrong. Please try again.");
@@ -87,9 +90,19 @@ export default function ContactForm({ open, onClose }: ContactFormProps) {
           <div className="py-8 text-center space-y-3">
             <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto" />
             <h3 className="text-lg font-semibold text-gray-900">Message Received!</h3>
+            {ticketId && (
+              <div className="inline-flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-lg px-4 py-2">
+                <span className="text-xs text-gray-500">Ticket #</span>
+                <span className="text-base font-bold text-freight-blue">{ticketId}</span>
+              </div>
+            )}
             <p className="text-sm text-gray-600">
-              Our compliance team will respond within <strong>2 business hours</strong> (Mon–Fri, 9AM–7PM ET).
+              Our compliance team will respond within <strong>2 business hours</strong><br />
+              Mon–Fri, 9AM–7PM ET
             </p>
+            {ticketId && (
+              <p className="text-xs text-gray-400">Save your ticket number for reference when following up.</p>
+            )}
             <Button onClick={handleClose} className="mt-2 bg-freight-blue hover:bg-freight-blue/90 text-white">
               Close
             </Button>
