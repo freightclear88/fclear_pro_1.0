@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { ensureKnowledgeBaseTable } from "./aiSupport";
 
 const app = express();
 app.use(express.json());
@@ -38,6 +39,9 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // Ensure AI Support knowledge_base table exists
+  await ensureKnowledgeBaseTable();
   
   // Initialize XML scheduler after routes are set up
   try {

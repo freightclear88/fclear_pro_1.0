@@ -11,9 +11,29 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { knowledgeBase } from "@shared/schema";
 import { eq } from "drizzle-orm";
+
+// Ensure the knowledge_base table exists (runs once at startup)
+export async function ensureKnowledgeBaseTable(): Promise<void> {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS knowledge_base (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        category VARCHAR(64) NOT NULL DEFAULT 'general',
+        content TEXT NOT NULL,
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    console.log('[kb] knowledge_base table ready');
+  } catch (err) {
+    console.error('[kb] Failed to ensure knowledge_base table:', err);
+  }
+}
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
