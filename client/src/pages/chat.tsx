@@ -13,7 +13,6 @@ import {
   AlertTriangle,
   Globe,
   Sparkles,
-  ExternalLink,
 } from "lucide-react";
 
 interface Message {
@@ -25,11 +24,31 @@ interface Message {
 
 
 const KB_LINKS = [
-  { label: "Duty Rate Tables", href: "https://freightclear.com", icon: Calculator },
-  { label: "HTS Code Lookup Guide", href: "https://freightclear.com", icon: BookOpen },
-  { label: "ISF Filing Checklist", href: "https://freightclear.com", icon: FileText },
-  { label: "Section 301 Tariff Updates", href: "https://freightclear.com", icon: AlertTriangle },
-  { label: "FreightClear Services", href: "https://freightclear.com", icon: Globe },
+  {
+    label: "Duty Rate Tables",
+    prompt: "What are the current US import duty rates? Give me an overview of how duty rates are structured and where to look them up.",
+    icon: Calculator,
+  },
+  {
+    label: "HTS Code Lookup Guide",
+    prompt: "How do I look up and read an HTS classification code? Walk me through the structure of an HTS code and how to find the right one for my product.",
+    icon: BookOpen,
+  },
+  {
+    label: "ISF Filing Checklist",
+    prompt: "Give me a complete ISF 10+2 filing checklist — what information do I need, what are the deadlines, and what are the penalties for non-compliance?",
+    icon: FileText,
+  },
+  {
+    label: "Section 301 Tariff Updates",
+    prompt: "What are the latest Section 301 tariff updates for goods from China? What products are affected and what are the current rates?",
+    icon: AlertTriangle,
+  },
+  {
+    label: "Import Cars & Vehicles",
+    prompt: "What are the requirements for importing cars and vehicles into the USA? Include DOT, NHTSA compliance, bond requirements, and current duty rates.",
+    icon: Globe,
+  },
 ];
 
 export default function AiSupport() {
@@ -232,18 +251,18 @@ export default function AiSupport() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
+              <p className="text-xs text-gray-400 mb-3">Click a topic to ask the AI assistant</p>
               {KB_LINKS.map((link) => (
-                <a
+                <button
                   key={link.label}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 p-2.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all group text-sm text-gray-700"
+                  onClick={() => sendMessage(link.prompt)}
+                  disabled={isLoading}
+                  className="w-full flex items-center gap-2 p-2.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all group text-sm text-gray-700 text-left disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <link.icon className="w-4 h-4 text-freight-blue flex-shrink-0" />
                   <span className="flex-1">{link.label}</span>
-                  <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-freight-blue flex-shrink-0" />
-                </a>
+                  <Send className="w-3 h-3 text-gray-300 group-hover:text-freight-blue flex-shrink-0" />
+                </button>
               ))}
             </CardContent>
           </Card>
