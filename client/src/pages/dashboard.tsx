@@ -11,7 +11,7 @@ import ShipmentDetail from "@/components/ShipmentDetail";
 import CreateShipmentDialog from "@/components/CreateShipmentDialog";
 import NotificationDropdown from "@/components/NotificationDropdown";
 
-import { Ship, FileText, CheckCircle, Plus, Bell, FileUp, ChevronLeft, ChevronRight, Clock, DollarSign, AlertCircle, FolderOpen, File } from "lucide-react";
+import { Ship, FileText, CheckCircle, Plus, Bell, FileUp, ChevronLeft, ChevronRight, Clock, DollarSign, AlertCircle, FolderOpen, File, Bot, Shield, Zap, Globe, ArrowRight, Award } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
@@ -111,64 +111,109 @@ export default function Dashboard() {
 
   return (
     <div className="p-3 lg:p-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 lg:mb-8 space-y-4 lg:space-y-0">
-        <div>
-          <h2 className="text-xl lg:text-2xl font-bold text-freight-dark">Dashboard</h2>
-          <p className="text-gray-600 text-sm lg:text-base">
-            Welcome back, {user?.firstName || "User"}
-          </p>
-        </div>
-        <div className="flex justify-end">
-          <NotificationDropdown />
-        </div>
+      {/* Top bar: welcome + notifications */}
+      <div className="flex justify-between items-center mb-5">
+        <p className="text-sm text-gray-500">Welcome back, <span className="font-medium text-freight-dark">{user?.firstName || 'there'}</span></p>
+        <NotificationDropdown />
       </div>
 
-      {/* Multi-Document Processing Feature Highlight */}
-      <Card className="gradient-primary border-0 mb-6 lg:mb-8">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h1 className="text-2xl lg:text-3xl font-bold text-white mb-3 flex items-center">
-                <FileUp className="w-7 h-7 mr-3" />
-                Create Shipment
-              </h1>
-              <h3 className="text-xl font-semibold text-white mb-3">
-                Comprehensive Multi-Document Processing
-              </h3>
-              <p className="text-blue-100 mb-4 text-sm lg:text-base">
-                Upload multiple shipping documents simultaneously (Bill of Lading, Commercial Invoice, 
-                Packing List, etc.) and our intelligent processing system will automatically extract and consolidate all relevant 
-                data to create complete shipments with comprehensive information from all documents.
-              </p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <Badge className="bg-white/20 text-white border-white/30">Bill of Lading</Badge>
-                <Badge className="bg-white/20 text-white border-white/30">Commercial Invoice</Badge>
-                <Badge className="bg-white/20 text-white border-white/30">Packing List</Badge>
-                <Badge className="bg-white/20 text-white border-white/30">Arrival Notice</Badge>
-                <Badge className="bg-white/20 text-white border-white/30">+ More</Badge>
-              </div>
-            </div>
-            <div className="hidden lg:block">
-              <DocumentUpload 
-                trigger={
-                  <Button className="bg-white text-freight-blue hover:bg-gray-100">
-                    <FileUp className="w-4 h-4 mr-2" />
-                    Multi-Document Upload
-                  </Button>
-                }
-                onShipmentCreated={(shipment) => {
-                  queryClient.invalidateQueries({ queryKey: ["/api/shipments"] });
-                  queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-                  setTimeout(() => {
-                    window.location.reload();
-                  }, 1000);
-                }} 
-              />
+      {/* ─── HERO SECTION ────────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-2xl mb-6 lg:mb-8" style={{ background: 'linear-gradient(135deg, #0f2a4a 0%, #1a4068 50%, #0d7a70 100%)' }}>
+        {/* Background decoration */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, #4ecdc4 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
+          <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, #2196f3 0%, transparent 70%)', transform: 'translate(-30%, 30%)' }} />
+        </div>
+
+        <div className="relative z-10 p-6 lg:p-8">
+          {/* Brand header */}
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-full px-3 py-1">
+              <Award className="w-3.5 h-3.5 text-teal-300" />
+              <span className="text-xs text-teal-200 font-medium">World Class Shipping — 38+ Years of Expertise</span>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex-1">
+              <h1 className="text-2xl lg:text-4xl font-bold text-white leading-tight mb-2">
+                U.S. Import Compliance,
+                <span className="block text-teal-300">Simplified.</span>
+              </h1>
+              <p className="text-blue-200 text-sm lg:text-base max-w-xl leading-relaxed">
+                FreightClear is your all-in-one platform for customs clearance, ISF filing, 
+                document management, and trade compliance — powered by licensed customs brokers 
+                with decades of experience.
+              </p>
+
+              {/* Feature tiles */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-5">
+                {[
+                  { icon: FileText, label: 'ISF Filing', desc: '10+2 compliance', href: '/fastisf' },
+                  { icon: Ship, label: 'Shipment Tracking', desc: 'Real-time status', href: '/shipments' },
+                  { icon: Bot, label: 'AI Support', desc: 'Duty & tariff help', href: '/chat' },
+                  { icon: FolderOpen, label: 'Document Vault', desc: 'Secure storage', href: '/documents' },
+                  { icon: Shield, label: 'Customs Clearance', desc: 'CBP compliant', href: '/chat' },
+                  { icon: Zap, label: 'Fast Processing', desc: 'AI-powered OCR', href: '/shipments' },
+                ].map((item) => (
+                  <Link key={item.label} href={item.href}>
+                    <div className="flex items-start gap-2 bg-white/8 hover:bg-white/15 border border-white/10 hover:border-white/25 rounded-xl p-3 cursor-pointer transition-all group">
+                      <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-teal-500/30 flex items-center justify-center">
+                        <item.icon className="w-3.5 h-3.5 text-teal-200" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-white leading-tight">{item.label}</p>
+                        <p className="text-[11px] text-blue-300 leading-tight mt-0.5">{item.desc}</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Right side: upload CTA + stats */}
+            <div className="flex flex-col gap-3 lg:min-w-[220px]">
+              {/* Multi-doc upload */}
+              <div className="bg-white/10 border border-white/20 rounded-xl p-4">
+                <p className="text-white font-semibold text-sm mb-1 flex items-center gap-1.5">
+                  <FileUp className="w-4 h-4 text-teal-300" /> Smart Document Upload
+                </p>
+                <p className="text-blue-200 text-xs mb-3">Upload BOL, Invoice, Packing List — AI extracts data automatically.</p>
+                <DocumentUpload
+                  trigger={
+                    <Button className="w-full bg-teal-500 hover:bg-teal-400 text-white font-semibold text-sm">
+                      <FileUp className="w-4 h-4 mr-2" /> Upload Documents
+                    </Button>
+                  }
+                  onShipmentCreated={() => {
+                    queryClient.invalidateQueries({ queryKey: ["/api/shipments"] });
+                    queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+                    setTimeout(() => window.location.reload(), 1000);
+                  }}
+                />
+              </div>
+
+              {/* Quick stat boxes */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-white/8 border border-white/10 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-white">{stats?.activeShipments || 0}</p>
+                  <p className="text-[11px] text-blue-300">Active Shipments</p>
+                </div>
+                <div className="bg-white/8 border border-white/10 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-white">{docStats?.total || 0}</p>
+                  <p className="text-[11px] text-blue-300">Documents</p>
+                </div>
+              </div>
+
+              {/* WCA badge */}
+              <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center gap-2">
+                <Globe className="w-4 h-4 text-teal-300 flex-shrink-0" />
+                <p className="text-[11px] text-blue-200">WCA Network Member — Global freight expertise in 100+ countries</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Stats Cards with Recent Activity */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
