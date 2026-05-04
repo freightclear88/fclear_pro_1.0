@@ -10,11 +10,13 @@
  */
 
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { db, pool } from "./db";
 import { knowledgeBase } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ─── Ensure DB Table ──────────────────────────────────────────────────────────
 
@@ -294,9 +296,37 @@ async function searchLocalKB(query: string): Promise<string> {
   }
 }
 
-// ─── OpenAI Tool Definitions ──────────────────────────────────────────────────
+// ─── Tool Definitions ───────────────────────────────────────────────────────
+// Dual format: Anthropic tool_use + OpenAI function calling (fallback)
 
-const TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
+const ANTHROPIC_TOOLS: Anthropic.Tool[] = [
+  {
+    name: "web_search",
+    description:
+      "Search the web for live, up-to-date information: current HTS codes, duty rates, CBP announcements, Federal Register tariff updates, Section 301 lists, UFLPA entity list updates. Use this for any question involving specific rates or recent regulatory changes.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        query: { type: "string", description: "Specific search query, e.g. 'HTS 8471.30 duty rate China Section 301 2025'" },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "search_knowledge_base",
+    description:
+      "Search FreightClear's internal knowledge base for company services, ISF requirements, UFLPA overview, de minimis rules, HTS code structure, vehicle import requirements.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        query: { type: "string", description: "Keywords to search, e.g. 'ISF filing deadline'" },
+      },
+      required: ["query"],
+    },
+  },
+];
+
+const OPENAI_TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
@@ -356,62 +386,101 @@ export interface AiSupportMessage {
   content: string;
 }
 
-export async function handleAiSupportQuery(
-  userMessage: string,
-  history: AiSupportMessage[] = []
-): Promise<string> {
+async function executeToolCall(name: string, query: string): Promise<string> {
+  if (name === "web_search") return webSearch(query);
+  if (name === "search_knowledge_base") return searchLocalKB(query);
+  return `Unknown tool: ${name}`;
+}
+
+// Claude (primary)
+async function handleWithClaude(userMessage: string, history: AiSupportMessage[]): Promise<string> {
+  const messages: Anthropic.MessageParam[] = [
+    ...history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+    { role: "user", content: userMessage },
+  ];
+
+  const anthropicTools: Anthropic.Tool[] = [
+    {
+      name: "web_search",
+      description: "Search the web for live HTS codes, duty rates, CBP announcements, Federal Register tariff updates, Section 301 lists. Use for any question about specific rates or recent regulatory changes.",
+      input_schema: { type: "object" as const, properties: { query: { type: "string" } }, required: ["query"] },
+    },
+    {
+      name: "search_knowledge_base",
+      description: "Search FreightClear's internal knowledge base for ISF requirements, customs procedures, UFLPA, de minimis rules, HTS structure, vehicle imports, and FreightClear services.",
+      input_schema: { type: "object" as const, properties: { query: { type: "string" } }, required: ["query"] },
+    },
+  ];
+
+  let current = [...messages];
+  for (let round = 0; round < 5; round++) {
+    const response = await anthropic.messages.create({
+      model: "claude-3-5-haiku-20241022",
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
+      tools: anthropicTools,
+      messages: current,
+    });
+
+    if (response.stop_reason === "end_turn") {
+      const text = response.content.find((b) => b.type === "text");
+      return text ? (text as Anthropic.TextBlock).text : "I was unable to generate a response.";
+    }
+
+    if (response.stop_reason === "tool_use") {
+      const toolBlocks = response.content.filter((b) => b.type === "tool_use") as Anthropic.ToolUseBlock[];
+      current.push({ role: "assistant", content: response.content });
+      const results: Anthropic.ToolResultBlockParam[] = await Promise.all(
+        toolBlocks.map(async (t) => ({
+          type: "tool_result" as const,
+          tool_use_id: t.id,
+          content: await executeToolCall(t.name, (t.input as { query: string }).query),
+        }))
+      );
+      current.push({ role: "user", content: results });
+      continue;
+    }
+    break;
+  }
+  return "I was unable to complete your request. Please try rephrasing your question.";
+}
+
+// OpenAI gpt-4o-mini (fallback if ANTHROPIC_API_KEY not set)
+async function handleWithOpenAI(userMessage: string, history: AiSupportMessage[]): Promise<string> {
+  const openaiTools: OpenAI.Chat.ChatCompletionTool[] = [
+    { type: "function", function: { name: "web_search", description: "Search the web for live tariff/duty info.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
+    { type: "function", function: { name: "search_knowledge_base", description: "Search FreightClear KB.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
+  ];
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM_PROMPT },
     ...history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
     { role: "user", content: userMessage },
   ];
-
-  // Agentic loop: let the model call tools until it finishes
   for (let round = 0; round < 5; round++) {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages,
-      tools: TOOLS,
-      tool_choice: "auto",
-      max_tokens: 1024,
-    });
-
-    const choice = response.choices[0];
-
-    if (choice.finish_reason === "stop") {
-      return choice.message.content ?? "I was unable to generate a response. Please try again.";
-    }
-
+    const res = await openai.chat.completions.create({ model: "gpt-4o-mini", messages, tools: openaiTools, tool_choice: "auto", max_tokens: 1024 });
+    const choice = res.choices[0];
+    if (choice.finish_reason === "stop") return choice.message.content ?? "I was unable to generate a response.";
     if (choice.finish_reason === "tool_calls" && choice.message.tool_calls?.length) {
       messages.push(choice.message);
-
-      // Execute all tool calls
-      for (const toolCall of choice.message.tool_calls) {
-        let result: string;
-        try {
-          const args = JSON.parse(toolCall.function.arguments) as { query: string };
-          if (toolCall.function.name === "web_search") {
-            result = await webSearch(args.query);
-          } else if (toolCall.function.name === "search_knowledge_base") {
-            result = await searchLocalKB(args.query);
-          } else {
-            result = `Unknown tool: ${toolCall.function.name}`;
-          }
-        } catch (err) {
-          result = `Tool error: ${String(err)}`;
-        }
-
-        messages.push({
-          role: "tool",
-          tool_call_id: toolCall.id,
-          content: result,
-        });
+      for (const tc of choice.message.tool_calls) {
+        const args = JSON.parse(tc.function.arguments) as { query: string };
+        messages.push({ role: "tool", tool_call_id: tc.id, content: await executeToolCall(tc.function.name, args.query) });
       }
       continue;
     }
-
     break;
   }
-
   return "I was unable to complete your request. Please try rephrasing your question.";
+}
+
+export async function handleAiSupportQuery(
+  userMessage: string,
+  history: AiSupportMessage[] = []
+): Promise<string> {
+  if (process.env.ANTHROPIC_API_KEY) {
+    console.log("[ai-support] Using Claude claude-3-5-haiku-20241022");
+    return handleWithClaude(userMessage, history);
+  }
+  console.log("[ai-support] ANTHROPIC_API_KEY not set — falling back to OpenAI gpt-4o-mini");
+  return handleWithOpenAI(userMessage, history);
 }
