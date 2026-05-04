@@ -126,14 +126,6 @@ export default function Dashboard() {
         </div>
 
         <div className="relative z-10 p-6 lg:p-8">
-          {/* Brand header */}
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-full px-3 py-1">
-              <Award className="w-3.5 h-3.5 text-teal-300" />
-              <span className="text-xs text-teal-200 font-medium">World Class Shipping — 38+ Years of Expertise</span>
-            </div>
-          </div>
-
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="flex-1">
               <h1 className="text-2xl lg:text-4xl font-bold text-white leading-tight mb-2">

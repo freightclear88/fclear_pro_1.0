@@ -67,7 +67,9 @@ export default function Shipments() {
   return (
     <div className="space-y-4 lg:space-y-8">
       {/* Multi-Document Processing Feature Highlight */}
-      <Card className="gradient-primary border-0 mb-6 lg:mb-8">
+      <div className="relative overflow-hidden rounded-2xl border-0 mb-6 lg:mb-8" style={{ background: 'linear-gradient(135deg, #0f2a4a 0%, #1a4068 50%, #0d7a70 100%)' }}>
+      <div className="absolute inset-0 opacity-10"><div className="absolute top-0 right-0 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, #4ecdc4 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} /></div>
+      <div className="relative z-10">
         <CardContent className="p-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -110,7 +112,7 @@ export default function Shipments() {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </div></div>
 
       {/* How Multi-Document Processing Works */}
       <Card className="mb-6 lg:mb-8 border-gray-200">

@@ -236,26 +236,27 @@ export default function DocumentsPage() {
   return (
     <div className="space-y-6 lg:space-y-8">
       {/* Header */}
-      <Card className="gradient-primary border-0 mb-2">
-        <CardContent className="p-6">
+      <div className="relative overflow-hidden rounded-2xl mb-4" style={{ background: 'linear-gradient(135deg, #0f2a4a 0%, #1a4068 50%, #0d7a70 100%)' }}>
+        <div className="absolute inset-0 opacity-10"><div className="absolute top-0 right-0 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, #4ecdc4 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} /></div>
+        <div className="relative z-10 p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold text-white mb-1 flex items-center gap-2">
                 <FolderOpen className="w-7 h-7" /> Documents
               </h1>
-              <p className="text-blue-100 text-sm">
+              <p className="text-blue-200 text-sm">
                 Manage your shipping documents, compliance files, and templates
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <div className="bg-white/20 rounded-lg px-4 py-2 text-center">
-                <p className="text-white text-xl font-bold">{(docStats as any)?.total || 0}</p>
-                <p className="text-blue-100 text-xs">Total Documents</p>
+              <div className="bg-white/15 border border-white/20 rounded-xl px-5 py-3 text-center">
+                <p className="text-white text-2xl font-bold">{(docStats as any)?.total || 0}</p>
+                <p className="text-blue-200 text-xs">Total Documents</p>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Tabs */}
       <Tabs defaultValue="shipment" className="w-full">
