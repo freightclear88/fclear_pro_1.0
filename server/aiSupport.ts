@@ -479,63 +479,40 @@ export interface AiSupportMessage {
   content: string;
 }
 
-async function executeToolCall(name: string, query: string): Promise<string> {
-  if (name === "web_search") return webSearch(query);
-  if (name === "search_knowledge_base") return searchLocalKB(query);
-  return `Unknown tool: ${name}`;
-}
-
-// Claude (primary)
+// Claude (primary) — pre-fetch context, then single Claude call (no tool loop needed)
 async function handleWithClaude(userMessage: string, history: AiSupportMessage[]): Promise<string> {
+  // Pre-fetch web search and KB in parallel
+  const [webResults, kbResults] = await Promise.allSettled([
+    webSearch(userMessage),
+    searchLocalKB(userMessage),
+  ]);
+
+  const webContext = webResults.status === 'fulfilled' ? webResults.value : '';
+  const kbContext = kbResults.status === 'fulfilled' ? kbResults.value : '';
+
+  const contextBlock = [
+    kbContext ? `## FreightClear Knowledge Base\n${kbContext}` : '',
+    webContext ? `## Live Web Search Results\n${webContext}` : '',
+  ].filter(Boolean).join('\n\n');
+
+  const augmentedMessage = contextBlock
+    ? `${userMessage}\n\n---\nContext retrieved for this question:\n${contextBlock}`
+    : userMessage;
+
   const messages: Anthropic.MessageParam[] = [
     ...history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
-    { role: "user", content: userMessage },
+    { role: "user", content: augmentedMessage },
   ];
 
-  const anthropicTools: Anthropic.Tool[] = [
-    {
-      name: "web_search",
-      description: "Search the web for live HTS codes, duty rates, CBP announcements, Federal Register tariff updates, Section 301 lists. Use for any question about specific rates or recent regulatory changes.",
-      input_schema: { type: "object" as const, properties: { query: { type: "string" } }, required: ["query"] },
-    },
-    {
-      name: "search_knowledge_base",
-      description: "Search FreightClear's internal knowledge base for ISF requirements, customs procedures, UFLPA, de minimis rules, HTS structure, vehicle imports, and FreightClear services.",
-      input_schema: { type: "object" as const, properties: { query: { type: "string" } }, required: ["query"] },
-    },
-  ];
+  const response = await anthropic.messages.create({
+    model: "claude-haiku-4-5",
+    max_tokens: 1024,
+    system: SYSTEM_PROMPT,
+    messages,
+  });
 
-  let current = [...messages];
-  for (let round = 0; round < 5; round++) {
-    const response = await anthropic.messages.create({
-      model: "claude-haiku-4-5",
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      tools: anthropicTools,
-      messages: current,
-    });
-
-    if (response.stop_reason === "end_turn") {
-      const text = response.content.find((b) => b.type === "text");
-      return text ? (text as Anthropic.TextBlock).text : "I was unable to generate a response.";
-    }
-
-    if (response.stop_reason === "tool_use") {
-      const toolBlocks = response.content.filter((b) => b.type === "tool_use") as Anthropic.ToolUseBlock[];
-      current.push({ role: "assistant", content: response.content });
-      const results: Anthropic.ToolResultBlockParam[] = await Promise.all(
-        toolBlocks.map(async (t) => ({
-          type: "tool_result" as const,
-          tool_use_id: t.id,
-          content: await executeToolCall(t.name, (t.input as { query: string }).query),
-        }))
-      );
-      current.push({ role: "user", content: results });
-      continue;
-    }
-    break;
-  }
-  return "I was unable to complete your request. Please try rephrasing your question.";
+  const text = response.content.find((b) => b.type === "text");
+  return text ? (text as Anthropic.TextBlock).text : "I was unable to generate a response.";
 }
 
 // OpenAI gpt-4o-mini (fallback if ANTHROPIC_API_KEY not set)
