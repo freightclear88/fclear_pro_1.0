@@ -6010,7 +6010,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'name, email, and message are required' });
       }
 
-      const ticketSubject = subject || `FreightClear Contact: ${category || 'General'} — ${name}`;
+      const ticketSubject = 'Freightclear.ai Contact';
       const ticketBody = [
         `Name: ${name}`,
         `Email: ${email}`,
