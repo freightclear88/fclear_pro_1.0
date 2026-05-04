@@ -570,10 +570,12 @@ export async function handleAiSupportQuery(
   userMessage: string,
   history: AiSupportMessage[] = []
 ): Promise<string> {
-  if (process.env.ANTHROPIC_API_KEY) {
-    console.log("[ai-support] Using Claude claude-3-5-haiku-20241022");
+  // OpenAI gpt-4o-mini is the active model (confirmed working)
+  // Claude is available as upgrade once Anthropic console.anthropic.com API key is obtained
+  if (process.env.ANTHROPIC_API_KEY && process.env.USE_CLAUDE === 'true') {
+    console.log("[ai-support] Using Claude claude-3-haiku-20240307");
     return handleWithClaude(userMessage, history);
   }
-  console.log("[ai-support] ANTHROPIC_API_KEY not set — falling back to OpenAI gpt-4o-mini");
+  console.log("[ai-support] Using OpenAI gpt-4o-mini");
   return handleWithOpenAI(userMessage, history);
 }
