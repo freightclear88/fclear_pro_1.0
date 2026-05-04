@@ -11,6 +11,9 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import { db } from "./db";
+import { knowledgeBase } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -20,7 +23,7 @@ const anthropic = new Anthropic({
 // Seed content for FreightClear-specific knowledge.
 // Phase 2 will move this to pgvector in Postgres for full CRUD management.
 
-const LOCAL_KNOWLEDGE: { category: string; title: string; content: string }[] = [
+export const LOCAL_KNOWLEDGE: { category: string; title: string; content: string }[] = [
   {
     category: "isf",
     title: "ISF 10+2 Filing Requirements",
@@ -265,20 +268,45 @@ async function webSearch(query: string): Promise<string> {
 
 // ─── Local KB Search ─────────────────────────────────────────────────────────
 
-function searchLocalKB(query: string): string {
+async function searchLocalKB(query: string): Promise<string> {
   const q = query.toLowerCase();
-  const matches = LOCAL_KNOWLEDGE.filter(
-    (entry) =>
-      entry.title.toLowerCase().includes(q) ||
-      entry.content.toLowerCase().split(" ").some((word) => q.includes(word.replace(/[^a-z]/g, "")))
-  );
 
-  if (matches.length === 0) return "No matching entries found in local knowledge base.";
+  // Try DB first
+  try {
+    const dbEntries = await db
+      .select()
+      .from(knowledgeBase)
+      .where(eq(knowledgeBase.isActive, true));
 
-  return matches
-    .slice(0, 3)
-    .map((m) => `## ${m.title}\n${m.content}`)
-    .join("\n\n---\n\n");
+    const allEntries = dbEntries.length > 0
+      ? dbEntries.map((e) => ({ title: e.title, content: e.content, category: e.category }))
+      : LOCAL_KNOWLEDGE;
+
+    const matches = allEntries.filter(
+      (entry) =>
+        entry.title.toLowerCase().includes(q) ||
+        entry.content.toLowerCase().split(" ").some((word) => q.includes(word.replace(/[^a-z]/g, "")))
+    );
+
+    if (matches.length === 0) return "No matching entries found in local knowledge base.";
+
+    return matches
+      .slice(0, 3)
+      .map((m) => `## ${m.title}\n${m.content}`)
+      .join("\n\n---\n\n");
+  } catch {
+    // Fallback to static KB if DB unavailable
+    const matches = LOCAL_KNOWLEDGE.filter(
+      (entry) =>
+        entry.title.toLowerCase().includes(q) ||
+        entry.content.toLowerCase().split(" ").some((word) => q.includes(word.replace(/[^a-z]/g, "")))
+    );
+    if (matches.length === 0) return "No matching entries found in local knowledge base.";
+    return matches
+      .slice(0, 3)
+      .map((m) => `## ${m.title}\n${m.content}`)
+      .join("\n\n---\n\n");
+  }
 }
 
 // ─── Tool Definitions ─────────────────────────────────────────────────────────
@@ -398,7 +426,7 @@ export async function handleAiSupportQuery(
             if (toolUse.name === "web_search") {
               result = await webSearch(input.query);
             } else if (toolUse.name === "search_knowledge_base") {
-              result = searchLocalKB(input.query);
+              result = await searchLocalKB(input.query);
             } else {
               result = `Unknown tool: ${toolUse.name}`;
             }

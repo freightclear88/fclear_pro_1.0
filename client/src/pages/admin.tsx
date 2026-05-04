@@ -10,7 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle, Receipt, ChevronDown, ChevronRight, ChevronLeft, Folder, CreditCard, Crown, Zap, Eye, Plus, ExternalLink, Settings, Loader2 } from "lucide-react";
+import { Shield, Download, Copy, Search, Calendar, FileText, Ship, Users, CheckCircle, XCircle, Receipt, ChevronDown, ChevronRight, ChevronLeft, Folder, CreditCard, Crown, Zap, Eye, Plus, ExternalLink, Settings, Loader2, BookOpen, Bot, Trash2, Pencil, ToggleLeft, ToggleRight, Database } from "lucide-react";
 import type { Shipment, Document, User } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -111,6 +111,283 @@ function SubscriptionUpgradeDialog({ user, subscriptionPlans, onUpgrade, isPendi
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ─── Knowledge Base Manager Component ───────────────────────────────────────
+interface KbEntry {
+  id: number;
+  title: string;
+  category: string;
+  content: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const KB_CATEGORIES = ['general', 'tariffs', 'isf', 'hts', 'compliance', 'vehicles', 'freightclear'];
+
+function KnowledgeBaseManager() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [editingEntry, setEditingEntry] = useState<KbEntry | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newEntry, setNewEntry] = useState({ title: '', category: 'general', content: '' });
+
+  const { data: kbEntries = [], isLoading } = useQuery<KbEntry[]>({
+    queryKey: ['/api/admin/knowledge-base'],
+  });
+
+  const seedMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/admin/knowledge-base/seed', {});
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/knowledge-base'] });
+      toast({ title: data.seeded ? `Seeded ${data.count} entries` : 'Already seeded', description: data.message });
+    },
+    onError: () => toast({ title: 'Seed failed', variant: 'destructive' }),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (entry: typeof newEntry) => {
+      const res = await apiRequest('POST', '/api/admin/knowledge-base', entry);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/knowledge-base'] });
+      setIsAdding(false);
+      setNewEntry({ title: '', category: 'general', content: '' });
+      toast({ title: 'Article added' });
+    },
+    onError: () => toast({ title: 'Failed to add article', variant: 'destructive' }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (entry: KbEntry) => {
+      const res = await apiRequest('PUT', `/api/admin/knowledge-base/${entry.id}`, entry);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/knowledge-base'] });
+      setEditingEntry(null);
+      toast({ title: 'Article updated' });
+    },
+    onError: () => toast({ title: 'Failed to update article', variant: 'destructive' }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest('DELETE', `/api/admin/knowledge-base/${id}`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/knowledge-base'] });
+      toast({ title: 'Article deleted' });
+    },
+    onError: () => toast({ title: 'Failed to delete article', variant: 'destructive' }),
+  });
+
+  const toggleActive = (entry: KbEntry) => {
+    updateMutation.mutate({ ...entry, isActive: !entry.isActive });
+  };
+
+  return (
+    <Card className="mt-8">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-gradient-to-br from-freight-blue to-freight-green p-2 rounded-lg">
+              <Bot className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <CardTitle>AI Support Knowledge Base</CardTitle>
+              <CardDescription>Manage articles used by the AI Support assistant to answer customer questions</CardDescription>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {kbEntries.length === 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => seedMutation.mutate()}
+                disabled={seedMutation.isPending}
+              >
+                {seedMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Database className="w-4 h-4 mr-1" />}
+                Seed Defaults
+              </Button>
+            )}
+            <Button
+              size="sm"
+              className="bg-freight-blue hover:bg-freight-blue/90 text-white"
+              onClick={() => setIsAdding(true)}
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Add Article
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {/* Add Article Form */}
+        {isAdding && (
+          <div className="mb-6 p-4 border border-blue-200 rounded-lg bg-blue-50 space-y-3">
+            <h4 className="font-medium text-freight-dark flex items-center gap-2">
+              <Plus className="w-4 h-4" /> New Knowledge Base Article
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs mb-1 block">Title</Label>
+                <Input
+                  placeholder="Article title"
+                  value={newEntry.title}
+                  onChange={(e) => setNewEntry({ ...newEntry, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block">Category</Label>
+                <Select value={newEntry.category} onValueChange={(v) => setNewEntry({ ...newEntry, category: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {KB_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block">Content</Label>
+              <textarea
+                className="w-full h-32 p-2 text-sm border rounded-md resize-y focus:outline-none focus:ring-2 focus:ring-freight-blue"
+                placeholder="Article content — this is what the AI reads when answering customer questions"
+                value={newEntry.content}
+                onChange={(e) => setNewEntry({ ...newEntry, content: e.target.value })}
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setIsAdding(false)}>Cancel</Button>
+              <Button
+                size="sm"
+                className="bg-freight-blue hover:bg-freight-blue/90 text-white"
+                onClick={() => createMutation.mutate(newEntry)}
+                disabled={!newEntry.title || !newEntry.content || createMutation.isPending}
+              >
+                {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Article'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Article List */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8 text-gray-400">
+            <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading knowledge base...
+          </div>
+        ) : kbEntries.length === 0 ? (
+          <div className="text-center py-10 text-gray-500">
+            <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+            <p className="font-medium">No articles yet</p>
+            <p className="text-sm mt-1">Click &quot;Seed Defaults&quot; to load the built-in articles, or add your own.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {kbEntries.map((entry) => (
+              <div key={entry.id} className={`border rounded-lg overflow-hidden ${entry.isActive ? '' : 'opacity-60'}`}>
+                {editingEntry?.id === entry.id ? (
+                  // Edit mode
+                  <div className="p-4 bg-yellow-50 space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs mb-1 block">Title</Label>
+                        <Input
+                          value={editingEntry.title}
+                          onChange={(e) => setEditingEntry({ ...editingEntry, title: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs mb-1 block">Category</Label>
+                        <Select value={editingEntry.category} onValueChange={(v) => setEditingEntry({ ...editingEntry, category: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {KB_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs mb-1 block">Content</Label>
+                      <textarea
+                        className="w-full h-40 p-2 text-sm border rounded-md resize-y focus:outline-none focus:ring-2 focus:ring-freight-blue"
+                        value={editingEntry.content}
+                        onChange={(e) => setEditingEntry({ ...editingEntry, content: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" size="sm" onClick={() => setEditingEntry(null)}>Cancel</Button>
+                      <Button
+                        size="sm"
+                        className="bg-freight-blue hover:bg-freight-blue/90 text-white"
+                        onClick={() => updateMutation.mutate(editingEntry)}
+                        disabled={updateMutation.isPending}
+                      >
+                        {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  // View mode
+                  <div className="flex items-start gap-3 p-4">
+                    <BookOpen className="w-4 h-4 mt-0.5 text-freight-blue flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-sm text-gray-900 truncate">{entry.title}</span>
+                        <Badge variant="outline" className="text-xs capitalize flex-shrink-0">{entry.category}</Badge>
+                        {entry.isActive
+                          ? <Badge className="text-xs bg-green-100 text-green-700 border-green-200 flex-shrink-0">Active</Badge>
+                          : <Badge variant="outline" className="text-xs text-gray-400 flex-shrink-0">Inactive</Badge>
+                        }
+                      </div>
+                      <p className="text-xs text-gray-500 line-clamp-2">{entry.content.slice(0, 120)}...</p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => toggleActive(entry)}
+                        className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                        title={entry.isActive ? 'Deactivate' : 'Activate'}
+                      >
+                        {entry.isActive
+                          ? <ToggleRight className="w-4 h-4 text-green-500" />
+                          : <ToggleLeft className="w-4 h-4" />}
+                      </button>
+                      <button
+                        onClick={() => setEditingEntry(entry)}
+                        className="p-1.5 rounded hover:bg-blue-50 text-gray-400 hover:text-freight-blue transition-colors"
+                        title="Edit"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete "${entry.title}"?`)) deleteMutation.mutate(entry.id);
+                        }}
+                        className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p className="text-xs text-gray-400 mt-4">
+          {kbEntries.length} article{kbEntries.length !== 1 ? 's' : ''} • Active articles are used by the AI assistant. Inactive articles are ignored.
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1072,88 +1349,8 @@ export default function Admin() {
         </CardContent>
       </Card>
 
-      {/* Admin Support System */}
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <div className="bg-gradient-to-br from-freight-blue to-freight-green p-2 rounded-lg mr-3">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
-            Admin Support System
-          </CardTitle>
-          <CardDescription>
-            Centralized support management and user communication hub
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 border rounded-lg bg-gradient-to-br from-blue-50 to-indigo-100">
-              <h4 className="font-medium mb-2 flex items-center">
-                <Shield className="w-4 h-4 mr-2 text-blue-600" />
-                Support Channels
-              </h4>
-              <p className="text-sm text-gray-600 mb-3">
-                Professional chat support system ready for integration
-              </p>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span>TalkJS Integration</span>
-                  <Badge variant="outline" className="text-amber-600 border-amber-600">Pending Setup</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Email Notifications</span>
-                  <Badge variant="outline" className="text-green-600 border-green-600">Active</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Admin Channels</span>
-                  <Badge variant="outline" className="text-blue-600 border-blue-600">Ready</Badge>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-4 border rounded-lg bg-gradient-to-br from-green-50 to-emerald-100">
-              <h4 className="font-medium mb-2 flex items-center">
-                <Users className="w-4 h-4 mr-2 text-green-600" />
-                User Management
-              </h4>
-              <p className="text-sm text-gray-600 mb-3">
-                Direct access to user accounts and subscription management
-              </p>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span>Account Search</span>
-                  <Badge variant="outline" className="text-green-600 border-green-600">Active</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Subscription Control</span>
-                  <Badge variant="outline" className="text-green-600 border-green-600">Active</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Document Validation</span>
-                  <Badge variant="outline" className="text-green-600 border-green-600">Active</Badge>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <div className="flex items-start">
-              <div className="bg-amber-100 p-2 rounded-lg mr-3">
-                <ExternalLink className="w-4 h-4 text-amber-600" />
-              </div>
-              <div>
-                <h5 className="font-medium text-amber-800 mb-1">TalkJS Integration Setup Required</h5>
-                <p className="text-sm text-amber-700 mb-2">
-                  To enable live chat support, configure your TalkJS API credentials in the environment settings.
-                </p>
-                <p className="text-xs text-amber-600">
-                  Contact your system administrator to set up VITE_TALKJS_APP_ID for full chat functionality.
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* AI Support Knowledge Base Management */}
+      <KnowledgeBaseManager />
 
       {/* XML Integration Management */}
       <Card className="mt-8">

@@ -26,7 +26,9 @@ import * as cron from 'node-cron';
 import { NotificationService } from './notificationService';
 import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
 import { storageService } from './fileStorage';
-import { handleAiSupportQuery, type AiSupportMessage } from './aiSupport';
+import { handleAiSupportQuery, type AiSupportMessage, LOCAL_KNOWLEDGE } from './aiSupport';
+import { knowledgeBase } from '@shared/schema';
+import { eq as eqKb } from 'drizzle-orm';
 
 // Initialize OpenAI Document Processor
 const aiDocProcessor = new AIDocumentProcessor();
@@ -6894,6 +6896,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) {
       console.error('[billing] Manual renewal check failed:', err);
       res.status(500).json({ error: 'Renewal check failed' });
+    }
+  });
+
+  // ─── Knowledge Base Admin Endpoints ───────────────────────────────────────────
+
+  // Seed KB from static defaults if DB is empty
+  app.post('/api/admin/knowledge-base/seed', requireAdmin, async (_req, res) => {
+    try {
+      const existing = await db.select().from(knowledgeBase);
+      if (existing.length > 0) {
+        return res.json({ seeded: false, message: 'Knowledge base already has entries', count: existing.length });
+      }
+      const rows = LOCAL_KNOWLEDGE.map((e) => ({ title: e.title, category: e.category, content: e.content }));
+      await db.insert(knowledgeBase).values(rows);
+      res.json({ seeded: true, message: `Seeded ${rows.length} entries from defaults`, count: rows.length });
+    } catch (err) {
+      console.error('[kb] Seed error:', err);
+      res.status(500).json({ error: 'Failed to seed knowledge base' });
+    }
+  });
+
+  // List all KB entries
+  app.get('/api/admin/knowledge-base', requireAdmin, async (_req, res) => {
+    try {
+      const entries = await db.select().from(knowledgeBase).orderBy(knowledgeBase.id);
+      res.json(entries);
+    } catch (err) {
+      console.error('[kb] List error:', err);
+      res.status(500).json({ error: 'Failed to fetch knowledge base' });
+    }
+  });
+
+  // Create KB entry
+  app.post('/api/admin/knowledge-base', requireAdmin, async (req: any, res) => {
+    try {
+      const { title, category, content } = req.body;
+      if (!title || !content) return res.status(400).json({ error: 'title and content are required' });
+      const [entry] = await db.insert(knowledgeBase)
+        .values({ title, category: category || 'general', content, isActive: true })
+        .returning();
+      res.json(entry);
+    } catch (err) {
+      console.error('[kb] Create error:', err);
+      res.status(500).json({ error: 'Failed to create entry' });
+    }
+  });
+
+  // Update KB entry
+  app.put('/api/admin/knowledge-base/:id', requireAdmin, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { title, category, content, isActive } = req.body;
+      const [entry] = await db.update(knowledgeBase)
+        .set({ title, category, content, isActive, updatedAt: new Date() })
+        .where(eqKb(knowledgeBase.id, id))
+        .returning();
+      if (!entry) return res.status(404).json({ error: 'Entry not found' });
+      res.json(entry);
+    } catch (err) {
+      console.error('[kb] Update error:', err);
+      res.status(500).json({ error: 'Failed to update entry' });
+    }
+  });
+
+  // Delete KB entry
+  app.delete('/api/admin/knowledge-base/:id', requireAdmin, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await db.delete(knowledgeBase).where(eqKb(knowledgeBase.id, id));
+      res.json({ success: true });
+    } catch (err) {
+      console.error('[kb] Delete error:', err);
+      res.status(500).json({ error: 'Failed to delete entry' });
     }
   });
 

@@ -944,3 +944,18 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+
+// ─── AI Support Knowledge Base ────────────────────────────────────────────────
+export const knowledgeBase = pgTable("knowledge_base", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  category: varchar("category", { length: 64 }).notNull().default("general"),
+  content: text("content").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type KnowledgeBaseEntry = typeof knowledgeBase.$inferSelect;
+export type InsertKnowledgeBaseEntry = typeof knowledgeBase.$inferInsert;
