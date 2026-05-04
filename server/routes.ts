@@ -6055,12 +6055,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const zdError = await zdRes.text();
         console.error('[contact] Zendesk API error:', zdRes.status, zdError);
-        // Return the error for diagnosis
-        return res.status(500).json({ error: `Zendesk API error ${zdRes.status}: ${zdError}` });
       }
 
-      // No Zendesk credentials — return error
-      return res.status(500).json({ error: 'Zendesk credentials not configured. Set ZENDESK_USERNAME and ZENDESK_API_TOKEN in Render environment.' });
+      // Fallback: email directly to Zendesk support address
+      await transporter.sendMail({
+        from: process.env.SMTP_USER || 'noreply@freightclear.com',
+        to: 'freightclear.help@wcscargo.zendesk.com',
+        replyTo: email,
+        subject: ticketSubject,
+        text: ticketBody,
+      });
+
+      res.json({ success: true, method: 'email-fallback' });
     } catch (err) {
       console.error('[contact] Error:', err);
       res.status(500).json({ error: 'Failed to submit contact form. Please try again.' });
