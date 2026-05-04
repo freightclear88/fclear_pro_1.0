@@ -508,7 +508,7 @@ async function handleWithClaude(userMessage: string, history: AiSupportMessage[]
   let current = [...messages];
   for (let round = 0; round < 5; round++) {
     const response = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307",
+      model: "claude-haiku-4-5",
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
       tools: anthropicTools,
@@ -570,12 +570,10 @@ export async function handleAiSupportQuery(
   userMessage: string,
   history: AiSupportMessage[] = []
 ): Promise<string> {
-  // OpenAI gpt-4o-mini is the active model (confirmed working)
-  // Claude is available as upgrade once Anthropic console.anthropic.com API key is obtained
-  if (process.env.ANTHROPIC_API_KEY && process.env.USE_CLAUDE === 'true') {
-    console.log("[ai-support] Using Claude claude-3-haiku-20240307");
+  if (process.env.ANTHROPIC_API_KEY) {
+    console.log("[ai-support] Using Claude claude-haiku-4-5");
     return handleWithClaude(userMessage, history);
   }
-  console.log("[ai-support] Using OpenAI gpt-4o-mini");
+  console.log("[ai-support] Falling back to OpenAI gpt-4o-mini");
   return handleWithOpenAI(userMessage, history);
 }

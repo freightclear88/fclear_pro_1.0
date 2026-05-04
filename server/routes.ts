@@ -6995,7 +6995,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const errMsg = err instanceof Error ? err.message : String(err);
       console.error('[ai-support] Error:', errMsg, err);
       // Surface actual error in reply for diagnosis
-      const diagReply = 'Our AI support is temporarily unavailable. Please try again shortly or contact FreightClear directly at freightclear.com.';
+      const diagReply = `AI error: ${errMsg}`;
       res.status(500).json({
         error: 'AI support temporarily unavailable',
         reply: diagReply,
