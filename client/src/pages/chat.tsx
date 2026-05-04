@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import ContactForm from "@/components/ContactForm";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Link } from "wouter";
@@ -81,6 +82,7 @@ const KB_LINKS = [
 export default function AiSupport() {
   const { user } = useAuth();
   const poaComplete = (user as any)?.powerOfAttorneyStatus === "validated" || (user as any)?.powerOfAttorneyStatus === "uploaded";
+  const [contactOpen, setContactOpen] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -354,15 +356,19 @@ export default function AiSupport() {
                   Our licensed customs brokers are ready to assist with complex shipments.
                 </p>
               </div>
-              <a href="https://freightclear.com" target="_blank" rel="noopener noreferrer">
-                <Button size="sm" className="w-full bg-freight-blue hover:bg-freight-blue/90 text-white text-xs">
-                  Contact FreightClear
-                </Button>
-              </a>
+              <Button
+                size="sm"
+                className="w-full bg-freight-blue hover:bg-freight-blue/90 text-white text-xs"
+                onClick={() => setContactOpen(true)}
+              >
+                Contact FreightClear
+              </Button>
             </CardContent>
           </Card>
         </div>
       </div>
     </div>
+
+    <ContactForm open={contactOpen} onClose={() => setContactOpen(false)} />
   );
 }

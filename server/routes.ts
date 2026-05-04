@@ -6000,6 +6000,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ─── Public Contact Form ─────────────────────────────────────────────────
+  // No auth required — creates a Zendesk ticket via API or email fallback
+  app.post('/api/contact', async (req: any, res) => {
+    try {
+      const { name, email, company, phone, subject, message, category } = req.body;
+
+      if (!name || !email || !message) {
+        return res.status(400).json({ error: 'name, email, and message are required' });
+      }
+
+      const ticketSubject = subject || `FreightClear Contact: ${category || 'General'} — ${name}`;
+      const ticketBody = [
+        `Name: ${name}`,
+        `Email: ${email}`,
+        company ? `Company: ${company}` : null,
+        phone ? `Phone: ${phone}` : null,
+        category ? `Category: ${category}` : null,
+        ``,
+        `Message:`,
+        message,
+      ].filter(Boolean).join('\n');
+
+      // Try Zendesk API first
+      if (zendeskClient) {
+        try {
+          await new Promise((resolve, reject) => {
+            zendeskClient.tickets.create({
+              ticket: {
+                subject: ticketSubject,
+                comment: { body: ticketBody },
+                requester: { name, email },
+                tags: ['freightclear-contact', category || 'general'],
+                priority: 'normal',
+                custom_fields: [],
+              },
+            }, (err: any, _req: any, result: any) => {
+              if (err) reject(err);
+              else resolve(result);
+            });
+          });
+          return res.json({ success: true, method: 'zendesk-api' });
+        } catch (zdErr) {
+          console.error('[contact] Zendesk API error, falling back to email:', zdErr);
+        }
+      }
+
+      // Fallback: email directly to Zendesk support address
+      await transporter.sendMail({
+        from: process.env.SMTP_USER || 'noreply@freightclear.com',
+        to: 'freightclear.help@wcscargo.zendesk.com',
+        replyTo: email,
+        subject: ticketSubject,
+        text: ticketBody,
+      });
+
+      res.json({ success: true, method: 'email' });
+    } catch (err) {
+      console.error('[contact] Error:', err);
+      res.status(500).json({ error: 'Failed to submit contact form. Please try again.' });
+    }
+  });
+
   // Support Routes
   app.post('/api/support/tickets', requireSubscription, async (req: any, res) => {
     try {
