@@ -38,7 +38,7 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
   { name: "Shipments", href: "/shipments", icon: Ship },
   { name: "Fast ISF", href: "/fastisf", icon: FileText },
-  { name: "Chat/Support", href: "/chat", icon: MessageCircle },
+  { name: "AI Support", href: "/chat", icon: MessageCircle },
   { name: "Payments", href: "/payments", icon: Receipt },
   { name: "Profile", href: "/profile", icon: User },
   { name: "Subscription", href: "/subscription", icon: CreditCard },

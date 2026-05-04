@@ -91,7 +91,7 @@ export default function Shipments() {
                 <Badge className="bg-white/20 text-white border-white/30">+ More</Badge>
               </div>
             </div>
-            <div className="hidden lg:block">
+            <div className="mt-4 lg:mt-0">
               <DocumentUpload 
                 trigger={
                   <Button className="bg-white text-freight-blue hover:bg-gray-100">

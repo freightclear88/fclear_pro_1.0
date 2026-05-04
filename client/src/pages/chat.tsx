@@ -1,192 +1,285 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
-import { Crown, MessageCircle, AlertTriangle, ExternalLink, Shield, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Bot,
+  Send,
+  User,
+  BookOpen,
+  Calculator,
+  FileText,
+  AlertTriangle,
+  Globe,
+  HelpCircle,
+  Sparkles,
+  ExternalLink,
+} from "lucide-react";
 
-import { Link } from "wouter";
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}
 
-export default function Chat() {
-  const { user } = useAuth();
+const QUICK_PROMPTS = [
+  { label: "Calculate import duties", prompt: "How do I calculate import duties for my shipment?", icon: Calculator },
+  { label: "China tariff rates", prompt: "What are the current tariff rates for goods from China?", icon: Globe },
+  { label: "ISF 10+2 requirements", prompt: "What are the ISF 10+2 filing requirements and deadlines?", icon: FileText },
+  { label: "De minimis rule", prompt: "Explain the de minimis rule and the $800 threshold for imports.", icon: HelpCircle },
+  { label: "UFLPA compliance", prompt: "What do I need to know about UFLPA compliance requirements?", icon: AlertTriangle },
+  { label: "Read my HTS code", prompt: "How do I read and understand my HTS classification code?", icon: BookOpen },
+];
 
-  // Check subscription access
-  const { data: userAccess } = useQuery({
-    queryKey: ["/api/subscription/access"],
-    enabled: !!user,
-  });
+const KB_LINKS = [
+  { label: "Duty Rate Tables", href: "https://freightclear.com", icon: Calculator },
+  { label: "HTS Code Lookup Guide", href: "https://freightclear.com", icon: BookOpen },
+  { label: "ISF Filing Checklist", href: "https://freightclear.com", icon: FileText },
+  { label: "Section 301 Tariff Updates", href: "https://freightclear.com", icon: AlertTriangle },
+  { label: "FreightClear Services", href: "https://freightclear.com", icon: Globe },
+];
 
-  // Show upgrade prompt for Free users
-  if (userAccess && !userAccess.hasAccess) {
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="text-center space-y-6">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-freight-orange to-freight-red rounded-full flex items-center justify-center">
-            <Crown className="w-8 h-8 text-white" />
+export default function AiSupport() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "welcome",
+      role: "assistant",
+      content:
+        "Hi! I'm the FreightClear AI Support assistant. I can help you with import duties, tariff rates, HTS classifications, ISF filings, and customs compliance. What would you like to know?",
+      timestamp: new Date(),
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
+
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: text.trim(),
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/ai-support", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text.trim() }),
+      });
+
+      if (!res.ok) throw new Error("API not available");
+
+      const data = await res.json();
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: data.reply || data.message || "I received your question. Our AI support team is processing your request.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch {
+      const fallbackMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content:
+          "Our AI support is being configured. In the meantime, you can reach our compliance team directly at freightclear.com or browse the knowledge base links on the right for answers to common import and customs questions.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, fallbackMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage(input);
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-6 max-w-6xl">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-br from-freight-blue to-freight-green rounded-lg">
+            <Bot className="w-6 h-6 text-white" />
           </div>
-          
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-gray-900">Chat Support Access Required</h1>
-            <p className="text-lg text-gray-600">
-              Chat support is available for Starter and Pro subscribers
+          <div>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-2">
+              AI Support
+              <Badge className="bg-gradient-to-r from-freight-blue to-freight-green text-white border-0 text-xs">
+                <Sparkles className="w-3 h-3 mr-1" />
+                Powered by AI
+              </Badge>
+            </h1>
+            <p className="text-gray-600 text-sm lg:text-base">
+              Get instant answers on duties, tariffs, calculations, and compliance
             </p>
-          </div>
-
-          <Card className="max-w-md mx-auto border-freight-orange/20 bg-gradient-to-br from-orange-50 to-red-50">
-            <CardContent className="p-6 text-center space-y-4">
-              <AlertTriangle className="w-12 h-12 text-freight-orange mx-auto" />
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Free Plan Limitations</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Your current Free plan includes basic shipment management but doesn't include chat support access.
-                </p>
-                <Link href="/subscription">
-                  <Button className="w-full bg-gradient-to-r from-freight-orange to-freight-red hover:from-freight-orange/90 hover:to-freight-red/90 text-white">
-                    <Crown className="w-4 h-4 mr-2" />
-                    Upgrade to Starter Plan
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto text-sm">
-            <div className="bg-white p-4 rounded-lg border border-green-200">
-              <h4 className="font-medium text-green-800 mb-2">✓ Starter Plan ($49/month)</h4>
-              <ul className="space-y-1 text-green-700">
-                <li>• 20 shipments per month</li>
-                <li>• 300 documents</li>
-                <li>• <strong>Chat support access</strong></li>
-                <li>• All basic features</li>
-              </ul>
-            </div>
-            <div className="bg-white p-4 rounded-lg border border-blue-200">
-              <h4 className="font-medium text-blue-800 mb-2">✓ Pro Plan ($175/month)</h4>
-              <ul className="space-y-1 text-blue-700">
-                <li>• Unlimited shipments</li>
-                <li>• Unlimited documents</li>
-                <li>• <strong>Priority chat support</strong></li>
-                <li>• All premium features</li>
-              </ul>
-            </div>
           </div>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-freight-blue to-freight-green rounded-lg">
-              <MessageCircle className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Chat Support</h1>
-              <p className="text-gray-600">Get instant help with your shipments and freight management</p>
-            </div>
-          </div>
-          
-          {userAccess?.subscriptionStatus && (
-            <Badge variant="outline" className="text-green-600 border-green-600">
-              <Shield className="w-3 h-3 mr-1" />
-              {userAccess.subscriptionStatus === 'active' ? 'Pro Support' : 'Support Access'}
-            </Badge>
-          )}
-        </div>
+      {/* Quick Prompt Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
+        {QUICK_PROMPTS.map((qp) => (
+          <button
+            key={qp.label}
+            onClick={() => sendMessage(qp.prompt)}
+            disabled={isLoading}
+            className="flex flex-col items-center gap-1 p-3 bg-white border border-gray-200 rounded-lg hover:border-freight-blue hover:bg-blue-50 transition-all text-center group disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <qp.icon className="w-5 h-5 text-freight-blue group-hover:scale-110 transition-transform" />
+            <span className="text-xs text-gray-600 font-medium leading-tight">{qp.label}</span>
+          </button>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Chat Interface */}
         <div className="lg:col-span-3">
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2">
-                <MessageCircle className="w-5 h-5" />
-                Live Support Chat
+          <Card className="flex flex-col h-[560px]">
+            <CardHeader className="pb-3 border-b flex-shrink-0">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Bot className="w-4 h-4 text-freight-blue" />
+                FreightClear AI Assistant
+                <span className="ml-auto flex items-center gap-1 text-xs text-green-600 font-normal">
+                  <span className="w-2 h-2 rounded-full bg-green-500 inline-block animate-pulse" />
+                  Online
+                </span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-[600px] bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center">
-                <div className="text-center space-y-4 max-w-md mx-auto p-6">
-                  <div className="bg-gradient-to-br from-freight-blue to-freight-green p-4 rounded-full mx-auto w-16 h-16 flex items-center justify-center">
-                    <MessageCircle className="w-8 h-8 text-white" />
+
+            {/* Messages */}
+            <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex items-start gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                >
+                  <div
+                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                      msg.role === "user"
+                        ? "bg-freight-blue text-white"
+                        : "bg-gradient-to-br from-freight-blue to-freight-green text-white"
+                    }`}
+                  >
+                    {msg.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-800">Professional Chat Support</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    Our TalkJS integration is ready for deployment. Contact your administrator to configure 
-                    the chat service with proper API credentials for real-time customer support.
-                  </p>
-                  <div className="grid grid-cols-2 gap-3 mt-4">
-                    <div className="p-3 bg-white rounded-lg border border-gray-200">
-                      <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-1" />
-                      <p className="text-xs text-gray-600">Integration Ready</p>
-                    </div>
-                    <div className="p-3 bg-white rounded-lg border border-gray-200">
-                      <Clock className="w-5 h-5 text-amber-600 mx-auto mb-1" />
-                      <p className="text-xs text-gray-600">Setup Required</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <div className="flex items-center justify-center text-amber-700">
-                      <AlertCircle className="w-4 h-4 mr-2" />
-                      <span className="text-xs">Configure VITE_TALKJS_APP_ID to activate</span>
+                  <div
+                    className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                      msg.role === "user"
+                        ? "bg-freight-blue text-white rounded-tr-sm"
+                        : "bg-gray-100 text-gray-800 rounded-tl-sm"
+                    }`}
+                  >
+                    {msg.content}
+                    <div
+                      className={`text-[10px] mt-1 ${
+                        msg.role === "user" ? "text-blue-200 text-right" : "text-gray-400"
+                      }`}
+                    >
+                      {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </div>
                   </div>
                 </div>
-              </div>
+              ))}
+
+              {/* Typing indicator */}
+              {isLoading && (
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-freight-blue to-freight-green text-white flex items-center justify-center">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1 items-center">
+                    <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce [animation-delay:0ms]" />
+                    <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce [animation-delay:150ms]" />
+                    <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce [animation-delay:300ms]" />
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </CardContent>
+
+            {/* Input */}
+            <div className="border-t p-4 flex-shrink-0">
+              <form onSubmit={handleSubmit} className="flex gap-2">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask about duties, tariffs, ISF filings, HTS codes..."
+                  className="flex-1 text-sm"
+                  disabled={isLoading}
+                />
+                <Button
+                  type="submit"
+                  disabled={!input.trim() || isLoading}
+                  className="bg-freight-blue hover:bg-freight-blue/90 text-white px-4"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </form>
+              <p className="text-[11px] text-gray-400 mt-2 text-center">
+                AI responses are informational. Consult a licensed customs broker for binding advice.
+              </p>
+            </div>
           </Card>
         </div>
 
-        {/* Help & Resources */}
+        {/* Knowledge Base Links */}
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Quick Help</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-freight-blue" />
+                Knowledge Base
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="text-sm space-y-2">
-                <p className="font-medium text-gray-700">Common Questions:</p>
-                <ul className="space-y-1 text-gray-600">
-                  <li>• How to upload documents</li>
-                  <li>• Tracking shipment status</li>
-                  <li>• ISF filing requirements</li>
-                  <li>• XML integration setup</li>
-                  <li>• Subscription management</li>
-                </ul>
-              </div>
-              
-              <div className="pt-3 border-t">
-                <p className="text-xs text-gray-500 mb-2">Response times:</p>
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span>Starter Plan</span>
-                    <span className="font-medium">~2 hours</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Pro Plan</span>
-                    <span className="font-medium text-green-600">~30 minutes</span>
-                  </div>
-                </div>
-              </div>
+            <CardContent className="space-y-2">
+              {KB_LINKS.map((link) => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 p-2.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all group text-sm text-gray-700"
+                >
+                  <link.icon className="w-4 h-4 text-freight-blue flex-shrink-0" />
+                  <span className="flex-1">{link.label}</span>
+                  <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-freight-blue flex-shrink-0" />
+                </a>
+              ))}
             </CardContent>
           </Card>
 
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="p-4">
-              <div className="text-center space-y-2">
-                <ExternalLink className="w-8 h-8 text-blue-600 mx-auto" />
-                <h3 className="font-medium text-blue-900">Need immediate help?</h3>
-                <p className="text-sm text-blue-700">
-                  For urgent shipping issues, contact our priority support line
-                </p>
-                <Button size="sm" variant="outline" className="text-blue-700 border-blue-300 hover:bg-blue-100">
-                  Contact Priority Support
-                </Button>
+          <Card className="border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50">
+            <CardContent className="p-4 text-center space-y-3">
+              <div className="mx-auto w-10 h-10 bg-gradient-to-br from-freight-blue to-freight-green rounded-full flex items-center justify-center">
+                <Globe className="w-5 h-5 text-white" />
               </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm">Need Expert Help?</h3>
+                <p className="text-xs text-gray-600 mt-1">
+                  Our licensed customs brokers are ready to assist with complex shipments.
+                </p>
+              </div>
+              <a href="https://freightclear.com" target="_blank" rel="noopener noreferrer">
+                <Button size="sm" className="w-full bg-freight-blue hover:bg-freight-blue/90 text-white text-xs">
+                  Contact FreightClear
+                </Button>
+              </a>
             </CardContent>
           </Card>
         </div>
